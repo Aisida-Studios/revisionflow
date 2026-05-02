@@ -1,19 +1,33 @@
 // src/pages/Signup.jsx
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ensureReferralCode, applyReferralCode, getPendingReferral, clearPendingReferral } from '../utils/referrals'
 import toast from 'react-hot-toast'
-import { Zap, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
 export default function Signup() {
   const { signup, loginWithGoogle } = useAuth()
-  const navigate  = useNavigate()
-  const [form,    setForm]    = useState({ name: '', email: '', password: '', confirm: '' })
+  const navigate      = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const [form,    setForm]    = useState({
+    name: '', email: '', password: '', confirm: '',
+    referralCode: searchParams.get('ref') || getPendingReferral() || '',
+  })
   const [showPw,  setShowPw]  = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors,  setErrors]  = useState({})
   const [consent, setConsent] = useState(false)
+
+  // If ?ref= in URL, store it
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      sessionStorage.setItem('pendingReferral', ref)
+      localStorage.setItem('pendingReferralFallback', ref)
+    }
+  }, [searchParams])
 
   function validate() {
     const e = {}
@@ -26,12 +40,12 @@ export default function Signup() {
   }
 
   async function handleSignupComplete(uid) {
-    // Give the user their own referral code
     await ensureReferralCode(uid)
-    // Apply any pending referral from the URL
-    const pendingRef = getPendingReferral()
-    if (pendingRef) {
-      await applyReferralCode(uid, pendingRef)
+    const code = form.referralCode.trim() || getPendingReferral()
+    if (code) {
+      const ok = await applyReferralCode(uid, code)
+      if (ok) toast.success('🚀 Referral code applied! You earned 100 XP and unlocked the Rocket icon.')
+      else if (form.referralCode.trim()) toast.error('Referral code not found — continuing without it.')
       clearPendingReferral()
     }
   }
@@ -42,9 +56,8 @@ export default function Signup() {
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true)
     try {
-      const userCredential = await signup(form.email, form.password, form.name)
-      // signup() returns the UserCredential — grab the uid
-      const uid = userCredential?.user?.uid
+      const cred = await signup(form.email, form.password, form.name)
+      const uid  = cred?.user?.uid
       if (uid) await handleSignupComplete(uid)
       navigate('/onboarding')
     } catch (err) {
@@ -56,8 +69,8 @@ export default function Signup() {
   async function handleGoogle() {
     setLoading(true)
     try {
-      const userCredential = await loginWithGoogle()
-      const uid = userCredential?.user?.uid
+      const cred = await loginWithGoogle()
+      const uid  = cred?.user?.uid
       if (uid) await handleSignupComplete(uid)
       navigate('/onboarding')
     } catch (err) {
@@ -77,7 +90,6 @@ export default function Signup() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg-base)' }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
 
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(124,58,237,0.4)' }}>
             <Zap size={26} color="#fff" />
@@ -88,7 +100,6 @@ export default function Signup() {
 
         <div className="card" style={{ padding: 28 }}>
 
-          {/* Google sign-in */}
           <button className="btn btn-secondary" style={{ width: '100%', marginBottom: 20, gap: 10 }} onClick={handleGoogle} disabled={loading}>
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -107,37 +118,71 @@ export default function Signup() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            {/* Name + email */}
-            {[
-              { key: 'name',  label: 'Full name', icon: User, type: 'text',  placeholder: 'Your full name' },
-              { key: 'email', label: 'Email',     icon: Mail, type: 'email', placeholder: 'you@school.ac.uk' },
-            ].map(({ key, label, icon: Icon, type, placeholder }) => (
-              <div key={key} className="form-group" style={{ marginBottom: 0 }}>
-                <label className="label">{label}</label>
-                <div style={{ position: 'relative' }}>
-                  <Icon size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input className="input" style={{ paddingLeft: 38 }} type={type} placeholder={placeholder} {...field(key)} required />
-                </div>
-                {errors[key] && <span className="form-error">{errors[key]}</span>}
+            {/* Name */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label">Full name</label>
+              <div style={{ position: 'relative' }}>
+                <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input className="input" style={{ paddingLeft: 38 }} type="text" placeholder="Your full name" {...field('name')} required />
               </div>
-            ))}
+              {errors.name && <span className="form-error">{errors.name}</span>}
+            </div>
 
-            {/* Password + confirm */}
-            {['password', 'confirm'].map(key => (
-              <div key={key} className="form-group" style={{ marginBottom: 0 }}>
-                <label className="label">{key === 'password' ? 'Password' : 'Confirm password'}</label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" {...field(key)} required />
-                  {key === 'confirm' && (
-                    <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
-                      {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  )}
-                </div>
-                {errors[key] && <span className="form-error">{errors[key]}</span>}
+            {/* Email */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label">Email</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input className="input" style={{ paddingLeft: 38 }} type="email" placeholder="you@school.ac.uk" {...field('email')} required />
               </div>
-            ))}
+              {errors.email && <span className="form-error">{errors.email}</span>}
+            </div>
+
+            {/* Password */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input className="input" style={{ paddingLeft: 38 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" {...field('password')} required />
+              </div>
+              {errors.password && <span className="form-error">{errors.password}</span>}
+            </div>
+
+            {/* Confirm password */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label">Confirm password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" {...field('confirm')} required />
+                <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.confirm && <span className="form-error">{errors.confirm}</span>}
+            </div>
+
+            {/* Referral code */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Gift size={13} /> Referral code <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Gift size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  className="input"
+                  style={{ paddingLeft: 38, textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                  type="text"
+                  placeholder="e.g. AB12CD34"
+                  maxLength={8}
+                  {...field('referralCode')}
+                />
+              </div>
+              {form.referralCode && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: 3, display: 'block' }}>
+                  🚀 You'll earn 100 XP + unlock the Rocket profile icon
+                </span>
+              )}
+            </div>
 
             {/* GDPR consent */}
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: `1px solid ${errors.consent ? 'var(--danger)' : 'var(--border)'}` }}>
@@ -146,10 +191,10 @@ export default function Signup() {
               <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                 I have read and agree to the{' '}
                 <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Privacy Policy</a>
-                {' '}and understand how my data is used. I confirm I am aged 13 or over.
+                {' '}and confirm I am aged 13 or over.
               </span>
             </label>
-            {errors.consent && <span className="form-error" style={{ fontSize: '0.78rem' }}>{errors.consent}</span>}
+            {errors.consent && <span className="form-error">{errors.consent}</span>}
 
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 4 }}>
               {loading ? 'Creating account…' : 'Create free account'}
