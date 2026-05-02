@@ -63,7 +63,7 @@ export const logout = () => signOut(auth)
    USER / PROFILE
 ========================= */
 
-export async function ensureUser(uid) {
+export async function ensureUser(uid, initialData = {}) {
   const ref = doc(db, 'users', uid)
   const snap = await getDoc(ref)
 
@@ -74,14 +74,40 @@ export async function ensureUser(uid) {
       streak: 0,
       lastLogin: null,
       badges: [],
-      profile: {},
-      friends: []
+      friends: [],
+      displayName: initialData.displayName || '',
+      profile: {
+        displayName: initialData.displayName || '',
+        email:       initialData.email       || '',
+        avatarUrl:   initialData.avatarUrl   || '',
+      },
     })
+  } else if (initialData.displayName) {
+    // Keep displayName in sync at top level for leaderboard queries
+    const existing = snap.data()
+    if (!existing.displayName) {
+      await updateDoc(ref, {
+        displayName: initialData.displayName,
+        'profile.displayName': initialData.displayName,
+      })
+    }
   }
 }
 
+// Updates top-level fields on the user doc (not nested under profile{})
 export const updateUserProfile = (uid, updates) =>
   updateDoc(doc(db, 'users', uid), updates)
+
+// Unlock the 'rocket' profile icon as a referral reward
+export const unlockReferralIcon = async (uid) => {
+  const ref = doc(db, 'users', uid)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const current = snap.data().unlockedIcons || []
+  if (!current.includes('rocket')) {
+    await updateDoc(ref, { unlockedIcons: [...current, 'rocket'] })
+  }
+}
 
 /* =========================
    STREAK
@@ -228,7 +254,7 @@ export const getLeaderboard = async (friendUids, currentUid) => {
         const d = snap.data()
         return {
           uid,
-          displayName: d.profile?.displayName || d.profile?.name || 'Anonymous',
+          displayName: d.displayName || d.profile?.displayName || d.profile?.name || 'Anonymous',
           xp: d.xp || 0,
           streak: d.streak || 0,
           profileIcon: d.profileIcon || null,
@@ -258,7 +284,7 @@ export const getGlobalLeaderboard = async (maxResults = 100) => {
       const data = d.data()
       return {
         uid: d.id,
-        displayName: data.profile?.displayName || data.profile?.name || 'Anonymous',
+        displayName: data.displayName || data.profile?.displayName || data.profile?.name || 'Anonymous',
         xp: data.xp || 0,
         streak: data.streak || 0,
         profileIcon: data.profileIcon || null,
