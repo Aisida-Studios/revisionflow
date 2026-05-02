@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,172 +9,366 @@ import TopicUpdateBanner from './TopicUpdateBanner'
 import {
   LayoutDashboard, Calendar, FileText, Brain, AlertCircle,
   CheckSquare, Users, Trophy, User, MessageSquare, BookOpen,
-  Clock, Settings, LogOut, Menu, X, Sun, Moon, Zap, Timer, BarChart2, Layers, HelpCircle
+  Clock, Settings, LogOut, Menu, Sun, Moon, Zap, Timer,
+  BarChart2, Layers, HelpCircle
 } from 'lucide-react'
 
 const NAV = [
-  { to:'/dashboard',   label:'Dashboard',   icon:LayoutDashboard },
-  { to:'/calendar',    label:'Calendar',    icon:Calendar },
-  { to:'/exams',       label:'Exam Dates',  icon:Clock },
-  { to:'/papers',      label:'Past Papers', icon:FileText },
-  { to:'/topics',      label:'Topics',      icon:Brain },
-  { to:'/mistakes',    label:'Mistakes',    icon:AlertCircle },
-  { to:'/notes',       label:'Notes',       icon:BookOpen },
-  { to:'/tasks',       label:'Tasks',       icon:CheckSquare },
-  { to:'/timer',       label:'Timer',       icon:Timer },
-  { to:'/analytics',   label:'Analytics',   icon:BarChart2 },
-  { to:'/mastery',     label:'Mastery',     icon:Layers },
-  { to:'/ai',          label:'AI Advisor',  icon:MessageSquare },
-  { to:'/friends',     label:'Friends',     icon:Users },
-  { to:'/leaderboard', label:'Leaderboard', icon:Trophy },
-  { to:'/profile',     label:'Profile',     icon:User },
-  { to:'/help',        label:'Help',        icon:HelpCircle },
-  { to:'/settings',    label:'Settings',    icon:Settings },
+  { to: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+  { to: '/calendar',    label: 'Calendar',    icon: Calendar },
+  { to: '/exams',       label: 'Exam Dates',  icon: Clock },
+  { to: '/papers',      label: 'Past Papers', icon: FileText },
+  { to: '/topics',      label: 'Topics',      icon: Brain },
+  { to: '/mastery',     label: 'Mastery',     icon: Layers },
+  { to: '/mistakes',    label: 'Mistakes',    icon: AlertCircle },
+  { to: '/notes',       label: 'Notes',       icon: BookOpen },
+  { to: '/tasks',       label: 'Tasks',       icon: CheckSquare },
+  { to: '/timer',       label: 'Timer',       icon: Timer },
+  { to: '/analytics',   label: 'Analytics',   icon: BarChart2 },
+  { to: '/ai',          label: 'AI Advisor',  icon: MessageSquare },
+  { to: '/friends',     label: 'Friends',     icon: Users },
+  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { to: '/profile',     label: 'Profile',     icon: User },
+  { to: '/help',        label: 'Help',        icon: HelpCircle },
+  { to: '/settings',    label: 'Settings',    icon: Settings },
 ]
 
 const MOBILE_NAV = [
-  { to:'/dashboard', label:'Home',      icon:LayoutDashboard },
-  { to:'/calendar',  label:'Calendar',  icon:Calendar },
-  { to:'/timer',     label:'Timer',     icon:Timer },
-  { to:'/ai',        label:'AI',        icon:MessageSquare },
-  { to:'/profile',   label:'Profile',   icon:User },
+  { to: '/dashboard', label: 'Home',   icon: LayoutDashboard },
+  { to: '/timer',     label: 'Timer',  icon: Timer },
+  { to: '/ai',        label: 'AI',     icon: MessageSquare },
+  { to: '/topics',    label: 'Topics', icon: Brain },
+  { to: '/profile',   label: 'Me',     icon: User },
 ]
+
+function xpForLevel(n) {
+  return Math.floor(100 * Math.pow(1.15, n - 1))
+}
+
+function computeLevel(totalXP) {
+  let lv = 1, cum = 0
+  while (true) {
+    const needed = xpForLevel(lv)
+    if (cum + needed > totalXP) break
+    cum += needed; lv++
+  }
+  return lv
+}
+
+const FULL_W      = 240
+const COLLAPSED_W = 60
 
 export default function Layout() {
   const { profile, logout } = useAuth()
   const { theme, toggle }   = useTheme()
-  const navigate             = useNavigate()
-  const [open,      setOpen]      = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const navigate            = useNavigate()
+
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsed,  setCollapsed]  = useState(false)
+  const [isMobile,   setIsMobile]   = useState(window.innerWidth <= 768)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const sidebarW = collapsed ? COLLAPSED_W : FULL_W
 
   async function handleLogout() {
     await logout()
     navigate('/login')
   }
 
-  const xpForNext  = profile ? Math.floor(100 * Math.pow(1.15, (profile.level||1)-1)) : 100
-  const xpProgress = profile ? Math.min(100, ((profile.xp||0) / xpForNext) * 100) : 0
+  // XP calculations
+  const totalXP     = profile?.xp || 0
+  const level       = computeLevel(totalXP)
+  let xpSoFar = 0
+  for (let i = 1; i < level; i++) xpSoFar += xpForLevel(i)
+  const xpThisLevel = totalXP - xpSoFar
+  const xpNeeded    = xpForLevel(level)
+  const xpPct       = Math.min(100, (xpThisLevel / xpNeeded) * 100)
 
-  // Profile icon — show emoji if set, otherwise first letter of name
   const iconId    = profile?.profileIcon || 'lightning'
-  const iconEmoji = PROFILE_ICONS?.[iconId]?.emoji || null
+  const iconEmoji = PROFILE_ICONS?.[iconId]?.emoji ?? null
+  const initial   = (profile?.displayName || profile?.name || 'U')[0].toUpperCase()
+
+  const avatarEl = (
+    <div style={{
+      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+      background: 'linear-gradient(135deg, var(--purple-700), var(--purple-400))',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: iconEmoji ? '1.1rem' : '0.88rem', fontWeight: 700, userSelect: 'none',
+    }}>
+      {iconEmoji || initial}
+    </div>
+  )
+
+  // Shared nav-item style factory
+  const navStyle = (isActive, extraPad) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: collapsed ? 0 : 9,
+    justifyContent: collapsed ? 'center' : 'flex-start',
+    padding: collapsed ? '9px 0' : (extraPad || '7px 10px'),
+    borderRadius: 8,
+    fontSize: '0.84rem',
+    fontWeight: isActive ? 600 : 400,
+    color: isActive ? '#fff' : 'var(--text-secondary)',
+    background: isActive ? 'var(--accent)' : 'transparent',
+    textDecoration: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    width: '100%',
+    whiteSpace: 'nowrap',
+    transition: 'background 0.15s ease, color 0.15s ease',
+    minHeight: 36,
+  })
 
   return (
-    <div className="app-layout">
-      {open && <div style={{position:'fixed',inset:0,zIndex:99,background:'rgba(0,0,0,0.5)'}} onClick={()=>setOpen(false)}/>}
+    <>
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
 
-      <aside className={`sidebar ${open?'open':''}`} style={{
-        width:collapsed?52:undefined, minWidth:collapsed?52:undefined,
-        transition:'width 0.2s,min-width 0.2s',
-        overflow:collapsed?'hidden':undefined,
-        overflowY:collapsed?'hidden':'auto',
-      }}>
-        {/* Logo + collapse toggle */}
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20,padding:'0 4px',justifyContent:collapsed?'center':'flex-start'}}>
-          {!collapsed && (
-            <>
-              <div style={{width:32,height:32,borderRadius:8,background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <Zap size={18} color="#fff"/>
+        {/* Mobile overlay */}
+        {mobileOpen && (
+          <div
+            onClick={() => setMobileOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 150,
+              background: 'rgba(0,0,0,0.55)',
+            }}
+          />
+        )}
+
+        {/* ─── Sidebar ─── */}
+        <aside style={{
+          width: sidebarW,
+          flexShrink: 0,
+          position: 'fixed',
+          top: 0, left: 0,
+          height: '100vh',
+          zIndex: 200,
+          background: 'var(--bg-surface)',
+          borderRight: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: collapsed ? '16px 8px' : '16px 12px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          transition: 'width 0.2s ease, padding 0.2s ease, transform 0.2s ease',
+          transform: isMobile ? (mobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+        }}>
+
+          {/* Logo row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            marginBottom: 14,
+            flexShrink: 0,
+          }}>
+            {!collapsed && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Zap size={14} color="#fff" />
+                </div>
+                <span style={{ fontWeight: 800, fontSize: '0.93rem', whiteSpace: 'nowrap' }}>
+                  Revision<span style={{ color: 'var(--accent-light)' }}>Flow</span>
+                </span>
               </div>
-              <span style={{fontWeight:800,fontSize:'1.05rem',letterSpacing:'-0.02em',flex:1}}>
-                Revision<span style={{color:'var(--accent-light)'}}>Flow</span>
-              </span>
-            </>
+            )}
+            <button
+              onClick={() => { setCollapsed(x => !x); setMobileOpen(false) }}
+              title={collapsed ? 'Expand' : 'Collapse'}
+              style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
+                width: 26, height: 26, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.8rem', fontWeight: 800,
+              }}
+            >
+              {collapsed ? '›' : '‹'}
+            </button>
+          </div>
+
+          {/* User card (expanded) */}
+          {profile && !collapsed && (
+            <div style={{
+              background: 'rgba(124,58,237,0.12)',
+              border: '1px solid rgba(124,58,237,0.28)',
+              borderRadius: 10,
+              padding: '10px 11px',
+              marginBottom: 10,
+              flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                {avatarEl}
+                <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {profile.displayName || profile.name || 'Student'}
+                  </div>
+                  <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: 1 }}>
+                    Lv {level} · ⚡{totalXP.toLocaleString()} · 🔥{profile.streak || 0}
+                  </div>
+                </div>
+              </div>
+              {/* XP bar */}
+              <div style={{ height: 4, background: 'var(--bg-hover)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: `${xpPct}%`,
+                  background: 'linear-gradient(90deg, var(--purple-700), var(--purple-400))',
+                  borderRadius: 2, transition: 'width 0.5s ease',
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                <span>{xpThisLevel} / {xpNeeded} XP</span>
+                <span>Lv {level + 1} →</span>
+              </div>
+            </div>
           )}
-          <button onClick={()=>setCollapsed(x=>!x)} title={collapsed?'Expand':'Collapse'}
-            style={{marginLeft:collapsed?0:'auto',flexShrink:0,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:6,cursor:'pointer',color:'var(--text-secondary)',padding:'4px 7px',fontSize:'0.8rem',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            {collapsed ? '»' : '«'}
-          </button>
+
+          {/* Collapsed: avatar only */}
+          {profile && collapsed && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, flexShrink: 0 }}>
+              {avatarEl}
+            </div>
+          )}
+
+          {/* Nav */}
+          <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+            {NAV.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={() => setMobileOpen(false)}
+                title={collapsed ? label : undefined}
+                style={({ isActive }) => navStyle(isActive)}
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon size={16} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
+                    {!collapsed && label}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Bottom: theme + logout */}
+          <div style={{
+            marginTop: 8, paddingTop: 8,
+            borderTop: '1px solid var(--border)',
+            display: 'flex', flexDirection: 'column', gap: 1,
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={toggle}
+              title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+              style={navStyle(false)}
+            >
+              {theme === 'dark'
+                ? <Sun size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+                : <Moon size={16} style={{ flexShrink: 0, opacity: 0.7 }} />}
+              {!collapsed && (theme === 'dark' ? 'Light mode' : 'Dark mode')}
+            </button>
+            <button
+              onClick={handleLogout}
+              title={collapsed ? 'Sign out' : undefined}
+              style={{ ...navStyle(false), color: 'var(--danger)' }}
+            >
+              <LogOut size={16} style={{ flexShrink: 0, opacity: 0.85 }} />
+              {!collapsed && 'Sign out'}
+            </button>
+          </div>
+        </aside>
+
+        {/* ─── Main content ─── */}
+        <div style={{
+          flex: 1,
+          marginLeft: isMobile ? 0 : sidebarW,
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'margin-left 0.2s ease',
+        }}>
+          {/* Mobile top bar */}
+          {isMobile && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '11px 16px',
+              background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)',
+              position: 'sticky', top: 0, zIndex: 100,
+            }}>
+              <button
+                onClick={() => setMobileOpen(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', display: 'flex', padding: 4 }}
+              >
+                <Menu size={22} />
+              </button>
+              <span style={{ fontWeight: 800, fontSize: '1rem' }}>
+                Revision<span style={{ color: 'var(--accent-light)' }}>Flow</span>
+              </span>
+              <button
+                onClick={toggle}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', padding: 4 }}
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
+          )}
+
+          {/* Scrollable page area */}
+          <div style={{
+            flex: 1,
+            padding: isMobile ? '16px 14px 90px' : '28px 32px',
+            maxWidth: 1300,
+            width: '100%',
+          }}>
+            <TopicUpdateBanner />
+            <Outlet />
+          </div>
         </div>
+      </div>
 
-        {/* User card with profile icon */}
-        {profile && !collapsed && (
-          <div className="card accent-card" style={{marginBottom:14,padding:10}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-              {/* Avatar — shows profile icon emoji or first letter */}
-              <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,var(--purple-700),var(--purple-400))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:iconEmoji?'1.1rem':'0.8rem',fontWeight:700,flexShrink:0,userSelect:'none'}}>
-                {iconEmoji || (profile.displayName||'U')[0].toUpperCase()}
-              </div>
-              <div style={{overflow:'hidden'}}>
-                <div style={{fontWeight:600,fontSize:'0.82rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{profile.displayName}</div>
-                <div style={{fontSize:'0.68rem',color:'var(--text-muted)'}}>Level {profile.level||1} · 🔥 {profile.streak||0}</div>
-              </div>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-fill xp-bar-fill" style={{width:`${xpProgress}%`}}/>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',marginTop:3,fontSize:'0.68rem',color:'var(--text-muted)'}}>
-              <span>{(profile.xp||0).toLocaleString()} XP</span>
-              <span>Next: {xpForNext} XP</span>
-            </div>
-          </div>
-        )}
+      <PWAInstallBanner />
 
-        {/* Collapsed avatar */}
-        {profile && collapsed && (
-          <div style={{display:'flex',justifyContent:'center',marginBottom:12}}>
-            <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,var(--purple-700),var(--purple-400))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:iconEmoji?'1.1rem':'0.8rem',fontWeight:700,userSelect:'none'}}>
-              {iconEmoji || (profile.displayName||'U')[0].toUpperCase()}
-            </div>
-          </div>
-        )}
-
-        {/* Nav links */}
-        <nav style={{flex:1,display:'flex',flexDirection:'column',gap:1,overflowY:'auto'}}>
-          {NAV.map(({to,label,icon:Icon})=>(
-            <NavLink key={to} to={to} onClick={()=>setOpen(false)}
-              style={({isActive})=>({
-                display:'flex',alignItems:'center',gap:9,padding:'8px 10px',
-                borderRadius:'var(--radius-md)',fontSize:'0.85rem',fontWeight:500,
-                color:isActive?'#fff':'var(--text-secondary)',
-                background:isActive?'var(--accent)':'transparent',
-                textDecoration:'none',transition:'all var(--transition)',
-              })}>
-              <Icon size={16}/>
-              {!collapsed && <span style={{marginLeft:9}}>{label}</span>}
+      {/* Mobile bottom nav */}
+      {isMobile && (
+        <nav style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'var(--bg-surface)', borderTop: '1px solid var(--border)',
+          zIndex: 300, display: 'flex',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}>
+          {MOBILE_NAV.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              style={({ isActive }) => ({
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 3, padding: '8px 2px',
+                color: isActive ? 'var(--accent-light)' : 'var(--text-muted)',
+                textDecoration: 'none',
+                fontSize: '0.67rem', fontWeight: 500,
+                transition: 'color 0.15s',
+              })}
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 1.75} />
+                  <span>{label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
-
-        {/* Bottom buttons */}
-        <div style={{display:'flex',flexDirection:'column',gap:3,marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-          <button className="btn btn-ghost" onClick={toggle} style={{justifyContent:'flex-start',gap:9,fontSize:'0.85rem'}}>
-            {theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}
-            {!collapsed && (theme==='dark'?'Light mode':'Dark mode')}
-          </button>
-          <button className="btn btn-ghost" onClick={handleLogout} style={{justifyContent:'flex-start',gap:9,fontSize:'0.85rem',color:'var(--danger)'}}>
-            <LogOut size={16}/>{!collapsed && ' Sign out'}
-          </button>
-        </div>
-      </aside>
-
-      <main className="main-content">
-        {/* Mobile header */}
-        <div className="mobile-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,paddingBottom:12,borderBottom:'1px solid var(--border)'}}>
-          <button className="btn btn-icon btn-ghost" onClick={()=>setOpen(true)}><Menu size={22}/></button>
-          <span style={{fontWeight:800}}>Revision<span style={{color:'var(--accent-light)'}}>Flow</span></span>
-          <button className="btn btn-icon btn-ghost" onClick={toggle}>
-            {theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}
-          </button>
-        </div>
-        <TopicUpdateBanner />
-        <Outlet />
-      </main>
-
-      <PWAInstallBanner/>
-
-      {/* Mobile bottom nav */}
-      <nav className="mobile-nav">
-        <div className="mobile-nav-items">
-          {MOBILE_NAV.map(({to,label,icon:Icon})=>(
-            <NavLink key={to} to={to} className={({isActive})=>`mobile-nav-item${isActive?' active':''}`}>
-              <Icon size={20}/><span>{label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-
-      <style>{`.mobile-header{display:none !important;}@media(max-width:768px){.mobile-header{display:flex !important;}}`}</style>
-    </div>
+      )}
+    </>
   )
 }
