@@ -137,7 +137,7 @@ export async function updateStreakOnLogin(uid) {
   await updateDoc(ref, { streak: newStreak, lastLogin: serverTimestamp() })
 
   // Award streak XP
-  await awardXP(uid, 10)
+  await awardXP(uid, 10, 'Login streak')
   if (newStreak === 7)  await checkAndAwardBadge(uid, 'streak_7')
   if (newStreak === 30) await checkAndAwardBadge(uid, 'streak_30')
 }
@@ -162,15 +162,18 @@ export function levelFromXP(totalXP) {
   return level
 }
 
-export const awardXP = async (uid, amount) => {
+export const awardXP = async (uid, amount, reason = '') => {
   if (!uid || !amount || amount <= 0) return
   await updateDoc(doc(db, 'users', uid), { xp: increment(amount) })
+  // Fire browser event so XPToast component can show the popup
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount, reason } }))
+  }
 }
 
 export const awardTimerXP = async (uid, seconds) => {
-  // 1 XP per minute, max 100 XP per session
   const xp = Math.min(Math.floor(seconds / 60), 100)
-  if (xp > 0) await awardXP(uid, xp)
+  if (xp > 0) await awardXP(uid, xp, 'Timer session')
 }
 
 export const checkAndAwardBadge = async (uid, badgeId) => {
@@ -307,7 +310,7 @@ export const completeSession = async (uid, id, notes = '') => {
   const snap = await getDoc(doc(db, 'users', uid, 'sessions', id))
   const dur  = snap.exists() ? (snap.data().duration || 0) : 0
   const xp   = dur >= 60 ? 75 : 50
-  await awardXP(uid, xp)
+  await awardXP(uid, xp, 'Session complete')
   await autoCompleteQuest(uid, 'log_session')
   // First session badge
   await checkAndAwardBadge(uid, 'first_session')
@@ -336,7 +339,7 @@ export const getTasks = async (uid) => {
 
 export const completeTask = async (uid, id, done = true) => {
   await updateDoc(doc(db, 'users', uid, 'tasks', id), { completed: done })
-  if (done) await awardXP(uid, 20)
+  if (done) await awardXP(uid, 20, 'Task done')
 }
 
 export const updateTask = (uid, id, data) =>
@@ -355,7 +358,7 @@ export const saveNote = async (uid, note) => {
     ...note,
     createdAt: serverTimestamp(),
   })
-  await awardXP(uid, 10)
+  await awardXP(uid, 10, 'Note saved')
   await autoCompleteQuest(uid, 'add_note')
   return ref.id
 }
@@ -378,7 +381,7 @@ export const addMistake = async (uid, data) => {
     ...data,
     createdAt: serverTimestamp(),
   })
-  await awardXP(uid, 10)
+  await awardXP(uid, 10, 'Mistake logged')
   return ref.id
 }
 
@@ -389,7 +392,7 @@ export const getMistakes = async (uid) => {
 
 export const resolveMistake = async (uid, id) => {
   await updateDoc(doc(db, 'users', uid, 'mistakes', id), { resolved: true })
-  await awardXP(uid, 20)
+  await awardXP(uid, 20, 'Mistake resolved')
   await autoCompleteQuest(uid, 'resolve_mistake')
 }
 
@@ -403,7 +406,7 @@ export const savePaperAttempt = async (uid, data) => {
     ...data,
     createdAt: serverTimestamp(),
   })
-  await awardXP(uid, 100)
+  await awardXP(uid, 100, 'Past paper logged')
   await autoCompleteQuest(uid, 'log_paper')
   await checkAndAwardBadge(uid, 'first_paper')
   return ref.id
@@ -457,8 +460,8 @@ export const acceptFriendRequest = async (requestId, fromUid, toUid) => {
   await updateDoc(doc(db, 'users', toUid),   { friends: increment(1) })
   await deleteDoc(doc(db, 'friendRequests', requestId))
   // Award XP to both
-  await awardXP(fromUid, 25)
-  await awardXP(toUid,   25)
+  await awardXP(fromUid, 25, 'New friend')
+  await awardXP(toUid,   25, 'New friend')
 }
 
 export const declineFriendRequest = (requestId) =>
@@ -468,3 +471,194 @@ export const removeFriend    = async () => {}
 export const getFriendProfiles  = async () => []
 export const getUserByUsername  = async () => null
 export const searchUsersByName  = async () => []
+
+/* =========================
+   BADGE AUDIT
+   Retroactively awards any badges the user has earned
+   but not yet received. Safe to call multiple times —
+   checkAndAwardBadge is idempotent.
+========================= */
+
+export async function runBadgeAudit(uid) {
+  if (!uid) return { awarded: [] }
+
+  // Fetch everything in parallel
+  const [userSnap, sessionsSnap, papersSnap, mistakesSnap, notesSnap, topicsSnap] =
+    await Promise.all([
+      getDoc(doc(db, 'users', uid)),
+      getDocs(collection(db, 'users', uid, 'sessions')),
+      getDocs(collection(db, 'users', uid, 'paperAttempts')),
+      getDocs(collection(db, 'users', uid, 'mistakes')),
+      getDocs(collection(db, 'users', uid, 'notes')),
+      getDocs(collection(db, 'users', uid, 'topics')),
+    ])
+
+  if (!userSnap.exists()) return { awarded: [] }
+
+  const user      = userSnap.data()
+  const sessions  = sessionsSnap.docs.map(d => d.data())
+  const papers    = papersSnap.docs.map(d => d.data())
+  const mistakes  = mistakesSnap.docs.map(d => d.data())
+  const notes     = notesSnap.docs.map(d => d.data())
+  const topics    = topicsSnap.docs.map(d => d.data())
+
+  const completedSessions = sessions.filter(s => s.completed)
+  const resolvedMistakes  = mistakes.filter(m => m.resolved)
+  const streak            = user.streak || 0
+  const friendCount       = Array.isArray(user.friends) ? user.friends.length : (user.friends || 0)
+
+  // Build candidates: { badgeId, condition }
+  const checks = []
+
+  // ── Milestones ───────────────────────────────────────────────────────────────
+  if (completedSessions.length >= 1)  checks.push('first_session')
+  if (completedSessions.length >= 10) checks.push('ten_sessions')
+  if (papers.length >= 1)             checks.push('first_paper')
+  if (papers.length >= 10)            checks.push('ten_papers')
+  if (papers.length >= 50)            checks.push('fifty_papers')
+  if ((user.profile?.displayName || user.displayName) &&
+      (user.subjects || []).length > 0 &&
+      (user.examDates || []).length > 0) checks.push('profile_complete')
+
+  // ── Streaks ──────────────────────────────────────────────────────────────────
+  if (streak >= 3)   checks.push('streak_3')
+  if (streak >= 7)   checks.push('streak_7')
+  if (streak >= 14)  checks.push('streak_14')
+  if (streak >= 30)  checks.push('streak_30')
+  if (streak >= 100) checks.push('streak_100')
+
+  // ── Improvement ──────────────────────────────────────────────────────────────
+  // grade_up: improved grade on same subject+paper vs earlier attempt
+  const gradeOrder = ['U','G','F','E','D','C','B','A','A*','9','8','7','6','5','4','3','2','1']
+  // Sort lowest grade first
+  const gradeIndex = g => {
+    const idx = gradeOrder.indexOf(String(g))
+    return idx === -1 ? -1 : idx
+  }
+  const bySubjectPaper = {}
+  papers.forEach(p => {
+    const key = `${p.subject}|${p.paper}`
+    if (!bySubjectPaper[key]) bySubjectPaper[key] = []
+    bySubjectPaper[key].push(p)
+  })
+  let gradeUp = false
+  Object.values(bySubjectPaper).forEach(attempts => {
+    if (attempts.length < 2) return
+    const sorted = [...attempts].sort((a, b) => {
+      const da = a.attemptDate ? new Date(a.attemptDate) : new Date((a.createdAt?.seconds || 0) * 1000)
+      const db2 = b.attemptDate ? new Date(b.attemptDate) : new Date((b.createdAt?.seconds || 0) * 1000)
+      return da - db2
+    })
+    for (let i = 1; i < sorted.length; i++) {
+      if (gradeIndex(sorted[i].grade) > gradeIndex(sorted[i - 1].grade)) { gradeUp = true; break }
+    }
+  })
+  if (gradeUp) checks.push('grade_up')
+
+  // full_marks: 90%+
+  if (papers.some(p => (p.percentage || 0) >= 90)) checks.push('full_marks')
+
+  // comeback: topic went from confidence 1 → 4 or 5 (can't fully detect without history,
+  // so check if any topic is now 4+ after having any old low-confidence record — approximate)
+  // We check if user has any topic at 4+ and also has any resolved mistake (shows improvement)
+  const highTopics = topics.filter(t => (t.confidence || 0) >= 4)
+  if (highTopics.length > 0 && resolvedMistakes.length > 0) checks.push('comeback')
+
+  // ── Subject Mastery ───────────────────────────────────────────────────────────
+  // Group topics by subject
+  const topicsBySubject = {}
+  topics.forEach(t => {
+    const subj = t.subjectId || t.subject || 'unknown'
+    if (!topicsBySubject[subj]) topicsBySubject[subj] = []
+    topicsBySubject[subj].push(t)
+  })
+  let maxHighConfidence = 0
+  let anySubjectAllHigh = false
+  Object.values(topicsBySubject).forEach(subTopics => {
+    const high = subTopics.filter(t => (t.confidence || 0) >= 4).length
+    if (high > maxHighConfidence) maxHighConfidence = high
+    if (high === subTopics.length && subTopics.length > 0) anySubjectAllHigh = true
+  })
+  if (maxHighConfidence >= 10)    checks.push('mastery_bronze')
+  if (maxHighConfidence >= 20)    checks.push('mastery_silver')
+  if (anySubjectAllHigh)          checks.push('mastery_gold')
+
+  // ── Consistency ───────────────────────────────────────────────────────────────
+  // early_bird: any session started before 08:00
+  const earlyBird = completedSessions.some(s => {
+    const time = s.start || s.startTime || ''
+    if (typeof time === 'string' && time.includes('T')) {
+      const h = parseInt(time.split('T')[1]?.split(':')[0] || '12')
+      return h < 8
+    }
+    if (typeof time === 'string' && time.includes(':')) {
+      return parseInt(time.split(':')[0]) < 8
+    }
+    return false
+  })
+  if (earlyBird) checks.push('early_bird')
+
+  // night_owl: any session started after 22:00
+  const nightOwl = completedSessions.some(s => {
+    const time = s.start || s.startTime || ''
+    if (typeof time === 'string' && time.includes('T')) {
+      const h = parseInt(time.split('T')[1]?.split(':')[0] || '0')
+      return h >= 22
+    }
+    if (typeof time === 'string' && time.includes(':')) {
+      return parseInt(time.split(':')[0]) >= 22
+    }
+    return false
+  })
+  if (nightOwl) checks.push('night_owl')
+
+  // weekend_warrior: sessions on both Saturday and Sunday in the same week
+  const weekendDays = new Set()
+  completedSessions.forEach(s => {
+    const d = s.date || s.startTime?.split?.('T')?.[0]
+    if (!d) return
+    const day = new Date(d).getDay()
+    if (day === 0 || day === 6) {
+      // Use ISO week + year as key, day as distinguisher
+      const dt  = new Date(d)
+      const wk  = `${dt.getFullYear()}-W${Math.ceil(dt.getDate() / 7)}`
+      weekendDays.add(`${wk}-${day}`)
+    }
+  })
+  // Check if both Sat (6) and Sun (0) appear in the same week
+  const weekKeys = {}
+  weekendDays.forEach(k => {
+    const [week, day] = k.split(/-(?=\d$)/)
+    if (!weekKeys[week]) weekKeys[week] = new Set()
+    weekKeys[week].add(day)
+  })
+  const weekendWarrior = Object.values(weekKeys).some(days => days.has('6') && days.has('0'))
+  if (weekendWarrior) checks.push('weekend_warrior')
+
+  // marathon_session: any timer session >= 120 minutes
+  if (completedSessions.some(s => (s.duration || 0) >= 120)) checks.push('marathon_session')
+
+  // ── Social ────────────────────────────────────────────────────────────────────
+  if (friendCount >= 1) checks.push('first_friend')
+  if (friendCount >= 3) checks.push('three_friends')
+
+  // ── Notes ─────────────────────────────────────────────────────────────────────
+  // (no specific badge, but add_note quest handled elsewhere)
+
+  // ── Award any missing badges ──────────────────────────────────────────────────
+  const alreadyEarned = new Set(user.badges || [])
+  const toAward       = checks.filter(id => !alreadyEarned.has(id))
+  const awarded       = []
+
+  for (const badgeId of toAward) {
+    await checkAndAwardBadge(uid, badgeId)
+    awarded.push(badgeId)
+  }
+
+  // Stamp last audit time so we don't run constantly
+  await updateDoc(doc(db, 'users', uid), {
+    lastBadgeAudit: serverTimestamp(),
+  })
+
+  return { awarded }
+}
