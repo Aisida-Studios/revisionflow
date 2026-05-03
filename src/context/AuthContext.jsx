@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
+import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
 
     const authUnsub = onAuthStateChanged(auth, async u => {
       setUser(u)
-      profileUnsub() // clean up any previous listener
+      profileUnsub()
 
       if (u) {
         try {
@@ -30,7 +30,6 @@ export function AuthProvider({ children }) {
             email:       u.email       || '',
             avatarUrl:   u.photoURL    || '',
           })
-          // Update streak once per login (no-op if already done today)
           await updateStreakOnLogin(u.uid)
         } catch (e) {
           console.error('[AuthContext] ensureUser/streak error:', e)
@@ -59,11 +58,30 @@ export function AuthProvider({ children }) {
     if (snap.exists()) setProfile({ uid: user.uid, ...snap.data() })
   }, [user])
 
-  const login          = (email, pw) => loginWithEmail(email, pw)
-  const signup         = (email, pw) => signupWithEmail(email, pw)
-  const loginWithGoogle = ()         => _loginWithGoogle()
-  const resetPassword  = email       => _resetPassword(email)
-  const logout         = ()          => signOut(auth)
+  const login = (email, pw) => loginWithEmail(email, pw)
+
+  // signup: creates the Firebase Auth user AND sets displayName immediately
+  const signup = async (email, pw, displayName) => {
+    const cred = await signupWithEmail(email, pw)
+    if (displayName && cred?.user) {
+      // Set displayName on the Firebase Auth user object
+      await updateProfile(cred.user, { displayName })
+      // Also write it to Firestore immediately so leaderboard/referral queries work
+      try {
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          displayName,
+          'profile.displayName': displayName,
+        }, { merge: true })
+      } catch (e) {
+        // Non-fatal — ensureUser will handle this
+      }
+    }
+    return cred
+  }
+
+  const loginWithGoogle = () => _loginWithGoogle()
+  const resetPassword   = email => _resetPassword(email)
+  const logout          = () => signOut(auth)
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile }}>
