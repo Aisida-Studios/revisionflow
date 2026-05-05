@@ -212,24 +212,25 @@ const QUEST_XP = {
 export const autoCompleteQuest = async (uid, questId) => {
   if (!uid || !questId) return
 
-  const today = new Date().toISOString().slice(0, 10)
+  // Use same date key format as DailyQuests.jsx component
+  const today = new Date().toDateString().replace(/ /g, '_')
   const ref   = doc(db, 'users', uid, 'quests', today)
   const snap  = await getDoc(ref)
+  const data  = snap.exists() ? snap.data() : {}
 
-  const data      = snap.exists() ? snap.data() : { completed: [] }
-  const completed = data.completed || []
-  if (completed.includes(questId)) return
+  // DailyQuests.jsx stores completion as { [questId]: true } flat keys
+  if (data[questId]) return // already marked complete
 
-  const newCompleted = [...completed, questId]
-  const xp           = QUEST_XP[questId] || 10
+  const xp = QUEST_XP[questId] || 10
+  await setDoc(ref, { [questId]: true, updatedAt: serverTimestamp() }, { merge: true })
+  await awardXP(uid, xp, 'Daily quest')
 
-  await setDoc(ref, { completed: newCompleted }, { merge: true })
-  await awardXP(uid, xp)
-
-  // Bonus for all-3 complete
-  if (newCompleted.length >= 3 && !data.bonusAwarded) {
+  // Count how many quests are now done to check for all-3 bonus
+  const updatedData = { ...data, [questId]: true }
+  const doneCount   = Object.keys(QUEST_XP).filter(id => updatedData[id]).length
+  if (doneCount >= 3 && !data.bonusAwarded) {
     await setDoc(ref, { bonusAwarded: true }, { merge: true })
-    await awardXP(uid, 50)
+    await awardXP(uid, 50, 'All quests complete!')
     await checkAndAwardBadge(uid, 'quests_complete')
   }
 }
