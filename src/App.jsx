@@ -34,6 +34,7 @@ const Settings      = lazy(() => import('./pages/Settings'))
 const EmergencyMode = lazy(() => import('./pages/EmergencyMode'))
 const Help          = lazy(() => import('./pages/Help'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const Study        = lazy(() => import('./pages/Study'))
 
 // ── Guards ────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children }) {
@@ -84,9 +85,8 @@ export default function App() {
                       <Route path="/exams"       element={<ExamDates />} />
                       <Route path="/papers"      element={<PastPapers />} />
                       <Route path="/topics"      element={<Topics />} />
-                      <Route path="/mastery"     element={<TopicMastery />} />
+                      <Route path="/study"       element={<Study />} />
                       <Route path="/mistakes"    element={<Mistakes />} />
-                      <Route path="/notes"       element={<Notes />} />
                       <Route path="/tasks"       element={<Tasks />} />
                       <Route path="/timer"       element={<Timer />} />
                       <Route path="/analytics"   element={<Analytics />} />
@@ -100,6 +100,9 @@ export default function App() {
                     </Route>
 
                     {/* Legacy URL redirects */}
+                    <Route path="/notes"    element={<Navigate to="/topics" replace />} />
+                    <Route path="/mistakes" element={<Navigate to="/papers" replace />} />
+                    <Route path="/mastery"  element={<Navigate to="/topics" replace />} />
                     <Route path="/past-papers"   element={<Navigate to="/papers" replace />} />
                     <Route path="/exam-dates"    element={<Navigate to="/exams" replace />} />
                     <Route path="/topic-mastery" element={<Navigate to="/mastery" replace />} />
