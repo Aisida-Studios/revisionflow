@@ -73,11 +73,21 @@ function renderMarkdown(text) {
     } else if (line.trim() === '') {
       elements.push(<br key={i} />)
     } else {
-      elements.push(
-        <p key={i} style={{ margin:'0.25rem 0', color:'var(--text-secondary)', lineHeight:1.65 }}>
-          {inlineFormat(line)}
-        </p>
-      )
+      // Lines that are entirely **bold** get rendered as a styled heading
+      const boldLineMatch = line.match(/^\*\*(.+?)\*\*:?$/)
+      if (boldLineMatch) {
+        elements.push(
+          <div key={i} style={{ fontWeight:700, color:'var(--text-primary)', marginTop:'0.6rem', marginBottom:'0.1rem', fontSize:'0.9rem' }}>
+            {inlineFormat(boldLineMatch[1])}
+          </div>
+        )
+      } else {
+        elements.push(
+          <p key={i} style={{ margin:'0.25rem 0', color:'var(--text-secondary)', lineHeight:1.65 }}>
+            {inlineFormat(line)}
+          </p>
+        )
+      }
     }
     i++
   }
@@ -185,8 +195,8 @@ export default function AIOutput({ text, onSummarise, loading = false, label = '
         </span>
         {text && !loading && (
           <>
-            <button onClick={handleSummarise} style={iconBtn(showSummary ? 'var(--accent)' : undefined)} title="TL;DR summary">
-              {showSummary ? '✦ Hide' : '✦ TL;DR'}
+            <button onClick={handleSummarise} style={iconBtn(showSummary ? 'var(--accent)' : undefined)} title="Summarise this">
+              {showSummary ? '✦ Hide summary' : '✦ Summarise'}
             </button>
             <button onClick={handleCopy} style={iconBtn()} title="Copy to clipboard">
               {copied ? '✓ Copied' : '📋 Copy'}
