@@ -270,9 +270,9 @@ ANNOTATION:
 
 ASSESSMENT OBJECTIVE BREAKDOWN:
 ${subject === 'Mathematics' || subject === 'Further Mathematics'
-  ? '• Method marks (M): [awarded/available]
+  ? `• Method marks (M): [awarded/available]
 • Accuracy marks (A): [awarded/available]
-• Bonus marks (B): [awarded/available]'
+• Bonus marks (B): [awarded/available]`
   : `• AO1 (Knowledge & Understanding): [marks awarded]/[available]
 • AO2 (Application): [marks awarded]/[available]
 • AO3 (Analysis & Evaluation): [marks awarded]/[available]`}
