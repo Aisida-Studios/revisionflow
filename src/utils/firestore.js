@@ -115,38 +115,49 @@ export const unlockReferralIcon = async (uid) => {
 ========================= */
 
 export async function updateStreakOnLogin(uid) {
+  // Login alone does NOT extend the streak.
+  // Only recordActivityStreak() does — called when user logs real activity.
+  const ref  = doc(db, 'users', uid)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const data     = snap.data()
+  const todayStr = new Date().toDateString()
+  const lastLogin = data.lastLogin?.toDate ? data.lastLogin.toDate() : null
+  if (!lastLogin || lastLogin.toDateString() !== todayStr) {
+    await updateDoc(ref, { lastLogin: serverTimestamp() })
+  }
+}
+
+// Call whenever user logs real revision activity (session, paper, task, note, mistake).
+export async function recordActivityStreak(uid) {
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
 
-  const data         = snap.data()
-  const now          = new Date()
-  const todayStr     = now.toDateString()
-  const lastLogin    = data.lastLogin?.toDate ? data.lastLogin.toDate() : null
-  const lastLoginStr = lastLogin ? lastLogin.toDateString() : null
+  const data            = snap.data()
+  const now             = new Date()
+  const todayStr        = now.toDateString()
+  const lastActivityStr = data.lastActivityDate || null
 
-  if (lastLoginStr === todayStr) return // already updated today
+  if (lastActivityStr === todayStr) return // already counted today
 
   const yesterday    = new Date(now)
   yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = yesterday.toDateString()
 
   const currentStreak = data.streak || 0
-  const newStreak     = lastLoginStr === yesterdayStr ? currentStreak + 1 : 1
+  const newStreak     = lastActivityStr === yesterdayStr ? currentStreak + 1 : 1
 
-  await updateDoc(ref, { streak: newStreak, lastLogin: serverTimestamp() })
-
-  // Award streak XP
-  await awardXP(uid, 10, 'Login streak')
-  if (newStreak === 7)  await checkAndAwardBadge(uid, 'streak_7')
-  if (newStreak === 30) await checkAndAwardBadge(uid, 'streak_30')
+  await updateDoc(ref, { streak: newStreak, lastActivityDate: todayStr })
+  await awardXP(uid, 10, 'Daily streak')
+  if (newStreak === 3)   await checkAndAwardBadge(uid, 'streak_3')
+  if (newStreak === 7)   await checkAndAwardBadge(uid, 'streak_7')
+  if (newStreak === 14)  await checkAndAwardBadge(uid, 'streak_14')
+  if (newStreak === 30)  await checkAndAwardBadge(uid, 'streak_30')
+  if (newStreak === 100) await checkAndAwardBadge(uid, 'streak_100')
 }
 
-/* =========================
-   XP / LEVELS / BADGES
-========================= */
 
-// Infinite level formula (100 * 1.15^(n-1))
 export function xpForLevel(n) {
   return Math.floor(100 * Math.pow(1.15, n - 1))
 }
@@ -313,7 +324,7 @@ export const completeSession = async (uid, id, notes = '') => {
   const xp   = dur >= 60 ? 75 : 50
   await awardXP(uid, xp, 'Session complete')
   await autoCompleteQuest(uid, 'log_session')
-  // First session badge
+  await recordActivityStreak(uid)
   await checkAndAwardBadge(uid, 'first_session')
 }
 
@@ -361,6 +372,7 @@ export const saveNote = async (uid, note) => {
   })
   await awardXP(uid, 10, 'Note saved')
   await autoCompleteQuest(uid, 'add_note')
+  await recordActivityStreak(uid)
   return ref.id
 }
 
@@ -395,6 +407,7 @@ export const resolveMistake = async (uid, id) => {
   await updateDoc(doc(db, 'users', uid, 'mistakes', id), { resolved: true })
   await awardXP(uid, 20, 'Mistake resolved')
   await autoCompleteQuest(uid, 'resolve_mistake')
+  await recordActivityStreak(uid)
 }
 
 /* =========================
@@ -409,6 +422,7 @@ export const savePaperAttempt = async (uid, data) => {
   })
   await awardXP(uid, 100, 'Past paper logged')
   await autoCompleteQuest(uid, 'log_paper')
+  await recordActivityStreak(uid)
   await checkAndAwardBadge(uid, 'first_paper')
   return ref.id
 }
