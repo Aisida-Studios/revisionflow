@@ -19,6 +19,8 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
+  // Ignore non-http(s) schemes — chrome-extension, data, blob etc.
+  if (!e.request.url.startsWith('http')) return
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET') return
   if (
