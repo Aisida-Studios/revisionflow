@@ -1,12 +1,11 @@
 // netlify/functions/ai.js
-// Server-side Mistral AI proxy using correct Netlify Functions format.
-// API key lives in MISTRAL_API_KEY env var (no VITE_ prefix = never in browser bundle).
+// ES Module format — required because package.json has "type": "module"
+// MISTRAL_API_KEY must be set in Netlify env vars (no VITE_ prefix)
 
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MAX_TOKENS  = 8192
 const DAILY_LIMIT = 150
 
-// In-memory rate limiter — resets on cold start (~every few hours)
 const rateLimiter = new Map()
 
 function checkRateLimit(uid) {
@@ -14,7 +13,7 @@ function checkRateLimit(uid) {
   const now   = Date.now()
   const entry = rateLimiter.get(uid)
   if (!entry || now > entry.resetAt) {
-    rateLimiter.set(uid, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 })
+    rateLimiter.set(uid, { count: 1, resetAt: now + 86400000 })
     return { allowed: true, remaining: DAILY_LIMIT - 1 }
   }
   if (entry.count >= DAILY_LIMIT) {
@@ -47,13 +46,12 @@ Always reference specific free resources where relevant:
 - English: Mr Bruff, SaveMyExams
 - All subjects: Seneca, PMT, SaveMyExams`
 
-exports.handler = async function(event) {
-  // CORS preflight
+export const handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin':  '*',
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
@@ -85,11 +83,10 @@ exports.handler = async function(event) {
 
   const apiKey = process.env.MISTRAL_API_KEY
   if (!apiKey) {
-    console.error('[AI proxy] MISTRAL_API_KEY not set in environment')
-    return respond(500, { error: 'AI service not configured. Please contact support.' })
+    console.error('[AI proxy] MISTRAL_API_KEY not set in Netlify environment variables')
+    return respond(500, { error: 'AI service not configured. Add MISTRAL_API_KEY to Netlify environment variables.' })
   }
 
-  // Strip any system-role messages from client — only allow user/assistant
   const safeMessages = messages
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => ({ role: m.role, content: String(m.content || '').slice(0, 20000) }))
@@ -102,16 +99,16 @@ exports.handler = async function(event) {
 
   try {
     const mistralRes = await fetch(MISTRAL_URL, {
-      method:  'POST',
+      method: 'POST',
       headers: {
-        'Content-Type':  'application/json',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model:       'mistral-small-latest',
-        messages:    fullMessages,
+        model: 'mistral-small-latest',
+        messages: fullMessages,
         temperature: 0.7,
-        max_tokens:  Math.min(maxTokens || MAX_TOKENS, MAX_TOKENS),
+        max_tokens: Math.min(maxTokens || MAX_TOKENS, MAX_TOKENS),
       }),
     })
 
@@ -124,11 +121,11 @@ exports.handler = async function(event) {
     const data = await mistralRes.json()
     const text = data.choices?.[0]?.message?.content || ''
 
-    if (!text) return respond(502, { error: 'AI returned an empty response. Please try again.' })
+    if (!text) return respond(502, { error: 'AI returned an empty response.' })
 
     return respond(200, { text, provider: 'mistral', remaining: rateCheck.remaining })
   } catch (e) {
-    console.error('[AI proxy] fetch error:', e)
+    console.error('[AI proxy] error:', e)
     return respond(503, { error: 'Could not reach the AI service. Check your connection.' })
   }
 }
