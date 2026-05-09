@@ -71,7 +71,7 @@ function FlipCard({ card, index, total }) {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -97,8 +97,8 @@ function FlipCard({ card, index, total }) {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
@@ -216,7 +216,7 @@ function ConfidenceBar({ onRate }) {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -242,8 +242,8 @@ function ConfidenceBar({ onRate }) {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
@@ -467,7 +467,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -493,8 +493,8 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
@@ -647,7 +647,7 @@ function SaveSetModal({ cards, subject, topic, onSave, onClose }) {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -673,8 +673,8 @@ function SaveSetModal({ cards, subject, topic, onSave, onClose }) {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
@@ -860,7 +860,7 @@ function CustomSetEditor({ subjects, onSave, onClose, initialSet }) {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -886,8 +886,8 @@ function CustomSetEditor({ subjects, onSave, onClose, initialSet }) {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
@@ -1129,19 +1129,18 @@ export default function Study() {
   }
 
   async function handleMark() {
-    if (!mkSubject || !mkQuestion.trim() || !mkAnswer.trim()) return
+    if (!mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks) return
     setMkLoading(true)
     setMkResult('')
     try {
-      const contextParts = []
-      if (mkBoard)  contextParts.push(mkBoard)
-      if (mkLevel)  contextParts.push(mkLevel)
-      if (mkYear)   contextParts.push(mkYear)
-      if (mkPaper)  contextParts.push(`Paper ${mkPaper}`)
-      if (mkMarks)  contextParts.push(`${mkMarks} marks`)
-      const context   = contextParts.length ? `[${mkSubject} — ${contextParts.join(', ')}] ` : `[${mkSubject}] `
-      const enrichedQ = context + mkQuestion.trim()
-      const res = await markAnswer(mkSubject, enrichedQ, mkAnswer.trim(), user?.uid)
+      const res = await markAnswer(
+        mkSubject, mkBoard, mkLevel,
+        mkPaper || null,
+        mkQuestion.trim(),
+        parseInt(mkMarks) || 6,
+        mkAnswer.trim(),
+        user?.uid
+      )
       const text = res.text || res.error || 'Could not mark answer.'
       setMkResult(text)
       // Save to session history
@@ -1451,7 +1450,7 @@ export default function Study() {
                       </select>
                     </div>
                     <div>
-                      <label className="label">Marks available <span style={{fontWeight:400,color:'var(--text-muted)'}}>(optional)</span></label>
+                      <label className="label">Marks available <span style={{fontWeight:700,color:'var(--danger)',fontSize:'0.7rem'}}>required</span></label>
                       <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6"/>
                     </div>
                     <div>
@@ -1477,8 +1476,8 @@ export default function Study() {
                     <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…"/>
                   </div>
 
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim()}>
-                    {mkLoading ? 'Marking your answer…' : `Mark my answer${mkMarks ? ` (/${mkMarks} marks)` : ''}`}
+                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
+                    {mkLoading ? 'Marking as a real examiner…' : mkMarks ? `Mark my answer (/${mkMarks} marks)` : 'Enter marks available to continue'}
                   </button>
                 </div>
               </div>
