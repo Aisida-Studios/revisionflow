@@ -7,6 +7,7 @@ import { AppProvider } from './context/AppContext'
 import { TimerProvider } from './context/TimerContext'
 import { PriorityProvider } from './context/PriorityContext'
 import Layout from './components/Layout'
+import { Toaster } from 'react-hot-toast'
 import XPToast from './components/XPToast'
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
@@ -113,6 +114,8 @@ export default function App() {
                   </Routes>
                 </Suspense>
               </BrowserRouter>
+            <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' } }} />
+            <XPToast />
             <XPToast />
             </PriorityProvider>
           </TimerProvider>
