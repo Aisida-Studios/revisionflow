@@ -660,6 +660,25 @@ export async function runBadgeAudit(uid) {
   // ── Notes ─────────────────────────────────────────────────────────────────────
   // (no specific badge, but add_note quest handled elsewhere)
 
+  // ── first_ai: check if user has any AI briefing cached (proxy for having used AI) ──
+  try {
+    const aiSnap = await getDoc(doc(db, 'users', uid, 'dailyBriefing', 'latest'))
+    if (aiSnap.exists()) checks.push('first_ai')
+  } catch {}
+
+  // ── emergency_mode: check if user has ever opened emergency mode ──
+  // We can't retroactively detect this, so skip in audit (real-time trigger handles it)
+
+  // ── top_three: can't check without querying global board — skip in audit ──
+  // (real-time trigger in Leaderboard.jsx handles this)
+
+  // ── ten_sessions ──────────────────────────────────────────────────────────────
+  if (completedSessions.length >= 10) checks.push('ten_sessions')
+
+  // ── ten_papers / fifty_papers ─────────────────────────────────────────────────
+  if (papers.length >= 10) checks.push('ten_papers')
+  if (papers.length >= 50) checks.push('fifty_papers')
+
   // ── Award any missing badges ──────────────────────────────────────────────────
   const alreadyEarned = new Set(user.badges || [])
   const toAward       = checks.filter(id => !alreadyEarned.has(id))
