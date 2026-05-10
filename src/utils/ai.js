@@ -6,7 +6,7 @@
 //   - Remove VITE_MISTRAL_API_KEY from Netlify env vars
 //   - Add MISTRAL_API_KEY (no VITE_ prefix) to Netlify env vars (same value)
 
-const AI_ENDPOINT = '/api/ai'
+const AI_ENDPOINT = '/api/tutor'
 
 const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE and A-Level revision.
 You give specific, practical, encouraging advice tailored to UK students.
@@ -295,18 +295,31 @@ PREDICTED FINAL GRADE IMPACT: [If this is typical of the student's work, what gr
 }
 
 
-export async function generateFlashcards(subject, topic, count = 8, uid) {
-  const prompt = `Generate ${count} GCSE flashcards for: ${subject}${topic ? ` — ${topic}` : ''}
-
-Format each card exactly like this:
-Q: [clear, specific question]
-A: [concise but complete answer — include key terms, numbers, processes]
-
-Focus on:
-- High-frequency exam topics
-- Key definitions and processes
-- Common command word questions (state, explain, evaluate)
-- Numbers and statistics students must know`
+export async function generateFlashcards(subject, topic, count, uid) {
+  count = count || 8
+  var topicPart = topic ? ', topic: ' + topic : ''
+  var prompt = [
+    'Generate exactly ' + count + ' revision flashcards for: ' + subject + topicPart + '.',
+    '',
+    'STRICT FORMAT RULES:',
+    '- Begin your response immediately with Q: (no introduction)',
+    '- Use this exact format for every card:',
+    'Q: [question text]',
+    'A: [answer text]',
+    '- Separate cards with one blank line',
+    '- No numbering, no bullet points, no markdown, no bold, no asterisks',
+    '- Answers: 1-3 sentences, include key terms and facts',
+    '- Questions: specific and exam-focused',
+    '',
+    'Example:',
+    'Q: What is the formula for calculating speed?',
+    'A: Speed = Distance divided by Time. The standard unit is metres per second (m/s).',
+    '',
+    'Q: Define osmosis.',
+    'A: Osmosis is the movement of water molecules from a region of higher water potential to lower water potential through a partially permeable membrane.',
+    '',
+    'Now generate exactly ' + count + ' flashcards for ' + subject + (topic ? ' (' + topic + ')' : '') + ':',
+  ].join('\n')
   return callAI(prompt, SYSTEM, 8192, uid)
 }
 
