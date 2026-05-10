@@ -10,10 +10,10 @@
   status = 200
   conditions = {UserAgent = ["Googlebot","Googlebot-Mobile","Googlebot-Image","Bingbot","bingbot","Slurp","DuckDuckBot","Baiduspider","YandexBot","Sogou","Exabot","facebookexternalhit","Twitterbot","LinkedInBot","WhatsApp","Slackbot","TelegramBot","Discordbot"]}
 
-# Proxy /api/ai to the Netlify Function
+# Proxy /api/tutor to the Netlify Function (renamed from /api/ai to avoid ad blockers)
 [[redirects]]
-  from   = "/api/ai"
-  to     = "/.netlify/functions/ai"
+  from   = "/api/tutor"
+  to     = "/.netlify/functions/tutor"
   status = 200
 
 # All other routes -> React app
