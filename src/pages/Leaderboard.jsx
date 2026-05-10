@@ -19,12 +19,14 @@ export default function Leaderboard() {
     if (!user || !profile) return
     getLeaderboard(profile.friends || [], user.uid)
     // Check top_three badge on global board
-    try {
-      const { getGlobalLeaderboard } = await import('../utils/firestore')
-      const board = await getGlobalLeaderboard(10)
-      const rank  = board.findIndex(u => u.uid === user.uid)
-      if (rank >= 0 && rank < 3) checkAndAwardBadge(user.uid, 'top_three').catch(()=>{})
-    } catch {}
+    ;(async () => {
+      try {
+        const { getGlobalLeaderboard } = await import('../utils/firestore')
+        const board = await getGlobalLeaderboard(10)
+        const rank  = board.findIndex(u => u.uid === user.uid)
+        if (rank >= 0 && rank < 3) checkAndAwardBadge(user.uid, 'top_three').catch(()=>{})
+      } catch {}
+    })()
       .then(d => { setFriendsBoard(d); setLoadingF(false) })
   }, [user, profile])
 
