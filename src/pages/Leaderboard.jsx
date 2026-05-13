@@ -17,7 +17,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     if (!user || !profile) return
-    getLeaderboard(profile.friends || [], user.uid)
+    getLeaderboard(Array.isArray(profile.friends) ? profile.friends : [], user.uid)
     // Check top_three badge on global board
     ;(async () => {
       try {
