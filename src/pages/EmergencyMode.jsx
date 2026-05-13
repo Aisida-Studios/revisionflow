@@ -36,8 +36,8 @@ async function generateEmergencyPlan({ subject, board, level, paper, weakTopics,
   const topicsForContext = weakPaperTopics.length > 0 ? weakPaperTopics : paperTopics.slice(0, 10)
 
   const prompt = [
-    'You are a senior ' + board + ' ' + subject + ' examiner and the student's personal tutor.',
-    'The student has ' + subject + ' ' + level + (paper ? ' Paper ' + paper : '') + ' in ' + days + ' day' + (days !== 1 ? 's' : '') + ' (' + hoursUntil + ' hours).',
+    "You are a senior " + board + " " + subject + " examiner and the student's personal tutor.",
+    'The student has ' + subject + ' ' + level + (paper ? ' Paper ' + paper : '') + ' in ' + days + (days !== 1 ? ' days' : ' day') + ' (' + hoursUntil + ' hours).',
     '',
     'STUDENT DATA:',
     '- Recent paper average: ' + (avgScore !== null ? Math.round(avgScore) + '%' : 'no papers logged'),
