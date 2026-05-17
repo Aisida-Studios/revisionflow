@@ -1,8 +1,6 @@
 // src/utils/firestore.js
 
-import { initializeApp } from 'firebase/app'
 import {
-  getAuth,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -11,7 +9,6 @@ import {
   signOut
 } from 'firebase/auth'
 import {
-  getFirestore,
   collection,
   getDocs,
   addDoc,
@@ -27,24 +24,10 @@ import {
   where,
   limit
 } from 'firebase/firestore'
+import { auth, db } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
 
-/* =========================
-   INIT
-========================= */
-
-const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
-}
-
-const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
-export const db   = getFirestore(app)
+export { auth, db }
 
 /* =========================
    AUTH
@@ -471,21 +454,72 @@ export const getReceivedRequests = async (uid) => {
 }
 
 export const acceptFriendRequest = async (requestId, fromUid, toUid) => {
-  await updateDoc(doc(db, 'users', fromUid), { friends: increment(1) })
-  await updateDoc(doc(db, 'users', toUid),   { friends: increment(1) })
+  const { arrayUnion } = await import('firebase/firestore')
+  // Store friends as arrays of UIDs — never use increment() which produces a number
+  await updateDoc(doc(db, 'users', fromUid), { friends: arrayUnion(toUid) })
+  await updateDoc(doc(db, 'users', toUid),   { friends: arrayUnion(fromUid) })
   await deleteDoc(doc(db, 'friendRequests', requestId))
-  // Award XP to both
   await awardXP(fromUid, 25, 'New friend')
   await awardXP(toUid,   25, 'New friend')
+  await checkAndAwardBadge(fromUid, 'first_friend')
+  await checkAndAwardBadge(toUid,   'first_friend')
 }
 
 export const declineFriendRequest = (requestId) =>
   deleteDoc(doc(db, 'friendRequests', requestId))
 
-export const removeFriend    = async () => {}
-export const getFriendProfiles  = async () => []
-export const getUserByUsername  = async () => null
-export const searchUsersByName  = async () => []
+export const removeFriend = async (uid, friendUid) => {
+  const { arrayRemove } = await import('firebase/firestore')
+  await updateDoc(doc(db, 'users', uid),       { friends: arrayRemove(friendUid) })
+  await updateDoc(doc(db, 'users', friendUid), { friends: arrayRemove(uid) })
+}
+
+export const getFriendProfiles = async (friendUids) => {
+  if (!friendUids || friendUids.length === 0) return []
+  const profiles = await Promise.all(
+    friendUids.map(async uid => {
+      try {
+        const snap = await getDoc(doc(db, 'users', uid))
+        if (!snap.exists()) return null
+        const d = snap.data()
+        return {
+          uid,
+          displayName: d.displayName || d.profile?.displayName || 'Anonymous',
+          xp:          d.xp || 0,
+          streak:      d.streak || 0,
+          profileIcon: d.profileIcon || null,
+        }
+      } catch { return null }
+    })
+  )
+  return profiles.filter(Boolean)
+}
+
+export const getUserByUsername = async (username) => {
+  if (!username) return null
+  try {
+    const q    = query(collection(db, 'users'), where('displayName', '==', username), limit(1))
+    const snap = await getDocs(q)
+    if (snap.empty) return null
+    const d = snap.docs[0]
+    return { uid: d.id, ...d.data() }
+  } catch { return null }
+}
+
+export const searchUsersByName = async (searchTerm) => {
+  if (!searchTerm) return []
+  try {
+    // Firestore doesn't support full-text search — fetch and filter client-side
+    // For a small user base this is fine; replace with Algolia if scale demands it
+    const q    = query(collection(db, 'users'), orderBy('displayName'), limit(50))
+    const snap = await getDocs(q)
+    const lower = searchTerm.toLowerCase()
+    return snap.docs
+      .map(d => ({ uid: d.id, ...d.data() }))
+      .filter(u => (u.displayName || '').toLowerCase().includes(lower))
+      .slice(0, 10)
+  } catch { return [] }
+}
 
 /* =========================
    BADGE AUDIT
