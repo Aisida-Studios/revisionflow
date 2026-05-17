@@ -21,18 +21,23 @@ export default function Friends() {
   const [tab,           setTab]           = useState('friends')
 
   useEffect(() => {
-    if (!profile) return
-    if (profile.friends?.length) {
-      getFriendProfiles(profile.friends).then(setFriends)
+    if (!profile || !user) return
+
+    // profile.friends is an array of UIDs (fixed — no longer a number)
+    const friendUids = Array.isArray(profile.friends) ? profile.friends : []
+    if (friendUids.length) {
+      getFriendProfiles(friendUids).then(setFriends)
     } else {
       setFriends([])
     }
+
     getReceivedRequests(user.uid).then(allReqs => {
-      const declined = profile.declinedFriendRequests || []
-      const active = allReqs.filter(r => !declined.includes(r.id) && !profile.friends?.includes(r.id))
+      // allReqs items: { id: docId, from: senderUid, to: currentUid }
+      // Filter out requests from people already friends (compare r.from against friend UIDs)
+      const active = allReqs.filter(r => !friendUids.includes(r.from))
       setRequests(active)
     })
-  }, [profile, user.uid])
+  }, [profile, user])
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -43,14 +48,17 @@ export default function Friends() {
     try {
       const byUsername = await getUserByUsername(q.toLowerCase())
       const byName     = await searchUsersByName(q)
+      // Normalise: both return { uid, displayName, ... } — use uid as the key
       const seen = new Set()
       const combined = [...(byUsername ? [byUsername] : []), ...byName]
         .filter(u => {
-          if (u.id === user.uid) return false
-          if (seen.has(u.id))   return false
-          seen.add(u.id)
+          const id = u.uid || u.id
+          if (id === user.uid)  return false
+          if (seen.has(id))     return false
+          seen.add(id)
           return true
         })
+        .map(u => ({ ...u, uid: u.uid || u.id }))
       setSearchResults(combined)
       if (!combined.length) toast.error('No users found')
     } catch (err) {
@@ -69,28 +77,42 @@ export default function Friends() {
     }
   }
 
-  async function handleAccept(fromUid) {
-    await acceptFriendRequest(user.uid, fromUid)
-    await refreshProfile()
-    setRequests(r => r.filter(u => u.id !== fromUid))
-    toast.success('Friend added!')
+  // req is a full request object: { id: docId, from: senderUid, to: currentUid }
+  async function handleAccept(req) {
+    try {
+      await acceptFriendRequest(req.id, req.from, user.uid)
+      await refreshProfile()
+      setRequests(r => r.filter(r2 => r2.id !== req.id))
+      toast.success('Friend added!')
+    } catch (err) {
+      toast.error('Could not accept request: ' + err.message)
+    }
   }
 
-  async function handleDecline(fromUid) {
-    await declineFriendRequest(user.uid, fromUid)
-    setRequests(r => r.filter(u => u.id !== fromUid))
+  async function handleDecline(req) {
+    try {
+      await declineFriendRequest(req.id)
+      setRequests(r => r.filter(r2 => r2.id !== req.id))
+    } catch (err) {
+      toast.error('Could not decline request: ' + err.message)
+    }
   }
 
   async function handleRemove(friendUid) {
     if (!confirm('Remove this friend?')) return
-    await removeFriend(user.uid, friendUid)
-    setFriends(f => f.filter(u => u.id !== friendUid))
-    await refreshProfile()
+    try {
+      await removeFriend(user.uid, friendUid)
+      setFriends(f => f.filter(u => u.uid !== friendUid))
+      await refreshProfile()
+    } catch (err) {
+      toast.error('Could not remove friend: ' + err.message)
+    }
   }
 
-  const isAlreadyFriend    = (uid) => profile?.friends?.includes(uid)
-  const hasIncomingRequest = (uid) => requests.some(r => r.id === uid)
-  const hasSentRequest     = (uid) => profile?.sentFriendRequests?.includes(uid)
+  const friendUids         = Array.isArray(profile?.friends) ? profile.friends : []
+  const isAlreadyFriend    = (uid) => friendUids.includes(uid)
+  const hasIncomingRequest = (uid) => requests.some(r => r.from === uid)
+  const hasSentRequest     = (uid) => (profile?.sentFriendRequests || []).includes(uid)
 
   const FriendCard = ({ f, actions }) => {
     const lvl = LEVELS[Math.min((f.level || 1) - 1, LEVELS.length - 1)]
@@ -102,7 +124,7 @@ export default function Friends() {
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <div style={{ fontWeight: 600 }}>{f.displayName}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {f.username ? `@${f.username} · ` : ''}Level {f.level || 1} · {lvl?.title} · 🔥 {f.streak || 0}
+            Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · 🔥 {f.streak || 0}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{(f.xp || 0).toLocaleString()} XP</div>
         </div>
@@ -126,7 +148,7 @@ export default function Friends() {
       {/* ── Search ── */}
       <div className="card" style={{ marginBottom: 20 }}>
         <h4 style={{ marginBottom: 4 }}>Find a friend</h4>
-        <p style={{ fontSize: '0.82rem', marginBottom: 12 }}>Search by username or name</p>
+        <p style={{ fontSize: '0.82rem', marginBottom: 12 }}>Search by username or display name</p>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: searchResults.length ? 12 : 0 }}>
           <input
             className="input"
@@ -142,21 +164,23 @@ export default function Friends() {
         {searchResults.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {searchResults.map(u => (
-              <div key={u.id} style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div key={u.uid} style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{u.displayName}</div>
+                  <div style={{ fontWeight: 600 }}>{u.displayName || 'Anonymous'}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {u.username ? `@${u.username} · ` : ''}Level {u.level || 1}
+                    Level {u.level || 1}
                   </div>
                 </div>
-                {isAlreadyFriend(u.id) ? (
+                {isAlreadyFriend(u.uid) ? (
                   <span className="badge badge-green"><UserCheck size={12} /> Friends</span>
-                ) : hasSentRequest(u.id) ? (
+                ) : hasSentRequest(u.uid) ? (
                   <span className="badge badge-grey">Request sent</span>
-                ) : hasIncomingRequest(u.id) ? (
-                  <button className="btn btn-primary btn-sm" onClick={() => handleAccept(u.id)}>Accept request</button>
+                ) : hasIncomingRequest(u.uid) ? (
+                  <button className="btn btn-primary btn-sm" onClick={() => handleAccept(requests.find(r => r.from === u.uid))}>
+                    Accept request
+                  </button>
                 ) : (
-                  <button className="btn btn-primary btn-sm" onClick={() => handleSendRequest(u.id)}>
+                  <button className="btn btn-primary btn-sm" onClick={() => handleSendRequest(u.uid)}>
                     <UserPlus size={14} /> Add friend
                   </button>
                 )}
@@ -187,8 +211,8 @@ export default function Friends() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {friends.map(f => (
-              <FriendCard key={f.id} f={f} actions={
-                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.id)}>
+              <FriendCard key={f.uid} f={f} actions={
+                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.uid)}>
                   <UserX size={15} />
                 </button>
               } />
@@ -205,17 +229,24 @@ export default function Friends() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {requests.map(f => (
-              <FriendCard key={f.id} f={f} actions={
+            {requests.map(req => (
+              <div key={req.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,var(--purple-700),var(--purple-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
+                  {(req.fromName || req.from || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 600 }}>{req.fromName || 'RevisionFlow user'}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Wants to be your study buddy</div>
+                </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => handleAccept(f.id)}>
+                  <button className="btn btn-primary btn-sm" onClick={() => handleAccept(req)}>
                     <UserCheck size={14} /> Accept
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => handleDecline(f.id)}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => handleDecline(req)}>
                     <UserX size={14} />
                   </button>
                 </div>
-              } />
+              </div>
             ))}
           </div>
         )
