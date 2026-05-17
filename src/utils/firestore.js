@@ -440,8 +440,17 @@ export const submitPaperStructure = async (uid, data) => {
 ========================= */
 
 export const sendFriendRequest = async (fromUid, toUid) => {
+  let fromName = ''
+  try {
+    const snap = await getDoc(doc(db, 'users', fromUid))
+    if (snap.exists()) {
+      const d = snap.data()
+      fromName = d.displayName || d.profile?.displayName || ''
+    }
+  } catch {}
   await addDoc(collection(db, 'friendRequests'), {
     from:      fromUid,
+    fromName,
     to:        toUid,
     createdAt: serverTimestamp(),
   })
