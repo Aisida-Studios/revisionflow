@@ -111,65 +111,129 @@ const GCSE = {
       ],
     }},
 
-    // ── Further Mathematics ──────────────────────────────────────────────────
+    // ── Further Mathematics (AQA Level 2 Certificate 8365) ──────────────────
+    // Both papers assess ANY part of the spec — topics below reflect the full
+    // spec grouped by the 6 official content areas, not by paper.
+    // Paper 1: non-calculator | Paper 2: calculator (each 1h45m, 80 marks)
     'Further Mathematics': { papers: {
       1: [
-        'Number – Number Theory: Division Algorithm, Modular Arithmetic',
-        'Algebra – Inequalities: Quadratic and Rational Inequalities',
-        'Algebra – Sequences and Series: Recurrence Relations, Arithmetic and Geometric Proofs',
-        'Algebra – Factor Theorem and Polynomial Division',
-        'Algebra – Algebraic Fractions: Simplification and Partial Fractions',
-        'Algebra – Functions: Domain, Range, Composite, Inverse',
-        'Algebra – Proof: Proof by Exhaustion, Contradiction and Counter-example',
-        'Coordinate Geometry – Straight Lines: Distance, Gradient, Midpoint',
-        'Coordinate Geometry – Circles: Equation, Tangent, Chord Bisector',
-        'Matrices: Adding, Multiplying, Determinant, Inverse (2×2)',
-        'Matrices: Transformations in 2D (rotation, reflection, enlargement)',
-        'Calculus – Differentiation: Polynomials, Chain Rule, Product Rule',
-        'Calculus – Integration: Indefinite and Definite, Area Under a Curve',
-        'Trigonometry – Further Identities: sin²θ + cos²θ = 1, Double Angle Formulae',
+        // 1. Number
+        'Number – Product Rule for Counting',
+        'Number – Surds: Simplification, Rationalising the Denominator, Exact Calculations',
+        // 2. Algebra
+        'Algebra – Basic Algebraic Processes: Associative, Commutative and Distributive Laws',
+        'Algebra – Functions: Definition, Domain and Range',
+        'Algebra – Composite and Inverse Functions',
+        'Algebra – Expanding Brackets and Collecting Like Terms (including cubics)',
+        'Algebra – Binomial Expansion: (a + b)ⁿ for Positive Integer n, Pascal\'s Triangle',
+        'Algebra – Factorising: Quadratics, Cubics, Difference of Two Squares',
+        'Algebra – Algebraic Fractions: Simplification, Addition, Subtraction, Multiplication, Division',
+        'Algebra – Rearranging Formulae',
+        'Algebra – Factor Theorem for Polynomials',
+        'Algebra – Completing the Square',
+        'Algebra – Graphs: Linear, Quadratic, Exponential (y = abˣ), Piecewise Functions',
+        'Algebra – Solving Linear and Quadratic Equations',
+        'Algebra – Simultaneous Equations: Two Linear, or One Linear and One Quadratic',
+        'Algebra – Linear Equations in Three Unknowns',
+        'Algebra – Linear and Quadratic Inequalities',
+        'Algebra – Index Laws: Fractional and Negative Indices',
+        'Algebra – Algebraic Proof',
+        'Algebra – Sequences: nth Term of Linear and Quadratic Sequences',
+        'Algebra – Sequences: Limiting Value as n → ∞',
+        // 3. Coordinate Geometry
+        'Coordinate Geometry – Straight Lines: Gradient, Parallel and Perpendicular Lines',
+        'Coordinate Geometry – Straight Lines: Distance Between Two Points (Pythagoras)',
+        'Coordinate Geometry – Straight Lines: Dividing a Line in a Given Ratio, Midpoint',
+        'Coordinate Geometry – Straight Lines: Equation of a Line (y = mx + c and y − y₁ = m(x − x₁))',
+        'Coordinate Geometry – Circles: x² + y² = r² and (x − a)² + (y − b)² = r²',
+        'Coordinate Geometry – Circles: Tangent at a Point, Circle Geometry Theorems',
       ],
       2: [
-        'Further Algebra – Roots of Polynomials: Vieta\'s Formulae for Quadratics and Cubics',
-        'Further Algebra – Geometric Series: Sum to Infinity, Convergence Conditions',
-        'Further Calculus – Integration by Substitution',
-        'Further Calculus – Differential Equations: Separating Variables',
-        'Further Coordinate Geometry – Parametric Equations',
-        'Further Trigonometry – Addition Formulae, R sin(x + α) Form',
-        'Numerical Methods – Fixed-Point Iteration, Newton-Raphson (introduction)',
-        'Vectors in 2D and 3D: Magnitude, Direction, Scalar Product',
-        'Statistics – Poisson Distribution (if included by school)',
-        'Decision Mathematics – Algorithms: Sorting (Bubble, Quick), Dijkstra\'s, Floyd\'s',
+        // 4. Calculus (Differentiation only — no integration in this spec)
+        'Calculus – Differentiation: Gradient Function dy/dx, Rate of Change',
+        'Calculus – Differentiation: Differentiating kxⁿ (n an integer) and Sums of Such Terms',
+        'Calculus – Differentiation: Equation of Tangent and Normal at a Point on a Curve',
+        'Calculus – Differentiation: Increasing and Decreasing Functions',
+        'Calculus – Differentiation: Second Derivative d²y/dx², Maxima and Minima',
+        'Calculus – Differentiation: Applied Optimisation Problems',
+        'Calculus – Differentiation: Sketching Curves with Known Turning Points',
+        // 5. Matrix Transformations (2×2 and 2×1 only)
+        'Matrices – Multiplication of 2×2 and 2×1 Matrices; Scalar Multiplication',
+        'Matrices – The Identity Matrix I (2×2)',
+        'Matrices – Transformations of the Unit Square: Rotations (90°, 180°, 270°), Reflections (x=0, y=0, y=x, y=−x), Enlargements',
+        'Matrices – Combinations of Transformations Using Matrix Multiplication',
+        // 6. Geometry
+        'Geometry – Perimeter, Area (rectangles, circles, triangles, parallelograms, trapezia)',
+        'Geometry – Surface Area and Volume (prisms, cylinders, spheres, cones, pyramids)',
+        'Geometry – Angle Properties: Parallel Lines, Triangles, Quadrilaterals, Polygons',
+        'Geometry – Circle Theorems: Angle at Centre, Same Segment, Cyclic Quadrilateral, Alternate Segment',
+        'Geometry – Geometric Proof Using Formal Arguments',
+        'Geometry – Sine Rule, Cosine Rule, Area = ½ab sinC',
+        'Geometry – Pythagoras\' Theorem in 2D and 3D; Pythagorean Triples',
+        'Geometry – Trigonometry in 2D and 3D Problems (including angle between line and plane)',
+        'Geometry – Graphs of y = sin x, y = cos x, y = tan x for Any Angle',
+        'Geometry – sin θ, cos θ, tan θ for Angles 0°–360°; Exact Values for 30°, 45°, 60°',
+        'Geometry – Trigonometric Identities: tan θ = sin θ / cos θ and sin²θ + cos²θ = 1',
+        'Geometry – Solving Simple Trigonometric Equations in a Given Interval',
       ],
     }},
 
     // ── Statistics ────────────────────────────────────────────────────────────
+    // AQA GCSE Statistics 8382 — both papers assess ALL content (tiered Foundation/Higher)
+    // Paper 1 and Paper 2 are identical in structure; topics below cover the full spec
     'Statistics': { papers: {
       1: [
-        'Data Collection – Types of Data: Qualitative vs Quantitative, Discrete vs Continuous',
-        'Data Collection – Sampling: Census vs Sample, Random, Stratified, Systematic, Cluster, Quota',
-        'Data Collection – Questionnaire Design: Leading Questions, Bias, Pilot Studies',
-        'Data Presentation – Bar Charts, Pie Charts, Stem-and-Leaf Diagrams',
-        'Data Presentation – Frequency Polygons and Cumulative Frequency Graphs',
-        'Data Presentation – Box Plots and Outliers',
-        'Data Presentation – Histograms (Frequency Density)',
-        'Statistical Measures – Mean (Ungrouped and Grouped), Median, Mode',
-        'Statistical Measures – Range, Interquartile Range, Standard Deviation',
-        'Statistical Measures – Measures of Skewness',
-        'Time Series – Trend Lines, Seasonal Variation, Moving Averages',
-        'Index Numbers – Simple and Weighted Index Numbers',
-        'Scatter Diagrams – Correlation, Line of Best Fit (by eye)',
-        'Scatter Diagrams – Regression Line, Interpolation and Extrapolation',
+        // Section A – Planning
+        'Planning – Hypothesis Testing: Defining a Question or Hypothesis',
+        'Planning – Constraints: Time, Cost, Ethics, Confidentiality, Non-Response',
+        'Planning – Statistical Enquiry Cycle (SEC): Planning, Collection, Processing, Interpretation, Evaluation',
+        // Section B – Data Collection
+        'Data Collection – Types of Data: Qualitative, Quantitative, Discrete, Continuous, Categorical, Ordinal, Bivariate',
+        'Data Collection – Primary vs Secondary Data; Reliability and Validity',
+        'Data Collection – Sampling Methods: Random, Systematic, Stratified, Quota, Opportunity/Convenience',
+        'Data Collection – Questionnaire Design: Leading Questions, Open/Closed, Bias, Response Issues',
+        'Data Collection – Identifying and Controlling Extraneous Variables; Control Groups',
+        'Data Collection – Data Cleaning: Missing Data, Incorrect Formats, Non-Responses',
+        // Section C – Data Presentation
+        'Data Presentation – Tabulation, Tally, Pictogram, Pie Chart, Stem-and-Leaf (including Back-to-Back)',
+        'Data Presentation – Bar Charts (Dual, Composite, Percentage); Frequency Polygons',
+        'Data Presentation – Cumulative Frequency Graphs; Box Plots and Outliers',
+        'Data Presentation – Histograms: Equal Width (Foundation) and Unequal Width with Frequency Density (Higher)',
+        'Data Presentation – Population Pyramids, Choropleth Maps, Time Series Graphs',
+        'Data Presentation – Comparative and Proportional Representations',
+        'Data Presentation – Identifying Graphical Misrepresentation (Truncated Axes, Distorted Scales)',
+        // Section D – Statistical Measures
+        'Statistical Measures – Averages: Mode, Median, Arithmetic Mean (Ungrouped and Grouped)',
+        'Statistical Measures – Averages (Higher): Weighted Mean, Geometric Mean, Mean Seasonal Variation',
+        'Statistical Measures – Spread: Range, Quartiles, Interquartile Range, Percentiles',
+        'Statistical Measures – Spread (Higher): Interpercentile Range, Interdecile Range, Standard Deviation',
+        'Statistical Measures – Outliers: Identification by Inspection or Calculation (1.5×IQR / 3σ rule)',
+        'Statistical Measures – Skewness: Identifying by Inspection (Foundation) and Calculation (Higher)',
+        'Statistical Measures – Moving Averages (4-point); Seasonal Variation and Trend Lines',
+        'Statistical Measures – Line of Best Fit: By Eye; Through Double Mean Point (x̄, ȳ); Regression Line (Higher)',
+        'Statistical Measures – Index Numbers: Simple and Weighted; RPI, CPI, GDP',
+        'Statistical Measures – Rates of Change: Birth Rate, Death Rate (formulae given)',
+        'Statistical Measures – Spearman\'s Rank Correlation Coefficient: Calculation and Interpretation',
+        'Statistical Measures – Pearson\'s PMCC: Interpretation (Higher)',
       ],
       2: [
-        'Probability – Listing Outcomes, AND/OR Rules, Conditional Probability',
-        'Probability – Venn Diagrams and Tree Diagrams',
-        'Binomial Distribution – P(X = r), Binomial Tables',
-        'Normal Distribution – Properties, Standardising (Z-score), Using Tables',
-        'Hypothesis Testing – Null and Alternative Hypotheses, Critical Region, Significance Level',
-        'Hypothesis Testing – One-Tailed and Two-Tailed Tests (Binomial context)',
-        'Correlation – Spearman\'s Rank Correlation Coefficient: Calculation and Interpretation',
-        'Quality Assurance – Control Charts: Mean Charts, Range Charts, Warning/Action Lines',
+        // Section E – Interpreting and Probability
+        'Probability – Scale 0–1; Expected Frequency; Relative Risk and Absolute Risk',
+        'Probability – Listing Outcomes: Two-Way Tables, Sample Space Diagrams, Tree Diagrams, Venn Diagrams',
+        'Probability – Independent Events: P(A and B) = P(A) × P(B)',
+        'Probability – Conditional Probability (Higher): P(B|A) = P(A and B) / P(A)',
+        'Probability – Experimental vs Theoretical Probability; Relative Frequency',
+        'Probability – Comparing Experimental Data with Theoretical Predictions',
+        'Distributions – Binomial Distribution: Characteristics, Fixed Trials, Constant Probability (n ≤ 5)',
+        'Distributions – Normal Distribution: Bell-Shape, Mean, 68-95-99.7 Rule, Standardising (Higher)',
+        'Distributions – Quality Assurance: Action and Warning Lines; Control Charts',
+        'Correlation – Positive, Negative, Zero Correlation; Causation vs Association',
+        'Correlation – Interpolation and Extrapolation; Strength of Correlation',
+        'Interpretation – Comparing Distributions Using Averages and Spread',
+        'Interpretation – Seasonal and Cyclic Trends; Making Predictions from Trend Lines',
+        'Interpretation – Estimating Population Characteristics from Sample Data',
+        'Interpretation – Petersen Capture-Recapture Formula (Higher)',
+        'Interpretation – Sample Size and Reliability; Distribution of Sample Means',
       ],
     }},
 
@@ -2135,55 +2199,185 @@ const GCSE = {
   // ── CCEA GCSE (Northern Ireland) ────────────────────────────────────────────
   CCEA: {
 
+    // CCEA GCSE Mathematics (2210) — Modular structure unique to Northern Ireland
+    // Foundation: Unit M1 + M2 (with calculator) then M5 or M6 completion test (P1 non-calc, P2 calculator)
+    // Higher: Unit M3 + M4 (with calculator) then M7 or M8 completion test (P1 non-calc, P2 calculator)
     'Mathematics': { papers: {
-      1: [
-        'Unit 1 – Non-Calculator: Number, Algebra, Statistics and Probability',
-        'Unit 2 – Calculator: Geometry, Trigonometry, Further Algebra',
-        'Unit 3 – Mental Mathematics (Foundation only)',
-        'Further Maths Module (Higher): Complex Numbers, Matrices, Calculus',
+      1: [ // Foundation content (Units M1, M2, M5/M6)
+        // Number
+        'Number – Integers: BIDMAS, Prime Factors, HCF, LCM',
+        'Number – Fractions, Decimals and Percentages: Conversions, Operations',
+        'Number – Percentages: Percentage Change, Reverse Percentages, Simple and Compound Interest',
+        'Number – Ratio and Proportion: Simplifying, Dividing in a Ratio, Direct and Inverse Proportion',
+        'Number – Powers, Roots and Standard Form',
+        // Algebra
+        'Algebra – Expressions: Simplifying, Expanding Brackets, Factorising',
+        'Algebra – Formulae: Substitution, Changing the Subject',
+        'Algebra – Solving Linear Equations and Inequalities',
+        'Algebra – Simultaneous Equations (Linear)',
+        'Algebra – Sequences: nth Term of Linear Sequences',
+        'Algebra – Graphs: Straight-Line Graphs, y = mx + c, Gradient and Intercept',
+        // Geometry
+        'Geometry – Angles: Properties of Triangles, Quadrilaterals, Polygons, Parallel Lines',
+        'Geometry – Pythagoras\' Theorem',
+        'Geometry – Trigonometry: SOH CAH TOA in Right-Angled Triangles',
+        'Geometry – Perimeter, Area: Rectangles, Triangles, Circles, Composite Shapes',
+        'Geometry – Volume and Surface Area: Cuboids, Prisms, Cylinders',
+        'Geometry – Transformations: Reflection, Rotation, Translation, Enlargement',
+        'Geometry – Constructions and Loci',
+        // Statistics and Probability
+        'Statistics – Averages and Range: Mean, Median, Mode from Lists and Tables',
+        'Statistics – Graphs: Bar Charts, Pie Charts, Frequency Polygons, Scatter Diagrams',
+        'Statistics – Cumulative Frequency, Box Plots',
+        'Statistics – Sampling and Data Collection',
+        'Probability – Basic Probability, Sample Spaces, Combined Events, Tree Diagrams',
+      ],
+      2: [ // Higher content (Units M3, M4, M7/M8) — builds on Foundation
+        // Number (Higher)
+        'Number – Surds: Simplifying and Rationalising the Denominator',
+        'Number – Bounds and Error Intervals',
+        // Algebra (Higher)
+        'Algebra – Quadratics: Factorising, Completing the Square, Quadratic Formula',
+        'Algebra – Quadratic Inequalities',
+        'Algebra – Simultaneous Equations: One Linear, One Quadratic',
+        'Algebra – Functions: Function Notation, Composite and Inverse Functions',
+        'Algebra – Sequences: nth Term of Quadratic Sequences; Geometric Sequences',
+        'Algebra – Algebraic Proof',
+        'Algebra – Graphs: Quadratic, Cubic, Reciprocal, Exponential; Transformations of Graphs',
+        'Algebra – Gradient and Area Under a Curve (Kinematics context)',
+        // Geometry (Higher)
+        'Geometry – Trigonometry: Sine Rule, Cosine Rule, Area = ½ab sinC',
+        'Geometry – Circle Theorems',
+        'Geometry – Vectors',
+        'Geometry – Similarity and Congruence Proofs',
+        'Geometry – Volume and Surface Area: Pyramids, Cones, Spheres',
+        // Statistics (Higher)
+        'Statistics – Histograms with Frequency Density',
+        'Statistics – Conditional Probability; Venn Diagrams',
       ],
     }},
 
     'English Language': { papers: {
-      1: ['Reading – Personal Response to Fiction', 'Writing – Personal and Imaginative Writing'],
-      2: ['Reading – Response to Non-Fiction', 'Writing – Functional and Discursive Writing'],
+      1: [
+        'Reading – Unit 1: Personal Response to Fiction and Literary Non-Fiction',
+        'Reading – Analysing Language and Structure in Literary Texts',
+        'Writing – Personal and Imaginative Writing (narrative, descriptive)',
+        'Writing – Transactional Writing: Letters, Articles, Speeches (formal and informal)',
+      ],
+      2: [
+        'Reading – Unit 2: Response to Non-Fiction and Media Texts',
+        'Reading – Comparing Non-Fiction Texts: Viewpoint, Purpose, Audience',
+        'Writing – Functional Writing: Reports, Reviews, Information Texts',
+        'Writing – Discursive Writing: Argument and Persuasion',
+        'Speaking and Listening – Controlled Assessment (internally assessed)',
+      ],
     }},
 
     'English Literature': { papers: {
-      1: ['Poetry: Prescribed and Unseen Poetry Analysis and Comparison'],
-      2: ['Prose and Drama: Novels and Plays — Character, Theme, Language'],
+      1: [
+        'Poetry – Unit 1: Prescribed Poems — Close Analysis and Comparison',
+        'Poetry – Unseen Poetry: Response to an Unfamiliar Poem',
+        'Poetry – Themes, Language, Form and Structure',
+      ],
+      2: [
+        'Prose – Unit 2: Novel Study — Character, Theme, Narrative Voice',
+        'Drama – Unit 2: Play Study — Character, Theme, Language, Stage Directions',
+        'Prose and Drama – Contextual Understanding and Critical Response',
+      ],
     }},
 
     'Biology': { papers: {
-      1: ['Unit 1 – Cells, Genetics, Biodiversity'],
-      2: ['Unit 2 – Physiology and Ecosystems'],
+      1: [
+        'Unit 1 – Cells: Cell Structure, Microscopy, Diffusion, Osmosis, Active Transport',
+        'Unit 1 – Genetics: DNA, Protein Synthesis, Mitosis, Meiosis, Inheritance, Mutations',
+        'Unit 1 – Biodiversity: Classification, Natural Selection, Evolution, Ecosystems',
+      ],
+      2: [
+        'Unit 2 – Physiology: Digestive System, Circulatory System, Respiratory System, Excretion',
+        'Unit 2 – Homeostasis: Blood Glucose, Temperature Regulation, Kidney Function',
+        'Unit 2 – Coordination: Nervous System, Hormones, Reflex Arcs',
+        'Unit 2 – Ecosystems: Food Chains, Energy Transfer, Nutrient Cycles, Human Impact',
+      ],
     }},
 
     'Chemistry': { papers: {
-      1: ['Unit 1 – Atomic Structure, Bonding, Quantitative Chemistry'],
-      2: ['Unit 2 – Further Chemistry: Rates, Organic, Analysis'],
+      1: [
+        'Unit 1 – Atomic Structure: Protons, Neutrons, Electrons, Isotopes, Electronic Configuration',
+        'Unit 1 – Bonding: Ionic, Covalent, Metallic; Properties of Materials',
+        'Unit 1 – Quantitative Chemistry: Moles, Formulae, Equations, Calculations',
+        'Unit 1 – The Periodic Table: Groups 1, 7, 0; Transition Metals; Trends',
+      ],
+      2: [
+        'Unit 2 – Rates of Reaction: Factors, Collision Theory, Catalysts',
+        'Unit 2 – Equilibrium: Reversible Reactions, Le Chatelier\'s Principle',
+        'Unit 2 – Organic Chemistry: Alkanes, Alkenes, Alcohols, Carboxylic Acids, Addition Polymers',
+        'Unit 2 – Analysis: Flame Tests, Chemical Tests for Ions and Gases, Chromatography',
+        'Unit 2 – Electrochemistry: Electrolysis, Extraction of Metals',
+      ],
     }},
 
     'Physics': { papers: {
-      1: ['Unit 1 – Motion, Forces, Electricity, Waves'],
-      2: ['Unit 2 – Energy, Atomic Structure, Fields'],
+      1: [
+        'Unit 1 – Motion: Speed, Velocity, Acceleration, Distance-Time and Velocity-Time Graphs, SUVAT',
+        'Unit 1 – Forces: Newton\'s Laws, Weight, Friction, Moments, Pressure',
+        'Unit 1 – Electricity: Current, Voltage, Resistance, Series and Parallel Circuits, Power',
+        'Unit 1 – Waves: Wave Properties, Reflection, Refraction, Diffraction, Sound, Light',
+      ],
+      2: [
+        'Unit 2 – Energy: Work Done, Energy Transfers, Efficiency, Power, Specific Heat Capacity',
+        'Unit 2 – Thermal Physics: Conduction, Convection, Radiation, Infrared',
+        'Unit 2 – Atomic Structure: Radioactivity, Half-Life, Nuclear Fission and Fusion',
+        'Unit 2 – Electromagnetism: Magnets, Electromagnets, Motor Effect, Generators, Transformers',
+        'Unit 2 – Space: Solar System, Stars, Universe, Red-Shift, Big Bang',
+      ],
     }},
 
     'Geography': { papers: {
-      1: ['Unit 1 – Physical Environments: Rivers, Coasts, Tectonic Hazards'],
-      2: ['Unit 2 – Human Environments: Population, Settlement, Development'],
-      3: ['Unit 3 – Fieldwork and Decision-Making Exercise'],
+      1: [
+        'Unit 1 – Physical Environments: River Processes and Landforms (Erosion, Transportation, Deposition)',
+        'Unit 1 – Physical Environments: Coastal Processes and Landforms',
+        'Unit 1 – Physical Environments: Tectonic Hazards (Earthquakes and Volcanoes)',
+        'Unit 1 – Weather and Climate: UK Weather, Global Climate Zones',
+      ],
+      2: [
+        'Unit 2 – Human Environments: Population (Growth, Migration, Ageing)',
+        'Unit 2 – Human Environments: Settlement (Urbanisation, Land Use, Regeneration)',
+        'Unit 2 – Human Environments: Development (Indicators, Trade, Aid, Tourism)',
+        'Unit 2 – Managing the Environment: Sustainability, Resource Management',
+      ],
+      3: [
+        'Unit 3 – Fieldwork: Planning, Data Collection and Presentation',
+        'Unit 3 – Decision-Making Exercise (DME): Applying Geographical Skills to an Unfamiliar Context',
+      ],
     }},
 
     'History': { papers: {
-      1: ['Unit 1 – Life Under Nazi Rule 1933–45'],
-      2: ['Unit 2 – A Divided Union? Northern Ireland 1921–72'],
-      3: ['Unit 3 – Thematic Study (chosen from list)'],
+      1: [
+        'Unit 1 – Life Under Nazi Rule 1933–45: Rise of Hitler, Propaganda, Racial Policies, Opposition',
+        'Unit 1 – Source Analysis: Reliability, Utility, Cross-Referencing',
+      ],
+      2: [
+        'Unit 2 – A Divided Union? Northern Ireland 1921–72: Partition, Stormont, Civil Rights Movement, Outbreak of Troubles',
+        'Unit 2 – Source and Interpretation Skills in the Context of Irish History',
+      ],
+      3: [
+        'Unit 3 – Thematic Study (chosen option): e.g. Changing Nature of Warfare 1845–1991, or Cold War 1945–91',
+        'Unit 3 – Extended Writing: Essay and Source Questions',
+      ],
     }},
 
     'Religious Studies': { papers: {
-      1: ['Christianity: Beliefs and Practices'],
-      2: ['Applied Ethics: Justice, Relationships and the Environment'],
+      1: [
+        'Christianity – Core Beliefs: The Trinity, Incarnation, Salvation, Afterlife',
+        'Christianity – Practices: Prayer, Worship, Sacraments, Pilgrimage',
+        'Christianity – Northern Irish Church Life: Role of Churches in Society',
+      ],
+      2: [
+        'Applied Ethics – Justice: Crime, Punishment, Forgiveness, Reconciliation',
+        'Applied Ethics – Relationships: Marriage, Family, Gender, Sexuality',
+        'Applied Ethics – Environment: Stewardship, Conservation, Climate Change',
+        'Applied Ethics – The Sanctity of Life: Abortion, Euthanasia, War and Peace',
+      ],
     }},
 
   }, // end CCEA GCSE
