@@ -32,11 +32,11 @@ const NAV = [
 ]
 
 const MOBILE_NAV = [
-  { to: '/dashboard', label: 'Home',   icon: LayoutDashboard },
-  { to: '/timer',     label: 'Timer',  icon: Timer },
-  { to: '/ai',        label: 'AI',     icon: MessageSquare },
-  { to: '/topics',    label: 'Topics', icon: Brain },
-  { to: '/profile',   label: 'Me',     icon: User },
+  { to: '/dashboard', label: 'Home',  icon: LayoutDashboard },
+  { to: '/timer',     label: 'Timer', icon: Timer },
+  { to: '/study',     label: 'Study', icon: Zap },
+  { to: '/topics',    label: 'Topics',icon: Brain },
+  { to: '/profile',   label: 'Me',    icon: User },
 ]
 
 function xpForLevel(n) {
