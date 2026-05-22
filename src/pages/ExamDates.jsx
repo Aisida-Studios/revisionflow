@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateUserProfile } from '../utils/firestore'
 import { countdownLabel, countdownUrgency, daysUntilExam } from '../utils/calendar'
+import { isExamDone } from '../utils/examUtils'
 import { EXAM_BOARDS } from '../data/subjects'
 import { isTiered, getExamDates, EXAM_DATES_2026 } from '../data/examDates2026'
 import toast from 'react-hot-toast'
@@ -165,10 +166,11 @@ export default function ExamDates() {
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {examDates.map(e => {
             const days    = daysUntilExam(e.examDate)
-            const urgency = countdownUrgency(e.examDate)
+            const isDone  = isExamDone(e.examDate)
+            const urgency = isDone ? 'done' : countdownUrgency(e.examDate)
             const isSel   = selected.includes(e.id)
             return (
-              <div key={e.id} style={{padding:'13px 16px',borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:14,...urgStyle(urgency),outline:isSel?'2px solid var(--accent)':'none'}}>
+              <div key={e.id} style={{padding:'13px 16px',borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:14,...urgStyle(isDone ? 'done' : urgency),outline:isSel?'2px solid var(--accent)':'none',opacity:isDone?0.65:1}}>
                 <input type="checkbox" checked={isSel} onChange={() => toggleSelect(e.id)}
                   style={{width:15,height:15,accentColor:'var(--accent)',flexShrink:0}}/>
                 <div style={{flex:1}}>
@@ -180,17 +182,17 @@ export default function ExamDates() {
                   </div>
                   {e.paperName && <div style={{fontSize:'0.8rem',color:'var(--text-secondary)',marginBottom:2}}>{e.paperName}</div>}
                   <div style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>
-                    {days < 0 ? 'Completed' : 'Exam on'} {format(new Date(e.examDate), 'EEEE, d MMMM yyyy')}
+                    {isDone ? 'Completed' : 'Exam on'} {format(new Date(e.examDate), 'EEEE, d MMMM yyyy')}
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
                   <div style={{textAlign:'center',minWidth:44}}>
                     <div style={{fontSize:'1.5rem',fontWeight:800,lineHeight:1,
                       color:urgency==='urgent'?'var(--danger)':urgency==='soon'?'var(--warning)':'var(--accent-light)'}}>
-                      {days < 0 ? '✓' : days}
+                      {isDone ? '✓' : days}
                     </div>
                     <div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:1}}>
-                      {days < 0 ? 'done' : days === 0 ? 'TODAY' : days === 1 ? 'day' : 'days'}
+                      {isDone ? 'done' : days === 0 ? 'TODAY' : days === 1 ? 'day' : 'days'}
                     </div>
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(e.id)} style={{color:'var(--danger)'}}>
