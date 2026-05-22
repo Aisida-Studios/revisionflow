@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   checkAndAwardBadge, autoCompleteQuest,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
-  getPublicFlashcardSets, updateFlashcardSetVisibility,
+  getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
@@ -270,6 +270,221 @@ function CustomSetEditor({ subjects, onSave, onClose }) {
   )
 }
 
+/* ── Edit existing set modal ───────────────────────────────────────────────── */
+function EditSetModal({ set, subjects, onSave, onClose }) {
+  const [title,    setTitle]    = useState(set.title || '')
+  const [subject,  setSubject]  = useState(set.subject || subjects[0] || '')
+  const [topic,    setTopic]    = useState(set.topic || '')
+  const [isPublic, setIsPublic] = useState(set.isPublic || false)
+  const [cards,    setCards]    = useState(set.cards?.length ? set.cards.map(c => ({ q: c.q || '', a: c.a || '' })) : [{ q: '', a: '' }])
+  const [saving,   setSaving]   = useState(false)
+
+  function addCard() { setCards(cs => [...cs, { q: '', a: '' }]) }
+  function removeCard(i) { setCards(cs => cs.filter((_, j) => j !== i)) }
+  function updateCard(i, field, val) { setCards(cs => cs.map((c, j) => j === i ? { ...c, [field]: val } : c)) }
+
+  async function handleSave() {
+    const valid = cards.filter(c => c.q.trim() && c.a.trim())
+    if (!title || valid.length === 0) { toast.error('Add a title and at least one card'); return }
+    setSaving(true)
+    await onSave({ title, subject, topic, cards: valid, isPublic })
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 700, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title"><Edit3 size={16} /> Edit set</span>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="grid-2" style={{ gap: 10 }}>
+            <div><label className="label">Set title</label><input className="input" value={title} onChange={e => setTitle(e.target.value)} /></div>
+            <div><label className="label">Subject</label>
+              <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div><label className="label">Topic <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label><input className="input" value={topic} onChange={e => setTopic(e.target.value)} /></div>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
+            <span style={{ fontSize: '0.83rem' }}>Make public — other students can use this set</span>
+          </label>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{cards.length} card{cards.length !== 1 ? 's' : ''}</span>
+              <button className="btn btn-secondary btn-sm" onClick={addCard}><Plus size={13} /> Add card</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto' }}>
+              {cards.map((card, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} /></div>
+                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} /></div>
+                  <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Paste import modal (Quizlet-style) ─────────────────────────────────────── */
+function PasteImportModal({ subjects, onImport, onClose }) {
+  const [mode,       setMode]       = useState('paste')   // 'paste' | 'ai'
+  const [pasteText,  setPasteText]  = useState('')
+  const [aiNotes,    setAiNotes]    = useState('')
+  const [separator,  setSeparator]  = useState('tab')     // 'tab' | 'dash' | 'colon'
+  const [preview,    setPreview]    = useState([])
+  const [title,      setTitle]      = useState('')
+  const [subject,    setSubject]    = useState(subjects[0] || '')
+  const [aiLoading,  setAiLoading]  = useState(false)
+
+  const SEP = { tab: '	', dash: ' - ', colon: ': ' }
+
+  function parsePaste(text, sep) {
+    return text.split('
+')
+      .map(line => {
+        const idx = sep === '	' ? line.indexOf('	') : line.indexOf(sep)
+        if (idx === -1) return null
+        return { q: line.slice(0, idx).trim(), a: line.slice(idx + sep.length).trim() }
+      })
+      .filter(c => c && c.q && c.a)
+  }
+
+  function handlePasteChange(text) {
+    setPasteText(text)
+    setPreview(parsePaste(text, SEP[separator]))
+  }
+
+  function handleSepChange(sep) {
+    setSeparator(sep)
+    setPreview(parsePaste(pasteText, SEP[sep]))
+  }
+
+  async function handleAIConvert() {
+    if (!aiNotes.trim()) return
+    setAiLoading(true)
+    try {
+      const { callAI } = await import('../utils/ai')
+      const prompt = 'Convert these notes into flashcard pairs. Return ONLY in this exact format, one card per line:\nQ: [question]\nA: [answer]\n\nNotes:\n' + aiNotes.slice(0, 8000)
+      const res = await callAI(prompt, null, 4096, null)
+      if (res.error) { toast.error(res.error); return }
+      // Parse Q:/A: format
+      const parsed = []
+      let current = null
+      for (const line of (res.text || '').split('
+')) {
+        const q = line.match(/^Q:\s*(.+)/)
+        const a = line.match(/^A:\s*(.+)/)
+        if (q) { if (current?.q && current?.a) parsed.push(current); current = { q: q[1].trim(), a: '' } }
+        else if (a && current) current.a = a[1].trim()
+      }
+      if (current?.q && current?.a) parsed.push(current)
+      setPreview(parsed)
+      if (!parsed.length) toast.error('Could not extract cards — try the paste tab with structured text')
+    } catch (e) { toast.error('Failed: ' + e.message) }
+    finally { setAiLoading(false) }
+  }
+
+  function handleImport() {
+    if (!preview.length) { toast.error('No cards to import'); return }
+    if (!title.trim()) { toast.error('Add a set title'); return }
+    onImport({ title, subject, cards: preview })
+    toast.success(preview.length + ' cards imported!')
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 680, maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">📋 Import flashcards</span>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button className={'btn btn-sm ' + (mode === 'paste' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('paste')}>📋 Paste text</button>
+          <button className={'btn btn-sm ' + (mode === 'ai' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('ai')}>✨ AI from notes</button>
+        </div>
+
+        {mode === 'paste' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label className="label">Term/definition separator</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[['tab','Tab (Quizlet default)'],['dash',' - (dash)'],['colon',': (colon)']].map(([v,l]) => (
+                  <button key={v} className={'btn btn-sm ' + (separator === v ? 'btn-primary' : 'btn-secondary')} onClick={() => handleSepChange(v)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="label">Paste your terms and definitions</label>
+              <textarea className="textarea" style={{ minHeight: 160, fontFamily: 'monospace', fontSize: '0.82rem' }}
+                placeholder={'photosynthesis	the process by which plants convert light into energy
+mitosis	cell division producing two identical daughter cells'}
+                value={pasteText} onChange={e => handlePasteChange(e.target.value)} />
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                Copy directly from Quizlet (Ctrl+A, Ctrl+C on a set) or paste tab-separated text. One card per line.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mode === 'ai' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label className="label">Paste your notes</label>
+              <textarea className="textarea" style={{ minHeight: 180, fontSize: '0.82rem' }}
+                placeholder="Paste your revision notes, textbook content, or any text and AI will extract key terms and definitions…"
+                value={aiNotes} onChange={e => setAiNotes(e.target.value)} />
+            </div>
+            <button className="btn btn-primary" onClick={handleAIConvert} disabled={aiLoading || !aiNotes.trim()}>
+              {aiLoading ? 'Converting…' : '✨ Convert to flashcards'}
+            </button>
+          </div>
+        )}
+
+        {preview.length > 0 && (
+          <div style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9rem' }}>{preview.length} cards detected</div>
+            <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+              {preview.slice(0, 10).map((c, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '7px 10px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{c.q}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{c.a}</span>
+                </div>
+              ))}
+              {preview.length > 10 && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>+{preview.length - 10} more cards</div>}
+            </div>
+            <div className="grid-2" style={{ gap: 10, marginBottom: 12 }}>
+              <div><label className="label">Set title</label><input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Biology Key Terms" /></div>
+              <div><label className="label">Subject</label>
+                <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleImport} disabled={!title.trim()}>Import {preview.length} cards</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function Study() {
   const { user, profile } = useAuth()
@@ -279,8 +494,10 @@ export default function Study() {
   const [studyTitle, setStudyTitle] = useState('')
   const [studySubj, setStudySubj] = useState('')
   const [studyTopic, setStudyTopic] = useState('')
-  const [showSave, setShowSave] = useState(false)
+  const [showSave,   setShowSave]   = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [showEdit,   setShowEdit]   = useState(null)   // set object being edited
+  const [showPaste,  setShowPaste]  = useState(false)
 
   // Generate
   const [fcSubject, setFcSubject] = useState('')
@@ -398,6 +615,25 @@ export default function Study() {
     loadMySets()
   }
 
+  async function handleEditSet({ title, subject, topic, cards, isPublic }) {
+    try {
+      await updateFlashcardSet(user.uid, showEdit.id, { title, subject, topic, cards, isPublic })
+      toast.success('Set updated!')
+      setShowEdit(null)
+      loadMySets()
+    } catch (e) { toast.error('Update failed: ' + e.message) }
+  }
+
+  async function handlePasteImport({ title, subject, cards }) {
+    try {
+      await saveFlashcardSet(user.uid, { title, subject, topic: '', cards, isPublic: false })
+      toast.success(cards.length + ' cards saved to My Sets!')
+      setShowPaste(false)
+      loadMySets()
+      setFlashTab('my-sets')
+    } catch (e) { toast.error('Import failed: ' + e.message) }
+  }
+
   function studySet(set) {
     setStudyCards(set.cards)
     setStudyTitle(set.title)
@@ -449,8 +685,10 @@ export default function Study() {
 
   return (
     <div className="fade-in">
-      {showSave && <SaveSetModal cards={studyCards || []} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
+      {showSave   && <SaveSetModal cards={studyCards || []} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
       {showCreate && <CustomSetEditor subjects={subjects} onSave={handleCreateSet} onClose={() => setShowCreate(false)} />}
+      {showEdit   && <EditSetModal set={showEdit} subjects={subjects} onSave={handleEditSet} onClose={() => setShowEdit(null)} />}
+      {showPaste  && <PasteImportModal subjects={subjects} onImport={handlePasteImport} onClose={() => setShowPaste(false)} />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
@@ -476,6 +714,7 @@ export default function Study() {
               ))}
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={14} /> Create set</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
           </div>
 
           {flashTab === 'generate' && (
@@ -513,6 +752,7 @@ export default function Study() {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-primary btn-sm" onClick={() => setFlashTab('generate')}>Generate with AI</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setShowCreate(true)}>Create manually</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
                     </div>
                   </div>
                 ) : (
@@ -525,6 +765,7 @@ export default function Study() {
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                            <button className="btn btn-ghost btn-icon btn-sm" title="Edit set" onClick={() => setShowEdit(set)}><Edit3 size={13} /></button>
                             <button className="btn btn-ghost btn-icon btn-sm" title={set.isPublic ? 'Make private' : 'Make public'} onClick={() => handleTogglePublic(set)}>
                               {set.isPublic ? <Globe size={13} style={{ color: 'var(--success)' }} /> : <Lock size={13} />}
                             </button>
