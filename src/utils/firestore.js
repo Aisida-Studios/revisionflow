@@ -760,7 +760,30 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
   if (isPublic) {
     await setDoc(doc(db, 'publicFlashcards', ref.id), { ...data, setId: ref.id })
   }
+  await recordActivityStreak(uid)
+  await autoCompleteQuest(uid, 'use_ai')
   return ref.id
+}
+
+export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
+  const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const prev = snap.data()
+  const updates = {
+    title, subject, topic: topic || '',
+    cards, isPublic,
+    cardCount: cards.length,
+    updatedAt: serverTimestamp(),
+  }
+  await updateDoc(ref, updates)
+  // Sync public collection
+  if (isPublic) {
+    await setDoc(doc(db, 'publicFlashcards', setId), { ...prev, ...updates, uid, setId })
+  } else if (prev.isPublic && !isPublic) {
+    try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
+  }
+  await recordActivityStreak(uid)
 }
 
 export const getFlashcardSets = async (uid) => {
