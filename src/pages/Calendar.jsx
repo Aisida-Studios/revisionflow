@@ -729,15 +729,31 @@ function AddSessionModal({ user, profile, selectedDate, onClose, onSave }) {
 
 // ── Complete Modal ────────────────────────────────────────────────────────────
 function CompleteModal({ session, onClose, onComplete }) {
-  const [notes,setNotes] = useState('')
+  const [notes,    setNotes]    = useState('')
+  const [showNotes,setShowNotes]= useState(false)
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header"><span className="modal-title">Mark complete</span><button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button></div>
-        <p style={{marginBottom:12,fontWeight:500}}>{session.title}</p>
-        <div className="form-group">
-          <label className="label">Notes (optional)</label>
-          <textarea className="textarea" value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What did you cover? Any topics to revisit?"/>
+        <p style={{marginBottom:16,fontWeight:500}}>{session.title}</p>
+        <div style={{marginBottom:14}}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={()=>setShowNotes(o=>!o)}
+            style={{fontSize:'0.82rem',color:'var(--text-muted)',padding:'4px 0',display:'flex',alignItems:'center',gap:6}}
+          >
+            {showNotes ? '▲' : '▼'} {showNotes ? 'Hide notes' : 'Add session notes (optional)'}
+          </button>
+          {showNotes && (
+            <textarea
+              className="textarea"
+              style={{marginTop:8,minHeight:80}}
+              value={notes}
+              onChange={e=>setNotes(e.target.value)}
+              placeholder="What did you cover? Any topics to revisit? How did it go?"
+              autoFocus
+            />
+          )}
         </div>
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
