@@ -2,6 +2,7 @@
 // All AI calls go through /api/tutor (netlify/functions/tutor.js).
 // The Mistral API key is server-side only: MISTRAL_API_KEY in Netlify env vars.
 // Never use VITE_MISTRAL_API_KEY — the key must never be in the browser bundle.
+import { recordActivityStreak } from './firestore'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -44,6 +45,8 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
     }
 
     if (!data.text) return { error: 'AI returned an empty response. Please try again.' }
+    // Record streak for any successful AI interaction
+    if (uid) recordActivityStreak(uid).catch(() => {})
     return { text: data.text, provider: 'mistral', remaining: data.remaining }
   } catch (e) {
     console.error('[AI] Network error:', e)
