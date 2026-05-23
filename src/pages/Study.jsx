@@ -382,9 +382,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
       // Parse Q:/A: format
       const parsed = []
       let current = null
-      for (const line of (res.text || '').split(/
-?
-/)) {
+      for (const line of (res.text || '').split('\n')) {
         const q = line.match(/^Q:\s*(.+)/)
         const a = line.match(/^A:\s*(.+)/)
         if (q) { if (current?.q && current?.a) parsed.push(current); current = { q: q[1].trim(), a: '' } }
