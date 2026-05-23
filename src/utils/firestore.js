@@ -131,7 +131,8 @@ export async function recordActivityStreak(uid) {
   const currentStreak = data.streak || 0
   const newStreak     = lastActivityStr === yesterdayStr ? currentStreak + 1 : 1
 
-  await updateDoc(ref, { streak: newStreak, lastActivityDate: todayStr })
+  const bestStreak = Math.max(newStreak, data.bestStreak || 0)
+  await updateDoc(ref, { streak: newStreak, bestStreak, lastActivityDate: todayStr })
   await awardXP(uid, 10, 'Daily streak')
   if (newStreak === 3)   await checkAndAwardBadge(uid, 'streak_3')
   if (newStreak === 7)   await checkAndAwardBadge(uid, 'streak_7')
