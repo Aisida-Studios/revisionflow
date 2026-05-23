@@ -33,135 +33,460 @@ function parseFlashcards(text) {
 }
 
 /* ── Flip card ─────────────────────────────────────────────────────────────── */
-function FlipCard({ card, index, total }) {
+function FlipCard({ card, index, total, onRate, showRate }) {
   const [flipped, setFlipped] = useState(false)
   useEffect(() => setFlipped(false), [index])
   return (
-    <div onClick={() => setFlipped(f => !f)} style={{ cursor: 'pointer', perspective: 1200, width: '100%', height: 280, userSelect: 'none' }}>
-      <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
-        <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', borderRadius: 16, background: 'linear-gradient(135deg,rgba(124,58,237,0.18),rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '28px 32px', gap: 16 }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Question {index + 1} of {total}</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.55 }}>{card.q}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>Tap to reveal answer</div>
-        </div>
-        <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 16, background: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06))', border: '1px solid rgba(16,185,129,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '28px 32px', gap: 16 }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Answer</div>
-          <div style={{ fontSize: '1rem', color: 'var(--text-primary)', textAlign: 'center', lineHeight: 1.65 }}>{card.a}</div>
+    <div style={{ width:'100%', maxWidth:560 }}>
+      <div onClick={() => setFlipped(f => !f)} style={{ cursor:'pointer', perspective:1200, width:'100%', height:260, userSelect:'none', marginBottom:16 }}>
+        <div style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform 0.42s cubic-bezier(0.4,0,0.2,1)', transform:flipped?'rotateY(180deg)':'rotateY(0deg)' }}>
+          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:16, background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.06))', border:'1px solid rgba(124,58,237,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
+            <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Card {index+1} of {total}</div>
+            <div style={{ fontSize:'1.1rem', fontWeight:600, color:'var(--text-primary)', textAlign:'center', lineHeight:1.55 }}>{card.q}</div>
+            <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:6 }}>Tap to flip</div>
+          </div>
+          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', transform:'rotateY(180deg)', borderRadius:16, background:'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.04))', border:'1px solid rgba(16,185,129,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
+            <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--success)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Answer</div>
+            <div style={{ fontSize:'1rem', color:'var(--text-primary)', textAlign:'center', lineHeight:1.65 }}>{card.a}</div>
+          </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function ConfidenceBar({ onRate }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-      {[{ label: "Didn't know", color: 'var(--danger)', val: 1 }, { label: 'Partially', color: 'var(--warning)', val: 2 }, { label: 'Got it!', color: 'var(--success)', val: 3 }].map(b => (
-        <button key={b.val} onClick={() => onRate(b.val)} style={{ padding: '8px 20px', borderRadius: 999, border: '1px solid ' + b.color, background: b.color + '22', color: b.color, fontWeight: 700, cursor: 'pointer', fontSize: '0.83rem' }}>{b.label}</button>
-      ))}
-    </div>
-  )
-}
-
-/* ── Study session ─────────────────────────────────────────────────────────── */
-function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
-  const [cards, setCards] = useState(initCards)
-  const [idx, setIdx] = useState(0)
-  const [scores, setScores] = useState([])
-  const [mode, setMode] = useState('study')
-  const [copied, setCopied] = useState(false)
-
-  function handleRate(val) {
-    const s = [...scores]; s[idx] = val; setScores(s)
-    if (idx < cards.length - 1) setIdx(i => i + 1)
-    else setMode('results')
-  }
-
-  function quizletCopy() {
-    navigator.clipboard.writeText(cards.map(c => c.q + '\t' + c.a).join('\n'))
-    setCopied(true)
-    toast.success('Copied! Go to Quizlet → Create → Import → Paste → Tab between term/definition → Import')
-    setTimeout(() => setCopied(false), 3000)
-  }
-
-  function downloadCSV() {
-    const csv = 'Question,Answer\n' + cards.map(c => '"' + c.q.replace(/"/g, '""') + '","' + c.a.replace(/"/g, '""') + '"').join('\n')
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: (subject || 'flashcards') + '.csv' })
-    a.click()
-  }
-
-  const got = scores.filter(s => s === 3).length
-  const partial = scores.filter(s => s === 2).length
-  const missed = scores.filter(s => s === 1).length
-
-  if (mode === 'results') return (
-    <div style={{ maxWidth: 520, margin: '0 auto' }}>
-      <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-        <div style={{ fontSize: '3rem', marginBottom: 12 }}>{got / cards.length >= 0.8 ? '🎉' : got / cards.length >= 0.5 ? '💪' : '📚'}</div>
-        <h3 style={{ marginBottom: 4 }}>Session complete!</h3>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>{title}</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 28 }}>
-          {[{ label: 'Got it', count: got, color: 'var(--success)' }, { label: 'Partial', count: partial, color: 'var(--warning)' }, { label: 'Missed', count: missed, color: 'var(--danger)' }].map(s => (
-            <div key={s.label} style={{ textAlign: 'center', padding: '10px 20px', background: 'var(--bg-surface)', borderRadius: 12, border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color }}>{s.count}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.label}</div>
-            </div>
+      {showRate && flipped && onRate && (
+        <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
+          {[{label:"Didn't know",c:'var(--danger)',v:1},{label:'Partially',c:'var(--warning)',v:2},{label:'Got it!',c:'var(--success)',v:3}].map(b => (
+            <button key={b.v} onClick={() => onRate(b.v)}
+              style={{ padding:'8px 18px', borderRadius:999, border:`1px solid ${b.c}`, background:b.c+'22', color:b.c, fontWeight:700, cursor:'pointer', fontSize:'0.82rem' }}>
+              {b.label}
+            </button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-          <button className="btn btn-primary" onClick={() => { setIdx(0); setScores([]); setMode('study') }}><RotateCcw size={15} /> Study again</button>
-          {onSave && <button className="btn btn-secondary" onClick={onSave}><Save size={15} /> Save set</button>}
-          <button className="btn btn-secondary" onClick={quizletCopy}>{copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Quizlet import</>}</button>
-          <button className="btn btn-secondary" onClick={downloadCSV}><Download size={14} /> CSV</button>
-          <button className="btn btn-ghost" onClick={onClose}><X size={14} /> Exit</button>
+      )}
+    </div>
+  )
+}
+
+function LearnMode({ cards, onDone }) {
+  const [queue,setQueue]     = useState(() => cards.map((c,i) => ({...c,_i:i,attempts:0})))
+  const [idx,setIdx]         = useState(0)
+  const [shown,setShown]     = useState(false)
+  const [done,setDone]       = useState([])
+  const [mastered,setMastered]= useState(new Set())
+  function rate(val) {
+    const card = queue[idx]
+    const correct = val === 3
+    if (correct) {
+      const nm = new Set(mastered); nm.add(card._i); setMastered(nm)
+      setDone(d => [...d, {...card,correct:true}])
+      const rest = queue.filter((_,i)=>i!==idx)
+      if (!rest.length) { onDone(done.length+1, cards.length); return }
+      setQueue(rest); setIdx(i=>Math.min(i,rest.length-1))
+    } else {
+      const updated = queue.filter((_,i)=>i!==idx)
+      updated.splice(Math.min(idx+3,updated.length),0,{...card,attempts:card.attempts+1})
+      setQueue(updated); setDone(d=>[...d,{...card,correct:false}]); setIdx(i=>Math.min(i,updated.length-1))
+    }
+    setShown(false)
+  }
+  if (!queue.length) return null
+  const card = queue[idx]
+  return (
+    <div>
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+          <span>{mastered.size}/{cards.length} mastered</span><span>{queue.length} remaining</span>
         </div>
-        <div style={{ padding: '12px 16px', background: 'rgba(124,58,237,0.08)', borderRadius: 10, border: '1px solid rgba(124,58,237,0.2)', textAlign: 'left', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          <strong style={{ color: 'var(--accent-light)' }}>Import to Quizlet:</strong> Click "Quizlet import" → quizlet.com/create → Import → Paste → Tab between term/definition → Import
+        <div style={{ height:6, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:Math.round(mastered.size/cards.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.4s' }} />
         </div>
       </div>
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <h4 style={{ marginBottom: 4 }}>All cards</h4>
-        {cards.map((c, i) => (
-          <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--bg-surface)', border: '1px solid ' + (scores[i] === 3 ? 'var(--success)' : scores[i] === 1 ? 'var(--danger)' : 'var(--border)') }}>
-            <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 4 }}>{c.q}</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.a}</div>
+      <div style={{ padding:'24px 28px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14, minHeight:160 }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:12 }}>
+          {card.attempts>0?`Revisiting (seen ${card.attempts}x)`:'Term'}
+        </div>
+        <div style={{ fontSize:'1.1rem', fontWeight:600, lineHeight:1.55, marginBottom:shown?16:0 }}>{card.q}</div>
+        {shown && <div style={{ borderTop:'1px solid var(--border)', paddingTop:14, marginTop:4 }}>
+          <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--success)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Definition</div>
+          <div style={{ fontSize:'0.95rem', lineHeight:1.6 }}>{card.a}</div>
+        </div>}
+      </div>
+      {!shown ? (
+        <button className="btn btn-primary" style={{ width:'100%' }} onClick={()=>setShown(true)}>Show answer</button>
+      ) : (
+        <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
+          {[{label:"Didn't know",c:'var(--danger)',v:1},{label:'Almost',c:'var(--warning)',v:2},{label:'Got it!',c:'var(--success)',v:3}].map(b=>(
+            <button key={b.v} onClick={()=>rate(b.v)} style={{ flex:1, minWidth:100, padding:'10px 14px', borderRadius:12, border:`1px solid ${b.c}`, background:b.c+'18', color:b.c, fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>{b.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WriteMode({ cards, onDone }) {
+  const [deck]            = useState(() => [...cards].sort(()=>Math.random()-.5))
+  const [idx,setIdx]      = useState(0)
+  const [input,setInput]  = useState('')
+  const [checked,setChecked]= useState(null)
+  const [scores,setScores]= useState([])
+  const inputRef = useRef(null)
+  useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
+  function fuzzy(a,b) {
+    const c = s=>s.toLowerCase().trim().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ')
+    const ca=c(a),cb=c(b); if(ca===cb) return true
+    if(Math.abs(ca.length-cb.length)>2) return false
+    let d=0; const lo=ca.length>cb.length?ca:cb,sh=ca.length>cb.length?cb:ca
+    for(let i=0;i<lo.length;i++){if(lo[i]!==sh[i])d++;if(d>Math.ceil(lo.length/8))return false}
+    return true
+  }
+  function check(){const ok=fuzzy(input,deck[idx].a);setChecked(ok?'correct':'wrong');setScores(s=>[...s,ok?1:0])}
+  function next(){if(idx>=deck.length-1){onDone(scores.filter(Boolean).length,deck.length);return}setIdx(i=>i+1)}
+  const card=deck[idx]
+  return (
+    <div>
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+          <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
+        </div>
+        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
+        </div>
+      </div>
+      <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Write the definition</div>
+        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:16 }}>{card.q}</div>
+        <textarea ref={inputRef} className="textarea"
+          style={{ minHeight:80, fontSize:'0.9rem', borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
+          value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'&&e.ctrlKey&&!checked)check()}}
+          placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
+        {checked && <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10,
+          background:checked==='correct'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
+          border:`1px solid ${checked==='correct'?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}` }}>
+          <div style={{ fontWeight:700, color:checked==='correct'?'var(--success)':'var(--danger)', marginBottom:4, fontSize:'0.85rem' }}>
+            {checked==='correct'?'Correct!':'Not quite — answer: '+card.a}
           </div>
+        </div>}
+      </div>
+      {!checked?<button className="btn btn-primary" style={{width:'100%'}} onClick={check} disabled={!input.trim()}>Check answer</button>
+        :<button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>}
+    </div>
+  )
+}
+
+function MatchMode({ cards, onDone }) {
+  const n = Math.min(6, cards.length)
+  function makeBoard() {
+    const picked = [...cards].sort(()=>Math.random()-.5).slice(0,n)
+    const terms = picked.map((c,i)=>({id:'t'+i,text:c.q,pairId:i,type:'term'}))
+    const defs  = picked.map((c,i)=>({id:'d'+i,text:c.a,pairId:i,type:'def'}))
+    return [...terms,...defs].sort(()=>Math.random()-.5)
+  }
+  const [tiles,setTiles]       = useState(makeBoard)
+  const [selected,setSelected] = useState(null)
+  const [matched,setMatched]   = useState(new Set())
+  const [wrong,setWrong]       = useState(new Set())
+  const [moves,setMoves]       = useState(0)
+  const [start]                = useState(Date.now())
+  const [elapsed,setElapsed]   = useState(0)
+  const [done,setDone]         = useState(false)
+  function pad2(n){return String(n).padStart(2,'0')}
+  useEffect(()=>{ if(done)return; const t=setInterval(()=>setElapsed(Math.floor((Date.now()-start)/1000)),500); return()=>clearInterval(t) },[done])
+  function select(tile) {
+    if(matched.has(tile.id)||wrong.has(tile.id))return
+    if(!selected){setSelected(tile);return}
+    if(selected.id===tile.id){setSelected(null);return}
+    setMoves(m=>m+1)
+    if(selected.pairId===tile.pairId&&selected.type!==tile.type){
+      const nm=new Set(matched);nm.add(selected.id);nm.add(tile.id);setMatched(nm);setSelected(null)
+      if(nm.size===tiles.length){setDone(true);onDone(n,n)}
+    } else {
+      setWrong(new Set([selected.id,tile.id]))
+      setTimeout(()=>{setWrong(new Set());setSelected(null)},800)
+    }
+  }
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:14, fontSize:'0.85rem', color:'var(--text-muted)' }}>
+        <span>Time: {Math.floor(elapsed/60)}:{pad2(elapsed%60)}</span>
+        <span>{matched.size/2}/{n} matched</span>
+        <span>{moves} moves</span>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+        {tiles.map(tile=>{
+          const isM=matched.has(tile.id),isW=wrong.has(tile.id),isS=selected?.id===tile.id
+          return <button key={tile.id} onClick={()=>!isM&&select(tile)}
+            style={{ padding:'14px 12px', borderRadius:12, border:'none', cursor:isM?'default':'pointer',
+              fontWeight:600, fontSize:'0.82rem', lineHeight:1.4, textAlign:'center', transition:'all 0.2s',
+              background:isM?'rgba(16,185,129,0.15)':isW?'rgba(239,68,68,0.12)':isS?'rgba(124,58,237,0.2)':'var(--bg-surface)',
+              border:`2px solid ${isM?'rgba(16,185,129,0.5)':isW?'rgba(239,68,68,0.5)':isS?'var(--accent)':'var(--border)'}`,
+              color:isM?'var(--success)':isW?'var(--danger)':isS?'var(--accent-light)':'var(--text-primary)',
+              transform:isS?'scale(1.03)':'scale(1)', opacity:isM?.6:1 }}>
+            {tile.text}
+          </button>
+        })}
+      </div>
+      {done&&<div style={{ marginTop:16, padding:'14px 18px', borderRadius:12, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', textAlign:'center' }}>
+        <span style={{ fontWeight:700, color:'var(--success)' }}>All matched in {Math.floor(elapsed/60)}:{pad2(elapsed%60)} with {moves} moves!</span>
+      </div>}
+    </div>
+  )
+}
+
+function SpellMode({ cards, onDone }) {
+  const [deck]              = useState(()=>[...cards].sort(()=>Math.random()-.5))
+  const [idx,setIdx]        = useState(0)
+  const [input,setInput]    = useState('')
+  const [checked,setChecked]= useState(null)
+  const [scores,setScores]  = useState([])
+  const inputRef = useRef(null)
+  useEffect(()=>{setInput('');setChecked(null);inputRef.current?.focus()},[idx])
+  const card=deck[idx]
+  const hint=card.a[0]+'_'.repeat(Math.max(0,card.a.length-1))
+  function check(){const ok=input.toLowerCase().trim()===card.a.toLowerCase().trim();setChecked(ok?'correct':'wrong');setScores(s=>[...s,ok?1:0])}
+  function next(){if(idx>=deck.length-1){onDone(scores.filter(Boolean).length,deck.length);return}setIdx(i=>i+1)}
+  return (
+    <div>
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+          <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
+        </div>
+        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3 }} />
+        </div>
+      </div>
+      <div style={{ padding:'20px 24px', borderRadius:14, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Spell the definition</div>
+        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:12 }}>{card.q}</div>
+        <div style={{ fontFamily:'monospace', fontSize:'1rem', color:'var(--text-muted)', letterSpacing:'0.15em', marginBottom:14, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:8 }}>{hint}</div>
+        <input ref={inputRef} className="input"
+          style={{ borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
+          value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'&&!checked)check()}}
+          placeholder="Spell out the full definition…" disabled={!!checked} />
+        {checked==='wrong'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--danger)', padding:'8px 12px', background:'rgba(239,68,68,0.08)', borderRadius:8, border:'1px solid rgba(239,68,68,0.2)' }}>
+          Correct spelling: <strong>{card.a}</strong>
+        </div>}
+        {checked==='correct'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--success)' }}>Correct!</div>}
+      </div>
+      {!checked?<button className="btn btn-primary" style={{width:'100%'}} onClick={check} disabled={!input.trim()}>Check spelling</button>
+        :<button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>}
+    </div>
+  )
+}
+
+function TestMode({ cards, onDone }) {
+  function build() {
+    return [...cards].sort(()=>Math.random()-.5).map((card,i)=>{
+      if(i%3===2) return {type:'write',card,answer:'',checked:null}
+      const wrong=cards.filter(c=>c.a!==card.a).sort(()=>Math.random()-.5).slice(0,3)
+      const opts=[...wrong,card].sort(()=>Math.random()-.5)
+      return {type:'mc',card,opts,selected:null,checked:null}
+    })
+  }
+  const [qs,setQs]       = useState(build)
+  const [idx,setIdx]     = useState(0)
+  const [finished,setFin]= useState(false)
+  function selectMC(opt) {
+    if(qs[idx].checked!==null)return
+    const u=[...qs]; u[idx]={...u[idx],selected:opt,checked:opt.a===u[idx].card.a?'correct':'wrong'}; setQs(u)
+  }
+  function submitWrite() {
+    const q=qs[idx]
+    const ok=q.answer.toLowerCase().trim()===q.card.a.toLowerCase().trim()||q.answer.toLowerCase().trim().includes(q.card.a.toLowerCase().trim().slice(0,8))
+    const u=[...qs]; u[idx]={...u[idx],checked:ok?'correct':'wrong'}; setQs(u)
+  }
+  function next() {
+    if(idx>=qs.length-1){const sc=qs.filter(q=>q.checked==='correct').length;setFin(true);onDone(sc,qs.length);return}
+    setIdx(i=>i+1)
+  }
+  if(finished)return null
+  const q=qs[idx]
+  return (
+    <div>
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+          <span>Q{idx+1}/{qs.length}</span><span>{qs.filter(q=>q.checked==='correct').length} correct</span>
+        </div>
+        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:Math.round(idx/qs.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
+        </div>
+      </div>
+      <div style={{ padding:'18px 22px', borderRadius:14, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>{q.type==='mc'?'Multiple choice':'Write the answer'}</div>
+        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:16 }}>{q.card.q}</div>
+        {q.type==='mc'&&<div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {q.opts.map((opt,i)=>{
+            const isC=opt.a===q.card.a,isSel=q.selected?.a===opt.a,ch=q.checked!==null
+            return <button key={i} onClick={()=>selectMC(opt)}
+              style={{ padding:'10px 16px', borderRadius:10, border:'none', cursor:ch?'default':'pointer',
+                textAlign:'left', fontSize:'0.88rem', lineHeight:1.4, fontWeight:isSel?700:500, transition:'all 0.2s',
+                background:!ch?(isSel?'rgba(124,58,237,0.15)':'var(--bg-hover)'):isC?'rgba(16,185,129,0.15)':isSel?'rgba(239,68,68,0.12)':'var(--bg-hover)',
+                border:`1.5px solid ${!ch?(isSel?'var(--accent)':'var(--border)'):isC?'rgba(16,185,129,0.5)':isSel?'rgba(239,68,68,0.5)':'var(--border)'}`,
+                color:!ch?'var(--text-primary)':isC?'var(--success)':isSel?'var(--danger)':'var(--text-muted)' }}>
+              <span style={{ marginRight:8, opacity:.6 }}>{['A','B','C','D'][i]}.</span>{opt.a}
+              {ch&&isC&&' ✓'}{ch&&isSel&&!isC&&' ✗'}
+            </button>
+          })}
+        </div>}
+        {q.type==='write'&&<div>
+          <textarea className="textarea"
+            style={{ minHeight:70, fontSize:'0.9rem', borderColor:q.checked==='correct'?'var(--success)':q.checked==='wrong'?'var(--danger)':undefined }}
+            value={q.answer} onChange={e=>{const u=[...qs];u[idx]={...u[idx],answer:e.target.value};setQs(u)}}
+            placeholder="Type your answer…" disabled={q.checked!==null} />
+          {q.checked&&<div style={{ marginTop:8, fontSize:'0.82rem', color:q.checked==='correct'?'var(--success)':'var(--danger)' }}>
+            {q.checked==='correct'?'Correct!':'Answer: '+q.card.a}
+          </div>}
+        </div>}
+      </div>
+      {q.checked===null&&q.type==='write'&&<button className="btn btn-primary" style={{width:'100%'}} onClick={submitWrite} disabled={!q.answer.trim()}>Check</button>}
+      {q.checked!==null&&<button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=qs.length-1?'Finish test':'Next'}</button>}
+    </div>
+  )
+}
+
+function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
+  const [cards,setCards]   = useState(()=>[...initCards])
+  const [mode,setMode]     = useState('select')
+  const [results,setResults]= useState(null)
+  const [idx,setIdx]       = useState(0)
+  const [scores,setScores] = useState([])
+  const [copied,setCopied] = useState(false)
+
+  function handleFlashRate(val) {
+    const s=[...scores]; s[idx]=val; setScores(s)
+    if(idx<cards.length-1) setIdx(i=>i+1)
+    else { setResults({got:s.filter(v=>v===3).length,total:cards.length,mode:'flash',scores:s}); setMode('results') }
+  }
+  function handleSubDone(correct,total) { setResults({got:correct,total,mode}); setMode('results') }
+  function restart(m) { setIdx(0); setScores([]); setResults(null); setMode(m||'select') }
+  function shuffle() { setCards(c=>[...c].sort(()=>Math.random()-.5)); setIdx(0); setScores([]) }
+  function quizletCopy() { navigator.clipboard.writeText(cards.map(c=>c.q+'\t'+c.a).join('\n')); setCopied(true); toast.success('Copied!'); setTimeout(()=>setCopied(false),3000) }
+  function downloadCSV() {
+    const csv='Question,Answer\n'+cards.map(c=>'"'+c.q.replace(/"/g,'""')+'","'+c.a.replace(/"/g,'""')+'"').join('\n')
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:(subject||'flashcards')+'.csv'}); a.click()
+  }
+
+  const MODES=[
+    {id:'flash', label:'Flash',  icon:'🃏', desc:'Flip cards, rate yourself'},
+    {id:'learn', label:'Learn',  icon:'🧠', desc:'Active recall until mastered'},
+    {id:'write', label:'Write',  icon:'✍️', desc:'Type the definition'},
+    {id:'spell', label:'Spell',  icon:'🔤', desc:'Spell out the answer'},
+    {id:'match', label:'Match',  icon:'🎯', desc:'Match terms to definitions'},
+    {id:'test',  label:'Test',   icon:'📝', desc:'Mixed quiz with score'},
+  ]
+
+  const TopBar = () => (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:8 }}>
+      <button className="btn btn-ghost btn-sm" onClick={mode==='select'?onClose:()=>setMode('select')}>
+        <ChevronLeft size={15}/> {mode==='select'?'Back':'Modes'}
+      </button>
+      <span style={{ fontSize:'0.82rem', color:'var(--text-muted)', fontWeight:600, maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</span>
+      <div style={{ display:'flex', gap:5 }}>
+        {mode==='flash'&&<button className="btn btn-ghost btn-sm" onClick={shuffle}><Shuffle size={14}/></button>}
+        <button className="btn btn-ghost btn-sm" onClick={quizletCopy}>{copied?<Check size={14}/>:<Copy size={14}/>}</button>
+        <button className="btn btn-ghost btn-sm" onClick={downloadCSV}><Download size={14}/></button>
+      </div>
+    </div>
+  )
+
+  if (mode==='select') return (
+    <div style={{ maxWidth:560, margin:'0 auto' }}>
+      <TopBar />
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
+        <span className="badge badge-purple">{cards.length} cards</span>
+        {subject&&<span className="badge badge-grey">{subject}</span>}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+        {MODES.map(m=>(
+          <button key={m.id} onClick={()=>setMode(m.id)}
+            style={{ padding:'16px 14px', borderRadius:14, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', textAlign:'left', transition:'all 0.18s' }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='rgba(124,58,237,0.05)'}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg-surface)'}}>
+            <div style={{ fontSize:'1.5rem', marginBottom:6 }}>{m.icon}</div>
+            <div style={{ fontWeight:700, fontSize:'0.9rem', marginBottom:3 }}>{m.label}</div>
+            <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', lineHeight:1.4 }}>{m.desc}</div>
+          </button>
         ))}
       </div>
     </div>
   )
 
-  return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button className="btn btn-ghost btn-sm" onClick={onClose}><ChevronLeft size={15} /> Back</button>
-        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{title}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setCards([...cards].sort(() => Math.random() - .5)); setIdx(0); setScores([]) }} title="Shuffle"><Shuffle size={14} /></button>
-          <button className="btn btn-ghost btn-sm" onClick={quizletCopy} title="Quizlet import">{copied ? <Check size={14} /> : <Copy size={14} />}</button>
-          <button className="btn btn-ghost btn-sm" onClick={downloadCSV} title="Download CSV"><Download size={14} /></button>
+  if (mode==='results'&&results) {
+    const pct=Math.round(results.got/results.total*100)
+    const emoji=pct>=90?'🏆':pct>=70?'🎉':pct>=50?'💪':'📚'
+    return (
+      <div style={{ maxWidth:520, margin:'0 auto' }}>
+        <TopBar />
+        <div className="card" style={{ textAlign:'center', padding:'28px 24px' }}>
+          <div style={{ fontSize:'3rem', marginBottom:10 }}>{emoji}</div>
+          <h3 style={{ marginBottom:4 }}>Session complete!</h3>
+          <div style={{ fontSize:'2rem', fontWeight:800, color:'var(--accent)', margin:'12px 0' }}>
+            {results.got}/{results.total} <span style={{ fontSize:'1rem', fontWeight:600, color:'var(--text-muted)' }}>{pct}%</span>
+          </div>
+          {results.scores&&(
+            <div style={{ display:'flex', gap:10, justifyContent:'center', marginBottom:20 }}>
+              {[{label:'Got it',count:results.scores.filter(v=>v===3).length,c:'var(--success)'},
+                {label:'Partial',count:results.scores.filter(v=>v===2).length,c:'var(--warning)'},
+                {label:'Missed',count:results.scores.filter(v=>v===1).length,c:'var(--danger)'}].map(s=>(
+                <div key={s.label} style={{ textAlign:'center', padding:'8px 16px', background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--border)' }}>
+                  <div style={{ fontSize:'1.4rem', fontWeight:800, color:s.c }}>{s.count}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
+            <button className="btn btn-primary" onClick={()=>restart(results.mode)}><RotateCcw size={14}/> Try again</button>
+            <button className="btn btn-secondary" onClick={()=>restart('select')}>Change mode</button>
+            {onSave&&<button className="btn btn-secondary" onClick={onSave}><Save size={14}/> Save set</button>}
+            <button className="btn btn-ghost" onClick={onClose}><X size={14}/> Exit</button>
+          </div>
+        </div>
+        {results.mode==='flash'&&results.scores&&(
+          <div style={{ marginTop:14 }}>
+            <h4 style={{ marginBottom:10, fontSize:'0.9rem' }}>All cards</h4>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {cards.map((c,i)=>(
+                <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-surface)',
+                  border:`1px solid ${results.scores[i]===3?'rgba(16,185,129,0.4)':results.scores[i]===1?'rgba(239,68,68,0.4)':'var(--border)'}` }}>
+                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (mode==='flash') return (
+    <div style={{ maxWidth:560, margin:'0 auto' }}>
+      <TopBar />
+      <div style={{ marginBottom:12 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', color:'var(--text-muted)', marginBottom:4 }}>
+          <span>{idx+1}/{cards.length}</span><span>{Math.round(idx/cards.length*100)}%</span>
+        </div>
+        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius:3, transition:'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          <span>{idx + 1} / {cards.length}</span>
-          <span>{Math.round(((idx) / cards.length) * 100)}%</span>
-        </div>
-        <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: ((idx + 1) / cards.length * 100) + '%', background: 'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius: 3, transition: 'width 0.3s' }} />
-        </div>
-      </div>
-      <FlipCard card={cards[idx]} index={idx} total={cards.length} />
-      <div style={{ marginTop: 16, marginBottom: 16 }}>
-        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10 }}>Tap card to flip · Rate your confidence:</p>
-        <ConfidenceBar onRate={handleRate} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}><ChevronLeft size={15} /> Prev</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setIdx(i => Math.min(cards.length - 1, i + 1))} disabled={idx === cards.length - 1}>Next <ChevronRight size={15} /></button>
+      <FlipCard card={cards[idx]} index={idx} total={cards.length} showRate onRate={handleFlashRate} />
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0}><ChevronLeft size={15}/> Prev</button>
+        <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<cards.length-1)setIdx(i=>i+1);else{setResults({got:scores.filter(v=>v===3).length,total:cards.length,mode:'flash',scores});setMode('results')}}}>
+          {idx<cards.length-1?<>Next <ChevronRight size={15}/></>:'Finish'}
+        </button>
       </div>
     </div>
   )
+
+  if (mode==='learn') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><LearnMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='write') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><WriteMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='spell') return <div style={{maxWidth:520,margin:'0 auto'}}><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='match') return <div style={{maxWidth:600,margin:'0 auto'}}><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='test')  return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><TestMode  cards={cards} onDone={handleSubDone} /></div>
+  return null
 }
 
 /* ── Save set modal ────────────────────────────────────────────────────────── */
