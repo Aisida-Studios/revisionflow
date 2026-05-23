@@ -69,7 +69,7 @@ export default function Analytics() {
     Promise.all([
       getDocs(collection(db, 'users', user.uid, 'sessions')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
       getPaperAttempts(user.uid, null),
-      getDocs(collection(db, 'users', user.uid, 'topicConfidence')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
+      getDocs(collection(db, 'users', user.uid, 'topics')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
     ]).then(([sess, atts, tops]) => {
       setSessions(sess)
       setAttempts(atts)
@@ -181,12 +181,12 @@ export default function Analytics() {
 
   const weakTopics = useMemo(() =>
     topics.filter(t => t.confidence <= 2).slice(0, 8)
-      .map(t => ({ subject: t.subject || '–', topic: t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
+      .map(t => ({ subject: t.subject || '–', topic: t.name || t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
   , [topics])
 
   const strongTopics = useMemo(() =>
     topics.filter(t => t.confidence >= 4).slice(0, 6)
-      .map(t => ({ subject: t.subject || '–', topic: t.topicName || t.topic || t.id }))
+      .map(t => ({ subject: t.subject || '–', topic: t.name || t.topicName || t.topic || t.id }))
   , [topics])
 
   // ── Grade trajectory ──────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ export default function Analytics() {
       if (d) sessionsPerDay[d] = (sessionsPerDay[d] || 0) + 1
     })
     const mostProductiveDay = Object.entries(sessionsPerDay).sort((a, b) => b[1] - a[1])[0]
-    const bestStreak = profile?.streak || 0
+    const bestStreak = profile?.bestStreak || profile?.streak || 0
     const subjectMins = {}
     completedSessions.forEach(s => {
       if (s.subject) subjectMins[s.subject] = (subjectMins[s.subject] || 0) + (parseInt(s.duration) || 45)
