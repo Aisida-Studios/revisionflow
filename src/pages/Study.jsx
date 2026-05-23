@@ -352,8 +352,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
   const SEP = { tab: '	', dash: ' - ', colon: ': ' }
 
   function parsePaste(text, sep) {
-    return text.split('
-')
+    return text.split(/\r?\n/)
       .map(line => {
         const idx = sep === '	' ? line.indexOf('	') : line.indexOf(sep)
         if (idx === -1) return null
