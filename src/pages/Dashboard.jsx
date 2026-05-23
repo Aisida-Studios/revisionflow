@@ -48,7 +48,17 @@ export default function Dashboard() {
   const [aiAdvice,       setAiAdvice]       = useState('')
   const [aiLoading,      setAiLoading]      = useState(false)
   const [dataLoading,    setDataLoading]    = useState(true)
-  const [showTour,       setShowTour]       = useState(!localStorage.getItem('tour_complete'))
+  // Tour: show only if profile says tourComplete is not set (new users) 
+  // Falls back to localStorage for backwards compatibility, but Firestore is source of truth
+  const [showTour, setShowTour] = useState(false)
+  useEffect(() => {
+    if (!profile) return
+    const localDone = localStorage.getItem('tour_complete')
+    const firestoreDone = profile.tourComplete
+    if (!localDone && !firestoreDone) {
+      setShowTour(true)
+    }
+  }, [profile?.uid])
   const [setupSkipped,   setSetupSkipped]   = useState(() => localStorage.getItem('setup-skipped') === '1')
 
   // Papers carousel
@@ -192,7 +202,17 @@ export default function Dashboard() {
 
   return (
     <>
-      {showTour && <TooltipTour onComplete={() => setShowTour(false)} />}
+      {showTour && <TooltipTour onComplete={async () => {
+        setShowTour(false)
+        localStorage.setItem('tour_complete', '1')
+        if (user) {
+          try {
+            const { updateDoc, doc } = await import('firebase/firestore')
+            const { db } = await import('../firebase')
+            await updateDoc(doc(db, 'users', user.uid), { tourComplete: true })
+          } catch (e) {}
+        }
+      }} />}
 
       {/* GDPR banner */}
       {!gdprConsent && (
