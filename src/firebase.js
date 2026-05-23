@@ -3,7 +3,7 @@
 // Get it from: Firebase Console → Project Settings → Your Apps → SDK setup and configuration
 
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
@@ -19,6 +19,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
+// Explicitly set local persistence so users stay signed in on mobile/PWA
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Auth persistence:', e))
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const googleProvider = new GoogleAuthProvider()
