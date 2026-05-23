@@ -427,8 +427,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
             <div>
               <label className="label">Paste your terms and definitions</label>
               <textarea className="textarea" style={{ minHeight: 160, fontFamily: 'monospace', fontSize: '0.82rem' }}
-                placeholder={'photosynthesis	the process by which plants convert light into energy
-mitosis	cell division producing two identical daughter cells'}
+                placeholder={"photosynthesis\tthe process by which plants convert light into energy\nmitosis\tcell division producing two identical daughter cells"}
                 value={pasteText} onChange={e => handlePasteChange(e.target.value)} />
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
                 Copy directly from Quizlet (Ctrl+A, Ctrl+C on a set) or paste tab-separated text. One card per line.
