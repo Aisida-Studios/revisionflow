@@ -238,60 +238,67 @@ Recommend ONE specific topic and explain:
 
 export async function markAnswer(subject, board, level, paper, question, markAllocation, studentAnswer, uid) {
   const isLevelBased = markAllocation >= 6
+  const isMaths = subject === 'Mathematics' || subject === 'Further Mathematics'
 
-  const prompt = `You are a chief ${board} ${subject} examiner marking a ${level} examination${paper ? ` Paper ${paper}` : ''}.
-Your marking must be STRICTLY in line with ${board} ${level} ${subject} mark schemes — not generic.
+  // Conservative marking system prompt — forces accuracy over generosity
+  const markerSystem = `You are a SENIOR PRINCIPAL EXAMINER for ${board} ${level} ${subject}. You have marked thousands of scripts.
 
-QUESTION [${markAllocation} marks]:
+CRITICAL MARKING RULES — you MUST follow these exactly:
+1. NEVER award marks for vague or generic statements. Every mark requires a specific, creditable point.
+2. If the student implies something but does not state it explicitly, do NOT award the mark unless the mark scheme specifically says "accept implied reference".
+3. For level-based questions: read the FULL answer before deciding the level. Do not upgrade for one good sentence in an otherwise weak answer.
+4. Be CONSERVATIVE. Real examiner research shows AI markers consistently over-mark by 15-25%. Correct for this by being strict.
+5. Max marks available is ${markAllocation}. You CANNOT award more than ${markAllocation}.
+6. If the answer is strong but has a small gap, award the mark band BELOW the top — reserve the top band for genuinely exceptional answers.
+7. Quote directly from the student's answer when awarding or denying marks. Do not paraphrase their words to make them seem better than they are.`
+
+  const prompt = `EXAMINATION PAPER: ${board} ${level} ${subject}${paper ? ` Paper ${paper}` : ''}
+TOTAL MARKS FOR THIS QUESTION: ${markAllocation}
+${isLevelBased ? `MARKING TYPE: Level-based (holistic — judge the overall quality, not just individual points)` : `MARKING TYPE: Point-mark (each distinct valid point = 1 mark, maximum ${markAllocation})`}
+
+QUESTION:
 ${question}
 
-STUDENT'S ANSWER:
+STUDENT'S ANSWER (mark exactly what is written — do not award marks for what they might have meant):
 ${studentAnswer}
 
-Mark this answer exactly as a ${board} examiner would. Respond in EXACTLY this format:
+---
 
-AWARDED MARKS: [number]/${markAllocation}
+Now mark this answer. Use EXACTLY this format — no deviations:
 
-${isLevelBased ? `LEVEL AWARDED: [Level X — copy the exact level descriptor for ${board} ${level} ${subject}]
+AWARDED MARKS: [X]/${markAllocation}
+${isLevelBased ? 'LEVEL: [Level 1 / 2 / 3 / 4 — state which and the mark range for that level]' : ''}
 
-` : ''}MARK SCHEME COMPARISON:
-${isLevelBased
-  ? `• [point from mark scheme met — quote the specific indicative content]
-• [point from mark scheme met]
-• [gap — missing indicative content that would have gained marks]
-• [gap — missing indicative content]`
-  : `• ✓ Award 1 mark: [specific point the student made that matches the mark scheme]
-• ✓ Award 1 mark: [another valid point]
-• ✗ Not awarded: [expected answer point that was absent or wrong]
-• ✗ Not awarded: [another missing point]`}
+CREDITED POINTS:
+[List only the points you are actually awarding marks for, one per line. Quote the student's exact words that earned each mark. If zero points earned, write "None — no creditable content identified."]
+
+POINTS NOT CREDITED:
+[List mark scheme points the student did not adequately address. Be specific about what was missing.]
 
 ANNOTATION:
-[Quote 2-3 specific phrases from the student's answer in "quotes" and explain exactly why each does/doesn't gain marks]
+[Pick 2-3 sentences from the student's answer. Quote them in "speech marks". For each, explain precisely why it does or does not gain marks — reference specific mark scheme criteria.]
 
-ASSESSMENT OBJECTIVE BREAKDOWN:
-${subject === 'Mathematics' || subject === 'Further Mathematics'
-  ? `• Method marks (M): [awarded/available]
-• Accuracy marks (A): [awarded/available]
-• Bonus marks (B): [awarded/available]`
-  : `• AO1 (Knowledge & Understanding): [marks awarded]/[available]
-• AO2 (Application): [marks awarded]/[available]
-• AO3 (Analysis & Evaluation): [marks awarded]/[available]`}
+${isMaths
+  ? `MARK BREAKDOWN:
+• Method marks (M): [X] — [which methods were shown correctly]
+• Accuracy marks (A): [X] — [which values were correct]
+• B marks (B): [X]`
+  : `AO BREAKDOWN:
+• AO1 Knowledge & Understanding: [X]/[available] — [brief reason]
+• AO2 Application: [X]/[available] — [brief reason]
+• AO3 Analysis & Evaluation: [X]/[available] — [brief reason]`}
 
-WHAT A GRADE ${level === 'GCSE' ? '9' : 'A*'} ANSWER INCLUDES:
-• [specific point or phrase that top answers use]
-• [specific point]
-• [specific technique or structure]
+GRADE BOUNDARY CONTEXT:
+[State roughly what raw mark this corresponds to as a grade — e.g. "This mark would typically correspond to a grade 6 on this paper"]
 
-HOW TO IMPROVE THIS ANSWER:
-1. [specific, actionable improvement — quote what to add or change]
-2. [specific improvement]
-3. [specific improvement]
+TO REACH THE NEXT MARK BAND:
+1. [Specific thing to add or change — quote from mark scheme indicative content]
+2. [Specific second improvement]
+3. [Specific third improvement]
 
-EXAMINER COMMENT: [One sentence written as a real examiner comment — the kind written on marked scripts]
+EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written on actual marked scripts, e.g. "Some relevant knowledge shown but analysis lacks development — candidate must engage more explicitly with the question's focus on..."]`
 
-PREDICTED FINAL GRADE IMPACT: [If this is typical of the student's work, what grade are they on track for? One sentence.]`
-
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, markerSystem, 8192, uid)
 }
 
 
