@@ -122,14 +122,114 @@ function LearnMode({ cards, onDone }) {
   )
 }
 
-function WriteMode({ cards, onDone }) {
-  const [deck]            = useState(() => [...cards].sort(()=>Math.random()-.5))
-  const [idx,setIdx]      = useState(0)
-  const [input,setInput]  = useState('')
-  const [checked,setChecked]= useState(null)
-  const [scores,setScores]= useState([])
+function AIWriteMarker({ question, correctAnswer, studentAnswer, uid, onResult }) {
+  const [loading, setLoading] = useState(false)
+  const [result,  setResult]  = useState(null)
+  const [disputed,setDisputed]= useState(false)
+  const [disputeNote,setDisputeNote]= useState('')
+  const [disputeResult,setDisputeResult]= useState(null)
+  const [disputeLoading,setDisputeLoading]= useState(false)
+
+  async function mark() {
+    setLoading(true)
+    try {
+      const { callAI } = await import('../utils/ai')
+      const prompt = `You are marking a student's written answer for a flashcard exercise. Be lenient — accept synonyms, paraphrases, and partial answers where the key concept is clearly demonstrated.
+
+Question: ${question}
+Correct answer: ${correctAnswer}
+Student's answer: ${studentAnswer}
+
+Respond in this exact format:
+VERDICT: CORRECT or INCORRECT
+SCORE: 1 or 0
+FEEDBACK: One sentence explaining your verdict.`
+      const res = await callAI(prompt, null, 300, uid)
+      if (res.error) { onResult(false, 'AI error'); return }
+      const text = res.text || ''
+      const correct = /VERDICT:\s*CORRECT/i.test(text)
+      const feedback = (text.match(/FEEDBACK:\s*(.+)/i) || [])[1] || (correct ? 'Good answer!' : 'Not quite right.')
+      setResult({ correct, feedback })
+      onResult(correct, feedback)
+    } catch(e) { onResult(false, 'Could not mark') }
+    finally { setLoading(false) }
+  }
+
+  async function dispute() {
+    if (!disputeNote.trim()) return
+    setDisputeLoading(true)
+    try {
+      const { callAI } = await import('../utils/ai')
+      const prompt = `A student is disputing their flashcard answer marking. Reconsider carefully.
+
+Question: ${question}
+Correct answer: ${correctAnswer}
+Student's answer: ${studentAnswer}
+Student's dispute: ${disputeNote}
+
+Be open-minded. If the student makes a valid point, change the verdict.
+Respond in this exact format:
+VERDICT: CORRECT or INCORRECT
+FEEDBACK: One sentence.`
+      const res = await callAI(prompt, null, 200, uid)
+      const text = res.text || ''
+      const correct = /VERDICT:\s*CORRECT/i.test(text)
+      const feedback = (text.match(/FEEDBACK:\s*(.+)/i) || [])[1] || 'Decision stands.'
+      setDisputeResult({ correct, feedback })
+      onResult(correct, feedback)
+    } catch(e) {}
+    finally { setDisputeLoading(false) }
+  }
+
+  if (!result && !loading) return (
+    <button className="btn btn-secondary btn-sm" onClick={mark} style={{ display:'flex', alignItems:'center', gap:6 }}>
+      <Zap size={13} /> AI Mark
+    </button>
+  )
+  if (loading) return <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>Marking…</span>
+
+  const final = disputeResult || result
+  return (
+    <div style={{ marginTop:10 }}>
+      <div style={{ padding:'10px 14px', borderRadius:10,
+        background: final.correct?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
+        border:`1px solid ${final.correct?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}`,
+        marginBottom:8 }}>
+        <div style={{ fontWeight:700, color:final.correct?'var(--success)':'var(--danger)', fontSize:'0.85rem', marginBottom:4 }}>
+          {final.correct ? '✓ Correct' : '✗ Incorrect'}
+        </div>
+        <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)' }}>{final.feedback}</div>
+      </div>
+      {!disputeResult && !final.correct && !disputed && (
+        <button className="btn btn-ghost btn-sm" onClick={() => setDisputed(true)} style={{ fontSize:'0.78rem' }}>
+          ⚖️ Dispute this mark
+        </button>
+      )}
+      {disputed && !disputeResult && (
+        <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
+          <input className="input" style={{ fontSize:'0.82rem', padding:'6px 10px' }}
+            value={disputeNote} onChange={e=>setDisputeNote(e.target.value)}
+            placeholder="Why do you think your answer is correct?" />
+          <button className="btn btn-secondary btn-sm" onClick={dispute} disabled={disputeLoading || !disputeNote.trim()}>
+            {disputeLoading ? '…' : 'Submit'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WriteMode({ cards, onDone, uid }) {
+  const [deck]              = useState(() => [...cards].sort(()=>Math.random()-.5))
+  const [idx,setIdx]        = useState(0)
+  const [input,setInput]    = useState('')
+  const [checked,setChecked]= useState(null) // null | 'correct' | 'wrong' | 'ai-pending'
+  const [scores,setScores]  = useState([])
+  const [aiUsed,setAiUsed]  = useState(false)
   const inputRef = useRef(null)
-  useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
+
+  useEffect(()=>{ setInput(''); setChecked(null); setAiUsed(false); inputRef.current?.focus() },[idx])
+
   function fuzzy(a,b) {
     const c = s=>s.toLowerCase().trim().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ')
     const ca=c(a),cb=c(b); if(ca===cb) return true
@@ -138,9 +238,26 @@ function WriteMode({ cards, onDone }) {
     for(let i=0;i<lo.length;i++){if(lo[i]!==sh[i])d++;if(d>Math.ceil(lo.length/8))return false}
     return true
   }
-  function check(){const ok=fuzzy(input,deck[idx].a);setChecked(ok?'correct':'wrong');setScores(s=>[...s,ok?1:0])}
-  function next(){if(idx>=deck.length-1){onDone(scores.filter(Boolean).length,deck.length);return}setIdx(i=>i+1)}
-  const card=deck[idx]
+
+  function check() {
+    const ok = fuzzy(input, deck[idx].a)
+    setChecked(ok ? 'correct' : 'wrong')
+    setScores(s=>[...s, ok?1:0])
+  }
+
+  function handleAIResult(correct) {
+    // Update the score for this card based on AI verdict
+    setScores(s => { const ns=[...s]; ns[idx]=correct?1:0; return ns })
+    setChecked(correct ? 'correct' : 'wrong')
+  }
+
+  function next() {
+    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length); return }
+    setIdx(i=>i+1)
+  }
+
+  const card = deck[idx]
+
   return (
     <div>
       <div style={{ marginBottom:14 }}>
@@ -159,16 +276,32 @@ function WriteMode({ cards, onDone }) {
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if(e.key==='Enter'&&e.ctrlKey&&!checked)check()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
-        {checked && <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10,
-          background:checked==='correct'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
-          border:`1px solid ${checked==='correct'?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}` }}>
-          <div style={{ fontWeight:700, color:checked==='correct'?'var(--success)':'var(--danger)', marginBottom:4, fontSize:'0.85rem' }}>
-            {checked==='correct'?'Correct!':'Not quite — answer: '+card.a}
+        {!checked && input.trim() && (
+          <div style={{ display:'flex', gap:8, marginTop:8, alignItems:'center' }}>
+            <button className="btn btn-primary btn-sm" onClick={check}>Check</button>
+            <span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>or</span>
+            <AIWriteMarker question={card.q} correctAnswer={card.a} studentAnswer={input} uid={uid}
+              onResult={(correct) => { handleAIResult(correct); setAiUsed(true) }} />
           </div>
-        </div>}
+        )}
+        {checked && !aiUsed && (
+          <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10,
+            background:checked==='correct'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
+            border:`1px solid ${checked==='correct'?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}` }}>
+            <div style={{ fontWeight:700, color:checked==='correct'?'var(--success)':'var(--danger)', marginBottom:4, fontSize:'0.85rem' }}>
+              {checked==='correct'?'Correct!':'Not quite'}
+            </div>
+            <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)', marginBottom:8 }}>
+              <span style={{ fontWeight:600 }}>Answer: </span>{card.a}
+            </div>
+            {checked==='wrong' && (
+              <AIWriteMarker question={card.q} correctAnswer={card.a} studentAnswer={input} uid={uid}
+                onResult={(correct) => handleAIResult(correct)} />
+            )}
+          </div>
+        )}
       </div>
-      {!checked?<button className="btn btn-primary" style={{width:'100%'}} onClick={check} disabled={!input.trim()}>Check answer</button>
-        :<button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>}
+      {checked && <button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>}
     </div>
   )
 }
@@ -274,77 +407,175 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone }) {
-  function build() {
-    return [...cards].sort(()=>Math.random()-.5).map((card,i)=>{
-      if(i%3===2) return {type:'write',card,answer:'',checked:null}
-      const wrong=cards.filter(c=>c.a!==card.a).sort(()=>Math.random()-.5).slice(0,3)
-      const opts=[...wrong,card].sort(()=>Math.random()-.5)
-      return {type:'mc',card,opts,selected:null,checked:null}
+function TestMode({ cards, onDone, uid }) {
+  // AI generates plausible wrong answers for MC questions
+  async function buildWithAI() {
+    // Build initial deck with real-card distractors as fallback
+    const shuffled = [...cards].sort(() => Math.random() - 0.5)
+    const deck = shuffled.map((card, i) => {
+      if (i % 3 === 2) return { type: 'write', card, answer: '', checked: null, opts: [] }
+      const realWrong = cards.filter(c => c.a !== card.a).sort(() => Math.random() - 0.5).slice(0, 3)
+      const opts = [...realWrong, card].sort(() => Math.random() - 0.5)
+      return { type: 'mc', card, opts, selected: null, checked: null, aiOpts: false }
     })
+    return deck
   }
-  const [qs,setQs]       = useState(build)
-  const [idx,setIdx]     = useState(0)
-  const [finished,setFin]= useState(false)
+
+  async function loadAIDistractors(deck, setQs) {
+    // For each MC question, generate AI distractors in the background
+    const mcIndices = deck.map((q, i) => q.type === 'mc' ? i : -1).filter(i => i >= 0)
+    if (!mcIndices.length) return
+    try {
+      const { callAI } = await import('../utils/ai')
+      // Batch all questions into one AI call for efficiency
+      const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('
+')
+      const prompt = `Generate 3 plausible but WRONG answer options for each flashcard question below. The wrong answers must be in the same style and length as the real answer but clearly incorrect. Return ONLY valid JSON array of arrays, no markdown:
+[["wrong1","wrong2","wrong3"],["wrong1","wrong2","wrong3"],...]
+
+Questions:
+${questions}`
+      const res = await callAI(prompt, null, 600, uid)
+      if (res.error || !res.text) return
+      const text = res.text.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(text)
+      if (!Array.isArray(parsed)) return
+      const updated = [...deck]
+      mcIndices.forEach((deckIdx, arrayIdx) => {
+        const wrongs = parsed[arrayIdx]
+        if (!Array.isArray(wrongs) || wrongs.length < 3) return
+        const opts = [
+          ...wrongs.slice(0, 3).map(a => ({ ...deck[deckIdx].card, a })),
+          deck[deckIdx].card,
+        ].sort(() => Math.random() - 0.5)
+        updated[deckIdx] = { ...updated[deckIdx], opts, aiOpts: true }
+      })
+      setQs(updated)
+    } catch(e) { /* silently use fallback distractors */ }
+  }
+
+  const [qs, setQs]         = useState([])
+  const [idx, setIdx]       = useState(0)
+  const [finished, setFin]  = useState(false)
+  const [building, setBuilding] = useState(true)
+
+  useEffect(() => {
+    buildWithAI().then(deck => {
+      setQs(deck)
+      setBuilding(false)
+      loadAIDistractors(deck, setQs)
+    })
+  }, [])
+
   function selectMC(opt) {
-    if(qs[idx].checked!==null)return
-    const u=[...qs]; u[idx]={...u[idx],selected:opt,checked:opt.a===u[idx].card.a?'correct':'wrong'}; setQs(u)
+    if (qs[idx].checked !== null) return
+    const u = [...qs]
+    u[idx] = { ...u[idx], selected: opt, checked: opt.a === u[idx].card.a ? 'correct' : 'wrong' }
+    setQs(u)
   }
+
   function submitWrite() {
-    const q=qs[idx]
-    const ok=q.answer.toLowerCase().trim()===q.card.a.toLowerCase().trim()||q.answer.toLowerCase().trim().includes(q.card.a.toLowerCase().trim().slice(0,8))
-    const u=[...qs]; u[idx]={...u[idx],checked:ok?'correct':'wrong'}; setQs(u)
+    const q = qs[idx]
+    const ok = q.answer.toLowerCase().trim() === q.card.a.toLowerCase().trim() ||
+      q.answer.toLowerCase().trim().includes(q.card.a.toLowerCase().trim().slice(0, 8))
+    const u = [...qs]; u[idx] = { ...u[idx], checked: ok ? 'correct' : 'wrong' }; setQs(u)
   }
+
+  function handleWriteAI(correct) {
+    const u = [...qs]; u[idx] = { ...u[idx], checked: correct ? 'correct' : 'wrong' }; setQs(u)
+  }
+
   function next() {
-    if(idx>=qs.length-1){const sc=qs.filter(q=>q.checked==='correct').length;setFin(true);onDone(sc,qs.length);return}
-    setIdx(i=>i+1)
+    if (idx >= qs.length - 1) {
+      const sc = qs.filter(q => q.checked === 'correct').length
+      setFin(true); onDone(sc, qs.length); return
+    }
+    setIdx(i => i + 1)
   }
-  if(finished)return null
-  const q=qs[idx]
+
+  if (building || !qs.length) return (
+    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '0.9rem' }}>Building your test…</div>
+    </div>
+  )
+  if (finished) return null
+
+  const q = qs[idx]
   return (
     <div>
-      <div style={{ marginBottom:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
-          <span>Q{idx+1}/{qs.length}</span><span>{qs.filter(q=>q.checked==='correct').length} correct</span>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
+          <span>Q{idx+1}/{qs.length}</span>
+          <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
         </div>
-        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:Math.round(idx/qs.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
+        <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: Math.round(idx/qs.length*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ padding:'18px 22px', borderRadius:14, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>{q.type==='mc'?'Multiple choice':'Write the answer'}</div>
-        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:16 }}>{q.card.q}</div>
-        {q.type==='mc'&&<div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {q.opts.map((opt,i)=>{
-            const isC=opt.a===q.card.a,isSel=q.selected?.a===opt.a,ch=q.checked!==null
-            return <button key={i} onClick={()=>selectMC(opt)}
-              style={{ padding:'10px 16px', borderRadius:10, border:'none', cursor:ch?'default':'pointer',
-                textAlign:'left', fontSize:'0.88rem', lineHeight:1.4, fontWeight:isSel?700:500, transition:'all 0.2s',
-                background:!ch?(isSel?'rgba(124,58,237,0.15)':'var(--bg-hover)'):isC?'rgba(16,185,129,0.15)':isSel?'rgba(239,68,68,0.12)':'var(--bg-hover)',
-                border:`1.5px solid ${!ch?(isSel?'var(--accent)':'var(--border)'):isC?'rgba(16,185,129,0.5)':isSel?'rgba(239,68,68,0.5)':'var(--border)'}`,
-                color:!ch?'var(--text-primary)':isC?'var(--success)':isSel?'var(--danger)':'var(--text-muted)' }}>
-              <span style={{ marginRight:8, opacity:.6 }}>{['A','B','C','D'][i]}.</span>{opt.a}
-              {ch&&isC&&' ✓'}{ch&&isSel&&!isC&&' ✗'}
-            </button>
-          })}
-        </div>}
-        {q.type==='write'&&<div>
-          <textarea className="textarea"
-            style={{ minHeight:70, fontSize:'0.9rem', borderColor:q.checked==='correct'?'var(--success)':q.checked==='wrong'?'var(--danger)':undefined }}
-            value={q.answer} onChange={e=>{const u=[...qs];u[idx]={...u[idx],answer:e.target.value};setQs(u)}}
-            placeholder="Type your answer…" disabled={q.checked!==null} />
-          {q.checked&&<div style={{ marginTop:8, fontSize:'0.82rem', color:q.checked==='correct'?'var(--success)':'var(--danger)' }}>
-            {q.checked==='correct'?'Correct!':'Answer: '+q.card.a}
-          </div>}
-        </div>}
+      <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {q.type === 'mc' ? 'Multiple choice' : 'Written answer'}
+          </div>
+          {q.type === 'mc' && q.aiOpts && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>✨ AI options</span>}
+        </div>
+        <div style={{ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.55, marginBottom: 16 }}>{q.card.q}</div>
+        {q.type === 'mc' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {q.opts.map((opt, i) => {
+              const isC = opt.a === q.card.a, isSel = q.selected?.a === opt.a, ch = q.checked !== null
+              return (
+                <button key={i} onClick={() => selectMC(opt)}
+                  style={{ padding: '10px 16px', borderRadius: 10, border: 'none', cursor: ch ? 'default' : 'pointer',
+                    textAlign: 'left', fontSize: '0.88rem', lineHeight: 1.4, fontWeight: isSel ? 700 : 500, transition: 'all 0.2s',
+                    background: !ch ? (isSel ? 'rgba(124,58,237,0.15)' : 'var(--bg-hover)') : isC ? 'rgba(16,185,129,0.15)' : isSel ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)',
+                    border: `1.5px solid ${!ch ? (isSel ? 'var(--accent)' : 'var(--border)') : isC ? 'rgba(16,185,129,0.5)' : isSel ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
+                    color: !ch ? 'var(--text-primary)' : isC ? 'var(--success)' : isSel ? 'var(--danger)' : 'var(--text-muted)' }}>
+                  <span style={{ marginRight: 8, opacity: .6 }}>{['A','B','C','D'][i]}.</span>{opt.a}
+                  {ch && isC && ' ✓'}{ch && isSel && !isC && ' ✗'}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {q.type === 'write' && (
+          <div>
+            <textarea className="textarea"
+              style={{ minHeight: 70, fontSize: '0.9rem', borderColor: q.checked === 'correct' ? 'var(--success)' : q.checked === 'wrong' ? 'var(--danger)' : undefined }}
+              value={q.answer}
+              onChange={e => { const u = [...qs]; u[idx] = { ...u[idx], answer: e.target.value }; setQs(u) }}
+              placeholder="Type your answer…" disabled={q.checked !== null} />
+            {q.checked && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: '0.82rem', color: q.checked === 'correct' ? 'var(--success)' : 'var(--danger)', marginBottom: 6 }}>
+                  {q.checked === 'correct' ? 'Correct!' : 'Answer: ' + q.card.a}
+                </div>
+                {q.checked === 'wrong' && (
+                  <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
+                    onResult={(correct) => handleWriteAI(correct)} />
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      {q.checked===null&&q.type==='write'&&<button className="btn btn-primary" style={{width:'100%'}} onClick={submitWrite} disabled={!q.answer.trim()}>Check</button>}
-      {q.checked!==null&&<button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=qs.length-1?'Finish test':'Next'}</button>}
+      {q.checked === null && q.type === 'write' && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={submitWrite} disabled={!q.answer.trim()}>Check</button>
+          <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
+            onResult={(correct) => handleWriteAI(correct)} />
+        </div>
+      )}
+      {q.checked !== null && (
+        <button className="btn btn-primary" style={{ width: '100%' }} onClick={next}>
+          {idx >= qs.length - 1 ? 'Finish test' : 'Next'}
+        </button>
+      )}
     </div>
   )
 }
 
-function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
+function StudySession({ cards: initCards, title, subject, onClose, onSave, uid }) {
   const [cards,setCards]   = useState(()=>[...initCards])
   const [mode,setMode]     = useState('select')
   const [results,setResults]= useState(null)
@@ -482,10 +713,10 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave }) {
   )
 
   if (mode==='learn') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><LearnMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='write') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><WriteMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='write') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><WriteMode cards={cards} onDone={handleSubDone} uid={uid} /></div>
   if (mode==='spell') return <div style={{maxWidth:520,margin:'0 auto'}}><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
   if (mode==='match') return <div style={{maxWidth:600,margin:'0 auto'}}><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='test')  return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><TestMode  cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='test')  return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} /></div>
   return null
 }
 
@@ -807,6 +1038,174 @@ function PasteImportModal({ subjects, onImport, onClose }) {
   )
 }
 
+/* ── Quiz tab ───────────────────────────────────────────────────────────────── */
+function QuizTab({ mySets, uid, profile }) {
+  const [selectedSet, setSelectedSet] = useState(null)
+  const [quizMode,    setQuizMode]    = useState('mc')    // 'mc' | 'write' | 'mixed'
+  const [questionCount, setQCount]    = useState(10)
+  const [started,     setStarted]     = useState(false)
+  const [results,     setResults]     = useState(null)
+
+  const subjects = profile?.subjects?.map(s => s.name) || []
+
+  if (results) return (
+    <div style={{ maxWidth: 520, margin: '0 auto' }}>
+      <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
+        {(() => {
+          const pct = Math.round(results.got / results.total * 100)
+          const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
+          return (
+            <>
+              <div style={{ fontSize: '3rem', marginBottom: 10 }}>{emoji}</div>
+              <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent)', margin: '12px 0' }}>
+                {results.got}/{results.total}
+                <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>{pct}%</span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.875rem' }}>
+                from <strong>{selectedSet?.title}</strong>
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btn-primary" onClick={() => { setResults(null); setStarted(false) }}>
+                  <RotateCcw size={14} /> Try again
+                </button>
+                <button className="btn btn-secondary" onClick={() => { setResults(null); setStarted(false); setSelectedSet(null) }}>
+                  Change set
+                </button>
+              </div>
+            </>
+          )
+        })()}
+      </div>
+    </div>
+  )
+
+  if (started && selectedSet) {
+    const quizCards = [...selectedSet.cards].sort(() => Math.random() - 0.5).slice(0, questionCount)
+    return (
+      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}>
+            <ChevronLeft size={15} /> Back
+          </button>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
+          <span className="badge badge-purple">{quizCards.length} questions</span>
+        </div>
+        {(quizMode === 'mc' || quizMode === 'mixed') && (
+          <TestMode cards={quizCards} uid={uid}
+            onDone={(got, total) => setResults({ got, total })} />
+        )}
+        {quizMode === 'write' && (
+          <WriteMode cards={quizCards} uid={uid}
+            onDone={(got, total) => setResults({ got, total })} />
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h3 style={{ marginBottom: 6 }}>Quiz</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          Test yourself on a flashcard set. Premade quizzes coming soon.
+        </p>
+      </div>
+
+      {/* Set picker */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>1. Choose a set</h4>
+        {mySets.length === 0 ? (
+          <div className="empty-state" style={{ padding: '16px 0' }}>
+            <BookOpen size={32} style={{ opacity: 0.3 }} />
+            <p>No saved sets yet — generate or create flashcards first</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {mySets.map(set => (
+              <button key={set.id} onClick={() => setSelectedSet(set)}
+                style={{ padding: '12px 16px', borderRadius: 10, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+                  background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {set.subject} · {set.cards?.length || 0} cards
+                    </div>
+                  </div>
+                  {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quiz options */}
+      {selectedSet && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>2. Quiz settings</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label className="label">Question format</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'mc',    label: 'Multiple choice', desc: 'Pick the right answer' },
+                  { id: 'write', label: 'Written',         desc: 'Type your answer (AI marked)' },
+                  { id: 'mixed', label: 'Mixed',           desc: 'Both formats' },
+                ].map(m => (
+                  <button key={m.id} onClick={() => setQuizMode(m.id)}
+                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 10,
+                      border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
+                      background: quizMode === m.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                      cursor: 'pointer', textAlign: 'left' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.label}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="label">Number of questions</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[5, 10, 15, 20, selectedSet.cards?.length].filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0)).map(n => (
+                  <button key={n} onClick={() => setQCount(n)}
+                    style={{ padding: '6px 14px', borderRadius: 20,
+                      border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
+                      background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
+                      color: questionCount === n ? 'white' : 'var(--text-primary)',
+                      cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                    {n === selectedSet.cards?.length ? `All (${n})` : n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start button */}
+      {selectedSet && (
+        <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
+          onClick={() => setStarted(true)}>
+          Start quiz — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
+        </button>
+      )}
+
+      {/* Coming soon */}
+      <div className="card" style={{ marginTop: 20, opacity: 0.6 }}>
+        <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Coming soon</h4>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {['📚 Premade quizzes by topic', '🏆 Timed challenge mode', '📊 Quiz history & scores', '🤝 Public quiz sets'].map(f => (
+            <span key={f} className="badge badge-grey" style={{ fontSize: '0.75rem' }}>{f}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function Study() {
   const { user, profile } = useAuth()
@@ -997,7 +1396,7 @@ export default function Study() {
   // If studying a set
   if (studyCards) return (
     <div className="fade-in">
-      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => setStudyCards(null)} onSave={() => setShowSave(true)} />
+      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => setStudyCards(null)} onSave={() => setShowSave(true)} uid={user?.uid} />
       {showSave && <SaveSetModal cards={studyCards} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
     </div>
   )
@@ -1020,8 +1419,9 @@ export default function Study() {
       </div>
 
       {/* Main tabs */}
-      <div className="tabs" style={{ marginBottom: 24, padding: 4 }}>
+      <div className="tabs" style={{ marginBottom: 24, padding: 4, flexWrap: 'wrap' }}>
         <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><BookOpen size={15} /> Flashcards</button>
+        <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ClipboardList size={15} /> Quiz</button>
         <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
         <button className={'tab' + (tab === 'marker' ? ' active' : '')} onClick={() => setTab('marker')}><Brain size={15} /> Answer Marker</button>
       </div>
@@ -1131,6 +1531,11 @@ export default function Study() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── QUIZ ── */}
+      {tab === 'quiz' && (
+        <QuizTab mySets={mySets} uid={user?.uid} profile={profile} />
       )}
 
       {/* ── EXAM QUESTIONS ── */}
