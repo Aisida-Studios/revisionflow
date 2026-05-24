@@ -45,7 +45,7 @@ const AMBIENTS = [
 /* ─── Music playlists ─────────────────────────────────────────── */
 const PLAYLISTS = [
   // IDs verified against search results May 2026
-  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Lofi Girl 24/7',      vid: 'jfKfPfyJRdk', thumb: '🎵' },
+  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Lofi Girl mix',        vid: 'CFGLoQIhmow', thumb: '🎵' },
   { id: 'lofi2',      label: 'Lofi Mix',         sub: 'Beats to study to',   vid: 'CFGLoQIhmow', thumb: '🎵' },
   { id: 'classical',  label: 'Classical',        sub: 'Mozart & Vivaldi',    vid: 'BMuknRb7woc', thumb: '🎻' },
   { id: 'classical2', label: 'Classical Piano',  sub: '4 hours Halidon',     vid: 'PkjATKxRDO0', thumb: '🎼' },
