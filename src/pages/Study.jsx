@@ -1,5 +1,5 @@
 // src/pages/Study.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   checkAndAwardBadge, autoCompleteQuest,
@@ -1205,6 +1205,30 @@ function QuizTab({ mySets, uid, profile }) {
   )
 }
 
+/* ── Mark scheme reveal (controlled state, no <details>) ────────── */
+function MarkSchemeReveal({ text }) {
+  const [shown, setShown] = useState(false)
+  return (
+    <div style={{ marginTop: 12 }}>
+      <button
+        onClick={() => setShown(s => !s)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+          background: 'rgba(16,185,129,0.07)', borderRadius: 7,
+          border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer',
+          fontSize: '0.8rem', fontWeight: 700, color: 'var(--success)', width: '100%' }}>
+        <span style={{ transition: 'transform 0.2s', display: 'inline-block', transform: shown ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+        {shown ? 'Hide mark scheme' : 'Reveal mark scheme'}
+      </button>
+      {shown && (
+        <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(16,185,129,0.05)',
+          borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
+          <AIOutput text={text} label="Mark scheme" compact />
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function Study() {
   const { user, profile } = useAuth()
@@ -1598,14 +1622,7 @@ export default function Study() {
                       <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
                         <AIOutput text={questionPart} label={'Question ' + (i + 1)} compact />
                         {schemePart && (
-                          <details style={{ marginTop: 12 }}>
-                            <summary style={{ cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: 'var(--success)', userSelect: 'none', padding: '6px 10px', background: 'rgba(16,185,129,0.07)', borderRadius: 7, border: '1px solid rgba(16,185,129,0.2)', listStyle: 'none' }}>
-                              ▶ Reveal mark scheme
-                            </summary>
-                            <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(16,185,129,0.05)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
-                              <AIOutput text={schemePart} label="Mark scheme" compact />
-                            </div>
-                          </details>
+                          <MarkSchemeReveal text={schemePart} />
                         )}
                       </div>
                     )
