@@ -428,8 +428,7 @@ function TestMode({ cards, onDone, uid }) {
     try {
       const { callAI } = await import('../utils/ai')
       // Batch all questions into one AI call for efficiency
-      const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('
-')
+      const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
       const prompt = `Generate 3 plausible but WRONG answer options for each flashcard question below. The wrong answers must be in the same style and length as the real answer but clearly incorrect. Return ONLY valid JSON array of arrays, no markdown:
 [["wrong1","wrong2","wrong3"],["wrong1","wrong2","wrong3"],...]
 
