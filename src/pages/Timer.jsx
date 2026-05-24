@@ -1,7 +1,7 @@
 // src/pages/Timer.jsx — Professional Focus Timer
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTimer } from '../context/TimerContext'
-import { startSound, stopSound, setVolume } from '../utils/timerSounds'
+import { startSound, stopSound, setVolume as setSoundVolume } from '../utils/timerSounds'
 import { awardTimerXP, recordActivityStreak } from '../utils/firestore'
 import { useAuth } from '../context/AuthContext'
 
@@ -44,14 +44,17 @@ const AMBIENTS = [
 
 /* ─── Music playlists ─────────────────────────────────────────── */
 const PLAYLISTS = [
-  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Relaxed beats',       vid: '5qap5aO4i9A', thumb: '🎵' },
-  { id: 'classical',  label: 'Classical Focus',  sub: 'Calm concentration',  vid: '4vHDjBFWvqA', thumb: '🎻' },
+  // IDs verified against search results May 2026
+  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Lofi Girl 24/7',      vid: 'jfKfPfyJRdk', thumb: '🎵' },
+  { id: 'lofi2',      label: 'Lofi Mix',         sub: 'Beats to study to',   vid: 'CFGLoQIhmow', thumb: '🎵' },
+  { id: 'classical',  label: 'Classical',        sub: 'Mozart & Vivaldi',    vid: 'BMuknRb7woc', thumb: '🎻' },
+  { id: 'classical2', label: 'Classical Piano',  sub: '4 hours Halidon',     vid: 'PkjATKxRDO0', thumb: '🎼' },
+  { id: 'piano',      label: 'Solo Piano',       sub: 'Calm & focus',        vid: 'oiGmGFxsJi8', thumb: '🎹' },
   { id: 'rain',       label: 'Rain Sounds',      sub: 'Sleep & focus',       vid: 'q76bMs-NwRk', thumb: '🌧' },
-  { id: 'jazz',       label: 'Jazz',             sub: 'Smooth & warm',       vid: 'Dx5qFachd3A', thumb: '🎷' },
-  { id: 'piano',      label: 'Solo Piano',       sub: 'Pure focus',          vid: '9bZkp7q19f0', thumb: '🎹' },
   { id: 'ambient',    label: 'Ambient',          sub: 'Atmospheric',         vid: 'HGl75kurxok', thumb: '🌌' },
   { id: 'brownnoise', label: 'Brown Noise',      sub: 'Deep concentration',  vid: 'RqzGzwTY-6w', thumb: '🟤' },
   { id: 'nature',     label: 'Nature Sounds',    sub: 'Outdoors',            vid: 'eKFTSSKCzWA', thumb: '🍃' },
+  { id: 'jazz',       label: 'Jazz',             sub: '1AM study session',   vid: 'lTRiuFIWV54', thumb: '🎷' },
 ]
 
 /* ─── Alert tones ─────────────────────────────────────────────── */
@@ -372,7 +375,7 @@ export default function Timer() {
 
   // ── Volume change (live, no restart needed) ────────────────────
   useEffect(() => {
-    if (timer.cdRunning && ambient !== 'none') setVolume(volume)
+    if (timer.cdRunning && ambient !== 'none') setSoundVolume(volume)
   }, [volume])
 
   // ── Timer finish ───────────────────────────────────────────────
