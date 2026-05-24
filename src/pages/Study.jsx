@@ -122,13 +122,18 @@ function LearnMode({ cards, onDone }) {
   )
 }
 
-function AIWriteMarker({ question, correctAnswer, studentAnswer, uid, onResult }) {
+function AIWriteMarker({ question, correctAnswer, studentAnswer, uid, onResult, autoMark = false }) {
   const [loading, setLoading] = useState(false)
   const [result,  setResult]  = useState(null)
   const [disputed,setDisputed]= useState(false)
   const [disputeNote,setDisputeNote]= useState('')
   const [disputeResult,setDisputeResult]= useState(null)
   const [disputeLoading,setDisputeLoading]= useState(false)
+
+  // Auto-trigger marking when mounted with autoMark prop
+  useEffect(() => {
+    if (autoMark && !result && !loading) mark()
+  }, [autoMark])
 
   async function mark() {
     setLoading(true)
@@ -223,31 +228,19 @@ function WriteMode({ cards, onDone, uid }) {
   const [deck]              = useState(() => [...cards].sort(()=>Math.random()-.5))
   const [idx,setIdx]        = useState(0)
   const [input,setInput]    = useState('')
-  const [checked,setChecked]= useState(null) // null | 'correct' | 'wrong' | 'ai-pending'
+  const [checked,setChecked]= useState(null) // null | 'pending' | 'correct' | 'wrong'
   const [scores,setScores]  = useState([])
-  const [aiUsed,setAiUsed]  = useState(false)
   const inputRef = useRef(null)
 
-  useEffect(()=>{ setInput(''); setChecked(null); setAiUsed(false); inputRef.current?.focus() },[idx])
-
-  function fuzzy(a,b) {
-    const c = s=>s.toLowerCase().trim().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ')
-    const ca=c(a),cb=c(b); if(ca===cb) return true
-    if(Math.abs(ca.length-cb.length)>2) return false
-    let d=0; const lo=ca.length>cb.length?ca:cb,sh=ca.length>cb.length?cb:ca
-    for(let i=0;i<lo.length;i++){if(lo[i]!==sh[i])d++;if(d>Math.ceil(lo.length/8))return false}
-    return true
-  }
-
-  function check() {
-    const ok = fuzzy(input, deck[idx].a)
-    setChecked(ok ? 'correct' : 'wrong')
-    setScores(s=>[...s, ok?1:0])
-  }
+  useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
 
   function handleAIResult(correct) {
-    // Update the score for this card based on AI verdict
-    setScores(s => { const ns=[...s]; ns[idx]=correct?1:0; return ns })
+    // Called by AIWriteMarker with the AI verdict — sets final state and records score
+    setScores(s => {
+      const ns = [...s]
+      ns[idx] = correct ? 1 : 0
+      return ns
+    })
     setChecked(correct ? 'correct' : 'wrong')
   }
 
@@ -276,32 +269,22 @@ function WriteMode({ cards, onDone, uid }) {
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if(e.key==='Enter'&&e.ctrlKey&&!checked)check()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
-        {!checked && input.trim() && (
-          <div style={{ display:'flex', gap:8, marginTop:8, alignItems:'center' }}>
-            <button className="btn btn-primary btn-sm" onClick={check}>Check</button>
-            <span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>or</span>
+        {/* AI marking shown once answer is submitted */}
+        {checked && (
+          <div style={{ marginTop:10 }}>
             <AIWriteMarker question={card.q} correctAnswer={card.a} studentAnswer={input} uid={uid}
-              onResult={(correct) => { handleAIResult(correct); setAiUsed(true) }} />
-          </div>
-        )}
-        {checked && !aiUsed && (
-          <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10,
-            background:checked==='correct'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
-            border:`1px solid ${checked==='correct'?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}` }}>
-            <div style={{ fontWeight:700, color:checked==='correct'?'var(--success)':'var(--danger)', marginBottom:4, fontSize:'0.85rem' }}>
-              {checked==='correct'?'Correct!':'Not quite'}
-            </div>
-            <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)', marginBottom:8 }}>
-              <span style={{ fontWeight:600 }}>Answer: </span>{card.a}
-            </div>
-            {checked==='wrong' && (
-              <AIWriteMarker question={card.q} correctAnswer={card.a} studentAnswer={input} uid={uid}
-                onResult={(correct) => handleAIResult(correct)} />
-            )}
+              onResult={(correct) => handleAIResult(correct)} autoMark />
           </div>
         )}
       </div>
-      {checked && <button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>}
+      {!checked && (
+        <button className="btn btn-primary" style={{width:'100%'}} onClick={()=>setChecked('pending')} disabled={!input.trim()}>
+          Submit answer
+        </button>
+      )}
+      {checked && checked !== 'pending' && (
+        <button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>
+      )}
     </div>
   )
 }
@@ -429,10 +412,20 @@ function TestMode({ cards, onDone, uid }) {
       const { callAI } = await import('../utils/ai')
       // Batch all questions into one AI call for efficiency
       const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
-      const prompt = `Generate 3 plausible but WRONG answer options for each flashcard question below. The wrong answers must be in the same style and length as the real answer but clearly incorrect. Return ONLY valid JSON array of arrays, no markdown:
-[["wrong1","wrong2","wrong3"],["wrong1","wrong2","wrong3"],...]
+      const prompt = `You are generating multiple choice distractors for a flashcard quiz. For each question below, generate exactly 3 wrong answer options.
 
-Questions:
+RULES for good distractors:
+- Same length and style as the real answer (if the answer is 2 sentences, make distractors 2 sentences)
+- Use correct subject terminology — they must sound like they could be right
+- Change 1-2 key facts, numbers, or concepts to make them wrong (e.g. wrong direction of movement, wrong organ, wrong date, wrong formula)
+- Do NOT make them obviously wrong or silly
+- Do NOT use "None of the above" or "All of the above"
+- If the correct answer is very short (under 6 words), make distractors equally short but with a plausible wrong fact
+
+Return ONLY a valid JSON array of arrays — no markdown, no explanation, no backticks:
+[["distractor1","distractor2","distractor3"],["distractor1","distractor2","distractor3"],...]
+
+Questions and correct answers:
 ${questions}`
       const res = await callAI(prompt, null, 600, uid)
       if (res.error || !res.text) return
@@ -474,10 +467,8 @@ ${questions}`
   }
 
   function submitWrite() {
-    const q = qs[idx]
-    const ok = q.answer.toLowerCase().trim() === q.card.a.toLowerCase().trim() ||
-      q.answer.toLowerCase().trim().includes(q.card.a.toLowerCase().trim().slice(0, 8))
-    const u = [...qs]; u[idx] = { ...u[idx], checked: ok ? 'correct' : 'wrong' }; setQs(u)
+    // Set to 'pending' so the AI marker shows — it will call handleWriteAI with the real verdict
+    const u = [...qs]; u[idx] = { ...u[idx], checked: 'pending' }; setQs(u)
   }
 
   function handleWriteAI(correct) {
@@ -546,26 +537,19 @@ ${questions}`
               placeholder="Type your answer…" disabled={q.checked !== null} />
             {q.checked && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: '0.82rem', color: q.checked === 'correct' ? 'var(--success)' : 'var(--danger)', marginBottom: 6 }}>
-                  {q.checked === 'correct' ? 'Correct!' : 'Answer: ' + q.card.a}
-                </div>
-                {q.checked === 'wrong' && (
-                  <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
-                    onResult={(correct) => handleWriteAI(correct)} />
-                )}
+                <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
+                  onResult={(correct) => handleWriteAI(correct)} autoMark />
               </div>
             )}
           </div>
         )}
       </div>
       {q.checked === null && q.type === 'write' && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={submitWrite} disabled={!q.answer.trim()}>Check</button>
-          <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
-            onResult={(correct) => handleWriteAI(correct)} />
-        </div>
+        <button className="btn btn-primary" style={{ width: '100%' }} onClick={submitWrite} disabled={!q.answer.trim()}>
+          Submit answer
+        </button>
       )}
-      {q.checked !== null && (
+      {q.checked !== null && q.checked !== 'pending' && (
         <button className="btn btn-primary" style={{ width: '100%' }} onClick={next}>
           {idx >= qs.length - 1 ? 'Finish test' : 'Next'}
         </button>
