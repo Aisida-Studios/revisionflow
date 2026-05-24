@@ -31,6 +31,7 @@ const Profile       = lazy(() => import('./pages/Profile'))
 const PublicProfile = lazy(() => import('./pages/PublicProfile'))
 const Settings      = lazy(() => import('./pages/Settings'))
 const EmergencyMode = lazy(() => import('./pages/EmergencyMode'))
+const Admin         = lazy(() => import('./pages/Admin'))
 const Help          = lazy(() => import('./pages/Help'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Study        = lazy(() => import('./pages/Study'))
@@ -95,6 +96,7 @@ export default function App() {
                       <Route path="/profile"     element={<Profile />} />
                       <Route path="/settings"    element={<Settings />} />
                       <Route path="/emergency"   element={<EmergencyMode />} />
+                      <Route path="/admin"       element={<Admin />} />
                       <Route path="/help"        element={<Help />} />
                     </Route>
 
