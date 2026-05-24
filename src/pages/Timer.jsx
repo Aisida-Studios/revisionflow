@@ -1,7 +1,7 @@
 // src/pages/Timer.jsx — Professional Focus Timer
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTimer } from '../context/TimerContext'
-import { startSound, stopSound } from '../utils/timerSounds'
+import { startSound, stopSound, setVolume } from '../utils/timerSounds'
 import { awardTimerXP, recordActivityStreak } from '../utils/firestore'
 import { useAuth } from '../context/AuthContext'
 
@@ -44,11 +44,11 @@ const AMBIENTS = [
 
 /* ─── Music playlists ─────────────────────────────────────────── */
 const PLAYLISTS = [
-  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Relaxed beats',       vid: 'jfKfPfyJRdk', thumb: '🎵' },
-  { id: 'classical',  label: 'Classical',        sub: 'Focus & calm',        vid: 'mDDP91JGJl4', thumb: '🎻' },
+  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Relaxed beats',       vid: '5qap5aO4i9A', thumb: '🎵' },
+  { id: 'classical',  label: 'Classical Focus',  sub: 'Calm concentration',  vid: '4vHDjBFWvqA', thumb: '🎻' },
   { id: 'rain',       label: 'Rain Sounds',      sub: 'Sleep & focus',       vid: 'q76bMs-NwRk', thumb: '🌧' },
-  { id: 'jazz',       label: 'Jazz',             sub: 'Smooth & warm',       vid: 'DSGyEsJ17cI', thumb: '🎷' },
-  { id: 'piano',      label: 'Solo Piano',       sub: 'Pure focus',          vid: 'UF9uh7MNqkY', thumb: '🎹' },
+  { id: 'jazz',       label: 'Jazz',             sub: 'Smooth & warm',       vid: 'Dx5qFachd3A', thumb: '🎷' },
+  { id: 'piano',      label: 'Solo Piano',       sub: 'Pure focus',          vid: '9bZkp7q19f0', thumb: '🎹' },
   { id: 'ambient',    label: 'Ambient',          sub: 'Atmospheric',         vid: 'HGl75kurxok', thumb: '🌌' },
   { id: 'brownnoise', label: 'Brown Noise',      sub: 'Deep concentration',  vid: 'RqzGzwTY-6w', thumb: '🟤' },
   { id: 'nature',     label: 'Nature Sounds',    sub: 'Outdoors',            vid: 'eKFTSSKCzWA', thumb: '🍃' },
@@ -363,13 +363,17 @@ export default function Timer() {
   const sc = SCENES.find(s => s.id === scene) || SCENES[0]
   const onScene = scene !== 'none'
 
-  // ── Ambient sound with volume ──────────────────────────────────
+  // ── Ambient sound ─────────────────────────────────────────────
   useEffect(() => {
-    if (timer.cdRunning && ambient !== 'none') {
-      startSound(ambient, volume)
-    } else stopSound()
+    if (timer.cdRunning && ambient !== 'none') startSound(ambient, volume)
+    else stopSound()
     return () => stopSound()
-  }, [ambient, timer.cdRunning, volume])
+  }, [ambient, timer.cdRunning])
+
+  // ── Volume change (live, no restart needed) ────────────────────
+  useEffect(() => {
+    if (timer.cdRunning && ambient !== 'none') setVolume(volume)
+  }, [volume])
 
   // ── Timer finish ───────────────────────────────────────────────
   useEffect(() => {
