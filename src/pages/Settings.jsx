@@ -460,71 +460,169 @@ function BoundaryViewer({ profile }) {
 }
 
 // ── Notifications Settings ─────────────────────────────────────────────────────
+function Toggle({ val, onChange }) {
+  return (
+    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
+      <input type="checkbox" checked={val} onChange={e => onChange(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+      <span style={{ position: 'absolute', inset: 0, background: val ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 12, transition: 'background 0.2s' }} />
+      <span style={{ position: 'absolute', top: 3, left: val ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
+    </label>
+  )
+}
+
 function NotificationsSettings({ profile, user, onSave }) {
   const saved = profile?.notificationSettings || {}
-  const [dailyReminder, setDailyReminder] = useState(saved.dailyReminder ?? true)
-  const [reminderTime,  setReminderTime]  = useState(saved.reminderTime  || '17:00')
-  const [sessionAlerts, setSessionAlerts] = useState(saved.sessionAlerts ?? true)
-  const [saving,        setSaving]        = useState(false)
-  const [permission,    setPermission]    = useState('Notification' in window ? Notification.permission : 'unsupported')
+  const [dailyReminder,  setDailyReminder]  = useState(saved.dailyReminder  ?? true)
+  const [reminderTime,   setReminderTime]   = useState(saved.reminderTime   || '17:00')
+  const [sessionAlerts,  setSessionAlerts]  = useState(saved.sessionAlerts  ?? true)
+  const [examReminders,  setExamReminders]  = useState(saved.examReminders  ?? true)
+  const [streakReminders,setStreakReminders]= useState(saved.streakReminders ?? true)
+  const [saving,         setSaving]         = useState(false)
+  const [subscribing,    setSubscribing]    = useState(false)
+  const [testSending,    setTestSending]    = useState(false)
+  const [permission,     setPermission]     = useState('Notification' in window ? Notification.permission : 'unsupported')
+  const [pushSubscribed, setPushSubscribed] = useState(!!profile?.pushSubscription)
 
-  async function requestPermission() {
-    if (!('Notification' in window)) return
-    const p = await Notification.requestPermission()
-    setPermission(p)
+  // Check current subscription state on mount
+  useEffect(() => {
+    import('../utils/notifications').then(({ getCurrentSubscription }) => {
+      getCurrentSubscription().then(sub => setPushSubscribed(!!sub))
+    })
+  }, [])
+
+  async function enablePush() {
+    setSubscribing(true)
+    try {
+      const { requestNotificationPermission, subscribeToPush } = await import('../utils/notifications')
+      const granted = await requestNotificationPermission()
+      setPermission(granted ? 'granted' : Notification.permission)
+      if (!granted) { toast.error('Notifications blocked — please allow them in your browser settings'); return }
+
+      const result = await subscribeToPush()
+      if (result.error) { toast.error(result.error); return }
+
+      // Save subscription to Firestore
+      const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
+      const { db: fsDb } = await import('../firebase')
+      await updateDoc(fsDoc(fsDb, 'users', user.uid), {
+        pushSubscription: result.subscription,
+        pushEnabled: true,
+      })
+      setPushSubscribed(true)
+      toast.success('Push notifications enabled!')
+    } catch(e) { toast.error(e.message) }
+    finally { setSubscribing(false) }
+  }
+
+  async function disablePush() {
+    try {
+      const { unsubscribeFromPush } = await import('../utils/notifications')
+      await unsubscribeFromPush()
+      const { updateDoc, doc: fsDoc, deleteField } = await import('firebase/firestore')
+      const { db: fsDb } = await import('../firebase')
+      await updateDoc(fsDoc(fsDb, 'users', user.uid), { pushEnabled: false })
+      setPushSubscribed(false)
+      toast.success('Push notifications disabled')
+    } catch(e) { toast.error(e.message) }
+  }
+
+  async function sendTest() {
+    setTestSending(true)
+    try {
+      const { getCurrentSubscription } = await import('../utils/notifications')
+      const sub = await getCurrentSubscription()
+      if (!sub) { toast.error('Not subscribed — enable push notifications first'); return }
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          title: 'RevisionFlow test 📚',
+          message: 'Push notifications are working!',
+          url: '/dashboard',
+        }),
+      })
+      const data = await res.json()
+      if (data.ok) toast.success('Test notification sent!')
+      else toast.error(data.error || 'Failed to send test')
+    } catch(e) { toast.error(e.message) }
+    finally { setTestSending(false) }
   }
 
   async function save() {
     setSaving(true)
-    await onSave({ dailyReminder, reminderTime, sessionAlerts })
+    await onSave({ dailyReminder, reminderTime, sessionAlerts, examReminders, streakReminders })
     setSaving(false)
     toast.success('Notification settings saved')
   }
 
+  const SETTINGS = [
+    { key: 'dailyReminder',   label: 'Daily revision reminder',  desc: 'Reminded at your chosen time each day',            val: dailyReminder,   set: setDailyReminder   },
+    { key: 'examReminders',   label: 'Exam countdown alerts',    desc: 'Night before + morning of each exam',              val: examReminders,   set: setExamReminders   },
+    { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session',             val: sessionAlerts,   set: setSessionAlerts   },
+    { key: 'streakReminders', label: 'Streak at-risk warning',   desc: 'Reminded if you haven't studied by 8pm',          val: streakReminders, set: setStreakReminders },
+  ]
+
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <h4>Notification Settings</h4>
-      {permission === 'denied' && (
-        <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem' }}>
-          Notifications are blocked. Go to your browser settings and allow notifications for this site.
+      <h4>Notifications</h4>
+
+      {/* Push subscription status */}
+      <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>Push notifications</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+          Push notifications work even when the app is closed — you'll get exam reminders, streak warnings and daily nudges directly on your device.
         </div>
-      )}
-      {permission === 'default' && (
-        <div style={{ padding: '10px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span>Browser notifications are not yet enabled.</span>
-          <button className="btn btn-primary btn-sm" onClick={requestPermission}>Enable</button>
-        </div>
-      )}
-      {permission === 'granted' && (
-        <div style={{ padding: '8px 14px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600 }}>
-          ✓ Notifications enabled
-        </div>
-      )}
-      {[
-        { key: 'dailyReminder', label: 'Daily revision reminder', desc: 'Get a notification each day at your chosen time', val: dailyReminder, set: setDailyReminder },
-        { key: 'sessionAlerts', label: 'Session start alerts',    desc: 'Notified 5 minutes before a scheduled session',  val: sessionAlerts, set: setSessionAlerts },
-      ].map(s => (
-        <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{s.label}</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.desc}</div>
+        {permission === 'denied' ? (
+          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--danger)' }}>
+            Notifications are blocked in your browser settings. Go to your browser settings → site permissions → allow notifications for this site.
           </div>
-          <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
-            <input type="checkbox" checked={s.val} onChange={e => s.set(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
-            <span style={{ position: 'absolute', inset: 0, background: s.val ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 12, transition: 'background 0.2s' }} />
-            <span style={{ position: 'absolute', top: 3, left: s.val ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-          </label>
-        </div>
-      ))}
+        ) : pushSubscribed ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600 }}>✓ Push notifications active</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary btn-sm" onClick={sendTest} disabled={testSending}>
+                {testSending ? 'Sending…' : '▶ Send test'}
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={disablePush}>
+                Disable
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn-primary" onClick={enablePush} disabled={subscribing}>
+            {subscribing ? 'Enabling…' : '🔔 Enable push notifications'}
+          </button>
+        )}
+      </div>
+
+      {/* Individual notification toggles */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {SETTINGS.map(s => (
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{s.label}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.desc}</div>
+            </div>
+            <Toggle val={s.val} onChange={s.set} />
+          </div>
+        ))}
+      </div>
+
       {dailyReminder && (
         <div>
           <label className="label">Daily reminder time</label>
           <input className="input" type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} style={{ maxWidth: 160 }} />
         </div>
       )}
+
       <button className="btn btn-primary" onClick={save} disabled={saving}>
         {saving ? 'Saving…' : 'Save notification settings'}
       </button>
+
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        Note: push notifications require your browser to support the Web Push API. iOS Safari 16.4+ and all modern Android browsers are supported. Some browsers may not deliver notifications when the device is in low-power mode.
+      </div>
     </div>
   )
 }
