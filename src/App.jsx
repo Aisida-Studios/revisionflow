@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { usePushNotifications } from './hooks/usePushNotifications'
 import { AppProvider } from './context/AppContext'
 import { TimerProvider } from './context/TimerContext'
 import { PriorityProvider } from './context/PriorityContext'
@@ -38,6 +39,7 @@ const Study        = lazy(() => import('./pages/Study'))
 
 // ── Guards ────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children }) {
+  usePushNotifications()
   const { user } = useAuth()
   return user ? children : <Navigate to="/login" replace />
 }
