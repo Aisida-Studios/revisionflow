@@ -1,7 +1,10 @@
 [build]
-  command   = "npm run build"
+  command   = "npm install --prefix netlify/functions && npm run build"
   publish   = "dist"
   functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
 
 # Serve static landing.html to search engine crawlers
 [[redirects]]
@@ -10,23 +13,19 @@
   status = 200
   conditions = {UserAgent = ["Googlebot","Googlebot-Mobile","Googlebot-Image","Bingbot","bingbot","Slurp","DuckDuckBot","Baiduspider","YandexBot","Sogou","Exabot","facebookexternalhit","Twitterbot","LinkedInBot","WhatsApp","Slackbot","TelegramBot","Discordbot"]}
 
-# Proxy /api/tutor to the Netlify Function (renamed from /api/ai to avoid ad blockers)
+# API routes MUST come before the /* catch-all
 [[redirects]]
   from   = "/api/tutor"
   to     = "/.netlify/functions/tutor"
   status = 200
 
-# All other routes -> React app
+[[redirects]]
+  from   = "/api/admin"
+  to     = "/.netlify/functions/admin"
+  status = 200
+
+# All other routes -> React app (must be last)
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
-  status = 200
-
-[build.environment]
-  NODE_VERSION = "18"
-
-
-[[redirects]]
-  from = "/api/admin"
-  to = "/.netlify/functions/admin"
   status = 200
