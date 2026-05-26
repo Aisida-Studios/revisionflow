@@ -515,7 +515,7 @@ function NotificationsSettings({ profile, user, onSave }) {
         toast.success('Notifications enabled! (Local only — works while app is open)')
         // Send a local confirmation immediately
         setTimeout(() => {
-          sendLocalNotification('RevisionFlow 📚', 'Notifications are enabled! You'll get exam and streak reminders.', { tag: 'push-enabled' })
+          sendLocalNotification('RevisionFlow 📚', "Notifications are enabled! You'll get exam and streak reminders.", { tag: 'push-enabled' })
         }, 500)
         return
       }
@@ -538,7 +538,7 @@ function NotificationsSettings({ profile, user, onSave }) {
 
       // Send a local confirmation so user sees something immediately
       setTimeout(() => {
-        sendLocalNotification('RevisionFlow 📚', 'Push notifications are active. You'll get reminders even when the app is closed.', { tag: 'push-enabled' })
+        sendLocalNotification('RevisionFlow 📚', "Push notifications are active. You'll get reminders even when the app is closed.", { tag: 'push-enabled' })
       }, 800)
 
     } catch(e) {
@@ -595,7 +595,7 @@ function NotificationsSettings({ profile, user, onSave }) {
       // Fallback: local notification (requires tab to be open)
       sendLocalNotification(
         'RevisionFlow test 📚',
-        'Notifications are working! Exam reminders and streak alerts will appear here.',
+        "Notifications are working! Exam reminders and streak alerts will appear here.",
         { tag: 'push-test', requireInteraction: true }
       )
       toast.success('Test notification sent!')
@@ -617,21 +617,27 @@ function NotificationsSettings({ profile, user, onSave }) {
   const SETTINGS = [
     { key: 'dailyReminder',   label: 'Daily revision reminder',  desc: 'Reminded at your chosen time each day',            val: dailyReminder,   set: setDailyReminder   },
     { key: 'examReminders',   label: 'Exam countdown alerts',    desc: 'Night before + morning of each exam',              val: examReminders,   set: setExamReminders   },
-    { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session',             val: sessionAlerts,   set: setSessionAlerts   },
+    { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session",             val: sessionAlerts,   set: setSessionAlerts   },
     { key: "streakReminders", label: "Streak at-risk warning",   desc: "Reminded if you haven't studied by 8pm",          val: streakReminders, set: setStreakReminders },
   ]
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="card" style={{ display:  studied by 8pm",          val: streakReminders, set: setStreakReminders },
+  ]
+
+  return (
+    <div className="card" style={{ display: "flex', flexDirection: 'column', gap: 16 }}>
       <h4>Notifications</h4>
 
       {/* Push subscription status */}
       <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>Push notifications</div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
           Push notifications work even when the app is closed — you'll get exam reminders, streak warnings and daily nudges directly on your device.
         </div>
-        {permission === 'denied' ? (
+        {permission ===  get exam reminders, streak warnings and daily nudges directly on your device.
+        </div>
+        {permission === "denied' ? (
           <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--danger)' }}>
             Notifications are blocked in your browser settings. Go to your browser settings → site permissions → allow notifications for this site.
           </div>
