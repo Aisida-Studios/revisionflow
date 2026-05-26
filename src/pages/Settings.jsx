@@ -492,43 +492,74 @@ function NotificationsSettings({ profile, user, onSave }) {
   async function enablePush() {
     setSubscribing(true)
     try {
-      const { requestNotificationPermission, subscribeToPush, sendLocalNotification } = await import('../utils/notifications')
-      const granted = await requestNotificationPermission()
-      setPermission('Notification' in window ? Notification.permission : 'unsupported')
+      // Step 1: request permission — this is the only truly required step
+      const permResult = await Notification.requestPermission()
+      setPermission(permResult)
 
-      if (!granted) {
+      if (permResult !== 'granted') {
         toast.error('Permission denied — allow notifications in your browser settings')
         return
       }
 
-      const result = await subscribeToPush()
+      // Step 2: try Web Push subscription with a hard 5-second timeout
+      // navigator.serviceWorker.ready can hang forever if SW failed to install
+      let webPushOk = false
+      try {
+        const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY
+        if (VAPID && 'serviceWorker' in navigator && 'PushManager' in window) {
+          const swReady = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000)),
+          ])
 
-      if (result.error) {
-        console.warn('[Push] Web Push unavailable:', result.error)
-        setPushSubscribed(true)
-        toast.success('Notifications enabled (local only — works while app is open)')
-        setTimeout(() => {
-          sendLocalNotification('RevisionFlow', "Notifications enabled! You'll get exam and streak reminders.", { tag: 'push-enabled' })
-        }, 500)
-        return
+          // Check for existing subscription first
+          let sub = await swReady.pushManager.getSubscription()
+          if (!sub) {
+            const padding = '='.repeat((4 - VAPID.length % 4) % 4)
+            const base64  = (VAPID + padding).replace(/-/g, '+').replace(/_/g, '/')
+            const raw     = window.atob(base64)
+            const key     = new Uint8Array(raw.length)
+            for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i)
+            sub = await swReady.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
+          }
+
+          // Save to Firestore
+          try {
+            const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
+            const { db: fsDb } = await import('../firebase')
+            await updateDoc(fsDoc(fsDb, 'users', user.uid), {
+              pushSubscription: sub.toJSON(),
+              pushEnabled: true,
+            })
+          } catch(dbErr) {
+            console.warn('[Push] Firestore save failed:', dbErr.message)
+          }
+
+          webPushOk = true
+          toast.success('Push notifications enabled! Works even when app is closed.')
+        }
+      } catch(swErr) {
+        console.warn('[Push] Web Push failed, using local only:', swErr.message)
       }
 
-      try {
-        const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
-        const { db: fsDb } = await import('../firebase')
-        await updateDoc(fsDoc(fsDb, 'users', user.uid), {
-          pushSubscription: result.subscription,
-          pushEnabled: true,
-        })
-      } catch(dbErr) {
-        console.warn('[Push] Could not save to Firestore:', dbErr.message)
+      // Step 3: regardless of Web Push, enable local notifications
+      if (!webPushOk) {
+        toast.success('Notifications enabled (works while app is open)')
       }
 
       setPushSubscribed(true)
-      toast.success('Push notifications enabled!')
-      setTimeout(() => {
-        sendLocalNotification('RevisionFlow', "Push notifications active. You'll get reminders even when the app is closed.", { tag: 'push-enabled' })
-      }, 800)
+
+      // Send an immediate test notification so user sees it working
+      if (Notification.permission === 'granted') {
+        setTimeout(() => {
+          new Notification('RevisionFlow', {
+            body: 'Notifications are active! You will get exam and streak reminders.',
+            icon: '/favicon.svg',
+            tag:  'push-enabled',
+          })
+        }, 600)
+      }
+
     } catch(e) {
       console.error('[Push] enablePush error:', e)
       toast.error('Could not enable notifications: ' + e.message)
@@ -552,35 +583,47 @@ function NotificationsSettings({ profile, user, onSave }) {
   async function sendTest() {
     setTestSending(true)
     try {
-      const { getCurrentSubscription, sendLocalNotification } = await import('../utils/notifications')
-      const sub = await getCurrentSubscription()
+      if (Notification.permission !== 'granted') {
+        toast.error('Notifications not enabled — click Enable first')
+        return
+      }
 
-      if (sub) {
-        try {
+      // Try Web Push server first (works in background)
+      let sentViaServer = false
+      try {
+        const sw = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+        ])
+        const sub = await sw.pushManager.getSubscription()
+        if (sub) {
           const res = await fetch('/api/notify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              subscription: sub,
+              subscription: sub.toJSON(),
               title: 'RevisionFlow test',
-              message: 'Push notifications are working! Exam reminders will appear here.',
+              message: 'Push notifications working! Exam reminders will appear here.',
               url: '/dashboard',
             }),
           })
           const data = await res.json()
-          if (data.ok) { toast.success('Test sent via Web Push!'); return }
-          console.warn('[Push] Web Push test failed:', data.error)
-        } catch(fetchErr) {
-          console.warn('[Push] fetch error:', fetchErr.message)
+          if (data.ok) { sentViaServer = true; toast.success('Test sent via Web Push!') }
         }
+      } catch(e) {
+        console.warn('[Push] server test failed:', e.message)
       }
 
-      sendLocalNotification(
-        'RevisionFlow test',
-        'Notifications are working! Exam reminders and streak alerts will appear here.',
-        { tag: 'push-test', requireInteraction: true }
-      )
-      toast.success('Test notification sent!')
+      // Always show a local notification as confirmation
+      if (!sentViaServer) {
+        new Notification('RevisionFlow test', {
+          body: 'Notifications working! You will get exam and streak reminders.',
+          icon: '/favicon.svg',
+          tag:  'push-test',
+          requireInteraction: true,
+        })
+        toast.success('Test notification sent!')
+      }
     } catch(e) {
       toast.error('Test failed: ' + e.message)
     } finally {
