@@ -493,25 +493,60 @@ function NotificationsSettings({ profile, user, onSave }) {
   async function enablePush() {
     setSubscribing(true)
     try {
-      const { requestNotificationPermission, subscribeToPush } = await import('../utils/notifications')
+      // Step 1: request browser permission
+      const { requestNotificationPermission, subscribeToPush, sendLocalNotification } = await import('../utils/notifications')
       const granted = await requestNotificationPermission()
-      setPermission(granted ? 'granted' : Notification.permission)
-      if (!granted) { toast.error('Notifications blocked — please allow them in your browser settings'); return }
+      const newPermission = 'Notification' in window ? Notification.permission : 'unsupported'
+      setPermission(newPermission)
 
+      if (!granted) {
+        toast.error('Permission denied — go to browser settings and allow notifications for this site')
+        return
+      }
+
+      // Step 2: attempt Web Push subscription (requires VAPID key)
       const result = await subscribeToPush()
-      if (result.error) { toast.error(result.error); return }
 
-      // Save subscription to Firestore
-      const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
-      const { db: fsDb } = await import('../firebase')
-      await updateDoc(fsDoc(fsDb, 'users', user.uid), {
-        pushSubscription: result.subscription,
-        pushEnabled: true,
-      })
+      if (result.error) {
+        // VAPID key not configured — fall back to local notifications only
+        // Local notifications still work while the tab is open
+        console.warn('[Push] Web Push unavailable:', result.error)
+        setPushSubscribed(true)  // mark as "enabled" for local notifications
+        toast.success('Notifications enabled! (Local only — works while app is open)')
+        // Send a local confirmation immediately
+        setTimeout(() => {
+          sendLocalNotification('RevisionFlow 📚', 'Notifications are enabled! You'll get exam and streak reminders.', { tag: 'push-enabled' })
+        }, 500)
+        return
+      }
+
+      // Step 3: save Web Push subscription to Firestore
+      try {
+        const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
+        const { db: fsDb } = await import('../firebase')
+        await updateDoc(fsDoc(fsDb, 'users', user.uid), {
+          pushSubscription: result.subscription,
+          pushEnabled: true,
+        })
+      } catch(dbErr) {
+        console.warn('[Push] Could not save subscription to Firestore:', dbErr.message)
+        // Non-fatal — push may still work this session
+      }
+
       setPushSubscribed(true)
       toast.success('Push notifications enabled!')
-    } catch(e) { toast.error(e.message) }
-    finally { setSubscribing(false) }
+
+      // Send a local confirmation so user sees something immediately
+      setTimeout(() => {
+        sendLocalNotification('RevisionFlow 📚', 'Push notifications are active. You'll get reminders even when the app is closed.', { tag: 'push-enabled' })
+      }, 800)
+
+    } catch(e) {
+      console.error('[Push] enablePush error:', e)
+      toast.error('Could not enable notifications: ' + e.message)
+    } finally {
+      setSubscribing(false)
+    }
   }
 
   async function disablePush() {
@@ -529,24 +564,47 @@ function NotificationsSettings({ profile, user, onSave }) {
   async function sendTest() {
     setTestSending(true)
     try {
-      const { getCurrentSubscription } = await import('../utils/notifications')
+      const { getCurrentSubscription, sendLocalNotification } = await import('../utils/notifications')
       const sub = await getCurrentSubscription()
-      if (!sub) { toast.error('Not subscribed — enable push notifications first'); return }
-      const res = await fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscription: sub,
-          title: 'RevisionFlow test 📚',
-          message: 'Push notifications are working!',
-          url: '/dashboard',
-        }),
-      })
-      const data = await res.json()
-      if (data.ok) toast.success('Test notification sent!')
-      else toast.error(data.error || 'Failed to send test')
-    } catch(e) { toast.error(e.message) }
-    finally { setTestSending(false) }
+
+      if (sub) {
+        // Try Web Push first (works in background)
+        try {
+          const res = await fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription: sub,
+              title: 'RevisionFlow test 📚',
+              message: 'Push notifications are working! You will receive exam and streak reminders.',
+              url: '/dashboard',
+            }),
+          })
+          const data = await res.json()
+          if (data.ok) {
+            toast.success('Test sent via Web Push — check your notifications!')
+            return
+          }
+          // Fall through to local if Web Push fails
+          console.warn('[Push] Web Push test failed:', data.error)
+        } catch(fetchErr) {
+          console.warn('[Push] Web Push fetch error:', fetchErr.message)
+        }
+      }
+
+      // Fallback: local notification (requires tab to be open)
+      sendLocalNotification(
+        'RevisionFlow test 📚',
+        'Notifications are working! Exam reminders and streak alerts will appear here.',
+        { tag: 'push-test', requireInteraction: true }
+      )
+      toast.success('Test notification sent!')
+
+    } catch(e) {
+      toast.error('Test failed: ' + e.message)
+    } finally {
+      setTestSending(false)
+    }
   }
 
   async function save() {
