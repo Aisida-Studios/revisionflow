@@ -472,18 +472,17 @@ function Toggle({ val, onChange }) {
 
 function NotificationsSettings({ profile, user, onSave }) {
   const saved = profile?.notificationSettings || {}
-  const [dailyReminder,  setDailyReminder]  = useState(saved.dailyReminder  ?? true)
-  const [reminderTime,   setReminderTime]   = useState(saved.reminderTime   || '17:00')
-  const [sessionAlerts,  setSessionAlerts]  = useState(saved.sessionAlerts  ?? true)
-  const [examReminders,  setExamReminders]  = useState(saved.examReminders  ?? true)
-  const [streakReminders,setStreakReminders]= useState(saved.streakReminders ?? true)
-  const [saving,         setSaving]         = useState(false)
-  const [subscribing,    setSubscribing]    = useState(false)
-  const [testSending,    setTestSending]    = useState(false)
-  const [permission,     setPermission]     = useState('Notification' in window ? Notification.permission : 'unsupported')
-  const [pushSubscribed, setPushSubscribed] = useState(!!profile?.pushSubscription)
+  const [dailyReminder,   setDailyReminder]   = useState(saved.dailyReminder   ?? true)
+  const [reminderTime,    setReminderTime]     = useState(saved.reminderTime    || '17:00')
+  const [sessionAlerts,   setSessionAlerts]    = useState(saved.sessionAlerts   ?? true)
+  const [examReminders,   setExamReminders]    = useState(saved.examReminders   ?? true)
+  const [streakReminders, setStreakReminders]  = useState(saved.streakReminders ?? true)
+  const [saving,          setSaving]           = useState(false)
+  const [subscribing,     setSubscribing]      = useState(false)
+  const [testSending,     setTestSending]      = useState(false)
+  const [permission,      setPermission]       = useState('Notification' in window ? Notification.permission : 'unsupported')
+  const [pushSubscribed,  setPushSubscribed]   = useState(!!profile?.pushSubscription)
 
-  // Check current subscription state on mount
   useEffect(() => {
     import('../utils/notifications').then(({ getCurrentSubscription }) => {
       getCurrentSubscription().then(sub => setPushSubscribed(!!sub))
@@ -493,34 +492,27 @@ function NotificationsSettings({ profile, user, onSave }) {
   async function enablePush() {
     setSubscribing(true)
     try {
-      // Step 1: request browser permission
       const { requestNotificationPermission, subscribeToPush, sendLocalNotification } = await import('../utils/notifications')
       const granted = await requestNotificationPermission()
-      const newPermission = 'Notification' in window ? Notification.permission : 'unsupported'
-      setPermission(newPermission)
+      setPermission('Notification' in window ? Notification.permission : 'unsupported')
 
       if (!granted) {
-        toast.error('Permission denied — go to browser settings and allow notifications for this site')
+        toast.error('Permission denied — allow notifications in your browser settings')
         return
       }
 
-      // Step 2: attempt Web Push subscription (requires VAPID key)
       const result = await subscribeToPush()
 
       if (result.error) {
-        // VAPID key not configured — fall back to local notifications only
-        // Local notifications still work while the tab is open
         console.warn('[Push] Web Push unavailable:', result.error)
-        setPushSubscribed(true)  // mark as "enabled" for local notifications
-        toast.success('Notifications enabled! (Local only — works while app is open)')
-        // Send a local confirmation immediately
+        setPushSubscribed(true)
+        toast.success('Notifications enabled (local only — works while app is open)')
         setTimeout(() => {
-          sendLocalNotification('RevisionFlow 📚', "Notifications are enabled! You'll get exam and streak reminders.", { tag: 'push-enabled' })
+          sendLocalNotification('RevisionFlow', "Notifications enabled! You'll get exam and streak reminders.", { tag: 'push-enabled' })
         }, 500)
         return
       }
 
-      // Step 3: save Web Push subscription to Firestore
       try {
         const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
         const { db: fsDb } = await import('../firebase')
@@ -529,18 +521,14 @@ function NotificationsSettings({ profile, user, onSave }) {
           pushEnabled: true,
         })
       } catch(dbErr) {
-        console.warn('[Push] Could not save subscription to Firestore:', dbErr.message)
-        // Non-fatal — push may still work this session
+        console.warn('[Push] Could not save to Firestore:', dbErr.message)
       }
 
       setPushSubscribed(true)
       toast.success('Push notifications enabled!')
-
-      // Send a local confirmation so user sees something immediately
       setTimeout(() => {
-        sendLocalNotification('RevisionFlow 📚', "Push notifications are active. You'll get reminders even when the app is closed.", { tag: 'push-enabled' })
+        sendLocalNotification('RevisionFlow', "Push notifications active. You'll get reminders even when the app is closed.", { tag: 'push-enabled' })
       }, 800)
-
     } catch(e) {
       console.error('[Push] enablePush error:', e)
       toast.error('Could not enable notifications: ' + e.message)
@@ -553,7 +541,7 @@ function NotificationsSettings({ profile, user, onSave }) {
     try {
       const { unsubscribeFromPush } = await import('../utils/notifications')
       await unsubscribeFromPush()
-      const { updateDoc, doc: fsDoc, deleteField } = await import('firebase/firestore')
+      const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
       const { db: fsDb } = await import('../firebase')
       await updateDoc(fsDoc(fsDb, 'users', user.uid), { pushEnabled: false })
       setPushSubscribed(false)
@@ -568,38 +556,31 @@ function NotificationsSettings({ profile, user, onSave }) {
       const sub = await getCurrentSubscription()
 
       if (sub) {
-        // Try Web Push first (works in background)
         try {
           const res = await fetch('/api/notify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               subscription: sub,
-              title: 'RevisionFlow test 📚',
-              message: 'Push notifications are working! You will receive exam and streak reminders.',
+              title: 'RevisionFlow test',
+              message: 'Push notifications are working! Exam reminders will appear here.',
               url: '/dashboard',
             }),
           })
           const data = await res.json()
-          if (data.ok) {
-            toast.success('Test sent via Web Push — check your notifications!')
-            return
-          }
-          // Fall through to local if Web Push fails
+          if (data.ok) { toast.success('Test sent via Web Push!'); return }
           console.warn('[Push] Web Push test failed:', data.error)
         } catch(fetchErr) {
-          console.warn('[Push] Web Push fetch error:', fetchErr.message)
+          console.warn('[Push] fetch error:', fetchErr.message)
         }
       }
 
-      // Fallback: local notification (requires tab to be open)
       sendLocalNotification(
-        'RevisionFlow test 📚',
-        "Notifications are working! Exam reminders and streak alerts will appear here.",
+        'RevisionFlow test',
+        'Notifications are working! Exam reminders and streak alerts will appear here.',
         { tag: 'push-test', requireInteraction: true }
       )
       toast.success('Test notification sent!')
-
     } catch(e) {
       toast.error('Test failed: ' + e.message)
     } finally {
@@ -615,52 +596,43 @@ function NotificationsSettings({ profile, user, onSave }) {
   }
 
   const SETTINGS = [
-    { key: 'dailyReminder',   label: 'Daily revision reminder',  desc: 'Reminded at your chosen time each day',            val: dailyReminder,   set: setDailyReminder   },
-    { key: 'examReminders',   label: 'Exam countdown alerts',    desc: 'Night before + morning of each exam',              val: examReminders,   set: setExamReminders   },
-    { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session",             val: sessionAlerts,   set: setSessionAlerts   },
-    { key: "streakReminders", label: "Streak at-risk warning",   desc: "Reminded if you haven't studied by 8pm",          val: streakReminders, set: setStreakReminders },
+    { key: 'dailyReminder',   label: 'Daily revision reminder',  desc: 'Reminded at your chosen time each day',  val: dailyReminder,   set: setDailyReminder   },
+    { key: 'examReminders',   label: 'Exam countdown alerts',    desc: 'Night before and morning of each exam',  val: examReminders,   set: setExamReminders   },
+    { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session',   val: sessionAlerts,   set: setSessionAlerts   },
+    { key: 'streakReminders', label: 'Streak at-risk warning',   desc: 'Reminded if no study logged by 8pm',     val: streakReminders, set: setStreakReminders },
   ]
 
   return (
-    <div className="card" style={{ display:  studied by 8pm",          val: streakReminders, set: setStreakReminders },
-  ]
-
-  return (
-    <div className="card" style={{ display: "flex', flexDirection: 'column', gap: 16 }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h4>Notifications</h4>
 
-      {/* Push subscription status */}
       <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>Push notifications</div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Push notifications work even when the app is closed — you'll get exam reminders, streak warnings and daily nudges directly on your device.
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+          Push notifications work even when the app is closed.
+          You will get exam reminders, streak warnings and daily nudges directly on your device.
         </div>
-        {permission ===  get exam reminders, streak warnings and daily nudges directly on your device.
-        </div>
-        {permission === "denied' ? (
+        {permission === 'denied' ? (
           <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--danger)' }}>
-            Notifications are blocked in your browser settings. Go to your browser settings → site permissions → allow notifications for this site.
+            Notifications are blocked. Go to your browser settings and allow notifications for this site.
           </div>
         ) : pushSubscribed ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600 }}>✓ Push notifications active</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600 }}>Push notifications active</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-secondary btn-sm" onClick={sendTest} disabled={testSending}>
-                {testSending ? 'Sending…' : '▶ Send test'}
+                {testSending ? 'Sending...' : 'Send test'}
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={disablePush}>
-                Disable
-              </button>
+              <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={disablePush}>Disable</button>
             </div>
           </div>
         ) : (
           <button className="btn btn-primary" onClick={enablePush} disabled={subscribing}>
-            {subscribing ? 'Enabling…' : '🔔 Enable push notifications'}
+            {subscribing ? 'Enabling...' : 'Enable push notifications'}
           </button>
         )}
       </div>
 
-      {/* Individual notification toggles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {SETTINGS.map(s => (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
@@ -681,11 +653,12 @@ function NotificationsSettings({ profile, user, onSave }) {
       )}
 
       <button className="btn btn-primary" onClick={save} disabled={saving}>
-        {saving ? 'Saving…' : 'Save notification settings'}
+        {saving ? 'Saving...' : 'Save notification settings'}
       </button>
 
       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-        Note: push notifications require your browser to support the Web Push API. iOS Safari 16.4+ and all modern Android browsers are supported. Some browsers may not deliver notifications when the device is in low-power mode.
+        Push notifications require browser support for the Web Push API.
+        iOS Safari 16.4+ requires the app to be installed as a PWA first.
       </div>
     </div>
   )
