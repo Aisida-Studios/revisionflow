@@ -560,7 +560,7 @@ function NotificationsSettings({ profile, user, onSave }) {
     { key: 'dailyReminder',   label: 'Daily revision reminder',  desc: 'Reminded at your chosen time each day',            val: dailyReminder,   set: setDailyReminder   },
     { key: 'examReminders',   label: 'Exam countdown alerts',    desc: 'Night before + morning of each exam',              val: examReminders,   set: setExamReminders   },
     { key: 'sessionAlerts',   label: 'Session start alerts',     desc: '5 minutes before a scheduled session',             val: sessionAlerts,   set: setSessionAlerts   },
-    { key: 'streakReminders', label: 'Streak at-risk warning',   desc: 'Reminded if you haven't studied by 8pm',          val: streakReminders, set: setStreakReminders },
+    { key: "streakReminders", label: "Streak at-risk warning",   desc: "Reminded if you haven't studied by 8pm",          val: streakReminders, set: setStreakReminders },
   ]
 
   return (
