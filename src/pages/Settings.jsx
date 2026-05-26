@@ -481,12 +481,28 @@ function NotificationsSettings({ profile, user, onSave }) {
   const [subscribing,     setSubscribing]      = useState(false)
   const [testSending,     setTestSending]      = useState(false)
   const [permission,      setPermission]       = useState('Notification' in window ? Notification.permission : 'unsupported')
-  const [pushSubscribed,  setPushSubscribed]   = useState(!!profile?.pushSubscription)
+  // Persist enabled state via profile.pushEnabled (written to Firestore on enable)
+  const [pushSubscribed,  setPushSubscribed]   = useState(!!(profile?.pushEnabled || profile?.pushSubscription))
+
+  // Sync with Firestore profile in realtime (onSnapshot keeps profile fresh)
+  useEffect(() => {
+    if (profile?.pushEnabled) setPushSubscribed(true)
+  }, [profile?.pushEnabled])
 
   useEffect(() => {
-    import('../utils/notifications').then(({ getCurrentSubscription }) => {
-      getCurrentSubscription().then(sub => setPushSubscribed(!!sub))
-    })
+    // Also check the actual browser subscription state on mount
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise(resolve => setTimeout(resolve, 2000)),
+      ]).then(sw => {
+        if (sw && sw.pushManager) {
+          sw.pushManager.getSubscription().then(sub => {
+            if (sub) setPushSubscribed(true)
+          }).catch(() => {})
+        }
+      }).catch(() => {})
+    }
   }, [])
 
   async function enablePush() {
@@ -543,6 +559,15 @@ function NotificationsSettings({ profile, user, onSave }) {
       }
 
       // Step 3: regardless of Web Push, enable local notifications
+      // Always persist the enabled state to Firestore so it survives page reload
+      try {
+        const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
+        const { db: fsDb } = await import('../firebase')
+        await updateDoc(fsDoc(fsDb, 'users', user.uid), { pushEnabled: true })
+      } catch(dbErr) {
+        console.warn('[Push] Could not persist pushEnabled:', dbErr.message)
+      }
+
       if (!webPushOk) {
         toast.success('Notifications enabled (works while app is open)')
       }
@@ -574,7 +599,7 @@ function NotificationsSettings({ profile, user, onSave }) {
       await unsubscribeFromPush()
       const { updateDoc, doc: fsDoc } = await import('firebase/firestore')
       const { db: fsDb } = await import('../firebase')
-      await updateDoc(fsDoc(fsDb, 'users', user.uid), { pushEnabled: false })
+      await updateDoc(fsDoc(fsDb, 'users', user.uid), { pushEnabled: false, pushSubscription: null })
       setPushSubscribed(false)
       toast.success('Push notifications disabled')
     } catch(e) { toast.error(e.message) }
