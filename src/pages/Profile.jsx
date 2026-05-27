@@ -20,9 +20,11 @@ export default function Profile() {
   const [copied,      setCopied]      = useState(false)
   const [exporting,   setExporting]   = useState(false)
   const [timetabling, setTimetabling] = useState(false)
-  const [showCard,    setShowCard]    = useState(false)
-  const [cardUrl,     setCardUrl]     = useState(null)
-  const [cardLoading, setCardLoading] = useState(false)
+  const [showCard,        setShowCard]        = useState(false)
+  const [cardUrl,         setCardUrl]         = useState(null)
+  const [cardLoading,     setCardLoading]     = useState(false)
+  const [showMilestone,   setShowMilestone]   = useState(false)
+  const [milestoneStreak, setMilestoneStreak] = useState(0)
 
   const lvl     = LEVELS[Math.min((profile?.level || 1) - 1, LEVELS.length - 1)]
   const nextLvl = LEVELS[Math.min((profile?.level || 1),     LEVELS.length - 1)]
@@ -32,6 +34,19 @@ export default function Profile() {
   const unlockedBadges = BADGE_LIST.filter(b => earnedIds.includes(b.id))
   const iconId         = profile?.profileIcon || 'lightning'
   const iconEmoji      = PROFILE_ICONS?.[iconId]?.emoji || null
+
+  // Detect streak milestones and prompt to share
+  useEffect(() => {
+    if (!profile?.streak) return
+    const s = profile.streak
+    const MILESTONES = [7, 14, 30, 50, 100, 200, 365]
+    if (!MILESTONES.includes(s)) return
+    const key = 'streak_card_prompted_' + s
+    if (localStorage.getItem(key)) return
+    localStorage.setItem(key, '1')
+    setMilestoneStreak(s)
+    setShowMilestone(true)
+  }, [profile?.streak])
   const profileUrl     = `${window.location.origin}/u/${profile?.username || user?.uid}`
 
   function copyLink() {
@@ -55,7 +70,7 @@ export default function Profile() {
         levelTitle:  lvl?.title           || 'Studier',
         badges:      (profile?.badges     || []).length,
         bestStreak:  profile?.bestStreak  || profile?.streak || 0,
-        subjects:    (profile?.subjects   || []).map(s => s.name),
+        subjects:    (profile?.subjects   || []).map(s => typeof s === 'string' ? s : s.name).filter(Boolean),
         profileIcon: iconEmoji,
         accentColor,
       })
@@ -133,6 +148,36 @@ export default function Profile() {
 
   return (
     <div className="fade-in" style={{ maxWidth: 720, margin: '0 auto' }}>
+
+      {/* ── Milestone celebration modal ── */}
+      {showMilestone && (
+        <div className="modal-overlay" onClick={() => setShowMilestone(false)}>
+          <div className="modal" style={{ maxWidth: 440, textAlign: 'center', padding: '2rem' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>
+              {milestoneStreak >= 100 ? '👑' : milestoneStreak >= 30 ? '💎' : milestoneStreak >= 14 ? '💪' : '⚡'}
+            </div>
+            <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak!</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>
+              {milestoneStreak >= 100
+                ? 'You are absolutely legendary. 100 days of consistent revision.'
+                : milestoneStreak >= 30
+                ? 'A whole month of daily revision. That discipline will pay off in your exams.'
+                : milestoneStreak >= 14
+                ? 'Two weeks straight. You are building real momentum.'
+                : 'A full week of revision. Keep it going!'}
+              {' '}Share your streak and inspire others!
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={() => { setShowMilestone(false); generateCard() }}>
+                <Share2 size={14} /> Share my streak card
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowMilestone(false)}>
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Streak card modal ── */}
       {showCard && (
@@ -276,13 +321,14 @@ export default function Profile() {
             const unlocked = earnedIds.includes(b.id)
             return (
               <div key={b.id} title={b.desc}
-                style={{ padding: 10, borderRadius: 'var(--radius-md)', textAlign: 'center', border: `1px solid ${unlocked ? 'var(--accent)' : 'var(--border)'}`, background: unlocked ? 'rgba(124,58,237,0.1)' : 'var(--bg-surface)', opacity: unlocked ? 1 : 0.4, transition: 'all 0.2s' }}
+                style={{ padding: 10, borderRadius: 'var(--radius-md)', textAlign: 'center', border: `1px solid ${unlocked ? 'rgba(124,58,237,0.45)' : 'var(--border)'}`, background: unlocked ? 'rgba(124,58,237,0.12)' : 'var(--bg-surface)', transition: 'all 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 4 }}>{b.icon}</div>
-                <div style={{ fontWeight: 600, fontSize: '0.78rem', lineHeight: 1.2 }}>{b.name}</div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.3 }}>{b.desc}</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: 4, opacity: unlocked ? 1 : 0.35 }}>{b.icon}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.78rem', lineHeight: 1.2, color: unlocked ? 'var(--text-primary)' : 'var(--text-muted)' }}>{b.name}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.3, opacity: unlocked ? 1 : 0.6 }}>{b.desc}</div>
                 {unlocked && <div style={{ marginTop: 4, fontSize: '0.68rem', color: 'var(--accent-light)', fontWeight: 600 }}>+{b.xp} XP ✓</div>}
+                {!unlocked && <div style={{ marginTop: 4, fontSize: '0.68rem', color: 'var(--text-muted)' }}>🔒 {b.hint || 'Keep going!'}</div>}
               </div>
             )
           })}
