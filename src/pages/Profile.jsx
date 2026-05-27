@@ -134,6 +134,40 @@ export default function Profile() {
   return (
     <div className="fade-in" style={{ maxWidth: 720, margin: '0 auto' }}>
 
+      {/* ── Streak card modal ── */}
+      {showCard && (
+        <div className="modal-overlay" onClick={() => setShowCard(false)}>
+          <div className="modal" style={{ maxWidth: 520, padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title"><Share2 size={16} /> Streak Card</span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowCard(false)}><X size={18} /></button>
+            </div>
+            {cardLoading ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+                <Loader size={28} style={{ animation: 'spin 1s linear infinite' }} />
+                <div style={{ marginTop: 10, fontSize: '0.875rem' }}>Generating your card...</div>
+              </div>
+            ) : cardUrl ? (
+              <>
+                <img src={cardUrl} alt="Streak card" style={{ width: '100%', borderRadius: 12, marginBottom: 16, display: 'block' }} />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={shareCard}>
+                    <Share2 size={14} /> Share
+                  </button>
+                  <button className="btn btn-secondary" onClick={downloadCard}>
+                    <Download size={14} /> Download
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
+                  Post to Instagram Stories, TikTok, or Twitter with #RevisionFlow
+                </p>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+
       {/* ── Header card ── */}
       <div className="card accent-card" style={{ marginBottom: 20, padding: 28, textAlign: 'center' }}>
         {/* Avatar */}
@@ -169,6 +203,9 @@ export default function Profile() {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary btn-sm" onClick={generateCard} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Share2 size={14} /> Share streak card
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={copyLink}>
             {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Share profile</>}
           </button>
