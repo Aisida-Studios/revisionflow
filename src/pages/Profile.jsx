@@ -11,7 +11,7 @@ import { BADGE_LIST, BADGE_CATEGORIES } from '../data/badges'
 import { PROFILE_ICONS } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
-import { Zap, Flame, Trophy, Copy, Check, Download, Loader } from 'lucide-react'
+import { Zap, Flame, Trophy, Copy, Check, Download, Loader, Share2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
 
@@ -20,6 +20,9 @@ export default function Profile() {
   const [copied,      setCopied]      = useState(false)
   const [exporting,   setExporting]   = useState(false)
   const [timetabling, setTimetabling] = useState(false)
+  const [showCard,    setShowCard]    = useState(false)
+  const [cardUrl,     setCardUrl]     = useState(null)
+  const [cardLoading, setCardLoading] = useState(false)
 
   const lvl     = LEVELS[Math.min((profile?.level || 1) - 1, LEVELS.length - 1)]
   const nextLvl = LEVELS[Math.min((profile?.level || 1),     LEVELS.length - 1)]
@@ -36,6 +39,62 @@ export default function Profile() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     toast.success('Profile link copied!')
+  }
+
+  async function generateCard() {
+    setCardLoading(true)
+    setShowCard(true)
+    try {
+      const { generateStreakCard } = await import('../utils/streakCard')
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7c3aed'
+      const url = await generateStreakCard({
+        displayName: profile?.displayName || user?.displayName || 'Student',
+        streak:      profile?.streak      || 0,
+        xp:          profile?.xp         || 0,
+        level:       profile?.level       || 1,
+        levelTitle:  lvl?.title           || 'Studier',
+        badges:      (profile?.badges     || []).length,
+        bestStreak:  profile?.bestStreak  || profile?.streak || 0,
+        subjects:    (profile?.subjects   || []).map(s => s.name),
+        profileIcon: iconEmoji,
+        accentColor,
+      })
+      setCardUrl(url)
+    } catch(e) {
+      toast.error('Could not generate card: ' + e.message)
+      setShowCard(false)
+    } finally {
+      setCardLoading(false)
+    }
+  }
+
+  function downloadCard() {
+    if (!cardUrl) return
+    const a = document.createElement('a')
+    a.href     = cardUrl
+    a.download = 'revisionflow-streak.png'
+    a.click()
+  }
+
+  async function shareCard() {
+    if (!cardUrl) return
+    if (navigator.share && navigator.canShare) {
+      try {
+        const blob = await (await fetch(cardUrl)).blob()
+        const file = new File([blob], 'revisionflow-streak.png', { type: 'image/png' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'My RevisionFlow streak',
+            text:  `${profile?.streak || 0} day streak on RevisionFlow! Join me at revisionflow.netlify.app`,
+          })
+          return
+        }
+      } catch(e) {}
+    }
+    // Fallback: copy link
+    downloadCard()
+    toast.success('Card downloaded — share it on Instagram or TikTok!')
   }
 
   async function handleExportPDF() {
