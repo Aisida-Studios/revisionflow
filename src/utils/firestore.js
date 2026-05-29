@@ -818,3 +818,41 @@ export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
     try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
   }
 }
+
+/* ── Topic note rate limiting ────────────────────────────────────────────── */
+// Free users: 5 topic note generations per day
+// Pro/beta users: unlimited
+// Usage tracked in users/{uid}/usage/topicNotes doc
+
+export async function checkTopicNoteLimit(uid, profile) {
+  if (profile?.isPro || profile?.betaUser) return { allowed: true, remaining: Infinity }
+
+  const today = new Date().toISOString().slice(0, 10)  // YYYY-MM-DD
+  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists() || snap.data().date !== today) {
+      // New day — reset counter
+      await setDoc(ref, { date: today, count: 0 })
+      return { allowed: true, remaining: 5 }
+    }
+    const count = snap.data().count || 0
+    const remaining = Math.max(0, 5 - count)
+    return { allowed: remaining > 0, remaining, count }
+  } catch(e) {
+    return { allowed: true, remaining: 5 }  // fail open
+  }
+}
+
+export async function incrementTopicNoteUsage(uid) {
+  const today = new Date().toISOString().slice(0, 10)
+  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists() || snap.data().date !== today) {
+      await setDoc(ref, { date: today, count: 1 })
+    } else {
+      await updateDoc(ref, { count: increment(snap.data().count + 1) })
+    }
+  } catch(e) {}
+}
