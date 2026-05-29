@@ -1213,10 +1213,249 @@ function MarkSchemeReveal({ text }) {
   )
 }
 
+/* ── Topic Notes Tab ────────────────────────────────────────────────────────── */
+function TopicNotesTab({ profile, uid }) {
+  const urlParams    = new URLSearchParams(window.location.search)
+  const [subject,    setSubject]    = useState(urlParams.get('subject') || '')
+  const [board,      setBoard]      = useState(urlParams.get('board')   || '')
+  const [level,      setLevel]      = useState(urlParams.get('level')   || 'GCSE')
+  const [topic,      setTopic]      = useState(urlParams.get('topic')   || '')
+  const [note,       setNote]       = useState(null)   // { text, cached, slug }
+  const [loading,    setLoading]    = useState(false)
+  const [remaining,  setRemaining]  = useState(null)
+  const [topicList,  setTopicList]  = useState([])
+  const [topicSearch,setTopicSearch]= useState('')
+
+  const subjects = profile?.subjects || []
+  const selectedSubject = subjects.find(s => s.name === subject)
+
+  // Load topic list when subject changes
+  useEffect(() => {
+    if (!subject) return
+    import('../data/topics').then(({ getTopicsForSubject }) => {
+      const sb = selectedSubject?.board || board || 'AQA'
+      const lv = selectedSubject?.qualification || level || 'GCSE'
+      const topics = getTopicsForSubject(sb, lv, subject) || []
+      setTopicList(topics)
+    })
+  }, [subject, board, level])
+
+  // Auto-load if topic pre-selected from URL
+  useEffect(() => {
+    if (topic && subject && board) {
+      loadNote(topic, false)
+    }
+  }, [])
+
+  async function loadNote(topicName, forceGenerate = false) {
+    setLoading(true)
+    setNote(null)
+    const t = topicName || topic
+    const b = selectedSubject?.board || board
+    const lv = selectedSubject?.qualification || level
+
+    try {
+      const { getTopicNoteFromCache, generateTopicNote, saveTopicNoteToCache, incrementTopicNoteViews } = await import('../utils/ai')
+      const { checkTopicNoteLimit, incrementTopicNoteUsage } = await import('../utils/firestore')
+
+      // Check cache first (unless force regenerating)
+      if (!forceGenerate) {
+        const cached = await getTopicNoteFromCache(b, lv, subject, t)
+        if (cached) {
+          setNote({ text: cached.text, cached: true, slug: cached.slug, generatedAt: cached.generatedAt })
+          incrementTopicNoteViews(cached.slug).catch(() => {})
+          setLoading(false)
+          return
+        }
+      }
+
+      // Check rate limit
+      const limit = await checkTopicNoteLimit(uid, profile)
+      setRemaining(limit.remaining)
+      if (!limit.allowed) {
+        toast.error('Daily limit reached (5/day on free plan). Upgrade to Pro for unlimited notes.')
+        setLoading(false)
+        return
+      }
+
+      // Generate
+      const res = await generateTopicNote({ subject, board: b, level: lv, topic: t, uid })
+      if (res.error) { toast.error(res.error); setLoading(false); return }
+
+      // Save to global cache
+      const slug = await saveTopicNoteToCache(b, lv, subject, t, res.text)
+      await incrementTopicNoteUsage(uid)
+      setNote({ text: res.text, cached: false, slug })
+      setRemaining(r => r !== null ? Math.max(0, r - 1) : null)
+    } catch(e) {
+      toast.error('Failed to load note: ' + e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredTopics = topicList.filter(t =>
+    !topicSearch || t.toLowerCase().includes(topicSearch.toLowerCase())
+  )
+
+  return (
+    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ marginBottom: 4 }}>Topic Revision Guides</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          AI-generated revision guides cached globally — generated once, available to all students.
+          {remaining !== null && remaining !== Infinity && (
+            <span style={{ marginLeft: 8, color: remaining > 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+              {remaining > 0 ? `${remaining} generations left today` : 'Daily limit reached — upgrade to Pro for unlimited'}
+            </span>
+          )}
+        </p>
+      </div>
+
+      {/* Subject / board selectors */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
+          <div>
+            <label className="label">Subject</label>
+            <select className="select" value={subject} onChange={e => { setSubject(e.target.value); setTopic(''); setNote(null) }}>
+              <option value="">Select subject</option>
+              {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          {subject && (
+            <>
+              <div>
+                <label className="label">Board</label>
+                <select className="select" value={selectedSubject?.board || board}
+                  onChange={e => setBoard(e.target.value)}>
+                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Level</label>
+                <select className="select" value={selectedSubject?.qualification || level}
+                  onChange={e => setLevel(e.target.value)}>
+                  {['GCSE','A-Level','AS-Level'].map(l => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Topic picker + note viewer */}
+      {subject && (
+        <div style={{ display: 'grid', gridTemplateColumns: note ? '280px 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
+
+          {/* Topic list */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden', maxHeight: note ? 'calc(100vh - 220px)' : 'none' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+              <input className="input" placeholder="Search topics..." value={topicSearch}
+                onChange={e => setTopicSearch(e.target.value)} style={{ fontSize: '0.82rem' }} />
+            </div>
+            <div style={{ overflowY: 'auto', maxHeight: note ? 'calc(100vh - 290px)' : 400 }}>
+              {topicList.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  {topicList.length === 0 ? 'Select a subject to see topics' : 'No topics found'}
+                </div>
+              ) : filteredTopics.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No matching topics</div>
+              ) : (
+                filteredTopics.map((t, i) => (
+                  <button key={i} onClick={() => { setTopic(t); loadNote(t) }}
+                    style={{
+                      width: '100%', textAlign: 'left', padding: '10px 14px',
+                      background: topic === t ? 'rgba(124,58,237,0.1)' : 'transparent',
+                      border: 'none', borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer', fontSize: '0.82rem', lineHeight: 1.4,
+                      color: topic === t ? 'var(--accent-light)' : 'var(--text-primary)',
+                      fontWeight: topic === t ? 600 : 400,
+                      transition: 'background 0.15s',
+                    }}>
+                    {t}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Note viewer */}
+          {note && (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{topic}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    {selectedSubject?.board || board} {selectedSubject?.qualification || level} {subject}
+                    {note.cached && <span style={{ marginLeft: 8, color: 'var(--success)' }}>● Cached</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => loadNote(topic, true)} disabled={loading}
+                    style={{ fontSize: '0.75rem' }}>
+                    {loading ? '...' : '↺ Regenerate'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setNote(null)} style={{ fontSize: '0.75rem' }}>
+                    ✕ Close
+                  </button>
+                </div>
+              </div>
+              <div style={{ padding: '16px 18px', overflowY: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
+                <AIOutput text={note.text} />
+              </div>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {loading && !note && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 16 }}>
+              <div style={{ width: 40, height: 40, border: '3px solid var(--bg-hover)', borderTop: '3px solid var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Generating revision guide...</div>
+                <div>This may take 15-20 seconds for a comprehensive guide.</div>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && !note && subject && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 12, textAlign: 'center' }}>
+              <BookOpen size={40} style={{ opacity: 0.25 }} />
+              <div style={{ fontWeight: 600 }}>Select a topic to view its revision guide</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: 280 }}>
+                Guides are generated by AI and cached globally. Once generated for a topic, all students can access it instantly.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!subject && (
+        <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <BookOpen size={40} style={{ opacity: 0.25, marginBottom: 12 }} />
+          <div style={{ fontWeight: 600, marginBottom: 8 }}>Choose a subject to get started</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Select a subject above to browse topics and generate revision guides.
+            Guides are cached globally — your generations help everyone.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function Study() {
   const { user, profile } = useAuth()
-  const [tab, setTab] = useState('flashcards')
+  // Read URL params — Topics page links here with ?tab=notes&topic=...&subject=...
+  const urlParams  = new URLSearchParams(window.location.search)
+  const initTab    = urlParams.get('tab') || 'flashcards'
+  const [tab, setTab] = useState(initTab)
   const [flashTab, setFlashTab] = useState('generate')
   const [studyCards, setStudyCards] = useState(null)
   const [studyTitle, setStudyTitle] = useState('')
@@ -1427,6 +1666,7 @@ export default function Study() {
 
       {/* Main tabs */}
       <div className="tabs" style={{ marginBottom: 24, padding: 4, flexWrap: 'wrap' }}>
+        <button className={'tab' + (tab === 'notes' ? ' active' : '')} onClick={() => setTab('notes')}><BookOpen size={15} /> Topic Notes</button>
         <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><BookOpen size={15} /> Flashcards</button>
         <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ClipboardList size={15} /> Quiz</button>
         <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
@@ -1538,6 +1778,11 @@ export default function Study() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── TOPIC NOTES ── */}
+      {tab === 'notes' && (
+        <TopicNotesTab profile={profile} uid={user?.uid} />
       )}
 
       {/* ── QUIZ ── */}
