@@ -412,3 +412,78 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
 
   return callAI(prompt, SYSTEM, 8192, uid)
 }
+
+export async function generateTopicNote({ subject, board, level, topic, uid }) {
+  const isALevel = level === 'A-Level' || level === 'AS-Level'
+
+  const prompt = `You are an expert ${board} ${level} ${subject} teacher creating a comprehensive revision guide for a student.
+
+TOPIC: ${topic}
+SUBJECT: ${subject}
+EXAM BOARD: ${board}
+LEVEL: ${level}
+
+Write a thorough revision guide covering ALL of the following sections. Be specific to the ${board} ${level} ${subject} specification — not generic.
+
+## Key Concepts
+List every core concept, definition, and piece of knowledge a student needs for this topic. Use clear, precise language. Include all formulae, equations, or key terms. At least 6-10 bullet points.
+
+## In Depth Explanation
+Explain the topic as if teaching it from scratch. Cover the underlying theory, mechanisms, or principles. Use numbered steps for processes. Include diagrams described in text (e.g. "Draw a graph showing..."). At least 300 words.
+
+## Worked Examples
+Provide 2-3 fully worked examples at ${isALevel ? 'A-Level' : 'GCSE'} standard. Show all working. Include at least one that would appear on a ${board} mark scheme.
+
+## Common Exam Mistakes
+List 5-8 specific mistakes students make on ${board} ${level} ${subject} exam questions on this topic. Be precise — e.g. "Forgetting to convert units" not just "careless errors".
+
+## Exam Technique
+How should students approach questions on this topic in a ${board} ${level} exam? What command words appear (explain, calculate, evaluate, discuss)? How many marks are typical? What does the mark scheme reward?
+
+## Mark Scheme Language
+List 5-6 specific phrases and terminology that ${board} mark schemes use for this topic. These are the exact words examiners credit.
+
+## Connections to Other Topics
+List 3-5 other topics in ${subject} that this connects to, and briefly explain how.
+
+## Quick Recall Facts
+10 key facts a student should be able to recall instantly in an exam. Numbered list, one sentence each.
+
+Format using markdown. Use **bold** for key terms. Use ## for section headings. Be thorough — this should be a complete revision resource.`
+
+  return callAI(prompt, null, 8192, uid)
+}
+
+export async function getTopicNoteFromCache(board, level, subject, topic) {
+  const { doc, getDoc } = await import('firebase/firestore')
+  const { db } = await import('../firebase')
+  const slug = slugify(board + '_' + level + '_' + subject + '_' + topic)
+  try {
+    const snap = await getDoc(doc(db, 'topicNotes', slug))
+    if (snap.exists()) return { cached: true, ...snap.data() }
+    return null
+  } catch(e) { return null }
+}
+
+export async function saveTopicNoteToCache(board, level, subject, topic, text) {
+  const { doc, setDoc, serverTimestamp } = await import('firebase/firestore')
+  const { db } = await import('../firebase')
+  const slug = slugify(board + '_' + level + '_' + subject + '_' + topic)
+  await setDoc(doc(db, 'topicNotes', slug), {
+    board, level, subject, topic, text,
+    slug,
+    generatedAt: serverTimestamp(),
+    views: 1,
+  })
+  return slug
+}
+
+export async function incrementTopicNoteViews(slug) {
+  const { doc, updateDoc, increment } = await import('firebase/firestore')
+  const { db } = await import('../firebase')
+  try { await updateDoc(doc(db, 'topicNotes', slug), { views: increment(1) }) } catch(e) {}
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 200)
+}
