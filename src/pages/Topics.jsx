@@ -1,5 +1,6 @@
 // src/pages/Topics.jsx
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
@@ -460,6 +461,10 @@ export default function Topics() {
                         </div>
                       </div>
                       <div style={{display:'flex',gap:6,flexShrink:0}}>
+                        <button className="btn btn-ghost btn-sm" style={{fontSize:'0.75rem'}}
+                          onClick={()=>navigate('/study?tab=notes&topic='+encodeURIComponent(t.name)+'&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
+                          <BookOpen size={12}/> Guide
+                        </button>
                         <button className="btn btn-secondary btn-sm" onClick={()=>getAIAdvice(t)} disabled={loadingAI===t.id}>
                           {loadingAI===t.id?'…':<><Brain size={12}/> Advice</>}
                         </button>
