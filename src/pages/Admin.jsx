@@ -44,6 +44,178 @@ function Section({ title, icon, children, defaultOpen = true }) {
 }
 
 /* ── Main page ─────────────────────────────────────────────────── */
+/* ── Content tab — bulk AI generation ─────────────────────────────────────── */
+function ContentTab({ email }) {
+  const [subject,   setSubject]   = useState('')
+  const [board,     setBoard]     = useState('AQA')
+  const [level,     setLevel]     = useState('GCSE')
+  const [topics,    setTopics]    = useState([])
+  const [progress,  setProgress]  = useState(null)  // { done, total, current, errors }
+  const [running,   setRunning]   = useState(false)
+  const [log,       setLog]       = useState([])
+
+  const SUBJECTS_BY_LEVEL = {
+    GCSE: ['Mathematics','English Language','English Literature','Biology','Chemistry','Physics',
+           'Combined Science','History','Geography','French','Spanish','German',
+           'Computer Science','Business','Economics','Psychology','Sociology',
+           'Religious Studies','Art & Design','Music','Physical Education','Statistics'],
+    'A-Level': ['Mathematics','Further Mathematics','Biology','Chemistry','Physics',
+                'History','Geography','English Literature','Computer Science',
+                'Economics','Psychology','Business','Sociology','Philosophy'],
+  }
+
+  const subjectList = SUBJECTS_BY_LEVEL[level] || SUBJECTS_BY_LEVEL['GCSE']
+
+  async function loadTopics() {
+    if (!subject) return
+    try {
+      const { getTopicsForSubject } = await import('../data/topics')
+      const list = getTopicsForSubject(board, level, subject) || []
+      setTopics(list)
+    } catch(e) { toast.error(e.message) }
+  }
+
+  useEffect(() => { loadTopics() }, [subject, board, level])
+
+  function addLog(msg, type = 'info') {
+    setLog(l => [...l, { msg, type, ts: new Date().toLocaleTimeString() }])
+  }
+
+  async function runBulkGenerate() {
+    if (!topics.length || !subject) { toast.error('Select a subject with topics first'); return }
+    setRunning(true)
+    setLog([])
+    setProgress({ done: 0, total: topics.length, current: '', errors: 0 })
+    addLog(`Starting bulk generation: ${topics.length} topics for ${board} ${level} ${subject}`)
+
+    const { generateTopicNote, getTopicNoteFromCache, saveTopicNoteToCache } = await import('../utils/ai')
+    let done = 0, errors = 0
+
+    for (const topic of topics) {
+      if (!running) break
+      setProgress(p => ({ ...p, current: topic }))
+      addLog(`Checking cache: ${topic}`)
+
+      try {
+        // Check if already cached
+        const cached = await getTopicNoteFromCache(board, level, subject, topic)
+        if (cached) {
+          addLog(`CACHED: ${topic}`, 'cached')
+          done++
+          setProgress(p => ({ ...p, done }))
+          continue
+        }
+
+        addLog(`Generating: ${topic}`)
+        const res = await generateTopicNote({ subject, board, level, topic, uid: null })
+        if (res.error) {
+          addLog(`ERROR: ${topic} — ${res.error}`, 'error')
+          errors++
+        } else {
+          await saveTopicNoteToCache(board, level, subject, topic, res.text)
+          addLog(`DONE: ${topic}`, 'success')
+          done++
+        }
+      } catch(e) {
+        addLog(`ERROR: ${topic} — ${e.message}`, 'error')
+        errors++
+      }
+
+      setProgress(p => ({ ...p, done, errors }))
+      // Small delay to avoid rate limits
+      await new Promise(r => setTimeout(r, 1200))
+    }
+
+    addLog(`Bulk generation complete: ${done} generated, ${errors} errors`, done > 0 ? 'success' : 'error')
+    setRunning(false)
+    setProgress(p => ({ ...p, current: '' }))
+  }
+
+  const logColour = { info: 'var(--text-muted)', success: 'var(--success)', error: 'var(--danger)', cached: 'var(--info)' }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Bulk topic note generator</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Pre-generates revision guides for every topic in a subject. Cached globally — all students get instant access.
+          Already-cached topics are skipped. Costs API tokens but saves them for every future student request.
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10, marginBottom: 14 }}>
+          <div>
+            <label className="label">Level</label>
+            <select className="select" value={level} onChange={e => { setLevel(e.target.value); setSubject('') }}>
+              <option value="GCSE">GCSE</option>
+              <option value="A-Level">A-Level</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Board</label>
+            <select className="select" value={board} onChange={e => setBoard(e.target.value)}>
+              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Subject</label>
+            <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+              <option value="">Select subject</option>
+              {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {topics.length > 0 && (
+          <div style={{ marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {topics.length} topics found for {board} {level} {subject}
+          </div>
+        )}
+
+        {progress && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 6 }}>
+              <span>{progress.done}/{progress.total} topics</span>
+              <span>{progress.errors > 0 && <span style={{ color: 'var(--danger)' }}>{progress.errors} errors</span>}</span>
+            </div>
+            <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: Math.round(progress.done/progress.total*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
+            </div>
+            {progress.current && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 5 }}>Processing: {progress.current}</div>}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-primary" onClick={runBulkGenerate} disabled={running || !subject || !topics.length}>
+            {running ? 'Generating...' : `Generate all ${topics.length} topics`}
+          </button>
+          {running && (
+            <button className="btn btn-secondary" onClick={() => setRunning(false)}>Stop</button>
+          )}
+        </div>
+      </div>
+
+      {log.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+            Generation log
+            <button className="btn btn-ghost btn-sm" onClick={() => setLog([])}>Clear</button>
+          </div>
+          <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {log.map((l, i) => (
+              <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
+                <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export default function Admin() {
   const { user } = useAuth()
   const [tab, setTab] = useState('users')
@@ -67,7 +239,7 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['users', 'beta', 'stats'].map(t => (
+        {['users', 'beta', 'stats', 'content'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
@@ -75,7 +247,8 @@ export default function Admin() {
 
       {tab === 'users' && <UsersTab email={user.email} />}
       {tab === 'beta'  && <BetaTab  email={user.email} />}
-      {tab === 'stats' && <StatsTab email={user.email} />}
+      {tab === 'stats'   && <StatsTab   email={user.email} />}
+      {tab === 'content' && <ContentTab email={user.email} />}
     </div>
   )
 }
