@@ -1225,6 +1225,7 @@ function TopicNotesTab({ profile, uid }) {
   const [remaining,  setRemaining]  = useState(null)
   const [topicList,  setTopicList]  = useState([])
   const [topicSearch,setTopicSearch]= useState('')
+  const [expanded,   setExpanded]   = useState(false)
 
   const subjects = profile?.subjects || []
   const selectedSubject = subjects.find(s => s.name === subject)
@@ -1353,10 +1354,10 @@ function TopicNotesTab({ profile, uid }) {
 
       {/* Topic picker + note viewer */}
       {subject && (
-        <div style={{ display: 'grid', gridTemplateColumns: note ? '280px 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: expanded ? '1fr' : note ? '280px 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
 
-          {/* Topic list */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden', maxHeight: note ? 'calc(100vh - 220px)' : 'none' }}>
+          {/* Topic list — hidden when expanded */}
+          {!expanded && <div className="card" style={{ padding: 0, overflow: 'hidden', maxHeight: note ? 'calc(100vh - 220px)' : 'none' }}>
             <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
               <input className="input" placeholder="Search topics..." value={topicSearch}
                 onChange={e => setTopicSearch(e.target.value)} style={{ fontSize: '0.82rem' }} />
@@ -1385,7 +1386,7 @@ function TopicNotesTab({ profile, uid }) {
                 ))
               )}
             </div>
-          </div>
+          </div>}
 
           {/* Note viewer */}
           {note && (
@@ -1399,11 +1400,15 @@ function TopicNotesTab({ profile, uid }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(e => !e)}
+                    style={{ fontSize: '0.75rem' }} title={expanded ? 'Collapse panel' : 'Expand to full width'}>
+                    {expanded ? '⊠ Collapse' : '⛶ Expand'}
+                  </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => loadNote(topic, true)} disabled={loading}
                     style={{ fontSize: '0.75rem' }}>
                     {loading ? '...' : '↺ Regenerate'}
                   </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setNote(null)} style={{ fontSize: '0.75rem' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setNote(null); setExpanded(false) }} style={{ fontSize: '0.75rem' }}>
                     ✕ Close
                   </button>
                 </div>
