@@ -70,7 +70,9 @@ function ContentTab({ email }) {
     if (!subject) return
     try {
       const { getTopicsForSubject } = await import('../data/topics')
-      const list = getTopicsForSubject(board, level, subject) || []
+      const papers = getTopicsForSubject(board, subject, level) || {}
+      const flat = Object.values(papers).flat().filter(t => typeof t === 'string' && t.trim())
+      const list = [...new Set(flat)]
       setTopics(list)
     } catch(e) { toast.error(e.message) }
   }
