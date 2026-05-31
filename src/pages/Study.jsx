@@ -1235,7 +1235,10 @@ function TopicNotesTab({ profile, uid }) {
     import('../data/topics').then(({ getTopicsForSubject }) => {
       const sb = selectedSubject?.board || board || 'AQA'
       const lv = selectedSubject?.qualification || level || 'GCSE'
-      const topics = getTopicsForSubject(sb, lv, subject) || []
+      // getTopicsForSubject returns {1:[...],2:[...]} — flatten to deduped array
+      const papers = getTopicsForSubject(sb, subject, lv) || {}
+      const flat = Object.values(papers).flat().filter(t => typeof t === 'string' && t.trim())
+      const topics = [...new Set(flat)]
       setTopicList(topics)
     })
   }, [subject, board, level])
