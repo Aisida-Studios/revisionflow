@@ -416,43 +416,44 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
 export async function generateTopicNote({ subject, board, level, topic, uid }) {
   const isALevel = level === 'A-Level' || level === 'AS-Level'
 
-  const prompt = `You are an expert ${board} ${level} ${subject} teacher creating a comprehensive revision guide for a student.
+  const sys = 'You are a senior ' + board + ' examiner and ' + level + ' ' + subject + ' teacher with 15 years of experience. ' +
+    'You have expert knowledge of the ' + board + ' ' + level + ' ' + subject + ' specification. ' +
+    'CRITICAL: Only include content explicitly on the ' + board + ' ' + level + ' ' + subject + ' specification. ' +
+    'Do NOT include content from other boards, other levels, or beyond the spec.'
 
-TOPIC: ${topic}
-SUBJECT: ${subject}
-EXAM BOARD: ${board}
-LEVEL: ${level}
+  const eg = isALevel ? '3' : '2'
 
-Write a thorough revision guide covering ALL of the following sections. Be specific to the ${board} ${level} ${subject} specification — not generic.
+  const prompt = 'Create a complete specification-accurate revision guide.\n\n' +
+    'EXAM BOARD: ' + board + '\nLEVEL: ' + level + '\nSUBJECT: ' + subject + '\nTOPIC: ' + topic + '\n\n' +
+    'CRITICAL: Every point must be directly from the ' + board + ' ' + level + ' ' + subject + ' specification only.\n\n' +
+    '## Specification Coverage\n' +
+    'Exactly what the ' + board + ' ' + level + ' ' + subject + ' spec says about this topic. List every sub-topic and skill required.\n\n' +
+    '## Key Definitions\n' +
+    'Every term the ' + board + ' spec requires for this topic. Format: **Term** — precise definition.\n\n' +
+    '## Core Content\n' +
+    'Complete content for every spec point. Include all required formulae, equations, case studies, events, vocabulary as appropriate to ' + subject + '.\n\n' +
+    '## Explanation\n' +
+    'Clear explanation of all concepts from first principles. Use numbered steps for processes. At least 300 words.\n\n' +
+    '## Worked Examples\n' +
+    eg + ' fully worked ' + board + ' ' + level + '-style examples with full working. Match real ' + board + ' past paper style and difficulty.\n\n' +
+    '## Common Exam Mistakes\n' +
+    '6 specific mistakes students make on ' + board + ' ' + level + ' ' + subject + ' questions on this topic, based on examiner reports.\n\n' +
+    '## ' + board + ' Exam Technique\n' +
+    '- Typical question styles for this topic in ' + board + ' ' + level + ' ' + subject + '\n' +
+    '- Command words used and exactly what they require\n' +
+    '- Typical mark allocations\n' +
+    '- What the ' + board + ' mark scheme specifically rewards\n\n' +
+    '## Exact Mark Scheme Phrases\n' +
+    '8-10 verbatim-style phrases from ' + board + ' ' + level + ' ' + subject + ' mark schemes for this topic. Students should memorise these exactly.\n\n' +
+    '## Specification Links\n' +
+    '3-4 other ' + board + ' ' + level + ' ' + subject + ' spec topics that connect to this one, and how.\n\n' +
+    '## Quick-Fire Recall\n' +
+    '12 facts or definitions a student must state instantly in an exam. Numbered, one sentence each. Spec-required content only.\n\n' +
+    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate throughout.'
 
-## Key Concepts
-List every core concept, definition, and piece of knowledge a student needs for this topic. Use clear, precise language. Include all formulae, equations, or key terms. At least 6-10 bullet points.
-
-## In Depth Explanation
-Explain the topic as if teaching it from scratch. Cover the underlying theory, mechanisms, or principles. Use numbered steps for processes. Include diagrams described in text (e.g. "Draw a graph showing..."). At least 300 words.
-
-## Worked Examples
-Provide 2-3 fully worked examples at ${isALevel ? 'A-Level' : 'GCSE'} standard. Show all working. Include at least one that would appear on a ${board} mark scheme.
-
-## Common Exam Mistakes
-List 5-8 specific mistakes students make on ${board} ${level} ${subject} exam questions on this topic. Be precise — e.g. "Forgetting to convert units" not just "careless errors".
-
-## Exam Technique
-How should students approach questions on this topic in a ${board} ${level} exam? What command words appear (explain, calculate, evaluate, discuss)? How many marks are typical? What does the mark scheme reward?
-
-## Mark Scheme Language
-List 5-6 specific phrases and terminology that ${board} mark schemes use for this topic. These are the exact words examiners credit.
-
-## Connections to Other Topics
-List 3-5 other topics in ${subject} that this connects to, and briefly explain how.
-
-## Quick Recall Facts
-10 key facts a student should be able to recall instantly in an exam. Numbered list, one sentence each.
-
-Format using markdown. Use **bold** for key terms. Use ## for section headings. Be thorough — this should be a complete revision resource.`
-
-  return callAI(prompt, null, 8192, uid)
+  return callAI(prompt, sys, 8192, uid)
 }
+
 
 export async function getTopicNoteFromCache(board, level, subject, topic) {
   const { doc, getDoc } = await import('firebase/firestore')
