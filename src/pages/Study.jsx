@@ -267,7 +267,7 @@ function WriteMode({ cards, onDone, uid }) {
         <textarea ref={inputRef} className="textarea"
           style={{ minHeight:80, fontSize:'0.9rem', borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
           value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>{if(e.key==='Enter'&&e.ctrlKey&&!checked)check()}}
+          onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
         {/* AI marking shown once answer is submitted */}
         {checked && (
@@ -278,9 +278,26 @@ function WriteMode({ cards, onDone, uid }) {
         )}
       </div>
       {!checked && (
-        <button className="btn btn-primary" style={{width:'100%'}} onClick={()=>setChecked('pending')} disabled={!input.trim()}>
-          Submit answer
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setChecked('pending')} disabled={!input.trim()}>
+            Submit answer
+          </button>
+          <button className="btn btn-secondary" onClick={() => {
+            setChecked('idk')
+            setScores(s => { const ns=[...s]; ns[idx]=0; return ns })
+          }} title="I don't know — reveal answer">
+            IDK
+          </button>
+        </div>
+      )}
+      {checked === 'idk' && (
+        <div style={{ marginTop: 10, padding: '12px 16px', borderRadius: 12,
+          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 6, fontSize: '0.85rem' }}>
+            Answer revealed
+          </div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6 }}>{card.a}</div>
+        </div>
       )}
       {checked && checked !== 'pending' && (
         <button className="btn btn-primary" style={{width:'100%'}} onClick={next}>{idx>=deck.length-1?'See results':'Next'}</button>
@@ -377,8 +394,8 @@ function SpellMode({ cards, onDone }) {
         <input ref={inputRef} className="input"
           style={{ borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
           value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>{if(e.key==='Enter'&&!checked)check()}}
-          placeholder="Spell out the full definition…" disabled={!!checked} />
+          onKeyDown={e=>{if((e.key==='Enter'||e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
+          placeholder="Spell out the full definition… (Enter to check)" disabled={!!checked} />
         {checked==='wrong'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--danger)', padding:'8px 12px', background:'rgba(239,68,68,0.08)', borderRadius:8, border:'1px solid rgba(239,68,68,0.2)' }}>
           Correct spelling: <strong>{card.a}</strong>
         </div>}
@@ -535,19 +552,35 @@ ${questions}`
               value={q.answer}
               onChange={e => { const u = [...qs]; u[idx] = { ...u[idx], answer: e.target.value }; setQs(u) }}
               placeholder="Type your answer…" disabled={q.checked !== null} />
-            {q.checked && (
+            {q.checked && q.checked !== 'idk' && (
               <div style={{ marginTop: 8 }}>
                 <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
                   onResult={(correct) => handleWriteAI(correct)} autoMark />
+              </div>
+            )}
+            {q.checked === 'idk' && (
+              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.82rem' }}>Answer</div>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
               </div>
             )}
           </div>
         )}
       </div>
       {q.checked === null && q.type === 'write' && (
-        <button className="btn btn-primary" style={{ width: '100%' }} onClick={submitWrite} disabled={!q.answer.trim()}>
-          Submit answer
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={submitWrite} disabled={!q.answer.trim()}>
+            Submit answer
+          </button>
+          <button className="btn btn-secondary" onClick={() => {
+            const u = [...qs]
+            u[idx] = { ...u[idx], checked: 'idk', answer: u[idx].answer || '(skipped)' }
+            setQs(u)
+          }} title="I don't know">
+            IDK
+          </button>
+        </div>
       )}
       {q.checked !== null && q.checked !== 'pending' && (
         <button className="btn btn-primary" style={{ width: '100%' }} onClick={next}>
@@ -558,21 +591,94 @@ ${questions}`
   )
 }
 
-function StudySession({ cards: initCards, title, subject, onClose, onSave, uid }) {
-  const [cards,setCards]   = useState(()=>[...initCards])
-  const [mode,setMode]     = useState('select')
-  const [results,setResults]= useState(null)
-  const [idx,setIdx]       = useState(0)
-  const [scores,setScores] = useState([])
-  const [copied,setCopied] = useState(false)
+function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, setId }) {
+  const [cards,setCards]       = useState(()=>[...initCards])
+  const [mode,setMode]         = useState('select')
+  const [results,setResults]   = useState(null)
+  const [idx,setIdx]           = useState(0)
+  const [scores,setScores]     = useState([])
+  const [copied,setCopied]     = useState(false)
+  const [masteryFilter,setMasteryFilter] = useState('all')  // 'all' | 'unmastered' | 'mastered'
+  // cardMastery: { [cardQ]: 1|2|3 } — persisted to Firestore via set metadata
+  const [cardMastery,setCardMastery] = useState({})
+
+  // Load mastery data from Firestore when studying a saved set
+  useEffect(() => {
+    if (!uid || !setId) return
+    import('../utils/firestore').then(({ getDoc, doc }) => {
+      import('../firebase').then(({ db }) => {
+        getDoc(doc(db, 'users', uid, 'flashcardSets', setId)).then(snap => {
+          if (snap.exists() && snap.data().cardMastery) {
+            setCardMastery(snap.data().cardMastery)
+          }
+        }).catch(() => {})
+      })
+    })
+  }, [uid, setId])
+
+  // Save mastery after flash mode completes
+  async function saveMastery(newScores) {
+    if (!uid || !setId) return
+    const mastery = {}
+    cards.forEach((c, i) => { if (newScores[i]) mastery[c.q] = newScores[i] })
+    try {
+      const { updateDoc, doc } = await import('firebase/firestore')
+      const { db } = await import('../firebase')
+      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery })
+      setCardMastery(mastery)
+    } catch(e) {}
+  }
+
+  // Derive filtered cards based on mastery filter
+  const filteredCards = masteryFilter === 'all' ? cards
+    : masteryFilter === 'unmastered' ? cards.filter(c => (cardMastery[c.q] || 0) < 3)
+    : cards.filter(c => (cardMastery[c.q] || 0) >= 3)
+
+  // Persist progress to localStorage (keyed by setId or title)
+  const progressKey = setId ? 'rf_progress_' + setId : null
+
+  function saveProgress(m, i, s) {
+    if (!progressKey) return
+    try { localStorage.setItem(progressKey, JSON.stringify({ mode: m, idx: i, scores: s, ts: Date.now() })) }
+    catch(e) {}
+  }
+
+  function clearProgress() {
+    if (progressKey) try { localStorage.removeItem(progressKey) } catch(e) {}
+  }
+
+  // Load saved progress on mount
+  useEffect(() => {
+    if (!progressKey) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(progressKey) || 'null')
+      if (!saved) return
+      // Only restore if less than 24 hours old
+      if (Date.now() - saved.ts > 86400000) { clearProgress(); return }
+      if (saved.mode && saved.mode !== 'select' && saved.mode !== 'results') {
+        setMode(saved.mode)
+        setIdx(saved.idx || 0)
+        setScores(saved.scores || [])
+        toast.success('Progress restored — continuing where you left off')
+      }
+    } catch(e) {}
+  }, [])
 
   function handleFlashRate(val) {
     const s=[...scores]; s[idx]=val; setScores(s)
-    if(idx<cards.length-1) setIdx(i=>i+1)
-    else { setResults({got:s.filter(v=>v===3).length,total:cards.length,mode:'flash',scores:s}); setMode('results') }
+    if(idx<filteredCards.length-1) {
+      setIdx(i=>i+1)
+      saveProgress('flash', idx+1, s)
+    } else {
+      const newResults = {got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s}
+      setResults(newResults)
+      setMode('results')
+      saveMastery(s)
+      clearProgress()
+    }
   }
   function handleSubDone(correct,total) { setResults({got:correct,total,mode}); setMode('results') }
-  function restart(m) { setIdx(0); setScores([]); setResults(null); setMode(m||'select') }
+  function restart(m) { setIdx(0); setScores([]); setResults(null); setMode(m||'select'); clearProgress() }
   function shuffle() { setCards(c=>[...c].sort(()=>Math.random()-.5)); setIdx(0); setScores([]) }
   function quizletCopy() { navigator.clipboard.writeText(cards.map(c=>c.q+'\t'+c.a).join('\n')); setCopied(true); toast.success('Copied!'); setTimeout(()=>setCopied(false),3000) }
   function downloadCSV() {
@@ -606,9 +712,18 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid }
   if (mode==='select') return (
     <div style={{ maxWidth:560, margin:'0 auto' }}>
       <TopBar />
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
-        <span className="badge badge-purple">{cards.length} cards</span>
-        {subject&&<span className="badge badge-grey">{subject}</span>}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18, flexWrap:'wrap', gap:8 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          <span className="badge badge-purple">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
+          {subject&&<span className="badge badge-grey">{subject}</span>}
+        </div>
+        {setId && (
+          <select className="select" style={{ width:'auto', fontSize:'0.8rem' }} value={masteryFilter} onChange={e=>{ setMasteryFilter(e.target.value); setIdx(0); setScores([]) }}>
+            <option value="all">All cards ({cards.length})</option>
+            <option value="unmastered">Unmastered ({cards.filter(c=>(cardMastery[c.q]||0)<3).length})</option>
+            <option value="mastered">Mastered ({cards.filter(c=>(cardMastery[c.q]||0)>=3).length})</option>
+          </select>
+        )}
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
         {MODES.map(m=>(
@@ -679,16 +794,16 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid }
       <TopBar />
       <div style={{ marginBottom:12 }}>
         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', color:'var(--text-muted)', marginBottom:4 }}>
-          <span>{idx+1}/{cards.length}</span><span>{Math.round(idx/cards.length*100)}%</span>
+          <span>{idx+1}/{filteredCards.length}</span><span>{Math.round(idx/filteredCards.length*100)}%</span>
         </div>
         <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
           <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius:3, transition:'width 0.3s' }} />
         </div>
       </div>
-      <FlipCard card={cards[idx]} index={idx} total={cards.length} showRate onRate={handleFlashRate} />
+      <FlipCard card={filteredCards[idx]} index={idx} total={filteredCards.length} showRate onRate={handleFlashRate} />
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
         <button className="btn btn-ghost btn-sm" onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0}><ChevronLeft size={15}/> Prev</button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<cards.length-1)setIdx(i=>i+1);else{setResults({got:scores.filter(v=>v===3).length,total:cards.length,mode:'flash',scores});setMode('results')}}}>
+        <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<filteredCards.length-1)setIdx(i=>i+1);else{const s=scores;setResults({got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s});setMode('results');saveMastery(s)}}}>
           {idx<cards.length-1?<>Next <ChevronRight size={15}/></>:'Finish'}
         </button>
       </div>
@@ -1484,7 +1599,8 @@ export default function Study() {
   const [mySets, setMySets] = useState([])
   const [pubSets, setPubSets] = useState([])
   const [setsLoad, setSetsLoad] = useState(false)
-  const [searchQ, setSearchQ] = useState('')
+  const [searchQ,   setSearchQ]   = useState('')
+  const [mySearch,  setMySearch]   = useState('')
 
   // Exam questions
   const [eqSubject, setEqSubject] = useState('')
@@ -1609,11 +1725,14 @@ export default function Study() {
     } catch (e) { toast.error('Import failed: ' + e.message) }
   }
 
+  const [studySetId, setStudySetId] = useState(null)
+
   function studySet(set) {
     setStudyCards(set.cards)
     setStudyTitle(set.title)
     setStudySubj(set.subject)
     setStudyTopic(set.topic || '')
+    setStudySetId(set.id || null)
   }
 
   async function handleGenEQ() {
@@ -1650,12 +1769,12 @@ export default function Study() {
   // If studying a set
   if (studyCards) return (
     <div className="fade-in">
-      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => setStudyCards(null)} onSave={() => setShowSave(true)} uid={user?.uid} />
+      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => { setStudyCards(null); setStudySetId(null) }} onSave={() => setShowSave(true)} uid={user?.uid} setId={studySetId} />
       {showSave && <SaveSetModal cards={studyCards} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
     </div>
   )
 
-  const filteredMy = mySets.filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()))
+  const filteredMy = mySets.filter(s => !mySearch || s.title?.toLowerCase().includes(mySearch.toLowerCase()) || s.subject?.toLowerCase().includes(mySearch.toLowerCase()) || s.topic?.toLowerCase().includes(mySearch.toLowerCase()))
   const filteredPub = pubSets.filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()) || s.subject?.toLowerCase().includes(searchQ.toLowerCase()))
 
   return (
@@ -1709,7 +1828,8 @@ export default function Study() {
                 </div>
                 <div><label className="label">Number of cards</label>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {[5, 10, 15, 20].map(n => <button key={n} onClick={() => setFcCount(n)} className={'btn btn-sm ' + (fcCount === n ? 'btn-primary' : 'btn-secondary')}>{n}</button>)}
+                    {(profile?.isPro || profile?.betaUser ? [5, 10, 15, 20, 30, 50] : [5, 10, 15, 20]).map(n => <button key={n} onClick={() => setFcCount(n)} className={'btn btn-sm ' + (fcCount === n ? 'btn-primary' : 'btn-secondary')}>{n}</button>)}
+                    {!(profile?.isPro || profile?.betaUser) && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Max 20 free · <span style={{ color: 'var(--accent)' }}>Pro: 50+</span></span>}
                   </div>
                 </div>
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={fcLoading || !fcSubject}>
@@ -1721,6 +1841,12 @@ export default function Study() {
 
           {flashTab === 'my-sets' && (
             <div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                <input className="input" placeholder="Search my sets..." value={mySearch}
+                  onChange={e => setMySearch(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
+                <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={13} /> Create</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
+              </div>
               {setsLoad ? <div className="loading-center"><div className="spinner" /></div>
                 : filteredMy.length === 0 ? (
                   <div className="empty-state">
@@ -1776,9 +1902,33 @@ export default function Study() {
                       <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            {set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
+                            {set.author && <span style={{ marginLeft: 4, fontWeight: 600, color: set.author === 'RevisionFlow' ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                              {set.author === 'RevisionFlow' ? '✦ RevisionFlow' : '· ' + set.author}
+                            </span>}
+                          </div>
                         </div>
-                        <button className="btn btn-primary btn-sm" onClick={() => studySet(set)}>Study →</button>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => studySet(set)}>Study →</button>
+                          <button className="btn btn-secondary btn-sm" title="Save to My Sets"
+                            onClick={async () => {
+                              try {
+                                const { saveFlashcardSet } = await import('../utils/firestore')
+                                await saveFlashcardSet(user.uid, {
+                                  title: set.title + ' (copy)',
+                                  subject: set.subject,
+                                  topic: set.topic || '',
+                                  cards: set.cards || [],
+                                  isPublic: false,
+                                })
+                                toast.success('Saved to My Sets!')
+                                loadMySets()
+                              } catch(e) { toast.error(e.message) }
+                            }}>
+                            + Save
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
