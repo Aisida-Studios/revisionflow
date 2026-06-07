@@ -747,11 +747,21 @@ export async function runBadgeAudit(uid) {
    Public sets also stored at: publicFlashcards/{id}
 ========================= */
 
-export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false }) => {
+export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType }) => {
+  // Resolve display name for author
+  let resolvedAuthor = author
+  if (!resolvedAuthor) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid))
+      if (snap.exists()) resolvedAuthor = snap.data().displayName || 'Anonymous'
+    } catch(e) {}
+  }
   const data = {
     uid, title, subject, topic: topic || '',
     cards, isPublic,
     cardCount: cards.length,
+    author: resolvedAuthor || 'Anonymous',
+    authorType: authorType || 'user',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
@@ -776,6 +786,8 @@ export const updateFlashcardSet = async (uid, setId, { title, subject, topic, ca
     cards, isPublic,
     cardCount: cards.length,
     updatedAt: serverTimestamp(),
+    // preserve existing author — don't overwrite official sets
+    ...(prev.authorType !== 'official' && { author: prev.author }),
   }
   await updateDoc(ref, updates)
   // Sync public collection
