@@ -320,10 +320,35 @@ export default function Topics() {
             <PriorityList topics={topics} profile={profile} />
           ) : view==='resources' ? (
             // ── Resources view ──
-            <ResourcesPanel subject={selSubj} allSubjects={subjects}/>
+            <div>
+              {selSubj && (
+                <div style={{padding:'10px 14px',borderRadius:10,background:'rgba(124,58,237,0.07)',border:'1px solid rgba(124,58,237,0.2)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>AI Revision Guides for {selSubj}</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Worked examples, mark scheme language and exam technique per topic</div>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
+                    <BookOpen size={13}/> Open guides
+                  </button>
+                </div>
+              )}
+              <ResourcesPanel subject={selSubj} allSubjects={subjects}/>
+            </div>
           ) : view==='notes' ? (
             // ── Notes view ──
             <div>
+              {/* Link to Study Tools revision guide */}
+              {selSubj && (
+                <div style={{padding:'10px 14px',borderRadius:10,background:'rgba(124,58,237,0.07)',border:'1px solid rgba(124,58,237,0.2)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>AI Revision Guides available</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Browse spec-accurate revision guides for {selSubj} topics</div>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
+                    <BookOpen size={13}/> Browse guides
+                  </button>
+                </div>
+              )}
               <div style={{marginBottom:16}}>
                 <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
                   <input className="input" placeholder="Note title…" value={noteForm.title} onChange={e=>setNoteForm(f=>({...f,title:e.target.value}))}/>
