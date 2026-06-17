@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getUserByUsername } from '../utils/firestore'
-import { LEVELS, BADGES, SUBJECT_COLOURS } from '../data/subjects'
+import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
+import { BADGE_LIST } from '../data/badges'
 import { Zap, Flame, Trophy } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -33,7 +34,7 @@ export default function PublicProfile() {
 
   const p = profileData
   const lvl = LEVELS[Math.min((p.level||1)-1,LEVELS.length-1)]
-  const unlockedBadges = (p.badges||[]).map(id=>BADGES.find(b=>b.id===id)).filter(Boolean)
+  const unlockedBadges = (p.badges||[]).map(id=>BADGE_LIST.find(b=>b.id===id)).filter(Boolean)
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-base)',padding:24}}>
