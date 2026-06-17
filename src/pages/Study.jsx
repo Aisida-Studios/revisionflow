@@ -5,6 +5,7 @@ import {
   checkAndAwardBadge, autoCompleteQuest,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
+  saveQuizResult, getQuizHistory,
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
@@ -13,7 +14,7 @@ import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
   RotateCcw, Copy, Check, Download, Shuffle, X, Plus,
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
-  Users, ChevronDown,
+  Users, ChevronDown, Timer,
 } from 'lucide-react'
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -224,18 +225,45 @@ FEEDBACK: One sentence.`
   )
 }
 
-function WriteMode({ cards, onDone, uid }) {
+function WriteMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
   const [deck]              = useState(() => [...cards].sort(()=>Math.random()-.5))
   const [idx,setIdx]        = useState(0)
   const [input,setInput]    = useState('')
-  const [checked,setChecked]= useState(null) // null | 'pending' | 'correct' | 'wrong'
+  const [checked,setChecked]= useState(null)
   const [scores,setScores]  = useState([])
+  const [timeLeft, setTimeLeft] = useState(timePerQ)
+  const startTimeRef = useRef(Date.now())
+  const timerRef = useRef(null)
   const inputRef = useRef(null)
 
   useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
 
+  useEffect(() => {
+    if (!timedMode || checked !== null) return
+    setTimeLeft(timePerQ)
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current)
+          setChecked('wrong')
+          setScores(s => { const ns=[...s]; ns[idx]=0; return ns })
+          setTimeout(() => {
+            if (idx >= deck.length - 1) {
+              const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+              onDone(scores.filter(Boolean).length, deck.length, elapsed)
+            } else setIdx(i => i + 1)
+          }, 900)
+          return 0
+        }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [timedMode, idx, checked])
+
   function handleAIResult(correct) {
-    // Called by AIWriteMarker with the AI verdict — sets final state and records score
+    clearInterval(timerRef.current)
     setScores(s => {
       const ns = [...s]
       ns[idx] = correct ? 1 : 0
@@ -245,7 +273,9 @@ function WriteMode({ cards, onDone, uid }) {
   }
 
   function next() {
-    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length); return }
+    clearInterval(timerRef.current)
+    const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length, elapsed); return }
     setIdx(i=>i+1)
   }
 
@@ -255,11 +285,26 @@ function WriteMode({ cards, onDone, uid }) {
     <div>
       <div style={{ marginBottom:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
-          <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
+          <span>{idx+1}/{deck.length}</span>
+          <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+            {timedMode && (
+              <span style={{ fontWeight:700, color: timeLeft<=5?'var(--danger)':timeLeft<=10?'var(--warning)':'var(--text-muted)', fontSize:'0.82rem' }}>
+                ⏱ {timeLeft}s
+              </span>
+            )}
+            <span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
+          </div>
         </div>
         <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
           <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
         </div>
+        {timedMode && (
+          <div style={{ height:3, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden', marginTop:3 }}>
+            <div style={{ height:'100%', width:Math.round(timeLeft/timePerQ*100)+'%',
+              background: timeLeft<=5?'var(--danger)':timeLeft<=10?'var(--warning)':'var(--success)',
+              borderRadius:3, transition:'width 1s linear' }} />
+          </div>
+        )}
       </div>
       <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Write the definition</div>
@@ -407,7 +452,7 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone, uid }) {
+function TestMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
   // AI generates plausible wrong answers for MC questions
   async function buildWithAI() {
     // Build initial deck with real-card distractors as fallback
@@ -467,6 +512,9 @@ ${questions}`
   const [idx, setIdx]       = useState(0)
   const [finished, setFin]  = useState(false)
   const [building, setBuilding] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(timePerQ)
+  const startTimeRef = useRef(Date.now())
+  const timerRef = useRef(null)
 
   useEffect(() => {
     buildWithAI().then(deck => {
@@ -475,6 +523,43 @@ ${questions}`
       loadAIDistractors(deck, setQs)
     })
   }, [])
+
+  // Timer for timed mode
+  useEffect(() => {
+    if (!timedMode || building || finished) return
+    setTimeLeft(timePerQ)
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current)
+          // Auto-advance: mark as wrong if unanswered
+          setQs(prev => {
+            const u = [...prev]
+            if (u[idx] && u[idx].checked === null) {
+              u[idx] = { ...u[idx], checked: 'wrong', selected: null }
+            }
+            return u
+          })
+          // Small delay then move on
+          setTimeout(() => {
+            setIdx(i => {
+              if (i >= qs.length - 1) {
+                setFin(true)
+                const sc = qs.filter(q => q.checked === 'correct').length
+                const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+                onDone(sc, qs.length, elapsed)
+              }
+              return Math.min(i + 1, qs.length - 1)
+            })
+          }, 800)
+          return 0
+        }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [timedMode, idx, building, finished])
 
   function selectMC(opt) {
     if (qs[idx].checked !== null) return
@@ -493,9 +578,11 @@ ${questions}`
   }
 
   function next() {
+    clearInterval(timerRef.current)
     if (idx >= qs.length - 1) {
       const sc = qs.filter(q => q.checked === 'correct').length
-      setFin(true); onDone(sc, qs.length); return
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+      setFin(true); onDone(sc, qs.length, elapsed); return
     }
     setIdx(i => i + 1)
   }
@@ -513,11 +600,25 @@ ${questions}`
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
           <span>Q{idx+1}/{qs.length}</span>
-          <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {timedMode && (
+              <span style={{ fontWeight: 700, color: timeLeft <= 5 ? 'var(--danger)' : timeLeft <= 10 ? 'var(--warning)' : 'var(--text-muted)', fontSize: '0.82rem' }}>
+                ⏱ {timeLeft}s
+              </span>
+            )}
+            <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
+          </div>
         </div>
         <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: Math.round(idx/qs.length*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
+        {timedMode && (
+          <div style={{ height: 3, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden', marginTop: 3 }}>
+            <div style={{ height: '100%', width: Math.round(timeLeft/timePerQ*100)+'%',
+              background: timeLeft <= 5 ? 'var(--danger)' : timeLeft <= 10 ? 'var(--warning)' : 'var(--success)',
+              borderRadius: 3, transition: 'width 1s linear' }} />
+          </div>
+        )}
       </div>
       <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -1138,91 +1239,274 @@ function PasteImportModal({ subjects, onImport, onClose }) {
 
 /* ── Quiz tab ───────────────────────────────────────────────────────────────── */
 function QuizTab({ mySets, uid, profile }) {
-  const [selectedSet, setSelectedSet] = useState(null)
-  const [quizMode,    setQuizMode]    = useState('mc')    // 'mc' | 'write' | 'mixed'
-  const [questionCount, setQCount]    = useState(10)
-  const [started,     setStarted]     = useState(false)
-  const [results,     setResults]     = useState(null)
+  const [quizView,      setQuizView]    = useState('setup')  // 'setup' | 'playing' | 'results' | 'history' | 'public'
+  const [selectedSet,   setSelectedSet] = useState(null)
+  const [quizMode,      setQuizMode]    = useState('mc')     // 'mc' | 'write' | 'mixed'
+  const [timedMode,     setTimedMode]   = useState(false)
+  const [timePerQ,      setTimePerQ]    = useState(20)       // seconds per question in timed mode
+  const [questionCount, setQCount]      = useState(10)
+  const [results,       setResults]     = useState(null)
+  const [history,       setHistory]     = useState([])
+  const [histLoading,   setHistLoading] = useState(false)
+  const [publicSets,    setPublicSets]  = useState([])
+  const [pubLoading,    setPubLoading]  = useState(false)
+  const [filterSubj,    setFilterSubj]  = useState('')
+  const [filterSearch,  setFilterSearch]= useState('')
 
   const subjects = profile?.subjects?.map(s => s.name) || []
 
-  if (results) return (
-    <div style={{ maxWidth: 520, margin: '0 auto' }}>
-      <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
-        {(() => {
-          const pct = Math.round(results.got / results.total * 100)
-          const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
-          return (
-            <>
-              <div style={{ fontSize: '3rem', marginBottom: 10 }}>{emoji}</div>
-              <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent)', margin: '12px 0' }}>
-                {results.got}/{results.total}
-                <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>{pct}%</span>
-              </div>
-              <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.875rem' }}>
-                from <strong>{selectedSet?.title}</strong>
-              </p>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" onClick={() => { setResults(null); setStarted(false) }}>
-                  <RotateCcw size={14} /> Try again
-                </button>
-                <button className="btn btn-secondary" onClick={() => { setResults(null); setStarted(false); setSelectedSet(null) }}>
-                  Change set
-                </button>
-              </div>
-            </>
-          )
-        })()}
-      </div>
-    </div>
-  )
+  async function loadHistory() {
+    setHistLoading(true)
+    try {
+      const { getQuizHistory } = await import('../utils/firestore')
+      const h = await getQuizHistory(uid, 30)
+      setHistory(h)
+    } catch(e) { console.warn(e) }
+    setHistLoading(false)
+  }
 
-  if (started && selectedSet) {
+  async function loadPublicSets() {
+    setPubLoading(true)
+    try {
+      const pub = await getPublicFlashcardSets()
+      setPublicSets(pub)
+    } catch(e) {}
+    setPubLoading(false)
+  }
+
+  function handleDone(got, total, timeTaken) {
+    const pct = Math.round(got / total * 100)
+    const res = { got, total, pct, timeTaken,
+      setId: selectedSet?.id, setTitle: selectedSet?.title,
+      subject: selectedSet?.subject, mode: quizMode, timedMode }
+    setResults(res)
+    setQuizView('results')
+    // Save to history
+    import('../utils/firestore').then(({ saveQuizResult }) => {
+      saveQuizResult(uid, res).catch(() => {})
+    })
+  }
+
+  // ── Results screen ─────────────────────────────────────────────────────────
+  if (quizView === 'results' && results) {
+    const { got, total, pct, timeTaken } = results
+    const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
+    const mins  = Math.floor((timeTaken || 0) / 60)
+    const secs  = ((timeTaken || 0) % 60).toString().padStart(2, '0')
+    return (
+      <div style={{ maxWidth: 520, margin: '0 auto' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: 10 }}>{emoji}</div>
+          <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
+          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)', margin: '14px 0' }}>
+            {got}/{total}
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 10 }}>{pct}%</span>
+          </div>
+          {timeTaken != null && (
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+              ⏱ {mins > 0 ? mins + 'm ' : ''}{secs}s
+            </div>
+          )}
+          <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.875rem' }}>
+            {selectedSet?.title} · {quizMode === 'mc' ? 'Multiple choice' : quizMode === 'write' ? 'Written' : 'Mixed'}{timedMode ? ' · Timed' : ''}
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={() => { setResults(null); setQuizView('playing') }}>
+              <RotateCcw size={14} /> Try again
+            </button>
+            <button className="btn btn-secondary" onClick={() => { setResults(null); setSelectedSet(null); setQuizView('setup') }}>
+              Change set
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { loadHistory(); setQuizView('history') }}>
+              📊 History
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Playing screen ─────────────────────────────────────────────────────────
+  if (quizView === 'playing' && selectedSet) {
     const quizCards = [...selectedSet.cards].sort(() => Math.random() - 0.5).slice(0, questionCount)
     return (
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}>
             <ChevronLeft size={15} /> Back
           </button>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
-          <span className="badge badge-purple">{quizCards.length} questions</span>
+          <div style={{ textAlign: 'center' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
+          </div>
+          <span className="badge badge-purple">{quizCards.length} Qs</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} uid={uid}
-            onDone={(got, total) => setResults({ got, total })} />
+          <TestMode cards={quizCards} uid={uid} timedMode={timedMode} timePerQ={timePerQ}
+            onDone={(got, total, timeTaken) => handleDone(got, total, timeTaken)} />
         )}
         {quizMode === 'write' && (
-          <WriteMode cards={quizCards} uid={uid}
-            onDone={(got, total) => setResults({ got, total })} />
+          <WriteMode cards={quizCards} uid={uid} timedMode={timedMode} timePerQ={timePerQ}
+            onDone={(got, total, timeTaken) => handleDone(got, total, timeTaken)} />
         )}
       </div>
     )
   }
 
+  // ── History screen ─────────────────────────────────────────────────────────
+  if (quizView === 'history') {
+    return (
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}><ChevronLeft size={15} /> Back</button>
+          <h3 style={{ margin: 0 }}>Quiz history</h3>
+        </div>
+        {histLoading ? (
+          <div className="empty-state"><div className="spinner" /></div>
+        ) : history.length === 0 ? (
+          <div className="empty-state"><div style={{ fontSize: '2rem' }}>📊</div><p>No quiz history yet — complete a quiz to see results here.</p></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {history.map((h, i) => {
+              const emoji = (h.pct||0) >= 90 ? '🏆' : (h.pct||0) >= 70 ? '🎉' : (h.pct||0) >= 50 ? '💪' : '📚'
+              const mins = Math.floor((h.timeTaken||0)/60)
+              const secs = ((h.timeTaken||0)%60).toString().padStart(2,'0')
+              const dateStr = h.createdAt?.toDate ? h.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : ''
+              return (
+                <div key={h.id||i} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px' }}>
+                  <div style={{ fontSize: '1.6rem', flexShrink: 0 }}>{emoji}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.setTitle || 'Quiz'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {h.subject && <span>{h.subject} · </span>}
+                      {h.mode === 'mc' ? 'Multiple choice' : h.mode === 'write' ? 'Written' : 'Mixed'}
+                      {h.timedMode ? ' · Timed' : ''}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: (h.pct||0) >= 70 ? 'var(--success)' : (h.pct||0) >= 50 ? 'var(--warning)' : 'var(--danger)' }}>
+                      {h.got}/{h.total} <span style={{ fontWeight: 500, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{h.pct}%</span>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {h.timeTaken != null && <span>{mins > 0 ? mins + 'm ' : ''}{secs}s · </span>}
+                      {dateStr}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Public sets screen ─────────────────────────────────────────────────────
+  if (quizView === 'public') {
+    const filteredPub = publicSets.filter(s => {
+      const matchSubj = !filterSubj || s.subject === filterSubj
+      const matchSearch = !filterSearch || s.title?.toLowerCase().includes(filterSearch.toLowerCase()) || s.subject?.toLowerCase().includes(filterSearch.toLowerCase())
+      return matchSubj && matchSearch
+    })
+    const pubSubjects = [...new Set(publicSets.map(s => s.subject).filter(Boolean))].sort()
+    return (
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}><ChevronLeft size={15} /> Back</button>
+          <h3 style={{ margin: 0 }}>Public quiz sets</h3>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          <input className="input" placeholder="Search sets…" value={filterSearch}
+            onChange={e => setFilterSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 140, fontSize: '0.85rem', padding: '7px 11px' }} />
+          <select className="select" value={filterSubj} onChange={e => setFilterSubj(e.target.value)}
+            style={{ fontSize: '0.85rem', padding: '7px 11px' }}>
+            <option value="">All subjects</option>
+            {pubSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        {pubLoading ? (
+          <div className="empty-state"><div className="spinner" /></div>
+        ) : filteredPub.length === 0 ? (
+          <div className="empty-state"><Globe size={32} style={{ opacity: 0.3 }} /><p>No public sets found.</p></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {filteredPub.map(set => (
+              <div key={set.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {set.subject} · {set.cards?.length || 0} cards
+                  </div>
+                </div>
+                <button className="btn btn-primary btn-sm"
+                  onClick={() => { setSelectedSet(set); setQuizView('setup') }}>
+                  Use set
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── My sets filtered ───────────────────────────────────────────────────────
+  const filteredMySets = mySets.filter(s => {
+    const matchSubj   = !filterSubj   || s.subject === filterSubj
+    const matchSearch = !filterSearch || s.title?.toLowerCase().includes(filterSearch.toLowerCase()) || s.subject?.toLowerCase().includes(filterSearch.toLowerCase())
+    return matchSubj && matchSearch
+  })
+  const mySubjects = [...new Set(mySets.map(s => s.subject).filter(Boolean))].sort()
+
+  // ── Setup screen ───────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 6 }}>Quiz</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          Test yourself on a flashcard set. Premade quizzes coming soon.
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <h3 style={{ marginBottom: 4 }}>Quiz</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
+            Test yourself on any flashcard set
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => { loadHistory(); setQuizView('history') }}>
+            📊 History
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { loadPublicSets(); setFilterSearch(''); setFilterSubj(''); setQuizView('public') }}>
+            <Globe size={14} /> Public sets
+          </button>
+        </div>
       </div>
 
       {/* Set picker */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>1. Choose a set</h4>
-        {mySets.length === 0 ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h4 style={{ fontSize: '0.95rem', margin: 0 }}>1. Choose a set</h4>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{mySets.length} saved</span>
+        </div>
+        {mySets.length > 4 && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+            <input className="input" placeholder="Search…" value={filterSearch}
+              onChange={e => setFilterSearch(e.target.value)}
+              style={{ flex: 1, minWidth: 120, fontSize: '0.82rem', padding: '6px 10px' }} />
+            <select className="select" value={filterSubj} onChange={e => setFilterSubj(e.target.value)}
+              style={{ fontSize: '0.82rem', padding: '6px 10px' }}>
+              <option value="">All subjects</option>
+              {mySubjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        )}
+        {filteredMySets.length === 0 ? (
           <div className="empty-state" style={{ padding: '16px 0' }}>
             <BookOpen size={32} style={{ opacity: 0.3 }} />
-            <p>No saved sets yet — generate or create flashcards first</p>
+            <p>{mySets.length === 0 ? 'No saved sets yet — generate or create flashcards first' : 'No sets match your filter'}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {mySets.map(set => (
-              <button key={set.id} onClick={() => setSelectedSet(set)}
-                style={{ padding: '12px 16px', borderRadius: 10, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+            {filteredMySets.map(set => (
+              <button key={set.id} onClick={() => setSelectedSet(selectedSet?.id === set.id ? null : set)}
+                style={{ padding: '12px 16px', borderRadius: 10,
+                  border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
                   background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                   cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1244,7 +1528,8 @@ function QuizTab({ mySets, uid, profile }) {
       {selectedSet && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>2. Quiz settings</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Format */}
             <div>
               <label className="label">Question format</label>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1254,7 +1539,7 @@ function QuizTab({ mySets, uid, profile }) {
                   { id: 'mixed', label: 'Mixed',           desc: 'Both formats' },
                 ].map(m => (
                   <button key={m.id} onClick={() => setQuizMode(m.id)}
-                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 10,
+                    style={{ flex: 1, minWidth: 120, padding: '10px 12px', borderRadius: 10,
                       border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
                       background: quizMode === m.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                       cursor: 'pointer', textAlign: 'left' }}>
@@ -1264,42 +1549,57 @@ function QuizTab({ mySets, uid, profile }) {
                 ))}
               </div>
             </div>
+            {/* Question count */}
             <div>
               <label className="label">Number of questions</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {[5, 10, 15, 20, selectedSet.cards?.length].filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0)).map(n => (
-                  <button key={n} onClick={() => setQCount(n)}
-                    style={{ padding: '6px 14px', borderRadius: 20,
-                      border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
-                      background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
-                      color: questionCount === n ? 'white' : 'var(--text-primary)',
-                      cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
-                    {n === selectedSet.cards?.length ? `All (${n})` : n}
-                  </button>
+                {[5, 10, 15, 20, selectedSet.cards?.length]
+                  .filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0))
+                  .map(n => (
+                    <button key={n} onClick={() => setQCount(n)}
+                      style={{ padding: '6px 14px', borderRadius: 20,
+                        border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
+                        background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
+                        color: questionCount === n ? 'white' : 'var(--text-primary)',
+                        cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                      {n === selectedSet.cards?.length ? 'All (' + n + ')' : n}
+                    </button>
                 ))}
+              </div>
+            </div>
+            {/* Timed mode */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>🏆 Timed challenge mode</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>Race against the clock — {timePerQ}s per question</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {timedMode && (
+                  <select className="select" value={timePerQ} onChange={e => setTimePerQ(Number(e.target.value))}
+                    style={{ fontSize: '0.8rem', padding: '4px 8px', width: 'auto' }}>
+                    {[10, 15, 20, 30, 45, 60].map(t => <option key={t} value={t}>{t}s</option>)}
+                  </select>
+                )}
+                <button onClick={() => setTimedMode(v => !v)}
+                  style={{ width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
+                    background: timedMode ? 'var(--accent)' : 'var(--border)', transition: 'background 0.2s',
+                    position: 'relative' }}>
+                  <span style={{ position: 'absolute', top: 3, left: timedMode ? 20 : 3, width: 16, height: 16,
+                    borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Start button */}
+      {/* Start */}
       {selectedSet && (
-        <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
-          onClick={() => setStarted(true)}>
-          Start quiz — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
+        <button className="btn btn-primary" style={{ width: '100%', padding: '13px', fontSize: '0.95rem' }}
+          onClick={() => setQuizView('playing')}>
+          {timedMode ? '🏆 Start timed quiz' : 'Start quiz'} — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
         </button>
       )}
-
-      {/* Coming soon */}
-      <div className="card" style={{ marginTop: 20, opacity: 0.6 }}>
-        <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Coming soon</h4>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {['📚 Premade quizzes by topic', '🏆 Timed challenge mode', '📊 Quiz history & scores', '🤝 Public quiz sets'].map(f => (
-            <span key={f} className="badge badge-grey" style={{ fontSize: '0.75rem' }}>{f}</span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
