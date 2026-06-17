@@ -121,7 +121,7 @@ export const PROFILE_ICONS = {
 // Check if a theme/icon is unlocked for a given user profile
 export function isUnlocked(unlockKey, profile) {
   if (unlockKey === 'free') return true
-  if (unlockKey === 'premium') return profile?.isPremium === true
+  if (unlockKey === 'premium') return profile?.isPro === true || profile?.betaUser === true
 
   if (unlockKey.startsWith('xp_')) {
     const required = parseInt(unlockKey.replace('xp_', ''))
