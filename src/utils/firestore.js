@@ -100,11 +100,25 @@ export const unlockReferralIcon = async (uid) => {
 export async function updateStreakOnLogin(uid) {
   // Login alone does NOT extend the streak.
   // Only recordActivityStreak() does — called when user logs real activity.
+  // BUT: if the user missed yesterday entirely, their streak resets to 0.
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
-  const data     = snap.data()
-  const todayStr = new Date().toDateString()
+  const data            = snap.data()
+  const todayStr        = new Date().toDateString()
+  const lastActivityStr = data.lastActivityDate || null
+
+  // Reset streak if lastActivityDate is older than yesterday
+  if (lastActivityStr && lastActivityStr !== todayStr) {
+    const yesterday    = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toDateString()
+    if (lastActivityStr !== yesterdayStr) {
+      // More than 1 day since last activity — streak is broken
+      await updateDoc(ref, { streak: 0 })
+    }
+  }
+
   const lastLogin = data.lastLogin?.toDate ? data.lastLogin.toDate() : null
   if (!lastLogin || lastLogin.toDateString() !== todayStr) {
     await updateDoc(ref, { lastLogin: serverTimestamp() })
@@ -867,4 +881,23 @@ export async function incrementTopicNoteUsage(uid) {
       await updateDoc(ref, { count: increment(snap.data().count + 1) })
     }
   } catch(e) {}
+}
+
+// ── Quiz History ──────────────────────────────────────────────────────────────
+
+export async function saveQuizResult(uid, result) {
+  // result: { setId, setTitle, subject, mode, score, total, pct, timeTaken, timedMode }
+  try {
+    const col = collection(db, 'users', uid, 'quizHistory')
+    await addDoc(col, { ...result, createdAt: serverTimestamp() })
+  } catch(e) { console.warn('[saveQuizResult]', e) }
+}
+
+export async function getQuizHistory(uid, limitN = 20) {
+  try {
+    const col  = collection(db, 'users', uid, 'quizHistory')
+    const q    = query(col, orderBy('createdAt', 'desc'), limit(limitN))
+    const snap = await getDocs(q)
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch(e) { return [] }
 }
