@@ -46,6 +46,7 @@ function Section({ title, icon, children, defaultOpen = true }) {
 /* ── Main page ─────────────────────────────────────────────────── */
 /* ── Content tab — bulk AI generation ─────────────────────────────────────── */
 function ContentTab({ email }) {
+  const { user } = useAuth()
   const [subject,   setSubject]   = useState('')
   const [board,     setBoard]     = useState('AQA')
   const [level,     setLevel]     = useState('GCSE')
@@ -156,7 +157,6 @@ function ContentTab({ email }) {
     try {
       const { generateFlashcards, parseFlashcards } = await import('../utils/ai')
       const { saveFlashcardSet }                     = await import('../utils/firestore')
-      const ADMIN_UID = 'femiaisida1@gmail.com'
       let done = 0, errors = 0
 
       for (const topic of topics) {
@@ -171,7 +171,7 @@ function ContentTab({ email }) {
           if (!cards.length) throw new Error('No cards parsed')
 
           // Save as public flashcard set — authorType: 'official' so it shows as RevisionFlow set
-          await saveFlashcardSet(null, {
+          await saveFlashcardSet(user?.uid, {
             title:      board + ' ' + level + ' ' + subject + ' — ' + topic,
             subject,
             topic,
