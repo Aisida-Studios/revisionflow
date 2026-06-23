@@ -5,7 +5,6 @@ import {
   checkAndAwardBadge, autoCompleteQuest,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
-  saveQuizResult, getQuizHistory,
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
@@ -14,7 +13,7 @@ import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
   RotateCcw, Copy, Check, Download, Shuffle, X, Plus,
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
-  Users, ChevronDown, Timer,
+  Users, ChevronDown,
 } from 'lucide-react'
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -225,45 +224,18 @@ FEEDBACK: One sentence.`
   )
 }
 
-function WriteMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
+function WriteMode({ cards, onDone, uid }) {
   const [deck]              = useState(() => [...cards].sort(()=>Math.random()-.5))
   const [idx,setIdx]        = useState(0)
   const [input,setInput]    = useState('')
-  const [checked,setChecked]= useState(null)
+  const [checked,setChecked]= useState(null) // null | 'pending' | 'correct' | 'wrong'
   const [scores,setScores]  = useState([])
-  const [timeLeft, setTimeLeft] = useState(timePerQ)
-  const startTimeRef = useRef(Date.now())
-  const timerRef = useRef(null)
   const inputRef = useRef(null)
 
   useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
 
-  useEffect(() => {
-    if (!timedMode || checked !== null) return
-    setTimeLeft(timePerQ)
-    clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(timerRef.current)
-          setChecked('wrong')
-          setScores(s => { const ns=[...s]; ns[idx]=0; return ns })
-          setTimeout(() => {
-            if (idx >= deck.length - 1) {
-              const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
-              onDone(scores.filter(Boolean).length, deck.length, elapsed)
-            } else setIdx(i => i + 1)
-          }, 900)
-          return 0
-        }
-        return t - 1
-      })
-    }, 1000)
-    return () => clearInterval(timerRef.current)
-  }, [timedMode, idx, checked])
-
   function handleAIResult(correct) {
-    clearInterval(timerRef.current)
+    // Called by AIWriteMarker with the AI verdict — sets final state and records score
     setScores(s => {
       const ns = [...s]
       ns[idx] = correct ? 1 : 0
@@ -273,9 +245,7 @@ function WriteMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
   }
 
   function next() {
-    clearInterval(timerRef.current)
-    const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
-    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length, elapsed); return }
+    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length); return }
     setIdx(i=>i+1)
   }
 
@@ -285,26 +255,11 @@ function WriteMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
     <div>
       <div style={{ marginBottom:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
-          <span>{idx+1}/{deck.length}</span>
-          <div style={{ display:'flex', gap:12, alignItems:'center' }}>
-            {timedMode && (
-              <span style={{ fontWeight:700, color: timeLeft<=5?'var(--danger)':timeLeft<=10?'var(--warning)':'var(--text-muted)', fontSize:'0.82rem' }}>
-                ⏱ {timeLeft}s
-              </span>
-            )}
-            <span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
-          </div>
+          <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
         </div>
         <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
           <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
         </div>
-        {timedMode && (
-          <div style={{ height:3, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden', marginTop:3 }}>
-            <div style={{ height:'100%', width:Math.round(timeLeft/timePerQ*100)+'%',
-              background: timeLeft<=5?'var(--danger)':timeLeft<=10?'var(--warning)':'var(--success)',
-              borderRadius:3, transition:'width 1s linear' }} />
-          </div>
-        )}
       </div>
       <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Write the definition</div>
@@ -452,7 +407,7 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone, uid, timedMode = false, timePerQ = 20 }) {
+function TestMode({ cards, onDone, uid }) {
   // AI generates plausible wrong answers for MC questions
   async function buildWithAI() {
     // Build initial deck with real-card distractors as fallback
@@ -512,9 +467,6 @@ ${questions}`
   const [idx, setIdx]       = useState(0)
   const [finished, setFin]  = useState(false)
   const [building, setBuilding] = useState(true)
-  const [timeLeft, setTimeLeft] = useState(timePerQ)
-  const startTimeRef = useRef(Date.now())
-  const timerRef = useRef(null)
 
   useEffect(() => {
     buildWithAI().then(deck => {
@@ -523,43 +475,6 @@ ${questions}`
       loadAIDistractors(deck, setQs)
     })
   }, [])
-
-  // Timer for timed mode
-  useEffect(() => {
-    if (!timedMode || building || finished) return
-    setTimeLeft(timePerQ)
-    clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(timerRef.current)
-          // Auto-advance: mark as wrong if unanswered
-          setQs(prev => {
-            const u = [...prev]
-            if (u[idx] && u[idx].checked === null) {
-              u[idx] = { ...u[idx], checked: 'wrong', selected: null }
-            }
-            return u
-          })
-          // Small delay then move on
-          setTimeout(() => {
-            setIdx(i => {
-              if (i >= qs.length - 1) {
-                setFin(true)
-                const sc = qs.filter(q => q.checked === 'correct').length
-                const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
-                onDone(sc, qs.length, elapsed)
-              }
-              return Math.min(i + 1, qs.length - 1)
-            })
-          }, 800)
-          return 0
-        }
-        return t - 1
-      })
-    }, 1000)
-    return () => clearInterval(timerRef.current)
-  }, [timedMode, idx, building, finished])
 
   function selectMC(opt) {
     if (qs[idx].checked !== null) return
@@ -578,11 +493,9 @@ ${questions}`
   }
 
   function next() {
-    clearInterval(timerRef.current)
     if (idx >= qs.length - 1) {
       const sc = qs.filter(q => q.checked === 'correct').length
-      const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
-      setFin(true); onDone(sc, qs.length, elapsed); return
+      setFin(true); onDone(sc, qs.length); return
     }
     setIdx(i => i + 1)
   }
@@ -600,25 +513,11 @@ ${questions}`
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
           <span>Q{idx+1}/{qs.length}</span>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {timedMode && (
-              <span style={{ fontWeight: 700, color: timeLeft <= 5 ? 'var(--danger)' : timeLeft <= 10 ? 'var(--warning)' : 'var(--text-muted)', fontSize: '0.82rem' }}>
-                ⏱ {timeLeft}s
-              </span>
-            )}
-            <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
-          </div>
+          <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
         </div>
         <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: Math.round(idx/qs.length*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
-        {timedMode && (
-          <div style={{ height: 3, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden', marginTop: 3 }}>
-            <div style={{ height: '100%', width: Math.round(timeLeft/timePerQ*100)+'%',
-              background: timeLeft <= 5 ? 'var(--danger)' : timeLeft <= 10 ? 'var(--warning)' : 'var(--success)',
-              borderRadius: 3, transition: 'width 1s linear' }} />
-          </div>
-        )}
       </div>
       <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -1239,274 +1138,91 @@ function PasteImportModal({ subjects, onImport, onClose }) {
 
 /* ── Quiz tab ───────────────────────────────────────────────────────────────── */
 function QuizTab({ mySets, uid, profile }) {
-  const [quizView,      setQuizView]    = useState('setup')  // 'setup' | 'playing' | 'results' | 'history' | 'public'
-  const [selectedSet,   setSelectedSet] = useState(null)
-  const [quizMode,      setQuizMode]    = useState('mc')     // 'mc' | 'write' | 'mixed'
-  const [timedMode,     setTimedMode]   = useState(false)
-  const [timePerQ,      setTimePerQ]    = useState(20)       // seconds per question in timed mode
-  const [questionCount, setQCount]      = useState(10)
-  const [results,       setResults]     = useState(null)
-  const [history,       setHistory]     = useState([])
-  const [histLoading,   setHistLoading] = useState(false)
-  const [publicSets,    setPublicSets]  = useState([])
-  const [pubLoading,    setPubLoading]  = useState(false)
-  const [filterSubj,    setFilterSubj]  = useState('')
-  const [filterSearch,  setFilterSearch]= useState('')
+  const [selectedSet, setSelectedSet] = useState(null)
+  const [quizMode,    setQuizMode]    = useState('mc')    // 'mc' | 'write' | 'mixed'
+  const [questionCount, setQCount]    = useState(10)
+  const [started,     setStarted]     = useState(false)
+  const [results,     setResults]     = useState(null)
 
   const subjects = profile?.subjects?.map(s => s.name) || []
 
-  async function loadHistory() {
-    setHistLoading(true)
-    try {
-      const { getQuizHistory } = await import('../utils/firestore')
-      const h = await getQuizHistory(uid, 30)
-      setHistory(h)
-    } catch(e) { console.warn(e) }
-    setHistLoading(false)
-  }
-
-  async function loadPublicSets() {
-    setPubLoading(true)
-    try {
-      const pub = await getPublicFlashcardSets()
-      setPublicSets(pub)
-    } catch(e) {}
-    setPubLoading(false)
-  }
-
-  function handleDone(got, total, timeTaken) {
-    const pct = Math.round(got / total * 100)
-    const res = { got, total, pct, timeTaken,
-      setId: selectedSet?.id, setTitle: selectedSet?.title,
-      subject: selectedSet?.subject, mode: quizMode, timedMode }
-    setResults(res)
-    setQuizView('results')
-    // Save to history
-    import('../utils/firestore').then(({ saveQuizResult }) => {
-      saveQuizResult(uid, res).catch(() => {})
-    })
-  }
-
-  // ── Results screen ─────────────────────────────────────────────────────────
-  if (quizView === 'results' && results) {
-    const { got, total, pct, timeTaken } = results
-    const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
-    const mins  = Math.floor((timeTaken || 0) / 60)
-    const secs  = ((timeTaken || 0) % 60).toString().padStart(2, '0')
-    return (
-      <div style={{ maxWidth: 520, margin: '0 auto' }}>
-        <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: 10 }}>{emoji}</div>
-          <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)', margin: '14px 0' }}>
-            {got}/{total}
-            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 10 }}>{pct}%</span>
-          </div>
-          {timeTaken != null && (
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-              ⏱ {mins > 0 ? mins + 'm ' : ''}{secs}s
-            </div>
-          )}
-          <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.875rem' }}>
-            {selectedSet?.title} · {quizMode === 'mc' ? 'Multiple choice' : quizMode === 'write' ? 'Written' : 'Mixed'}{timedMode ? ' · Timed' : ''}
-          </p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => { setResults(null); setQuizView('playing') }}>
-              <RotateCcw size={14} /> Try again
-            </button>
-            <button className="btn btn-secondary" onClick={() => { setResults(null); setSelectedSet(null); setQuizView('setup') }}>
-              Change set
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { loadHistory(); setQuizView('history') }}>
-              📊 History
-            </button>
-          </div>
-        </div>
+  if (results) return (
+    <div style={{ maxWidth: 520, margin: '0 auto' }}>
+      <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
+        {(() => {
+          const pct = Math.round(results.got / results.total * 100)
+          const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
+          return (
+            <>
+              <div style={{ fontSize: '3rem', marginBottom: 10 }}>{emoji}</div>
+              <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent)', margin: '12px 0' }}>
+                {results.got}/{results.total}
+                <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>{pct}%</span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.875rem' }}>
+                from <strong>{selectedSet?.title}</strong>
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btn-primary" onClick={() => { setResults(null); setStarted(false) }}>
+                  <RotateCcw size={14} /> Try again
+                </button>
+                <button className="btn btn-secondary" onClick={() => { setResults(null); setStarted(false); setSelectedSet(null) }}>
+                  Change set
+                </button>
+              </div>
+            </>
+          )
+        })()}
       </div>
-    )
-  }
+    </div>
+  )
 
-  // ── Playing screen ─────────────────────────────────────────────────────────
-  if (quizView === 'playing' && selectedSet) {
+  if (started && selectedSet) {
     const quizCards = [...selectedSet.cards].sort(() => Math.random() - 0.5).slice(0, questionCount)
     return (
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}>
             <ChevronLeft size={15} /> Back
           </button>
-          <div style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
-          </div>
-          <span className="badge badge-purple">{quizCards.length} Qs</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
+          <span className="badge badge-purple">{quizCards.length} questions</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} uid={uid} timedMode={timedMode} timePerQ={timePerQ}
-            onDone={(got, total, timeTaken) => handleDone(got, total, timeTaken)} />
+          <TestMode cards={quizCards} uid={uid}
+            onDone={(got, total) => setResults({ got, total })} />
         )}
         {quizMode === 'write' && (
-          <WriteMode cards={quizCards} uid={uid} timedMode={timedMode} timePerQ={timePerQ}
-            onDone={(got, total, timeTaken) => handleDone(got, total, timeTaken)} />
+          <WriteMode cards={quizCards} uid={uid}
+            onDone={(got, total) => setResults({ got, total })} />
         )}
       </div>
     )
   }
 
-  // ── History screen ─────────────────────────────────────────────────────────
-  if (quizView === 'history') {
-    return (
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}><ChevronLeft size={15} /> Back</button>
-          <h3 style={{ margin: 0 }}>Quiz history</h3>
-        </div>
-        {histLoading ? (
-          <div className="empty-state"><div className="spinner" /></div>
-        ) : history.length === 0 ? (
-          <div className="empty-state"><div style={{ fontSize: '2rem' }}>📊</div><p>No quiz history yet — complete a quiz to see results here.</p></div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {history.map((h, i) => {
-              const emoji = (h.pct||0) >= 90 ? '🏆' : (h.pct||0) >= 70 ? '🎉' : (h.pct||0) >= 50 ? '💪' : '📚'
-              const mins = Math.floor((h.timeTaken||0)/60)
-              const secs = ((h.timeTaken||0)%60).toString().padStart(2,'0')
-              const dateStr = h.createdAt?.toDate ? h.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : ''
-              return (
-                <div key={h.id||i} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px' }}>
-                  <div style={{ fontSize: '1.6rem', flexShrink: 0 }}>{emoji}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.setTitle || 'Quiz'}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {h.subject && <span>{h.subject} · </span>}
-                      {h.mode === 'mc' ? 'Multiple choice' : h.mode === 'write' ? 'Written' : 'Mixed'}
-                      {h.timedMode ? ' · Timed' : ''}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: (h.pct||0) >= 70 ? 'var(--success)' : (h.pct||0) >= 50 ? 'var(--warning)' : 'var(--danger)' }}>
-                      {h.got}/{h.total} <span style={{ fontWeight: 500, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{h.pct}%</span>
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      {h.timeTaken != null && <span>{mins > 0 ? mins + 'm ' : ''}{secs}s · </span>}
-                      {dateStr}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ── Public sets screen ─────────────────────────────────────────────────────
-  if (quizView === 'public') {
-    const filteredPub = publicSets.filter(s => {
-      const matchSubj = !filterSubj || s.subject === filterSubj
-      const matchSearch = !filterSearch || s.title?.toLowerCase().includes(filterSearch.toLowerCase()) || s.subject?.toLowerCase().includes(filterSearch.toLowerCase())
-      return matchSubj && matchSearch
-    })
-    const pubSubjects = [...new Set(publicSets.map(s => s.subject).filter(Boolean))].sort()
-    return (
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setQuizView('setup')}><ChevronLeft size={15} /> Back</button>
-          <h3 style={{ margin: 0 }}>Public quiz sets</h3>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-          <input className="input" placeholder="Search sets…" value={filterSearch}
-            onChange={e => setFilterSearch(e.target.value)}
-            style={{ flex: 1, minWidth: 140, fontSize: '0.85rem', padding: '7px 11px' }} />
-          <select className="select" value={filterSubj} onChange={e => setFilterSubj(e.target.value)}
-            style={{ fontSize: '0.85rem', padding: '7px 11px' }}>
-            <option value="">All subjects</option>
-            {pubSubjects.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        {pubLoading ? (
-          <div className="empty-state"><div className="spinner" /></div>
-        ) : filteredPub.length === 0 ? (
-          <div className="empty-state"><Globe size={32} style={{ opacity: 0.3 }} /><p>No public sets found.</p></div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {filteredPub.map(set => (
-              <div key={set.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {set.subject} · {set.cards?.length || 0} cards
-                  </div>
-                </div>
-                <button className="btn btn-primary btn-sm"
-                  onClick={() => { setSelectedSet(set); setQuizView('setup') }}>
-                  Use set
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ── My sets filtered ───────────────────────────────────────────────────────
-  const filteredMySets = mySets.filter(s => {
-    const matchSubj   = !filterSubj   || s.subject === filterSubj
-    const matchSearch = !filterSearch || s.title?.toLowerCase().includes(filterSearch.toLowerCase()) || s.subject?.toLowerCase().includes(filterSearch.toLowerCase())
-    return matchSubj && matchSearch
-  })
-  const mySubjects = [...new Set(mySets.map(s => s.subject).filter(Boolean))].sort()
-
-  // ── Setup screen ───────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h3 style={{ marginBottom: 4 }}>Quiz</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
-            Test yourself on any flashcard set
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => { loadHistory(); setQuizView('history') }}>
-            📊 History
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { loadPublicSets(); setFilterSearch(''); setFilterSubj(''); setQuizView('public') }}>
-            <Globe size={14} /> Public sets
-          </button>
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <h3 style={{ marginBottom: 6 }}>Quiz</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          Test yourself on a flashcard set. Premade quizzes coming soon.
+        </p>
       </div>
 
       {/* Set picker */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h4 style={{ fontSize: '0.95rem', margin: 0 }}>1. Choose a set</h4>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{mySets.length} saved</span>
-        </div>
-        {mySets.length > 4 && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-            <input className="input" placeholder="Search…" value={filterSearch}
-              onChange={e => setFilterSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 120, fontSize: '0.82rem', padding: '6px 10px' }} />
-            <select className="select" value={filterSubj} onChange={e => setFilterSubj(e.target.value)}
-              style={{ fontSize: '0.82rem', padding: '6px 10px' }}>
-              <option value="">All subjects</option>
-              {mySubjects.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        )}
-        {filteredMySets.length === 0 ? (
+        <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>1. Choose a set</h4>
+        {mySets.length === 0 ? (
           <div className="empty-state" style={{ padding: '16px 0' }}>
             <BookOpen size={32} style={{ opacity: 0.3 }} />
-            <p>{mySets.length === 0 ? 'No saved sets yet — generate or create flashcards first' : 'No sets match your filter'}</p>
+            <p>No saved sets yet — generate or create flashcards first</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {filteredMySets.map(set => (
-              <button key={set.id} onClick={() => setSelectedSet(selectedSet?.id === set.id ? null : set)}
-                style={{ padding: '12px 16px', borderRadius: 10,
-                  border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+            {mySets.map(set => (
+              <button key={set.id} onClick={() => setSelectedSet(set)}
+                style={{ padding: '12px 16px', borderRadius: 10, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
                   background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                   cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1528,8 +1244,7 @@ function QuizTab({ mySets, uid, profile }) {
       {selectedSet && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>2. Quiz settings</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Format */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label className="label">Question format</label>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1539,7 +1254,7 @@ function QuizTab({ mySets, uid, profile }) {
                   { id: 'mixed', label: 'Mixed',           desc: 'Both formats' },
                 ].map(m => (
                   <button key={m.id} onClick={() => setQuizMode(m.id)}
-                    style={{ flex: 1, minWidth: 120, padding: '10px 12px', borderRadius: 10,
+                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 10,
                       border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
                       background: quizMode === m.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                       cursor: 'pointer', textAlign: 'left' }}>
@@ -1549,57 +1264,42 @@ function QuizTab({ mySets, uid, profile }) {
                 ))}
               </div>
             </div>
-            {/* Question count */}
             <div>
               <label className="label">Number of questions</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {[5, 10, 15, 20, selectedSet.cards?.length]
-                  .filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0))
-                  .map(n => (
-                    <button key={n} onClick={() => setQCount(n)}
-                      style={{ padding: '6px 14px', borderRadius: 20,
-                        border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
-                        background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
-                        color: questionCount === n ? 'white' : 'var(--text-primary)',
-                        cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
-                      {n === selectedSet.cards?.length ? 'All (' + n + ')' : n}
-                    </button>
+                {[5, 10, 15, 20, selectedSet.cards?.length].filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0)).map(n => (
+                  <button key={n} onClick={() => setQCount(n)}
+                    style={{ padding: '6px 14px', borderRadius: 20,
+                      border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
+                      background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
+                      color: questionCount === n ? 'white' : 'var(--text-primary)',
+                      cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                    {n === selectedSet.cards?.length ? `All (${n})` : n}
+                  </button>
                 ))}
-              </div>
-            </div>
-            {/* Timed mode */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>🏆 Timed challenge mode</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>Race against the clock — {timePerQ}s per question</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {timedMode && (
-                  <select className="select" value={timePerQ} onChange={e => setTimePerQ(Number(e.target.value))}
-                    style={{ fontSize: '0.8rem', padding: '4px 8px', width: 'auto' }}>
-                    {[10, 15, 20, 30, 45, 60].map(t => <option key={t} value={t}>{t}s</option>)}
-                  </select>
-                )}
-                <button onClick={() => setTimedMode(v => !v)}
-                  style={{ width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
-                    background: timedMode ? 'var(--accent)' : 'var(--border)', transition: 'background 0.2s',
-                    position: 'relative' }}>
-                  <span style={{ position: 'absolute', top: 3, left: timedMode ? 20 : 3, width: 16, height: 16,
-                    borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Start */}
+      {/* Start button */}
       {selectedSet && (
-        <button className="btn btn-primary" style={{ width: '100%', padding: '13px', fontSize: '0.95rem' }}
-          onClick={() => setQuizView('playing')}>
-          {timedMode ? '🏆 Start timed quiz' : 'Start quiz'} — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
+        <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
+          onClick={() => setStarted(true)}>
+          Start quiz — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
         </button>
       )}
+
+      {/* Coming soon */}
+      <div className="card" style={{ marginTop: 20, opacity: 0.6 }}>
+        <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Coming soon</h4>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {['📚 Premade quizzes by topic', '🏆 Timed challenge mode', '📊 Quiz history & scores', '🤝 Public quiz sets'].map(f => (
+            <span key={f} className="badge badge-grey" style={{ fontSize: '0.75rem' }}>{f}</span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1873,6 +1573,344 @@ function TopicNotesTab({ profile, uid }) {
 }
 
 /* ── Main page ─────────────────────────────────────────────────────────────── */
+
+// ── ExamMarkScheme — hides mark scheme until revealed ─────────────────────────
+function ExamMarkScheme({ text }) {
+  const [revealed, setRevealed] = React.useState(false)
+  const clean = text.replace(/^MARK SCHEME:\s*/i, '').trim()
+  return (
+    <div style={{ marginTop: 10 }}>
+      {!revealed ? (
+        <button
+          className="btn btn-secondary btn-sm"
+          style={{ width: '100%', padding: '10px', fontSize: '0.85rem', letterSpacing: '0.01em' }}
+          onClick={() => setRevealed(true)}>
+          <span style={{ marginRight: 6 }}>🔒</span> Reveal mark scheme
+        </button>
+      ) : (
+        <div style={{ padding: '14px 16px', borderRadius: 10,
+          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
+              letterSpacing: '0.08em', textTransform: 'uppercase' }}>Mark scheme</div>
+            <button onClick={() => setRevealed(false)} style={{ background: 'none', border: 'none',
+              color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem', padding: 0 }}>Hide</button>
+          </div>
+          <AIOutput text={clean} compact />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── AnswerMarkerTab — full revamp ──────────────────────────────────────────────
+function AnswerMarkerTab({ subjects, profile, uid }) {
+  const [mkSubject, setMkSubject] = React.useState('')
+  const [mkBoard,   setMkBoard]   = React.useState('AQA')
+  const [mkLevel,   setMkLevel]   = React.useState('GCSE')
+  const [mkQ,       setMkQ]       = React.useState('')
+  const [mkMarks,   setMkMarks]   = React.useState('6')
+  const [mkAnswer,  setMkAnswer]  = React.useState('')
+  const [mkResult,  setMkResult]  = React.useState(null)
+  const [mkLoading, setMkLoading] = React.useState(false)
+  const [mkHistory, setMkHistory] = React.useState([])
+  const [histIdx,   setHistIdx]   = React.useState(null)
+
+  // Auto-fill board from profile
+  React.useEffect(() => {
+    if (subjects.length && !mkSubject) {
+      setMkSubject(subjects[0])
+      const s = profile?.subjects?.[0]
+      if (s?.board) setMkBoard(s.board)
+      if (profile?.qualification) setMkLevel(profile.qualification)
+    }
+  }, [subjects.length])
+
+  async function handleMark() {
+    if (!mkSubject || !mkQ.trim() || !mkAnswer.trim() || !mkMarks) {
+      toast.error('Fill in all fields before marking')
+      return
+    }
+    setMkLoading(true)
+    setMkResult(null)
+    try {
+      const { markAnswer } = await import('../utils/ai')
+      const res = await markAnswer(mkSubject, mkBoard, mkLevel, null, mkQ.trim(), parseInt(mkMarks), mkAnswer.trim(), uid)
+      if (res.error) { toast.error(res.error); setMkLoading(false); return }
+      const parsed = parseMarkerResult(res.text || '')
+      setMkResult(parsed)
+      setMkHistory(h => [{ subject: mkSubject, board: mkBoard, level: mkLevel,
+        question: mkQ.slice(0, 60) + (mkQ.length > 60 ? '...' : ''),
+        marks: mkMarks, result: parsed, raw: res.text,
+        time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      }, ...h].slice(0, 8))
+    } catch(e) { toast.error('Marking failed: ' + e.message) }
+    setMkLoading(false)
+  }
+
+  function parseMarkerResult(text) {
+    // Extract structured fields from the AI response
+    const getField = (label) => {
+      const re = new RegExp(label + '[:\\s]+([^\\n]+(?:\\n(?![A-Z][A-Z ])[^\\n]+)*)', 'i')
+      const m  = text.match(re)
+      return m ? m[1].trim() : null
+    }
+    const getSection = (label, nextLabel) => {
+      const re = new RegExp(label + '[:\\s]*\\n([\\s\\S]*?)(?=\\n' + (nextLabel || '[A-Z]{2,}') + '|$)', 'i')
+      const m  = text.match(re)
+      return m ? m[1].trim() : null
+    }
+    const awardedLine = text.match(/AWARDED MARKS[:\s]+(\d+)\s*\/\s*(\d+)/i)
+    const awarded = awardedLine ? parseInt(awardedLine[1]) : null
+    const outOf   = awardedLine ? parseInt(awardedLine[2]) : parseInt(mkMarks)
+    const pct     = awarded != null && outOf ? Math.round(awarded / outOf * 100) : null
+    return {
+      awarded,
+      outOf,
+      pct,
+      level:      getField('LEVEL'),
+      credited:   getSection('CREDITED POINTS', 'POINTS NOT CREDITED'),
+      notCredited:getSection('POINTS NOT CREDITED', 'ANNOTATION'),
+      annotation: getSection('ANNOTATION', '(AO BREAKDOWN|MARK BREAKDOWN|GRADE BOUNDARY)'),
+      aoBreakdown:getSection('(AO BREAKDOWN|MARK BREAKDOWN)', 'GRADE BOUNDARY'),
+      gradeBoundary:getSection('GRADE BOUNDARY CONTEXT', 'TO REACH'),
+      improvements:getSection('TO REACH THE NEXT', 'EXAMINER NOTE'),
+      examinerNote:getField('EXAMINER NOTE'),
+      raw: text,
+    }
+  }
+
+  const canMark = mkSubject && mkQ.trim().length > 5 && mkAnswer.trim().length > 5 && mkMarks
+
+  // ── Result display
+  function ResultCard({ r }) {
+    if (!r) return null
+    const colour = r.pct >= 70 ? 'var(--success)' : r.pct >= 50 ? 'var(--warning)' : 'var(--danger)'
+    const grade  = r.pct >= 90 ? 'A*' : r.pct >= 80 ? 'A' : r.pct >= 70 ? 'B' : r.pct >= 60 ? 'C' : r.pct >= 50 ? 'D' : 'U'
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Score hero */}
+        <div style={{ padding: '20px 24px', borderRadius: 14,
+          background: 'var(--bg-surface)', border: '1px solid var(--border)', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 900, color, lineHeight: 1 }}>
+            {r.awarded != null ? r.awarded : '?'}<span style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-muted)' }}>/{r.outOf}</span>
+          </div>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color, marginTop: 4 }}>
+            {r.pct != null ? r.pct + '%' : ''}{r.level ? ' · ' + r.level : ''}
+          </div>
+          <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '3px 12px', borderRadius: 999, background: colour + '18',
+            fontSize: '0.8rem', fontWeight: 700, color }}>
+            Estimated grade: {grade}
+          </div>
+        </div>
+
+        {/* Credited points */}
+        {r.credited && (
+          <div style={{ padding: '14px 16px', borderRadius: 12,
+            background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Credited points
+            </div>
+            <AIOutput text={r.credited} compact />
+          </div>
+        )}
+
+        {/* Points not credited */}
+        {r.notCredited && (
+          <div style={{ padding: '14px 16px', borderRadius: 12,
+            background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--danger)',
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Not credited
+            </div>
+            <AIOutput text={r.notCredited} compact />
+          </div>
+        )}
+
+        {/* Annotation */}
+        {r.annotation && (
+          <div style={{ padding: '14px 16px', borderRadius: 12,
+            background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Examiner annotation
+            </div>
+            <AIOutput text={r.annotation} compact />
+          </div>
+        )}
+
+        {/* AO breakdown */}
+        {r.aoBreakdown && (
+          <div style={{ padding: '14px 16px', borderRadius: 12,
+            background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Mark breakdown
+            </div>
+            <AIOutput text={r.aoBreakdown} compact />
+          </div>
+        )}
+
+        {/* How to improve */}
+        {r.improvements && (
+          <div style={{ padding: '14px 16px', borderRadius: 12,
+            background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              To reach the next mark band
+            </div>
+            <AIOutput text={r.improvements} compact />
+          </div>
+        )}
+
+        {/* Examiner note */}
+        {r.examinerNote && (
+          <div style={{ padding: '12px 16px', borderRadius: 10,
+            background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
+            fontSize: '0.84rem', fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            <span style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--warning)' }}>Examiner: </span>
+            {r.examinerNote}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.2fr)', gap: 20, alignItems: 'start' }}
+        className="marker-grid">
+        {/* Left: input form */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="card">
+            <h4 style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Brain size={18} color="var(--accent-light)" /> Mark my answer
+            </h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+              Paste a question and your answer — the AI marks it like a real examiner.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <label className="label">Subject</label>
+                  <select className="select" value={mkSubject}
+                    onChange={e => {
+                      setMkSubject(e.target.value)
+                      const s = profile?.subjects?.find(x => x.name === e.target.value)
+                      if (s?.board) setMkBoard(s.board)
+                    }}>
+                    <option value="">Select…</option>
+                    {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Exam board</label>
+                  <select className="select" value={mkBoard} onChange={e => setMkBoard(e.target.value)}>
+                    {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <label className="label">Level</label>
+                  <select className="select" value={mkLevel} onChange={e => setMkLevel(e.target.value)}>
+                    <option value="GCSE">GCSE</option>
+                    <option value="A-Level">A-Level</option>
+                    <option value="AS-Level">AS-Level</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Marks available</label>
+                  <select className="select" value={mkMarks} onChange={e => setMkMarks(e.target.value)}>
+                    {[1,2,3,4,5,6,8,9,10,12,15,20].map(m => <option key={m} value={m}>{m} marks</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">The question</label>
+                <textarea className="textarea" rows={3} placeholder="Paste or type the exam question here..."
+                  value={mkQ} onChange={e => setMkQ(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Your answer</label>
+                <textarea className="textarea" rows={6} placeholder="Type or paste your answer here..."
+                  value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} />
+              </div>
+              <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
+                onClick={handleMark} disabled={mkLoading || !canMark}>
+                {mkLoading
+                  ? <><span className="spinner-sm" /> Marking your answer...</>
+                  : <><Brain size={15} /> Mark this answer ({mkMarks} marks)</>}
+              </button>
+            </div>
+          </div>
+
+          {/* History */}
+          {mkHistory.length > 0 && (
+            <div className="card">
+              <h4 style={{ marginBottom: 12, fontSize: '0.9rem' }}>Recent marks</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {mkHistory.map((h, i) => {
+                  const colour = (h.result?.pct || 0) >= 70 ? 'var(--success)' : (h.result?.pct || 0) >= 50 ? 'var(--warning)' : 'var(--danger)'
+                  return (
+                    <button key={i} onClick={() => setHistIdx(histIdx === i ? null : i)}
+                      style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                        background: histIdx === i ? 'var(--bg-surface)' : 'transparent',
+                        cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.question}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          {h.subject} {h.board} · {h.time}
+                        </div>
+                      </div>
+                      {h.result?.awarded != null && (
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color, flexShrink: 0 }}>
+                          {h.result.awarded}/{h.result.outOf}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              {histIdx != null && mkHistory[histIdx] && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                  <ResultCard r={mkHistory[histIdx].result} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right: results */}
+        <div>
+          {mkLoading && (
+            <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+              <div className="spinner" style={{ margin: '0 auto 16px' }} />
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>Marking your answer...</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Applying {mkBoard} {mkLevel} {mkSubject} mark scheme
+              </p>
+            </div>
+          )}
+          {!mkLoading && mkResult && <ResultCard r={mkResult} />}
+          {!mkLoading && !mkResult && (
+            <div className="card empty-state" style={{ padding: '48px 24px' }}>
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>✍️</div>
+              <h4>Your marked result appears here</h4>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: 280, textAlign: 'center' }}>
+                Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Study() {
   const { user, profile } = useAuth()
   // Read URL params — Topics page links here with ?tab=notes&topic=...&subject=...
@@ -2252,173 +2290,158 @@ export default function Study() {
       {tab === 'examqs' && (
         <div>
           <div className="card" style={{ marginBottom: 20 }}>
-            <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Brain size={18} color="var(--accent-light)" /> Generate Exam Questions</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(190px,1fr))', gap: 12 }}>
-              <div><label className="label">Subject</label>
-                <select className="select" value={eqSubject} onChange={e => { setEqSubject(e.target.value); const s = profile?.subjects?.find(x => x.name === e.target.value); if (s?.board) setEqBoard(s.board) }}>
-                  <option value="">Select…</option>{subjects.map(s => <option key={s} value={s}>{s}</option>)}
+            <h4 style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ClipboardList size={18} color="var(--accent-light)" /> Generate Exam Questions
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+              Board-accurate questions with real mark schemes. Specify board, topic and marks.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10 }}>
+              <div>
+                <label className="label">Subject</label>
+                <select className="select" value={eqSubject} onChange={e => {
+                  setEqSubject(e.target.value)
+                  const s = profile?.subjects?.find(x => x.name === e.target.value)
+                  if (s?.board) setEqBoard(s.board)
+                }}>
+                  <option value="">Select…</option>
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div><label className="label">Topic</label><input className="input" placeholder="e.g. Photosynthesis" value={eqTopic} onChange={e => setEqTopic(e.target.value)} /></div>
-              <div><label className="label">Board</label>
+              <div>
+                <label className="label">Exam board</label>
                 <select className="select" value={eqBoard} onChange={e => setEqBoard(e.target.value)}>
-                  {['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
-              <div><label className="label">Level</label>
+              <div>
+                <label className="label">Level</label>
                 <select className="select" value={eqLevel} onChange={e => setEqLevel(e.target.value)}>
-                  <option value="GCSE">GCSE</option><option value="A-Level">A-Level</option>
+                  <option value="GCSE">GCSE</option>
+                  <option value="A-Level">A-Level</option>
+                  <option value="AS-Level">AS-Level</option>
                 </select>
               </div>
-              <div><label className="label">Total marks</label>
-                <select className="select" value={eqMarks} onChange={e => setEqMarks(Number(e.target.value))}>
-                  {[10, 15, 20, 30, 40, 50].map(m => <option key={m} value={m}>{m} marks</option>)}
-                </select>
+              <div>
+                <label className="label">Topic</label>
+                <input className="input" placeholder="e.g. Photosynthesis" value={eqTopic} onChange={e => setEqTopic(e.target.value)} />
               </div>
-              <div><label className="label">Questions</label>
+              <div>
+                <label className="label">Questions</label>
                 <select className="select" value={eqCount} onChange={e => setEqCount(Number(e.target.value))}>
-                  {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                  {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Total marks</label>
+                <select className="select" value={eqMarks} onChange={e => setEqMarks(Number(e.target.value))}>
+                  {[6,10,12,15,20,25,30,40,50].map(m => <option key={m} value={m}>{m} marks</option>)}
                 </select>
               </div>
             </div>
-            <button className="btn btn-primary" onClick={handleGenEQ} disabled={eqLoading || !eqSubject || !eqTopic} style={{ marginTop: 16 }}>
-              {eqLoading ? 'Generating realistic questions…' : 'Generate exam questions'}
+            <button className="btn btn-primary" style={{ marginTop: 14 }}
+              onClick={handleGenEQ} disabled={eqLoading || !eqSubject || !eqTopic}>
+              {eqLoading ? 'Generating...' : 'Generate ' + eqCount + ' question' + (eqCount > 1 ? 's' : '') + ' (' + eqMarks + ' marks)'}
             </button>
           </div>
-          {eqLoading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><div className="spinner" style={{ margin: '0 auto 16px' }} /><p>Generating {eqBoard} {eqLevel} {eqSubject} questions on {eqTopic}…</p></div>}
-          {eqParsed.length > 0 && !eqLoading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <h4>{eqParsed.length} question{eqParsed.length !== 1 ? 's' : ''} — {eqBoard} {eqLevel} {eqSubject}: {eqTopic}</h4>
-                <button className="btn btn-secondary btn-sm" onClick={() => { navigator.clipboard.writeText(eqResult); toast.success('Copied') }}><Copy size={13} /> Copy all</button>
-              </div>
-              {eqParsed.map((q, i) => (
-                <div key={q.id} className="card" style={{ borderLeft: '3px solid var(--accent)', cursor: 'pointer' }} onClick={() => setEqExpanded(eqExpanded === i ? null : i)}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{i + 1}</span>
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Question {i + 1}{q.marks !== '?' && <span className="badge badge-purple" style={{ marginLeft: 8 }}>[{q.marks} marks]</span>}</span>
-                    </div>
-                    <ChevronDown size={16} style={{ color: 'var(--text-muted)', transform: eqExpanded === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
-                  </div>
-                  {eqExpanded === i && (() => {
-                    const msIdx = q.text.search(/mark scheme|indicative content|accept:|award.*mark/i)
-                    const questionPart = msIdx > 0 ? q.text.slice(0, msIdx).trim() : q.text
-                    const schemePart = msIdx > 0 ? q.text.slice(msIdx).trim() : null
-                    return (
-                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                        <AIOutput text={questionPart} label={'Question ' + (i + 1)} compact />
-                        {schemePart && (
-                          <MarkSchemeReveal text={schemePart} />
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              ))}
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>Generated in {eqBoard} {eqLevel} style. Cross-reference with official past papers from your exam board's website.</p>
+
+          {eqLoading && (
+            <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <div className="spinner" style={{ margin: '0 auto 16px' }} />
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>Writing {eqBoard} {eqLevel} questions...</p>
+              <p style={{ fontSize: '0.8rem' }}>Generating spec-accurate questions on {eqTopic}</p>
             </div>
           )}
+
+          {eqParsed.length > 0 && !eqLoading && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <h4 style={{ marginBottom: 2 }}>{eqParsed.length} question{eqParsed.length !== 1 ? 's' : ''}</h4>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                    {eqBoard} {eqLevel} {eqSubject} — {eqTopic}
+                  </p>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(eqResult); toast.success('Copied') }}>
+                  <Copy size={13} /> Copy all
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {eqParsed.map((q, i) => {
+                  const isOpen  = eqExpanded === i
+                  const msIdx   = q.text.search(/MARK SCHEME:/i)
+                  const tipIdx  = q.text.search(/EXAMINER TIP:/i)
+                  const qText   = msIdx > 0 ? q.text.slice(0, msIdx).trim() : q.text
+                  const msText  = msIdx > 0 ? (tipIdx > msIdx ? q.text.slice(msIdx, tipIdx).trim() : q.text.slice(msIdx).trim()) : null
+                  const tipText = tipIdx > 0 ? q.text.slice(tipIdx).trim() : null
+                  return (
+                    <div key={q.id} className="card" style={{ borderLeft: '3px solid var(--accent)', padding: 0, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
+                        cursor: 'pointer', background: isOpen ? 'var(--bg-surface)' : 'transparent' }}
+                        onClick={() => setEqExpanded(isOpen ? null : i)}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                          background: 'var(--accent)', color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.78rem', fontWeight: 800 }}>{i + 1}</div>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Question {i + 1}</span>
+                          {q.marks !== '?' && (
+                            <span className="badge badge-purple" style={{ marginLeft: 8, fontSize: '0.72rem' }}>
+                              [{q.marks} mark{q.marks !== '1' ? 's' : ''}]
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDown size={16} style={{ color: 'var(--text-muted)', flexShrink: 0,
+                          transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                      </div>
+                      {isOpen && (
+                        <div style={{ padding: '0 18px 18px' }}>
+                          <div style={{ padding: '14px 16px', background: 'var(--bg-hover)',
+                            borderRadius: 10, marginBottom: 12, marginTop: 6 }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
+                              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Question</div>
+                            <AIOutput text={qText} compact />
+                          </div>
+                          {msText && <ExamMarkScheme text={msText} />}
+                          {tipText && (
+                            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8,
+                              background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--warning)',
+                                letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                                Examiner tip
+                              </div>
+                              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
+                                {tipText.replace(/^EXAMINER TIP:\s*/i, '')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.6 }}>
+                AI-generated in {eqBoard} {eqLevel} style. Cross-reference with official past papers from your exam board.
+              </p>
+            </div>
+          )}
+
           {!eqResult && !eqLoading && (
-            <div className="empty-state"><div style={{ fontSize: '2.5rem' }}>📝</div><h4>Generate realistic exam questions</h4><p style={{ maxWidth: 400, textAlign: 'center', fontSize: '0.875rem' }}>Mark scheme is hidden until you choose to reveal it.</p></div>
+            <div className="empty-state">
+              <div style={{ fontSize: '2.5rem' }}>📝</div>
+              <h4>Generate exam-style questions</h4>
+              <p style={{ maxWidth: 360, textAlign: 'center', fontSize: '0.875rem' }}>
+                Select your subject, board, and topic above. Mark schemes are hidden until you reveal them.
+              </p>
+            </div>
           )}
         </div>
       )}
 
       {/* ── ANSWER MARKER ── */}
       {tab === 'marker' && (
-        <div>
-          <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div className="card">
-                <h4 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><Brain size={18} color="var(--accent-light)" /> Mark My Answer</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div><label className="label">Subject</label>
-                      <select className="select" value={mkSubject} onChange={e => { setMkSubject(e.target.value); const s = profile?.subjects?.find(x => x.name === e.target.value); if (s?.board) setMkBoard(s.board); setMkLevel(profile?.qualification || 'GCSE') }}>
-                        <option value="">Select…</option>{subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div><label className="label">Board</label>
-                      <select className="select" value={mkBoard} onChange={e => setMkBoard(e.target.value)}>
-                        {['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-                    <div><label className="label">Level</label>
-                      <select className="select" value={mkLevel} onChange={e => setMkLevel(e.target.value)}>
-                        <option value="GCSE">GCSE</option><option value="A-Level">A-Level</option>
-                      </select>
-                    </div>
-                    <div><label className="label">Marks <span style={{ fontWeight: 700, color: 'var(--danger)', fontSize: '0.7rem' }}>required</span></label>
-                      <input className="input" type="number" min={1} max={40} value={mkMarks} onChange={e => setMkMarks(e.target.value)} placeholder="e.g. 6" />
-                    </div>
-                    <div><label className="label">Year <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label>
-                      <input className="input" type="number" min={2015} max={2026} value={''} onChange={() => {}} placeholder="e.g. 2023" />
-                    </div>
-                    <div><label className="label">Paper <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label>
-                      <select className="select" value={mkPaper} onChange={e => setMkPaper(e.target.value)}>
-                        <option value="">Any</option>{[1, 2, 3].map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div><label className="label">Exam question</label>
-                    <textarea className="textarea" style={{ minHeight: 90 }} value={mkQuestion} onChange={e => setMkQuestion(e.target.value)} placeholder="Paste the exam question exactly as it appears on the paper…" />
-                  </div>
-                  <div><label className="label">Your answer</label>
-                    <textarea className="textarea" style={{ minHeight: 140 }} value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} placeholder="Write your full answer here — the more detail you give, the better the feedback…" />
-                  </div>
-                  <button className="btn btn-primary" onClick={handleMark} disabled={mkLoading || !mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks}>
-                    {mkLoading ? 'Marking your answer…' : mkMarks ? 'Mark my answer (/' + mkMarks + ' marks)' : 'Enter marks available to continue'}
-                  </button>
-                </div>
-              </div>
-              <div className="card" style={{ padding: '12px 14px', background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-light)', marginBottom: 8 }}>Tips for best results</div>
-                <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                  <li>Paste the exact question text from the paper</li>
-                  <li>Include the mark allocation — it changes how marks are awarded</li>
-                  <li>Write your full answer, not a summary</li>
-                  <li>Set the correct board — marking criteria vary significantly</li>
-                </ul>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {mkLoading && <div className="card" style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto 16px' }} /><p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Marking as a {mkBoard} {mkLevel} {mkSubject} examiner…</p></div>}
-              {mkResult && !mkLoading && (
-                <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.88rem' }}><Check size={15} color="var(--success)" /> Marking feedback</span>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(mkResult); toast.success('Copied') }}><Copy size={12} /> Copy</button>
-                  </div>
-                  <AIOutput text={mkResult} label="Examiner feedback" compact />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => { setMkAnswer(''); setMkResult('') }}>Try again</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setMkQuestion(''); setMkAnswer(''); setMkResult('') }}>New question</button>
-                  </div>
-                </div>
-              )}
-              {!mkResult && !mkLoading && (
-                <div className="card empty-state" style={{ padding: '32px 20px' }}>
-                  <Brain size={32} style={{ opacity: 0.3 }} />
-                  <p style={{ fontSize: '0.875rem', maxWidth: 300, textAlign: 'center' }}>Paste an exam question and your answer. The AI marks it like a real {mkBoard} examiner — awarding marks, flagging gaps, AO breakdown, and showing what a top answer looks like.</p>
-                </div>
-              )}
-              {mkHistory.length > 0 && (
-                <div className="card">
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 10 }}>This session</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {mkHistory.map((h, i) => (
-                      <button key={i} onClick={() => setMkResult(h.result)} style={{ textAlign: 'left', padding: '8px 10px', background: 'var(--bg-surface)', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer', width: '100%' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.8rem', marginBottom: 2 }}>{h.subject}{h.marks ? ' · ' + h.marks + ' marks' : ''}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{h.question} · {h.time}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <AnswerMarkerTab subjects={subjects} profile={profile} uid={user?.uid} />
       )}
     </div>
   )
