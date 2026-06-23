@@ -138,6 +138,68 @@ function ContentTab({ email }) {
     }
   }
 
+  // ── Bulk flashcards state ─────────────────────────────────────────────────
+  const [fcRunning,  setFcRunning]  = useState(false)
+  const [fcProgress, setFcProgress] = useState(null)
+  const [fcLog,      setFcLog]      = useState([])
+  const fcStopRef = useRef(false)
+
+  async function runBulkFlashcards() {
+    if (!topics.length || !subject) { toast.error('Select a subject with topics first'); return }
+    fcStopRef.current = false
+    setFcRunning(true)
+    setFcLog([])
+    setFcProgress({ done: 0, total: topics.length, current: '', errors: 0 })
+    const addFcLog = (msg, type = 'info') => setFcLog(l => [...l, { msg, type, ts: new Date().toLocaleTimeString() }])
+    addFcLog('Starting bulk flashcard generation: ' + topics.length + ' topics for ' + board + ' ' + level + ' ' + subject)
+
+    try {
+      const { generateFlashcards, parseFlashcards } = await import('../utils/ai')
+      const { saveFlashcardSet }                     = await import('../utils/firestore')
+      const ADMIN_UID = 'femiaisida1@gmail.com'
+      let done = 0, errors = 0
+
+      for (const topic of topics) {
+        if (fcStopRef.current) { addFcLog('Stopped by user', 'error'); break }
+        setFcProgress(p => ({ ...p, current: topic }))
+        addFcLog('Generating: ' + topic)
+
+        try {
+          const res = await generateFlashcards(subject, topic, 10, null)
+          if (res.error) throw new Error(res.error)
+          const cards = parseFlashcards(res.text || '')
+          if (!cards.length) throw new Error('No cards parsed')
+
+          // Save as public flashcard set — authorType: 'official' so it shows as RevisionFlow set
+          await saveFlashcardSet(null, {
+            title:      board + ' ' + level + ' ' + subject + ' — ' + topic,
+            subject,
+            topic,
+            cards,
+            isPublic:   true,
+            author:     'RevisionFlow',
+            authorType: 'official',
+          })
+          addFcLog('DONE (' + cards.length + ' cards): ' + topic, 'success')
+          done++
+        } catch(e) {
+          addFcLog('ERROR: ' + topic + ' — ' + e.message, 'error')
+          errors++
+        }
+
+        setFcProgress(p => ({ ...p, done: done + errors, errors }))
+        await new Promise(r => setTimeout(r, 2000))
+      }
+
+      addFcLog('Complete: ' + done + ' sets created, ' + errors + ' errors', done > 0 ? 'success' : 'error')
+    } catch(e) {
+      addFcLog('Fatal error: ' + e.message, 'error')
+    } finally {
+      setFcRunning(false)
+      setFcProgress(p => p ? ({ ...p, current: '' }) : null)
+    }
+  }
+
   const logColour = { info: 'var(--text-muted)', success: 'var(--success)', error: 'var(--danger)', cached: 'var(--info)' }
 
   return (
@@ -211,6 +273,78 @@ function ContentTab({ email }) {
           </div>
           <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {log.map((l, i) => (
+              <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
+                <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── BULK FLASHCARD GENERATOR ── */}
+      <div style={{ marginBottom: 20, marginTop: 28, padding: '12px 16px', borderRadius: 10,
+        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Bulk flashcard generator</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Generate a public flashcard set for every topic in a subject. Saved to Public Sets — all students can quiz on them.
+          Uses the same subject/board/level selection above.
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+              {topics.length > 0 ? topics.length + ' topics loaded for ' + board + ' ' + level + ' ' + subject : 'Select subject above'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Each topic generates ~10 flashcards and saves as a public set
+            </div>
+          </div>
+          {fcProgress && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {fcProgress.done}/{fcProgress.total}
+            </span>
+          )}
+        </div>
+
+        {fcProgress && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: Math.round(fcProgress.done/fcProgress.total*100)+'%',
+                background: 'var(--success)', borderRadius: 3, transition: 'width 0.3s' }} />
+            </div>
+            {fcProgress.current && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 5 }}>
+                Processing: {fcProgress.current}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" disabled={fcRunning || !subject || !topics.length}
+            onClick={runBulkFlashcards}>
+            {fcRunning ? 'Generating flashcards...' : 'Generate flashcards for all ' + topics.length + ' topics'}
+          </button>
+          {fcRunning && (
+            <button className="btn btn-secondary" onClick={() => { fcStopRef.current = true; setFcRunning(false) }}>
+              Stop
+            </button>
+          )}
+        </div>
+      </div>
+
+      {fcLog.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem',
+            display: 'flex', justifyContent: 'space-between' }}>
+            Flashcard log
+            <button className="btn btn-ghost btn-sm" onClick={() => setFcLog([])}>Clear</button>
+          </div>
+          <div style={{ maxHeight: 260, overflowY: 'auto', padding: '8px 14px',
+            fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {fcLog.map((l, i) => (
               <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
                 <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
               </div>
