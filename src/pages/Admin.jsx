@@ -165,7 +165,7 @@ function ContentTab({ email }) {
         addFcLog('Generating: ' + topic)
 
         try {
-          const res = await generateFlashcards(subject, topic, 10, null)
+          const res = await generateFlashcards(subject, topic, 50, null)
           if (res.error) throw new Error(res.error)
           const cards = parseFlashcards(res.text || '')
           if (!cards.length) throw new Error('No cards parsed')
@@ -298,7 +298,7 @@ function ContentTab({ email }) {
               {topics.length > 0 ? topics.length + ' topics loaded for ' + board + ' ' + level + ' ' + subject : 'Select subject above'}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              Each topic generates ~10 flashcards and saves as a public set
+              Each topic generates ~50 flashcards and saves as a public set
             </div>
           </div>
           {fcProgress && (
