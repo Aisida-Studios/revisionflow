@@ -100,25 +100,11 @@ export const unlockReferralIcon = async (uid) => {
 export async function updateStreakOnLogin(uid) {
   // Login alone does NOT extend the streak.
   // Only recordActivityStreak() does — called when user logs real activity.
-  // BUT: if the user missed yesterday entirely, their streak resets to 0.
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
-  const data            = snap.data()
-  const todayStr        = new Date().toDateString()
-  const lastActivityStr = data.lastActivityDate || null
-
-  // Reset streak if lastActivityDate is older than yesterday
-  if (lastActivityStr && lastActivityStr !== todayStr) {
-    const yesterday    = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toDateString()
-    if (lastActivityStr !== yesterdayStr) {
-      // More than 1 day since last activity — streak is broken
-      await updateDoc(ref, { streak: 0 })
-    }
-  }
-
+  const data     = snap.data()
+  const todayStr = new Date().toDateString()
   const lastLogin = data.lastLogin?.toDate ? data.lastLogin.toDate() : null
   if (!lastLogin || lastLogin.toDateString() !== todayStr) {
     await updateDoc(ref, { lastLogin: serverTimestamp() })
@@ -522,11 +508,17 @@ export const getFriendProfiles = async (friendUids) => {
 export const getUserByUsername = async (username) => {
   if (!username) return null
   try {
-    const q    = query(collection(db, 'users'), where('displayName', '==', username), limit(1))
-    const snap = await getDocs(q)
-    if (snap.empty) return null
-    const d = snap.docs[0]
-    return { uid: d.id, ...d.data() }
+    // 1. Try exact username field match (set in Onboarding / Settings)
+    const q1    = query(collection(db, 'users'), where('username', '==', username), limit(1))
+    const snap1 = await getDocs(q1)
+    if (!snap1.empty) {
+      const d = snap1.docs[0]
+      return { uid: d.id, ...d.data() }
+    }
+    // 2. Fallback: treat as uid (profile URLs fall back to uid when no username is set)
+    const snap2 = await getDoc(doc(db, 'users', username))
+    if (snap2.exists()) return { uid: snap2.id, ...snap2.data() }
+    return null
   } catch { return null }
 }
 
@@ -764,30 +756,42 @@ export async function runBadgeAudit(uid) {
 export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType }) => {
   // Resolve display name for author
   let resolvedAuthor = author
-  if (!resolvedAuthor) {
+  if (!resolvedAuthor && uid) {
     try {
       const snap = await getDoc(doc(db, 'users', uid))
       if (snap.exists()) resolvedAuthor = snap.data().displayName || 'Anonymous'
     } catch(e) {}
   }
   const data = {
-    uid, title, subject, topic: topic || '',
+    uid: uid || 'official',
+    title, subject, topic: topic || '',
     cards, isPublic,
     cardCount: cards.length,
-    author: resolvedAuthor || 'Anonymous',
+    author: resolvedAuthor || author || 'RevisionFlow',
     authorType: authorType || 'user',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
-  // Save to user's private collection
-  const ref = await addDoc(collection(db, 'users', uid, 'flashcardSets'), data)
-  // If public, also save to global collection so others can find it
-  if (isPublic) {
-    await setDoc(doc(db, 'publicFlashcards', ref.id), { ...data, setId: ref.id })
+  let refId
+  if (uid) {
+    // Save to user's private collection
+    const ref = await addDoc(collection(db, 'users', uid, 'flashcardSets'), data)
+    refId = ref.id
+  } else {
+    // Official/admin sets — go straight to publicFlashcards only
+    const ref = await addDoc(collection(db, 'publicFlashcards'), { ...data, setId: null })
+    await updateDoc(ref, { setId: ref.id })
+    refId = ref.id
   }
-  await recordActivityStreak(uid)
-  await autoCompleteQuest(uid, 'use_ai')
-  return ref.id
+  // If public AND user-owned, also save to global collection
+  if (isPublic && uid) {
+    await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
+  }
+  if (uid) {
+    await recordActivityStreak(uid)
+    await autoCompleteQuest(uid, 'use_ai')
+  }
+  return refId
 }
 
 export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
@@ -881,23 +885,4 @@ export async function incrementTopicNoteUsage(uid) {
       await updateDoc(ref, { count: increment(snap.data().count + 1) })
     }
   } catch(e) {}
-}
-
-// ── Quiz History ──────────────────────────────────────────────────────────────
-
-export async function saveQuizResult(uid, result) {
-  // result: { setId, setTitle, subject, mode, score, total, pct, timeTaken, timedMode }
-  try {
-    const col = collection(db, 'users', uid, 'quizHistory')
-    await addDoc(col, { ...result, createdAt: serverTimestamp() })
-  } catch(e) { console.warn('[saveQuizResult]', e) }
-}
-
-export async function getQuizHistory(uid, limitN = 20) {
-  try {
-    const col  = collection(db, 'users', uid, 'quizHistory')
-    const q    = query(col, orderBy('createdAt', 'desc'), limit(limitN))
-    const snap = await getDocs(q)
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  } catch(e) { return [] }
 }
