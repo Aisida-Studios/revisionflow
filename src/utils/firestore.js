@@ -773,19 +773,22 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
     updatedAt: serverTimestamp(),
   }
   let refId
-  if (uid) {
-    // Save to user's private collection
+  const isOfficial = authorType === 'official'
+  if (uid && !isOfficial) {
+    // Save to user's private collection (skip for official/admin bulk sets)
     const ref = await addDoc(collection(db, 'users', uid, 'flashcardSets'), data)
     refId = ref.id
-  } else {
-    // Official/admin sets — go straight to publicFlashcards only
-    const ref = await addDoc(collection(db, 'publicFlashcards'), { ...data, setId: null })
-    await updateDoc(ref, { setId: ref.id })
-    refId = ref.id
   }
-  // If public AND user-owned, also save to global collection
-  if (isPublic && uid) {
-    await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
+  if (isPublic || isOfficial) {
+    // Save to global public collection
+    if (refId) {
+      await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
+    } else {
+      // Official sets with no user subcollection entry
+      const ref = await addDoc(collection(db, 'publicFlashcards'), { ...data, setId: null })
+      await updateDoc(ref, { setId: ref.id })
+      refId = ref.id
+    }
   }
   if (uid) {
     await recordActivityStreak(uid)
