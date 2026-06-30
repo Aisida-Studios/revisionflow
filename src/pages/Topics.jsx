@@ -9,9 +9,10 @@ import { awardXP } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
 import { getAllTopicsFlat } from '../data/topics'
+import { resolveTopicResources } from '../data/resourceLinks'
 import { SUBJECT_COLOURS } from '../data/subjects'
 import toast from 'react-hot-toast'
-import { Plus, X, Brain, Zap, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen, StickyNote, Layers } from 'lucide-react'
+import { Plus, X, Brain, Zap, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen, StickyNote, Layers, Link2 } from 'lucide-react'
 import { saveNote, getNotes, deleteNote } from '../utils/firestore'
 import { format } from 'date-fns'
 
@@ -146,6 +147,7 @@ export default function Topics() {
   const [showAdd, setShowAdd] = useState(false)
   const [aiAdvice, setAiAdvice] = useState({})
   const [loadingAI, setLoadingAI] = useState(null)
+  const [openResources, setOpenResources] = useState(null)
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState([])
   const [newTopic, setNewTopic] = useState({ name:'', confidence:3, notes:'' })
@@ -493,6 +495,10 @@ export default function Topics() {
                         <button className="btn btn-secondary btn-sm" onClick={()=>getAIAdvice(t)} disabled={loadingAI===t.id}>
                           {loadingAI===t.id?'…':<><Brain size={12}/> Advice</>}
                         </button>
+                        <button className="btn btn-ghost btn-sm" style={{fontSize:'0.75rem'}}
+                          onClick={()=>setOpenResources(openResources===t.id?null:t.id)}>
+                          <Link2 size={12}/> Resources
+                        </button>
                         <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDelete(t.id)}><Trash2 size={13}/></button>
                       </div>
                     </div>
@@ -507,6 +513,9 @@ export default function Topics() {
                           }}
                         />
                       </div>
+                    )}
+                    {openResources===t.id && (
+                      <TopicResourcesPanel subject={selSubj} topicName={t.name} />
                     )}
                   </div>
                 )
@@ -603,6 +612,72 @@ function TopicAdviceRenderer({ text }) {
 }
 
 // ── Resources Panel ───────────────────────────────────────────────────────────
+// ── Per-topic resources panel — shows tiered links for one specific topic ──────
+function TopicResourcesPanel({ subject, topicName }) {
+  const { verified, hub, search } = resolveTopicResources(subject, topicName)
+  const linkStyle = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+    padding: '9px 12px', borderRadius: 8, background: 'var(--bg-card)',
+    border: '1px solid var(--border)', textDecoration: 'none', color: 'inherit',
+    fontSize: '0.82rem', fontWeight: 600,
+  }
+  return (
+    <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 10,
+      background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
+        letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+        Resources for "{topicName}"
+      </div>
+
+      {verified.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 700, marginBottom: 5 }}>
+            ✓ Verified direct links
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {verified.map((l, i) => (
+              <a key={i} href={l.url} target="_blank" rel="noreferrer" style={linkStyle}>
+                <span>{l.name}</span>
+                <ExternalLink size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hub.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 5 }}>
+            Subject hub
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {hub.map((l, i) => (
+              <a key={i} href={l.url} target="_blank" rel="noreferrer" style={linkStyle}>
+                <span>{l.name}</span>
+                <ExternalLink size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 5 }}>
+          Search for this exact topic
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {search.map((l, i) => (
+            <a key={i} href={l.url} target="_blank" rel="noreferrer" style={{ ...linkStyle, background: 'var(--bg-hover)' }}>
+              <span>{l.site}</span>
+              <ExternalLink size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ResourcesPanel({ subject, allSubjects }) {
   const [selSubj, setSelSubj] = React.useState(subject || allSubjects[0] || '')
   const resources = SUBJECT_RESOURCES[selSubj] || []
