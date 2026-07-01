@@ -1,52 +1,67 @@
 // src/components/TooltipTour.jsx
 import { useState, useEffect } from 'react'
 
-const TOUR_STEPS = [
-  {
-    title: '👋 Welcome to RevisionFlow!',
-    body: 'This quick tour will show you how to get the most out of the app. You can skip it at any time.',
-    anchor: null, // centred modal
-  },
-  {
-    title: '📅 Your Dashboard',
-    body: "This is your home base. You'll see today's sessions, upcoming exams, your streak, and a personalised AI tip every day.",
-    anchor: null,
-  },
-  {
-    title: '📆 Calendar',
-    body: 'Generate a full revision schedule with AI, or add sessions manually. The schedule is built around your exam dates and availability.',
-    anchor: null,
-  },
-  {
-    title: '📄 Past Papers',
-    body: 'Log every past paper you do. RevisionFlow tracks your score, grade, and grade boundaries automatically so you can see your progress.',
-    anchor: null,
-  },
-  {
-    title: '🧠 Topics',
-    body: 'Rate your confidence on every topic in your spec (1–5). Use the Priority tab to flag the topics that need the most work.',
-    anchor: null,
-  },
-  {
-    title: '✨ AI Advisor',
-    body: 'Your personal AI tutor. Ask anything, get grade predictions, find your next topic to revise, mark your answers, and generate flashcards — all personalised to your data.',
-    anchor: null,
-  },
-  {
-    title: '⏱ Timer',
-    body: 'Use the built-in Pomodoro timer or stopwatch for focused revision sessions. It keeps running even when you switch pages.',
-    anchor: null,
-  },
-  {
-    title: '🎯 You\'re all set!',
-    body: 'Start by completing your subjects in Settings, then generate your first revision schedule. Good luck! 🚀',
-    anchor: null,
-  },
-]
+function buildSteps(profile) {
+  const firstName  = (profile?.displayName || '').split(' ')[0] || 'there'
+  const subjects   = profile?.subjects || []
+  const subjNames  = subjects.slice(0, 3).map(s => s.name)
+  const subjList   = subjNames.length
+    ? (subjNames.length === 1 ? subjNames[0] : subjNames.slice(0, -1).join(', ') + ' and ' + subjNames[subjNames.length - 1])
+    : null
+  const qual       = profile?.qualification || 'exams'
+  const examCount  = (profile?.examDates || []).length
+  const target     = subjects[0]?.targetGrade
 
-export default function TooltipTour({ onComplete }) {
+  const steps = [
+    {
+      title: '👋 Hey ' + firstName + '!',
+      body: subjList
+        ? "You're set up for " + qual + ' in ' + subjList + (subjects.length > 3 ? ' and ' + (subjects.length - 3) + ' more' : '') + '. Quick 30-second tour of where everything lives.'
+        : "Quick 30-second tour of where everything lives, then you're free to dive in.",
+    },
+    {
+      title: '📅 Your Dashboard',
+      body: examCount > 0
+        ? "This is home base — today's sessions, your next exam countdown, streak, and a fresh AI tip every day."
+        : "This is home base. Once you add exam dates, you'll see a live countdown here alongside today's sessions and streak.",
+    },
+    {
+      title: '📆 Calendar',
+      body: subjList
+        ? 'Generate a full revision schedule for ' + subjList + ' with one click — built around your exam dates and the availability you set during signup.'
+        : 'Generate a full revision schedule with AI, built around your exam dates and availability.',
+    },
+    {
+      title: '🧠 Topics',
+      body: subjects.length
+        ? 'Every topic for ' + (subjNames[0] || 'your subjects') + ' is already pre-loaded. Rate your confidence 1–5 on each one, and the AI will know exactly what to prioritise.'
+        : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and the AI prioritises accordingly.',
+    },
+    {
+      title: '✨ AI Advisor',
+      body: target
+        ? "Ask anything, get grade predictions toward your target grade " + target + ", mark your answers like a real examiner, and generate flashcards — all personalised to your data."
+        : 'Ask anything, get grade predictions, mark your answers like a real examiner, and generate flashcards — all personalised to your data.',
+    },
+    {
+      title: '⏱ Timer',
+      body: 'Built-in Pomodoro timer or stopwatch for focused sessions. Keeps running even when you switch pages, and earns you XP per minute.',
+    },
+    {
+      title: "🎯 You're all set, " + firstName + '!',
+      body: examCount === 0
+        ? 'First step: add your exam dates so the countdown and AI scheduling can kick in. Good luck! 🚀'
+        : "Jump into Calendar to generate your first revision schedule, or head straight to Topics to start rating your confidence. Good luck! 🚀",
+    },
+  ]
+
+  return steps
+}
+
+export default function TooltipTour({ onComplete, profile }) {
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
+  const TOUR_STEPS = buildSteps(profile)
 
   function skip() {
     localStorage.setItem('tour_complete', 'true')
