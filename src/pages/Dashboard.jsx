@@ -39,6 +39,84 @@ function computeLevel(totalXP) {
   return lv
 }
 
+// ── Personalised welcome card for new users ───────────────────────────────────
+function WelcomeCard({ profile, onDismiss }) {
+  const firstName   = (profile?.displayName || '').split(' ')[0] || 'there'
+  const subjects    = profile?.subjects || []
+  const subjNames   = subjects.slice(0, 3).map(s => s.name)
+  const qual        = profile?.qualification || 'GCSE'
+  const hasExams    = (profile?.examDates || []).length > 0
+  const hasSubjects = subjects.length > 0
+
+  function dismiss() {
+    localStorage.setItem('welcome-dismissed', '1')
+    onDismiss?.()
+  }
+
+  const nextSteps = [
+    !hasExams    && { emoji: '📅', text: 'Add your exam dates', link: '/exams',    key: 'exams' },
+    !hasSubjects && { emoji: '📚', text: 'Add your subjects',   link: '/settings', key: 'subjects' },
+    hasSubjects  && { emoji: '📆', text: 'Generate a revision schedule', link: '/calendar', key: 'cal' },
+    hasSubjects  && { emoji: '🧠', text: 'Rate topic confidence', link: '/topics', key: 'topics' },
+  ].filter(Boolean).slice(0, 3)
+
+  return (
+    <div style={{
+      marginBottom: 20, borderRadius: 16, overflow: 'hidden',
+      background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(59,130,246,0.08) 100%)',
+      border: '1px solid rgba(124,58,237,0.25)',
+    }}>
+      <div style={{ padding: '20px 20px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem' }}>
+              Welcome to RevisionFlow, {firstName}! 🎉
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              {hasSubjects
+                ? "You're set up for " + qual + ' in ' + (subjNames.length > 1 ? subjNames.slice(0,-1).join(', ') + ' and ' + subjNames[subjNames.length-1] : subjNames[0]) + (subjects.length > 3 ? ' and ' + (subjects.length - 3) + ' more' : '') + '. Here\'s where to start:'
+                : "Your account is ready. Let's get you set up — it takes about 2 minutes."
+              }
+            </p>
+          </div>
+          <button onClick={dismiss} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-muted)', padding: 4, flexShrink: 0, fontSize: '1.1rem', lineHeight: 1,
+          }} title="Dismiss">×</button>
+        </div>
+
+        {nextSteps.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+            {nextSteps.map((step, i) => (
+              <Link key={step.key} to={step.link} style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 14px', borderRadius: 999,
+                background: i === 0 ? 'var(--accent)' : 'var(--bg-surface)',
+                color: i === 0 ? '#fff' : 'var(--text-primary)',
+                border: i === 0 ? 'none' : '1px solid var(--border)',
+                textDecoration: 'none', fontSize: '0.82rem', fontWeight: 600,
+                transition: 'opacity 0.15s',
+              }}>
+                <span>{step.emoji}</span> {step.text}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* XP incentive strip */}
+      <div style={{
+        padding: '10px 20px', background: 'rgba(124,58,237,0.07)',
+        borderTop: '1px solid rgba(124,58,237,0.12)',
+        fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <span style={{ color: 'var(--accent-light)', fontWeight: 700 }}>⚡</span>
+        Complete each step to earn XP and unlock your first badges. Start with the most urgent step above.
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { profile, user } = useAuth()
   const [gdprConsent,    setGdprConsent]    = useState(localStorage.getItem('gdpr_consent') === 'true')
@@ -59,7 +137,16 @@ export default function Dashboard() {
       setShowTour(true)
     }
   }, [profile?.uid])
-  const [setupSkipped,   setSetupSkipped]   = useState(() => localStorage.getItem('setup-skipped') === '1')
+  const [setupSkipped,      setSetupSkipped]      = useState(() => localStorage.getItem('setup-skipped') === '1')
+  const [welcomeDismissed,  setWelcomeDismissed]  = useState(() => localStorage.getItem('welcome-dismissed') === '1')
+
+  // New user = account created within last 48 hours
+  const isNewUser = (() => {
+    if (welcomeDismissed) return false
+    const ts = profile?.createdAt?.toDate ? profile.createdAt.toDate() : null
+    if (!ts) return false
+    return (Date.now() - ts.getTime()) < 48 * 60 * 60 * 1000
+  })()
 
   // Papers carousel
   const [carouselIdx,    setCarouselIdx]    = useState(0)
@@ -202,7 +289,7 @@ export default function Dashboard() {
 
   return (
     <>
-      {showTour && <TooltipTour onComplete={async () => {
+      {showTour && <TooltipTour profile={profile} onComplete={async () => {
         setShowTour(false)
         localStorage.setItem('tour_complete', '1')
         if (user) {
@@ -231,6 +318,11 @@ export default function Dashboard() {
       <div className="fade-in">
         <UpdatePrompt />
         <EmergencyBanner />
+
+        {/* Welcome card for brand-new users (joined within 48h, setup not yet done) */}
+        {isNewUser && !setupDone && (
+          <WelcomeCard profile={profile} onDismiss={() => setWelcomeDismissed(true)} />
+        )}
 
         {/* Setup checklist */}
         {!setupDone && !setupSkipped && (
