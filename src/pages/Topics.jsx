@@ -141,6 +141,7 @@ const SUBJECT_RESOURCES = {
 
 export default function Topics() {
   const { user, profile } = useAuth()
+  const navigate = useNavigate()
   const [topics, setTopics] = useState([])
   const [allTopics, setAllTopics] = useState([])
   const [selSubj, setSelSubj] = useState('All')
@@ -157,7 +158,10 @@ export default function Topics() {
   const [editingNote, setEditingNote] = useState(null)
   const [noteSaving, setNoteSaving] = useState(false)
 
-  const subjects = profile?.subjects?.map(s=>s.name) || []
+  const subjects   = profile?.subjects?.map(s=>s.name) || []
+  const selSubjObj  = profile?.subjects?.find(s => s.name === selSubj)
+  const selBoard    = selSubjObj?.board || 'AQA'
+  const selLevel    = profile?.qualification || 'GCSE'
 
   useEffect(() => {
     if (!user) return
@@ -209,7 +213,7 @@ export default function Topics() {
     if (!selSubj) return
     setLoading(true)
     const subj = profile?.subjects?.find(s=>s.name===selSubj)
-    const topicList = getAllTopicsFlat(subj?.board||'AQA', selSubj)
+    const topicList = getAllTopicsFlat(subj?.board||'AQA', selSubj, profile?.qualification||'GCSE')
     if (!topicList.length) { toast.error('No topics found for this subject/board'); setLoading(false); return }
     for (const t of topicList) {
       const id = `${selSubj}_${t.name}`.replace(/[^a-zA-Z0-9_]/g,'_').slice(0,100)
