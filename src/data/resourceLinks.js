@@ -77,19 +77,19 @@ export const VERIFIED_DEEP_LINKS = {
     {
       keywords: ['photosynthesis'],
       links: [
-        { name: 'Cognito — Photosynthesis', url: 'https://www.cognitoedu.org/topics/photosynthesis-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Biology (search Photosynthesis)', url: 'https://go.cognitoedu.org/biology', site: 'Cognito' },
       ],
     },
     {
       keywords: ['cell structure', 'cell division', 'mitosis'],
       links: [
-        { name: 'Cognito — Cell Biology', url: 'https://www.cognitoedu.org/topics/cell-structure-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Biology (search Cell Biology)', url: 'https://go.cognitoedu.org/biology', site: 'Cognito' },
       ],
     },
     {
       keywords: ['respiration'],
       links: [
-        { name: 'Cognito — Respiration', url: 'https://www.cognitoedu.org/topics/cellular-respiration-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Biology (search Respiration)', url: 'https://go.cognitoedu.org/biology', site: 'Cognito' },
       ],
     },
   ],
@@ -98,13 +98,13 @@ export const VERIFIED_DEEP_LINKS = {
     {
       keywords: ['atomic structure'],
       links: [
-        { name: 'Cognito — Atomic Structure', url: 'https://www.cognitoedu.org/topics/atomic-structure-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Chemistry (search Atomic Structure)', url: 'https://go.cognitoedu.org/chemistry', site: 'Cognito' },
       ],
     },
     {
       keywords: ['periodic table'],
       links: [
-        { name: 'Cognito — The Periodic Table', url: 'https://www.cognitoedu.org/topics/the-periodic-table-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Chemistry (search Periodic Table)', url: 'https://go.cognitoedu.org/chemistry', site: 'Cognito' },
       ],
     },
   ],
@@ -113,13 +113,13 @@ export const VERIFIED_DEEP_LINKS = {
     {
       keywords: ['forces', 'newton'],
       links: [
-        { name: 'Cognito — Forces', url: 'https://www.cognitoedu.org/topics/forces-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Physics (search Forces)', url: 'https://go.cognitoedu.org/physics', site: 'Cognito' },
       ],
     },
     {
       keywords: ['energy stores', 'energy transfer'],
       links: [
-        { name: 'Cognito — Energy', url: 'https://www.cognitoedu.org/topics/energy-gcse', site: 'Cognito' },
+        { name: 'Cognito — GCSE Physics (search Energy)', url: 'https://go.cognitoedu.org/physics', site: 'Cognito' },
       ],
     },
   ],
@@ -129,10 +129,10 @@ export const VERIFIED_DEEP_LINKS = {
 export const SUBJECT_HUBS = {
   'Mathematics':         [{ name: 'Corbett Maths — Full Topic List', url: 'https://corbettmaths.com/contents/', site: 'Corbett Maths' }],
   'Further Mathematics': [{ name: 'Dr Frost Maths', url: 'https://www.drfrostmaths.com', site: 'Dr Frost Maths' }],
-  'Biology':             [{ name: 'Cognito — All Biology Topics', url: 'https://www.cognitoedu.org/subjects/biology', site: 'Cognito' }],
-  'Chemistry':           [{ name: 'Cognito — All Chemistry Topics', url: 'https://www.cognitoedu.org/subjects/chemistry', site: 'Cognito' }],
-  'Physics':             [{ name: 'Cognito — All Physics Topics', url: 'https://www.cognitoedu.org/subjects/physics', site: 'Cognito' }],
-  'Combined Science':    [{ name: 'Cognito — Combined Science', url: 'https://www.cognitoedu.org', site: 'Cognito' }],
+  'Biology':             [{ name: 'Cognito — All Biology Topics', url: 'https://go.cognitoedu.org/biology', site: 'Cognito' }],
+  'Chemistry':           [{ name: 'Cognito — All Chemistry Topics', url: 'https://go.cognitoedu.org/chemistry', site: 'Cognito' }],
+  'Physics':             [{ name: 'Cognito — All Physics Topics', url: 'https://go.cognitoedu.org/physics', site: 'Cognito' }],
+  'Combined Science':    [{ name: 'Cognito — Combined Science', url: 'https://go.cognitoedu.org/gcse', site: 'Cognito' }],
   'English Language':    [{ name: 'BBC Bitesize — English Language', url: 'https://www.bbc.co.uk/bitesize/subjects/zr9d7ty', site: 'BBC Bitesize' }],
   'English Literature':  [{ name: 'BBC Bitesize — English Literature', url: 'https://www.bbc.co.uk/bitesize/subjects/zm8ng82', site: 'BBC Bitesize' }],
   'History':             [{ name: 'BBC Bitesize — History', url: 'https://www.bbc.co.uk/bitesize/subjects/zk26n39', site: 'BBC Bitesize' }],
