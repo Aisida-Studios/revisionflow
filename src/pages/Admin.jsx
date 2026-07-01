@@ -380,7 +380,7 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['users', 'beta', 'stats', 'content'].map(t => (
+        {['users', 'beta', 'stats', 'content', 'resources'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
@@ -390,6 +390,251 @@ export default function Admin() {
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
       {tab === 'content' && <ContentTab email={user.email} />}
+      {tab === 'resources' && <ResourcesTab email={user.email} />}
+    </div>
+  )
+}
+
+/* ── Resources tab — import verified topic resource links ───────── */
+function ResourcesTab({ email }) {
+  const [links,      setLinks]      = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [mode,       setMode]       = useState('single')   // 'single' | 'bulk'
+  const [saving,     setSaving]     = useState(false)
+  const [filterSubj, setFilterSubj] = useState('')
+
+  // Single-entry form
+  const [subject,  setSubject]  = useState('Mathematics')
+  const [keywords, setKeywords] = useState('')
+  const [name,      setName]    = useState('')
+  const [url,       setUrl]     = useState('')
+  const [site,      setSite]    = useState('')
+
+  // Bulk paste
+  const [bulkText, setBulkText] = useState('')
+  const [bulkPreview, setBulkPreview] = useState([])
+  const [bulkErrors,  setBulkErrors]  = useState([])
+
+  const SUBJECTS = [
+    'Mathematics','Further Mathematics','Biology','Chemistry','Physics','Combined Science',
+    'English Language','English Literature','History','Geography','Computer Science',
+    'Business Studies','Economics','Psychology','Sociology','French','German','Spanish',
+    'Religious Studies','Law','Media Studies',
+  ]
+
+  async function loadLinks() {
+    setLoading(true)
+    try {
+      const data = await adminCall('listResourceLinks', email)
+      setLinks(data.links || [])
+    } catch(e) { toast.error(e.message) }
+    setLoading(false)
+  }
+
+  useEffect(() => { loadLinks() }, [])
+
+  async function addSingle() {
+    if (!subject || !keywords.trim() || !name.trim() || !url.trim()) {
+      toast.error('Fill in all fields'); return
+    }
+    setSaving(true)
+    try {
+      await adminCall('addResourceLink', email, {
+        subject, keywords: keywords.trim(), name: name.trim(), url: url.trim(), site: site.trim() || name.trim(),
+      })
+      toast.success('Link added')
+      setKeywords(''); setName(''); setUrl(''); setSite('')
+      loadLinks()
+    } catch(e) { toast.error(e.message) }
+    setSaving(false)
+  }
+
+  async function deleteLink(id) {
+    try {
+      await adminCall('deleteResourceLink', email, { linkId: id })
+      setLinks(l => l.filter(x => x.id !== id))
+      toast.success('Deleted')
+    } catch(e) { toast.error(e.message) }
+  }
+
+  // Bulk paste format: Subject | keyword1,keyword2 | Link name | URL | Site name (optional)
+  function parseBulk(text) {
+    const rows = []
+    const errors = []
+    text.split('\n').forEach((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return
+      const parts = trimmed.split('|').map(p => p.trim())
+      if (parts.length < 4) {
+        errors.push('Line ' + (i + 1) + ': needs at least 4 fields separated by |')
+        return
+      }
+      const [subj, kw, nm, u, st] = parts
+      if (!subj || !kw || !nm || !u) {
+        errors.push('Line ' + (i + 1) + ': missing required field')
+        return
+      }
+      if (!u.startsWith('http')) {
+        errors.push('Line ' + (i + 1) + ': URL must start with http(s)://')
+        return
+      }
+      rows.push({ subject: subj, keywords: kw, name: nm, url: u, site: st || nm })
+    })
+    return { rows, errors }
+  }
+
+  function handleBulkChange(text) {
+    setBulkText(text)
+    const { rows, errors } = parseBulk(text)
+    setBulkPreview(rows)
+    setBulkErrors(errors)
+  }
+
+  async function submitBulk() {
+    if (!bulkPreview.length) { toast.error('Nothing to import'); return }
+    setSaving(true)
+    try {
+      const data = await adminCall('bulkAddResourceLinks', email, { rows: bulkPreview })
+      toast.success(data.added + ' links imported')
+      setBulkText(''); setBulkPreview([]); setBulkErrors([])
+      loadLinks()
+    } catch(e) { toast.error(e.message) }
+    setSaving(false)
+  }
+
+  const filteredLinks = filterSubj ? links.filter(l => l.subject === filterSubj) : links
+  const subjectsInUse = [...new Set(links.map(l => l.subject))].sort()
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Verified resource links</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          These power the "Resources" button on each topic in Topics.jsx. Keywords are matched as
+          case-insensitive substrings against the topic name — e.g. keyword "bidmas" matches the topic
+          "Number — Integers: Order of Operations (BIDMAS)".
+        </div>
+      </div>
+
+      {/* Mode toggle */}
+      <div className="tabs" style={{ marginBottom: 16 }}>
+        <button className={'tab' + (mode === 'single' ? ' active' : '')} onClick={() => setMode('single')}>Add one link</button>
+        <button className={'tab' + (mode === 'bulk' ? ' active' : '')} onClick={() => setMode('bulk')}>Bulk paste</button>
+      </div>
+
+      {mode === 'single' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h4 style={{ marginBottom: 14, fontSize: '0.9rem' }}>Add a single verified link</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10, marginBottom: 12 }}>
+            <div>
+              <label className="label">Subject</label>
+              <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+                {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Keywords (comma-separated)</label>
+              <input className="input" placeholder="e.g. bidmas, order of operations" value={keywords} onChange={e => setKeywords(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Link display name</label>
+              <input className="input" placeholder="e.g. Corbett Maths — BIDMAS" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Site name (optional)</label>
+              <input className="input" placeholder="e.g. Corbett Maths" value={site} onChange={e => setSite(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label className="label">URL</label>
+            <input className="input" placeholder="https://..." value={url} onChange={e => setUrl(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" onClick={addSingle} disabled={saving}>
+            {saving ? 'Saving...' : 'Add link'}
+          </button>
+        </div>
+      )}
+
+      {mode === 'bulk' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Bulk paste links</h4>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
+            One link per line, fields separated by <code>|</code>:<br />
+            <code style={{ display: 'block', marginTop: 4, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 6 }}>
+              Subject | keyword1,keyword2 | Link name | https://url.com | Site name (optional)
+            </code>
+          </p>
+          <textarea className="textarea" rows={8}
+            placeholder={'Mathematics | bidmas,order of operations | Corbett Maths — BIDMAS | https://corbettmaths.com/2013/06/08/order-of-operations/ | Corbett Maths\nBiology | photosynthesis | Cognito — Photosynthesis | https://www.cognitoedu.org/topics/photosynthesis-gcse | Cognito'}
+            value={bulkText} onChange={e => handleBulkChange(e.target.value)} />
+
+          {bulkErrors.length > 0 && (
+            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8,
+              background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {bulkErrors.map((e, i) => (
+                <div key={i} style={{ fontSize: '0.78rem', color: 'var(--danger)' }}>{e}</div>
+              ))}
+            </div>
+          )}
+
+          {bulkPreview.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--success)' }}>
+                {bulkPreview.length} link{bulkPreview.length !== 1 ? 's' : ''} ready to import
+              </div>
+              <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {bulkPreview.map((r, i) => (
+                  <div key={i} style={{ fontSize: '0.75rem', padding: '6px 10px', borderRadius: 6,
+                    background: 'var(--bg-hover)', display: 'flex', gap: 8 }}>
+                    <span className="badge badge-purple" style={{ fontSize: '0.68rem' }}>{r.subject}</span>
+                    <span style={{ fontWeight: 600 }}>{r.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button className="btn btn-primary" style={{ marginTop: 14 }}
+            onClick={submitBulk} disabled={saving || !bulkPreview.length}>
+            {saving ? 'Importing...' : 'Import ' + bulkPreview.length + ' link' + (bulkPreview.length !== 1 ? 's' : '')}
+          </button>
+        </div>
+      )}
+
+      {/* Existing links list */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <h4 style={{ margin: 0 }}>{links.length} link{links.length !== 1 ? 's' : ''} stored</h4>
+        {subjectsInUse.length > 1 && (
+          <select className="select" style={{ width: 'auto', fontSize: '0.82rem' }} value={filterSubj} onChange={e => setFilterSubj(e.target.value)}>
+            <option value="">All subjects</option>
+            {subjectsInUse.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="empty-state"><div className="spinner" /></div>
+      ) : filteredLinks.length === 0 ? (
+        <div className="empty-state"><p>No resource links yet — add some above.</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filteredLinks.map(l => (
+            <div key={l.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px' }}>
+              <span className="badge badge-purple" style={{ flexShrink: 0, fontSize: '0.7rem' }}>{l.subject}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {(l.keywords || []).join(', ')}
+                </div>
+              </div>
+              <a href={l.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }}>Open</a>
+              <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', flexShrink: 0 }}
+                onClick={() => deleteLink(l.id)}><XCircle size={14} /></button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
