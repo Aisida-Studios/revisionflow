@@ -1913,6 +1913,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
 export default function Study() {
   const { user, profile } = useAuth()
+  const { isPro } = useIsPro()
   // Read URL params — Topics page links here with ?tab=notes&topic=...&subject=...
   const urlParams  = new URLSearchParams(window.location.search)
   const initTab    = urlParams.get('tab') || 'flashcards'
@@ -2166,8 +2167,8 @@ export default function Study() {
                 </div>
                 <div><label className="label">Number of cards</label>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {(profile?.isPro || profile?.betaUser ? [5, 10, 15, 20, 30, 50] : [5, 10, 15, 20]).map(n => <button key={n} onClick={() => setFcCount(n)} className={'btn btn-sm ' + (fcCount === n ? 'btn-primary' : 'btn-secondary')}>{n}</button>)}
-                    {!(profile?.isPro || profile?.betaUser) && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Max 20 free · <span style={{ color: 'var(--accent)' }}>Pro: 50+</span></span>}
+                    {(isPro ? [5, 10, 15, 20, 30, 50] : [5, 10, 15, 20]).map(n => <button key={n} onClick={() => setFcCount(n)} className={'btn btn-sm ' + (fcCount === n ? 'btn-primary' : 'btn-secondary')}>{n}</button>)}
+                    {!isPro && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Max 20 free · <span style={{ color: 'var(--accent)' }}>Pro: 50+</span></span>}
                   </div>
                 </div>
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={fcLoading || !fcSubject}>
