@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useIsPro } from '../components/ProGate'
 import { useTheme } from '../context/ThemeContext'
 import { PROFILE_ICONS } from '../data/themes'
 import PWAInstallBanner from './PWAInstallBanner'
@@ -256,6 +257,31 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
+
+          {/* Pro upgrade CTA — only for free users */}
+          {!isPro && !collapsed && (
+            <a href="/pro" style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              margin: '8px 0 4px', padding: '10px 12px', borderRadius: 10,
+              background: 'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.08))',
+              border: '1px solid rgba(124,58,237,0.3)',
+              textDecoration: 'none', cursor: 'pointer',
+            }}>
+              <span style={{ fontSize: '1rem' }}>⚡</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.78rem', color: 'var(--accent-light)' }}>Upgrade to Pro</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>from £3.99/mo</div>
+              </div>
+            </a>
+          )}
+          {!isPro && collapsed && (
+            <a href="/pro" title="Upgrade to Pro" style={{
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
+              margin: '8px 0 4px', padding: '8px', borderRadius: 10,
+              background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)',
+              textDecoration: 'none', fontSize: '1rem',
+            }}>⚡</a>
+          )}
 
           {/* Bottom: theme + logout */}
           <div style={{
