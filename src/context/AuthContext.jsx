@@ -102,3 +102,14 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext)
+
+// Convenience hook — also exported from components/ProGate.jsx
+// Use whichever import is more convenient in your component
+export function useIsPro() {
+  const { profile } = useContext(AuthContext)
+  return {
+    isPro:    !!(profile?.isPro || profile?.betaUser),
+    isBeta:   !!profile?.betaUser,
+    isStripe: !!profile?.isPro && !profile?.betaUser,
+  }
+}
