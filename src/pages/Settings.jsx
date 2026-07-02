@@ -1,5 +1,6 @@
 // src/pages/Settings.jsx
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { updateUserProfile } from '../utils/firestore'
@@ -16,7 +17,12 @@ export default function Settings() {
   const { user, profile, refreshProfile, logout } = useAuth()
   const { theme, toggle } = useTheme()
   const [saving,       setSaving]       = useState(false)
-  const [tab,          setTab]          = useState('profile')
+  const [searchParams]                    = useSearchParams()
+  const [tab,          setTab]          = useState(() => {
+    const t = searchParams.get('tab')
+    const VALID = ['profile', 'subjects', 'appearance', 'privacy', 'notifications', 'boundaries']
+    return VALID.includes(t) ? t : 'profile'
+  })
   const [displayName,  setDisplayName]  = useState(profile?.displayName || '')
   const [username,     setUsername]     = useState(profile?.username || '')
   const [privacy,      setPrivacy]      = useState({
