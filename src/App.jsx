@@ -36,6 +36,7 @@ const Admin         = lazy(() => import('./pages/Admin'))
 const Help          = lazy(() => import('./pages/Help'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Study        = lazy(() => import('./pages/Study'))
+const Pro          = lazy(() => import('./pages/Pro'))
 
 // ── Guards ────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children }) {
@@ -71,6 +72,8 @@ export default function App() {
                     {/* Public — no sidebar */}
                     <Route path="/"            element={<Landing />} />
                     <Route path="/privacy"     element={<PrivacyPolicy />} />
+                    <Route path="/pro"         element={<Pro />} />
+                    <Route path="/pro/success"  element={<Pro />} />
                     <Route path="/u/:username" element={<PublicProfile />} />
 
                     {/* Auth — no sidebar */}
