@@ -1,7 +1,7 @@
 // src/pages/PrivacyPolicy.jsx
 // GDPR-compliant privacy policy for RevisionFlow
 // Data controller: Oluwafemi Aisida, England, United Kingdom
-// Last updated: March 2026
+// Last updated: July 2026
 
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Zap } from 'lucide-react'
@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <h1 style={{ marginBottom: '0.4rem' }}>Privacy Policy</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Last updated: 20 March 2026 · Effective date: 20 March 2026
+          Last updated: 1 July 2026 · Effective date: 1 July 2026
         </p>
 
         <div style={{ padding:'14px 18px', background:'rgba(124,58,237,0.08)', border:'1px solid var(--accent)', borderRadius:'var(--radius-md)', marginBottom:'2rem', fontSize:'0.875rem', lineHeight:1.7 }}>
@@ -74,6 +74,9 @@ export default function PrivacyPolicy() {
             <li>Tasks: title, due date, priority, completion status</li>
             <li>Notes: subject, content, created date</li>
             <li>Exam dates: subject, board, date</li>
+            <li>Flashcard sets: title, subject, topic, cards (front/back), visibility (private/public)</li>
+            <li>Quiz results: set title, score, time taken, mode (saved to your quiz history)</li>
+            <li>Topic resource preferences: which resource links you open (not tracked — links open externally)</li>
           </ul>
 
           <p style={{ ...P_STYLE, fontWeight:600 }}>Gamification data (lawful basis: contract performance)</p>
@@ -87,6 +90,8 @@ export default function PrivacyPolicy() {
             <li>Friends list: UIDs of connected users</li>
             <li>Friend requests: sender and recipient UIDs</li>
             <li>Leaderboard data: display name, XP, level and streak visible to other users (opt-out available in Settings)</li>
+            <li>Public profile: if you set a username, your profile page (<code>/u/username</code>) is publicly accessible without login and shows your display name, level, XP, streak, badges and subjects. No email or revision scores are shown.</li>
+            <li>Referral code: a non-personal code derived from the first 8 characters of your user ID, used to track referrals</li>
           </ul>
 
           <p style={{ ...P_STYLE, fontWeight:600 }}>AI interaction data (lawful basis: contract performance)</p>
@@ -134,7 +139,7 @@ export default function PrivacyPolicy() {
                 {[
                   ['Google Firebase','Authentication, Firestore database, hosting infrastructure','Email, display name, all Firestore data','EU / USA (SCCs apply)','firebase.google.com/support/privacy'],
                   ['Mistral AI','AI Advisor, answer marking, study plan generation','Your messages + summarised revision context','EU','mistral.ai/privacy'],
-                  ['Netlify','Web hosting and deployment','IP addresses in server logs (Netlify standard logging)','USA (SCCs apply)','netlify.com/privacy'],
+                  ['Netlify','Web hosting, deployment, and serverless functions (admin operations, AI proxy)','IP addresses in server logs (Netlify standard logging)','USA (SCCs apply)','netlify.com/privacy'],
                 ].map(([s,p,d,l,url]) => (
                   <tr key={s} style={{ borderBottom:'1px solid var(--border)' }}>
                     <td style={{ padding:'10px 12px', fontWeight:600 }}>{s}</td>
@@ -214,7 +219,8 @@ export default function PrivacyPolicy() {
 
         <section style={SECTION_STYLE}>
           <h2 style={H2_STYLE}>10. Public Profile and Leaderboard</h2>
-          <p style={P_STYLE}>If you choose to create a username, your public profile page (<code>/u/username</code>) is visible to anyone with the link. It displays your display name, level, badges, and subject list. <strong>No email address or revision scores are shown publicly.</strong></p>
+          <p style={P_STYLE}>If you set a username (in Settings), your public profile at <code>/u/username</code> is visible to <strong>anyone with the link — including people who are not logged in</strong>. It shows your display name, level, XP, streak, badge count, and subject list. <strong>No email address, revision scores, or grade data are ever shown publicly.</strong> If you have not set a username, your profile is accessible at <code>/u/uid</code> (your Firebase UID, which is non-guessable).</p>
+          <p style={P_STYLE}>To make your profile private, go to Settings → Privacy and disable "Public profile". This prevents your profile from loading for anyone other than you.</p>
           <p style={P_STYLE}>The global leaderboard shows your display name, XP, level and streak to other logged-in users. You can:</p>
           <ul style={UL_STYLE}>
             <li>Hide your real name and appear as "Anonymous" (Leaderboard → Hide my name)</li>
@@ -231,6 +237,7 @@ export default function PrivacyPolicy() {
         <section style={SECTION_STYLE}>
           <h2 style={H2_STYLE}>12. Changes to This Policy</h2>
           <p style={P_STYLE}>We may update this Privacy Policy from time to time. When we make significant changes, we will display a notice within the app and update the "Last updated" date above. Continued use of RevisionFlow after changes are posted constitutes your acceptance of the updated policy.</p>
+          <p style={P_STYLE}><strong>July 2026 update:</strong> Added sections covering flashcard sets and quiz history data; clarified that public profiles are viewable without login; added referral code to social data list; updated data collection to reflect quiz result storage.</p>
           <p style={P_STYLE}>For minor changes (e.g. clarifications), we will simply update the date. For material changes (e.g. new data uses or third parties), we will seek renewed consent where required by UK GDPR.</p>
         </section>
 
