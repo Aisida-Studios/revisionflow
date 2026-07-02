@@ -55,7 +55,7 @@ function WelcomeCard({ profile, onDismiss }) {
 
   const nextSteps = [
     !hasExams    && { emoji: '📅', text: 'Add your exam dates', link: '/exams',    key: 'exams' },
-    !hasSubjects && { emoji: '📚', text: 'Add your subjects',   link: '/settings', key: 'subjects' },
+    !hasSubjects && { emoji: '📚', text: 'Add your subjects',   link: '/settings?tab=subjects', key: 'subjects' },
     hasSubjects  && { emoji: '📆', text: 'Generate a revision schedule', link: '/calendar', key: 'cal' },
     hasSubjects  && { emoji: '🧠', text: 'Rate topic confidence', link: '/topics', key: 'topics' },
   ].filter(Boolean).slice(0, 3)
@@ -270,7 +270,7 @@ export default function Dashboard() {
     .slice(0, 4)
 
   const setupSteps = [
-    { id: 'subjects', label: 'Add your subjects',           done: (profile?.subjects || []).length > 0,  link: '/settings' },
+    { id: 'subjects', label: 'Add your subjects',           done: (profile?.subjects || []).length > 0,  link: '/settings?tab=subjects' },
     { id: 'exams',    label: 'Add exam dates',               done: (profile?.examDates || []).length > 0, link: '/exams' },
     { id: 'calendar', label: 'Generate a revision schedule', done: todaySessions.length > 0,               link: '/calendar' },
   ]
