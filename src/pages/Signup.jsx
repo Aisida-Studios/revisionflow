@@ -15,10 +15,12 @@ export default function Signup() {
     name: '', email: '', password: '', confirm: '',
     referralCode: searchParams.get('ref') || getPendingReferral() || '',
   })
-  const [showPw,  setShowPw]  = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [errors,  setErrors]  = useState({})
-  const [consent, setConsent] = useState(false)
+  const [showPw,      setShowPw]      = useState(false)
+  const [loading,     setLoading]     = useState(false)
+  const [errors,      setErrors]       = useState({})
+  const [consent,     setConsent]      = useState(false)
+  const [referrerName,setReferrerName] = useState('')
+  const [codeChecking,setCodeChecking] = useState(false)
 
   // If ?ref= in URL, store it
   useEffect(() => {
@@ -28,6 +30,33 @@ export default function Signup() {
       localStorage.setItem('pendingReferralFallback', ref)
     }
   }, [searchParams])
+
+  // Look up referrer name whenever the code field changes
+  useEffect(() => {
+    const code = form.referralCode.trim().toUpperCase()
+    if (code.length < 8) { setReferrerName(''); return }
+    let cancelled = false
+    setCodeChecking(true)
+    import('../utils/firestore').then(({ default: _, ...fs }) => {
+      // Use firestore directly
+      return import('firebase/firestore').then(({ collection, query, where, limit, getDocs }) => {
+        return import('../firebase').then(({ db }) => {
+          const q = query(collection(db, 'users'), where('referralCode', '==', code), limit(1))
+          return getDocs(q).then(snap => {
+            if (cancelled) return
+            if (!snap.empty) {
+              const name = snap.docs[0].data().displayName || 'a friend'
+              setReferrerName(name)
+            } else {
+              setReferrerName(null)  // null = invalid code entered
+            }
+            setCodeChecking(false)
+          })
+        })
+      })
+    }).catch(() => { if (!cancelled) setCodeChecking(false) })
+    return () => { cancelled = true }
+  }, [form.referralCode])
 
   function validate() {
     const e = {}
@@ -177,9 +206,15 @@ export default function Signup() {
                   {...field('referralCode')}
                 />
               </div>
-              {form.referralCode && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: 3, display: 'block' }}>
-                  🚀 You'll earn 100 XP + unlock the Rocket profile icon
+              {form.referralCode.trim().length >= 8 && (
+                <span style={{ fontSize: '0.75rem', marginTop: 3, display: 'block',
+                  color: referrerName === null ? 'var(--danger)' : 'var(--success)' }}>
+                  {codeChecking
+                    ? '⏳ Checking code...'
+                    : referrerName === null
+                      ? '❌ Code not found — double-check and try again'
+                      : '🚀 Referred by ' + referrerName + ' · You both earn XP + unlock the Rocket icon'
+                  }
                 </span>
               )}
             </div>
