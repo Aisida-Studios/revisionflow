@@ -29,6 +29,11 @@
   to     = "/.netlify/functions/notify"
   status = 200
 
+[[redirects]]
+  from   = "/api/stripe"
+  to     = "/.netlify/functions/stripe"
+  status = 200
+
 # All other routes -> React app (must be last)
 [[redirects]]
   from   = "/*"
