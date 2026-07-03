@@ -13,9 +13,21 @@ const ADMIN_EMAIL = 'femiaisida1@gmail.com'
 
 /* ── Admin API helper ──────────────────────────────────────────── */
 async function adminCall(action, callerEmail, params = {}) {
+  // Get a fresh Firebase ID token — verified server-side, cannot be faked
+  let idToken = ''
+  try {
+    const { getAuth } = await import('firebase/auth')
+    const { app } = await import('../firebase')
+    const currentUser = getAuth(app).currentUser
+    if (currentUser) idToken = await currentUser.getIdToken()
+  } catch(e) { console.warn('[adminCall] could not get ID token:', e.message) }
+
   const res = await fetch('/api/admin', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + idToken,
+    },
     body: JSON.stringify({ action, callerEmail, ...params }),
   })
   const data = await res.json()
