@@ -15,7 +15,7 @@ PAGES & FEATURES:
 - Dashboard: Today's sessions, next exam countdown, streak, XP level bar (infinite levels, 1.15x XP formula), daily AI briefing, daily quests, badge showcase, recent papers carousel, referral code entry. New users see a personalised welcome card with their subjects listed and suggested first steps.
 - Calendar: Monthly/weekly view, AI-powered 7-step schedule generator, ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
 - Exam Dates: Add upcoming exams with subject, board, paper, date. Emergency Mode triggers when exam is within 7 days.
-- Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019-2025). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
+- Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019–2025, 2026 estimated). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
 - Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 6 boards, GCSE and A-Level. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
 - Study Tools (/study): Three tabs:
   * Flashcards — AI generator (50 cards), saved sets (private/public), create custom sets, flip-card UI, confidence rating, Quizlet copy, CSV download, public sets library with search/filter
@@ -194,7 +194,7 @@ const FAQ = [
 const FEATURES = [
   { icon: BookOpen,      title: 'Dashboard',        desc: 'XP, streak, next exam countdown, daily quests, AI briefing, welcome card for new users', colour: 'var(--accent)' },
   { icon: Calendar,      title: 'Calendar',          desc: 'AI schedule generator, multi-day task blocks, ICS import/export', colour: '#3b82f6' },
-  { icon: FileText,      title: 'Past Papers',       desc: 'Grade tracking, boundaries (2019–2025), mistakes log', colour: '#f59e0b' },
+  { icon: FileText,      title: 'Past Papers',       desc: 'Grade tracking, boundaries (2019–2025, 2026 estimated), mistakes log', colour: '#f59e0b' },
   { icon: Brain,         title: 'Topics',            desc: 'Confidence ratings, heatmap, priority, notes, mastery tab, per-topic resource links', colour: '#8b5cf6' },
   { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (50 cards), custom sets, public library, quiz mode, timed challenge', colour: '#a855f7' },
   { icon: ClipboardList, title: 'Exam Questions',    desc: 'Board-accurate questions (all 6 boards), real command words, hidden mark schemes, examiner tips', colour: '#7c3aed' },
