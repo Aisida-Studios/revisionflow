@@ -279,7 +279,7 @@ export default function Pro() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
               { q: 'What happens if I cancel?', a: 'Your Pro access continues until the end of the current billing period. After that you drop to the free plan — your data stays intact.' },
-              { q: 'Am I a beta user with lifetime access?', a: 'If you signed up during the beta, your account has betaUser: true — you get all Pro features for free, forever. Check your profile to confirm.' },
+              { q: 'Am I a beta user with lifetime access?', a: 'If you signed up during the beta period, you have lifetime free access to all Pro features. Check your profile page — if it shows a Pro or Beta badge, you\'re all set and won\'t be charged.' },
               { q: 'Can I switch between monthly and annual?', a: 'Yes — contact us and we\'ll switch your plan at the next renewal.' },
               { q: 'Is this safe?', a: 'All payments are processed by Stripe. RevisionFlow never sees your card details.' },
             ].map(({ q, a }) => (
