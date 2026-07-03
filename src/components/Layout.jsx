@@ -59,6 +59,7 @@ const COLLAPSED_W = 60
 
 export default function Layout() {
   const { profile, logout } = useAuth()
+  const { isPro } = useIsPro()
   const { theme, toggle }   = useTheme()
   const navigate            = useNavigate()
 
