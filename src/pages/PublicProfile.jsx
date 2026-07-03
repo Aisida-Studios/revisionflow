@@ -16,15 +16,40 @@ export default function PublicProfile() {
 
   useEffect(() => {
     if (!username) { setNotFound(true); setLoading(false); return }
-    getUserByUsername(username).then(p => {
-      // Allow viewing even if profilePublic is undefined (default = public)
-      if (p && p.settings?.profilePublic !== false) {
-        setProfileData(p)
-      } else {
-        setNotFound(true)
-      }
-      setLoading(false)
-    }).catch(() => { setNotFound(true); setLoading(false) })
+
+    // Strategy:
+    // 1. Try treating `username` as a uid (direct doc GET — always allowed, even without login)
+    // 2. If the doc exists and has a matching username field → show it
+    // 3. If the doc's username doesn't match, try a WHERE username==x query
+    //    (requires login under new Firestore rules)
+    // 4. Fall back to "not found"
+    import('../utils/firestore').then(({ getUserByUsername }) => {
+      // First try direct uid lookup
+      import('firebase/firestore').then(({ doc, getDoc }) => {
+        import('../firebase').then(({ db }) => {
+          getDoc(doc(db, 'users', username)).then(snap => {
+            if (snap.exists()) {
+              const p = { uid: snap.id, ...snap.data() }
+              if (p.settings?.profilePublic !== false) {
+                setProfileData(p); setLoading(false)
+              } else {
+                setNotFound(true); setLoading(false)
+              }
+              return
+            }
+            // Not a uid — try username query (may require auth)
+            getUserByUsername(username).then(p => {
+              if (p && p.settings?.profilePublic !== false) {
+                setProfileData(p)
+              } else {
+                setNotFound(true)
+              }
+              setLoading(false)
+            }).catch(() => { setNotFound(true); setLoading(false) })
+          }).catch(() => { setNotFound(true); setLoading(false) })
+        })
+      })
+    })
   }, [username])
 
   if (loading) return <LoadingScreen />
