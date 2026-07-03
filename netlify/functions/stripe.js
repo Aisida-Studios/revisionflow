@@ -89,6 +89,25 @@ module.exports.handler = async (event) => {
       })
       customerId = customer.id
       await db.collection('users').doc(uid).update({ stripeCustomerId: customerId })
+    } else {
+      // Verify the stored customer ID is valid in the current mode (test vs live).
+      // If not — e.g. a live ID used with test keys — create a fresh one.
+      try {
+        await stripe.customers.retrieve(customerId)
+      } catch (e) {
+        if (e.code === 'resource_missing') {
+          let email
+          try { email = (await admin.auth().getUser(uid)).email } catch {}
+          const customer = await stripe.customers.create({
+            email,
+            metadata: { firebaseUid: uid },
+          })
+          customerId = customer.id
+          await db.collection('users').doc(uid).update({ stripeCustomerId: customerId })
+        } else {
+          throw e
+        }
+      }
     }
 
     const siteUrl = process.env.SITE_URL || 'https://revision-flow.netlify.app'
