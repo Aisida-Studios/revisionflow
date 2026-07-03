@@ -45,12 +45,20 @@ module.exports.handler = async (event) => {
   if (sig) {
     let stripeEvent
     try {
+      // Netlify sometimes base64-encodes the body — decode it before passing to Stripe
+      const rawBody = event.isBase64Encoded
+        ? Buffer.from(event.body, 'base64').toString('utf8')
+        : event.body
+
       stripeEvent = stripe.webhooks.constructEvent(
-        event.body,
+        rawBody,
         sig,
         process.env.STRIPE_WEBHOOK_SECRET
       )
     } catch (err) {
+      console.error('[stripe webhook] signature verification failed:', err.message)
+      console.error('[stripe webhook] sig header present:', !!sig)
+      console.error('[stripe webhook] webhook secret set:', !!process.env.STRIPE_WEBHOOK_SECRET)
       return respond(400, { error: 'Webhook signature verification failed: ' + err.message })
     }
     return handleWebhook(stripeEvent)
@@ -146,6 +154,8 @@ async function handleWebhook(event) {
     return uid
   }
 
+  console.log('[stripe webhook] received event:', event.type)
+
   try {
     switch (event.type) {
       // ── Subscription activated (initial checkout or reactivation) ──────────
@@ -153,16 +163,31 @@ async function handleWebhook(event) {
       case 'customer.subscription.updated': {
         const sub = obj
         const uid = await getUid(sub)
-        if (!uid) break
+        if (!uid) { console.warn('[stripe webhook] no uid found for subscription', sub.id); break }
         const active = sub.status === 'active' || sub.status === 'trialing'
-        await db.collection('users').doc(uid).update({
-          isPro:              active,
-          stripeSubId:        sub.id,
-          stripeSubStatus:    sub.status,
-          stripePlan:         sub.metadata?.plan || 'monthly',
-          stripeCurrentPeriodEnd: sub.current_period_end,
-          proActivatedAt:     active ? admin.firestore.FieldValue.serverTimestamp() : null,
-        })
+        // Don't touch isPro if status is 'incomplete' — payment is still processing.
+        // We'll get another webhook when status becomes 'active'.
+        if (sub.status === 'incomplete') {
+          console.log('[stripe webhook] status=incomplete, waiting for payment confirmation')
+          break
+        }
+        console.log('[stripe webhook] setting isPro=' + active + ' for uid=' + uid)
+
+        // Filter out undefined values — Firestore rejects them
+        const updateData = {
+          isPro:           active,
+          stripeSubId:     sub.id || null,
+          stripeSubStatus: sub.status || null,
+          stripePlan:      sub.metadata?.plan || 'monthly',
+        }
+        if (sub.current_period_end !== undefined) {
+          updateData.stripeCurrentPeriodEnd = sub.current_period_end
+        }
+        if (active) {
+          updateData.proActivatedAt = admin.firestore.FieldValue.serverTimestamp()
+        }
+
+        await db.collection('users').doc(uid).update(updateData)
         break
       }
 
