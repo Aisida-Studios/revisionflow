@@ -6,14 +6,41 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Serve static landing.html to search engine crawlers
+# ── Security headers ──────────────────────────────────────────────────────────
+# Applied to every response Netlify serves.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent your pages being embedded in iframes on other sites (clickjacking)
+    X-Frame-Options = "DENY"
+
+    # Stop browsers guessing content types (MIME sniffing attacks)
+    X-Content-Type-Options = "nosniff"
+
+    # Only send the origin (not the full URL) in Referer headers to third parties
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Disable browser features you don't use
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(self)"
+
+    # Force HTTPS for 1 year, include subdomains
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+    # Content Security Policy — controls what resources the browser is allowed to load
+    # 'self'          = your own domain only
+    # firebase/google = Firebase Auth + Firestore
+    # stripe.com      = Stripe Checkout redirect (not an embed)
+    # mistral         = not called from browser (server-side only, omitted)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com; object-src 'none'; base-uri 'self';"
+
+# ── Bot detection — serve static landing page to crawlers ─────────────────────
 [[redirects]]
   from   = "/"
   to     = "/landing.html"
   status = 200
   conditions = {UserAgent = ["Googlebot","Googlebot-Mobile","Googlebot-Image","Bingbot","bingbot","Slurp","DuckDuckBot","Baiduspider","YandexBot","Sogou","Exabot","facebookexternalhit","Twitterbot","LinkedInBot","WhatsApp","Slackbot","TelegramBot","Discordbot"]}
 
-# API routes MUST come before the /* catch-all
+# ── API routes — MUST come before the /* catch-all ────────────────────────────
 [[redirects]]
   from   = "/api/tutor"
   to     = "/.netlify/functions/tutor"
@@ -34,7 +61,7 @@
   to     = "/.netlify/functions/stripe"
   status = 200
 
-# All other routes -> React app (must be last)
+# ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
