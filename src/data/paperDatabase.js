@@ -369,6 +369,9 @@ export const PAPER_DATABASE = {
 // Higher tier entries cover G9-G4; Foundation covers G5-G1
 // For tiered subjects, separate Higher/Foundation entries are used
 export const GRADE_BOUNDARIES = {
+  // 2026 boundaries are not yet published (released by boards in August 2026).
+  // We use 2025 values as estimates — the app shows a disclaimer when 2026 is selected.
+  2026: null,  // sentinel — getBoundaries() falls back to 2025 when this is null
 
   // ─── 2025 ──────────────────────────────────────────────────────────────────
   2025: {
@@ -797,8 +800,11 @@ function normSubj(subject) {
 }
 
 export function getBoundaries(board, subject, tier, year, level) {
-  const yearData = GRADE_BOUNDARIES[year] || GRADE_BOUNDARIES[2024]
+  // 2026 boundaries not yet published — fall back to 2025 as estimate
+  const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
+  const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
   if (!yearData) return null
+  const estimated = year === 2026
 
   const norm = normSubj(subject)
   const isTieredSubj = TIERED.includes(subject) || TIERED.includes(norm)
@@ -823,7 +829,8 @@ export function getBoundaries(board, subject, tier, year, level) {
 }
 
 export function getBoundariesForPaper(board, subject, tier, year, paper, level) {
-  const yearData = GRADE_BOUNDARIES[year] || GRADE_BOUNDARIES[2024]
+  const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
+  const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
   if (!yearData) return getBoundaries(board, subject, tier, year, level)
   const paperKey = `${board}-${subject}-P${paper}`
   return yearData[paperKey] || getBoundaries(board, subject, tier, year, level)
@@ -856,4 +863,6 @@ export function getBoundariesWithPercentages(board, subject, tier, year, paper, 
   }
 }
 
-export const AVAILABLE_YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019]
+export const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+// Note: 2026 grade boundaries will be published by exam boards in August 2026.
+// Until then, logging a 2026 paper will calculate grade using 2025 boundaries as an estimate.
