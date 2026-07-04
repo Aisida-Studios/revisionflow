@@ -8,6 +8,7 @@ import EmergencyBanner from '../components/EmergencyBanner'
 import DailyQuests from '../components/DailyQuests'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useIsPro } from '../components/ProGate'
 import { getSessions, getTasks, getPaperAttempts } from '../utils/firestore'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -37,6 +38,55 @@ function computeLevel(totalXP) {
     cum += needed; lv++
   }
   return lv
+}
+
+// ── Beta user special thanks banner ──────────────────────────────────────────
+function BetaThanksBanner({ onDismiss }) {
+  return (
+    <div style={{
+      marginBottom: 20, borderRadius: 14, overflow: 'hidden',
+      background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #6366f1 100%)',
+      boxShadow: '0 4px 24px rgba(124,58,237,0.25)',
+    }}>
+      <div style={{ padding: '20px 22px', position: 'relative' }}>
+        <button onClick={onDismiss} style={{
+          position: 'absolute', top: 12, right: 14, background: 'rgba(255,255,255,0.15)',
+          border: 'none', borderRadius: '50%', width: 26, height: 26,
+          cursor: 'pointer', color: '#fff', fontSize: '1rem', lineHeight: 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>×</button>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <div style={{ fontSize: '2.2rem', flexShrink: 0 }}>👑</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', marginBottom: 4 }}>
+              Thank you for being a beta user
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: '0 0 14px' }}>
+              You helped shape RevisionFlow from the very beginning. As a thank you,
+              you have <strong style={{ color: '#fff' }}>lifetime free access to all Pro features</strong> — including
+              unlimited AI, all themes, timed quiz mode, and everything we build in the future.
+              No subscription needed, ever.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {['Unlimited AI generations', 'All 10 themes', 'Timed quiz mode', 'All profile icons', 'Every future Pro feature'].map(f => (
+                <span key={f} style={{
+                  padding: '3px 10px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600,
+                  background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)',
+                }}>✓ {f}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: '10px 22px', background: 'rgba(0,0,0,0.15)', fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Your account is permanently marked as a lifetime member</span>
+        <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.78rem', textDecoration: 'underline' }}>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ── Personalised welcome card for new users ───────────────────────────────────
@@ -139,6 +189,7 @@ export default function Dashboard() {
   }, [profile?.uid])
   const [setupSkipped,      setSetupSkipped]      = useState(() => localStorage.getItem('setup-skipped') === '1')
   const [welcomeDismissed,  setWelcomeDismissed]  = useState(() => localStorage.getItem('welcome-dismissed') === '1')
+  const [betaBannerDismissed, setBetaBannerDismissed] = useState(() => localStorage.getItem('beta-banner-dismissed') === '1')
 
   // New user = account created within last 48 hours
   const isNewUser = (() => {
@@ -289,6 +340,11 @@ export default function Dashboard() {
 
   return (
     <>
+      {/* Beta user special thanks banner */}
+      {isBeta && !betaBannerDismissed && (
+        <BetaThanksBanner onDismiss={() => { localStorage.setItem('beta-banner-dismissed','1'); setBetaBannerDismissed(true) }} />
+      )}
+
       {showTour && <TooltipTour profile={profile} onComplete={async () => {
         setShowTour(false)
         localStorage.setItem('tour_complete', '1')
