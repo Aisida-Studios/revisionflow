@@ -1,5 +1,5 @@
 // src/pages/Profile.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -11,12 +11,44 @@ import { BADGE_LIST, BADGE_CATEGORIES } from '../data/badges'
 import { PROFILE_ICONS } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
-import { Zap, Flame, Trophy, Copy, Check, Download, Loader, Share2, X } from 'lucide-react'
+import { Zap, Flame, Trophy, Copy, Check, Download, Loader, Share2, X, Crown, Settings } from 'lucide-react'
+import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
 
+// Opens a Stripe Customer Portal session for subscription management
+function ManageSubButton({ uid }) {
+  const [loading, setLoading] = React.useState(false)
+
+  async function openPortal() {
+    if (!uid) return
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create-portal', uid }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else throw new Error(data.error || 'Could not open portal')
+    } catch(e) {
+      toast.error(e.message)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <button onClick={openPortal} disabled={loading}
+      className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
+      <Settings size={13} /> {loading ? 'Opening…' : 'Manage subscription'}
+    </button>
+  )
+}
+
 export default function Profile() {
   const { user, profile } = useAuth()
+  const { isPro, isBeta } = useIsPro()
   const [copied,      setCopied]      = useState(false)
   const [exporting,   setExporting]   = useState(false)
   const [timetabling, setTimetabling] = useState(false)
@@ -220,7 +252,10 @@ export default function Profile() {
           {iconEmoji || (profile?.displayName || 'U')[0].toUpperCase()}
         </div>
 
-        <h2 style={{ marginBottom: 4 }}>{profile?.displayName}</h2>
+        <h2 style={{ marginBottom: 4, display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
+          {profile?.displayName}
+          {isPro && <ProBadge style={{ fontSize:'0.7rem', padding:'3px 10px' }} />}
+        </h2>
         {profile?.username && <p style={{ fontSize: '0.875rem', marginBottom: 14 }}>@{profile.username}</p>}
 
         {/* Stats row */}
@@ -271,6 +306,52 @@ export default function Profile() {
       <div style={{ marginBottom: 20 }}>
         <ReferralCard />
       </div>
+
+      {/* ── Pro subscription card ── */}
+      {(isPro || isBeta) && (
+        <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg,rgba(124,58,237,0.1) 0%,rgba(168,85,247,0.05) 100%)', border: '1px solid rgba(124,58,237,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Crown size={20} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  RevisionFlow Pro
+                  {isBeta && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: 'rgba(124,58,237,0.15)', color: 'var(--accent-light)', fontWeight: 700 }}>LIFETIME</span>}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  {isBeta
+                    ? 'Beta user — lifetime free access to all Pro features'
+                    : profile?.stripePlan === 'annual'
+                      ? '£29.99/year · ' + (profile?.stripeCurrentPeriodEnd ? 'renews ' + new Date(profile.stripeCurrentPeriodEnd * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : 'annual plan')
+                      : '£3.99/month · ' + (profile?.stripeCurrentPeriodEnd ? 'renews ' + new Date(profile.stripeCurrentPeriodEnd * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : 'monthly plan')
+                  }
+                </div>
+              </div>
+            </div>
+            {!isBeta && (
+              <ManageSubButton uid={user?.uid} />
+            )}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
+            {['Unlimited AI topic notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
+              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-light)' }}>
+                <Check size={10} /> {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {!isPro && (
+        <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Upgrade to Pro</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Unlimited AI, all themes, timed quiz — from £3.99/mo</div>
+          </div>
+          <a href="/pro" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}><Zap size={13} /> Upgrade</a>
+        </div>
+      )}
 
       {/* ── Subjects ── */}
       <div className="card" style={{ marginBottom: 20 }}>
