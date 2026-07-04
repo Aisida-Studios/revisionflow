@@ -12,7 +12,7 @@ import ThemeSelector from '../components/ThemeSelector'
 import toast from 'react-hot-toast'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { auth } from '../firebase'
-import { Sun, Moon, Plus, X, Trash2 } from 'lucide-react'
+import { Sun, Moon, Plus, X, Trash2, Crown, Zap } from 'lucide-react'
 
 function PortalButton({ uid }) {
   const [loading, setLoading] = React.useState(false)
