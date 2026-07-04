@@ -170,6 +170,7 @@ function WelcomeCard({ profile, onDismiss }) {
 export default function Dashboard() {
   const { profile, user } = useAuth()
   const { isPro, isBeta } = useIsPro()
+  const [gdprConsent,    setGdprConsent]    = useState(localStorage.getItem('gdpr_consent') === 'true')
   const [todaySessions,  setTodaySessions]  = useState([])
   const [tasks,          setTasks]          = useState([])
   const [recentPapers,   setRecentPapers]   = useState([])
