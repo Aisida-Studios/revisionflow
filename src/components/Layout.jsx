@@ -209,8 +209,13 @@ export default function Layout() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
                 {avatarEl}
                 <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6 }}>
                     {profile.displayName || profile.name || 'Student'}
+                    {isPro && (
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:999, background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.04em', flexShrink:0 }}>
+                        ⚡PRO
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: 1 }}>
                     Lv {level} · ⚡{totalXP.toLocaleString()} · 🔥{profile.streak || 0}
