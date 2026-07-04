@@ -10,11 +10,33 @@ import { GRADE_BOUNDARIES, AVAILABLE_YEARS, getBoundaries } from '../data/paperD
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
 import toast from 'react-hot-toast'
+import { useIsPro, ProBadge } from '../components/ProGate'
 import { auth } from '../firebase'
 import { Sun, Moon, Plus, X, Trash2 } from 'lucide-react'
 
+function PortalButton({ uid }) {
+  const [loading, setLoading] = React.useState(false)
+  async function open() {
+    if (!uid) return
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create-portal', uid }) })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else throw new Error(data.error || 'Could not open portal')
+    } catch(e) { toast.error(e.message) }
+    setLoading(false)
+  }
+  return (
+    <button onClick={open} disabled={loading} className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
+      {loading ? 'Opening…' : 'Manage subscription'}
+    </button>
+  )
+}
+
 export default function Settings() {
   const { user, profile, refreshProfile, logout } = useAuth()
+  const { isPro, isBeta } = useIsPro()
   const { theme, toggle } = useTheme()
   const [saving,       setSaving]       = useState(false)
   const [searchParams]                    = useSearchParams()
@@ -296,6 +318,46 @@ export default function Settings() {
           <a href="/privacy" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', marginBottom: '0.5rem' }}>
             📄 Privacy Policy
           </a>
+          {/* Subscription management */}
+          <div className="divider" />
+          <div>
+            <label className="label" style={{ marginBottom: 8 }}>Subscription</label>
+            {isBeta ? (
+              <div style={{ padding: '14px 16px', borderRadius: 12, background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', border: '1px solid rgba(124,58,237,0.25)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Crown size={20} color="var(--accent-light)" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    Pro — Lifetime Access
+                    <span style={{ padding: '1px 8px', borderRadius: 999, background: 'rgba(124,58,237,0.15)', color: 'var(--accent-light)', fontSize: '0.68rem', fontWeight: 800 }}>BETA</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>All Pro features unlocked forever — thank you for being an early supporter</div>
+                </div>
+              </div>
+            ) : isPro ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 12, background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Crown size={18} color="var(--accent-light)" style={{ flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Pro — Active</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      {profile?.stripePlan === 'annual' ? '£29.99/year' : '£3.99/month'}
+                      {profile?.stripeCurrentPeriodEnd ? ' · renews ' + new Date(profile.stripeCurrentPeriodEnd * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : ''}
+                    </div>
+                  </div>
+                </div>
+                <PortalButton uid={user?.uid} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
+                </div>
+                <a href="/pro" className="btn btn-primary btn-sm"><Zap size={13} /> Upgrade to Pro</a>
+              </div>
+            )}
+          </div>
+
           <button className="btn btn-danger" onClick={handleDeleteAccount} style={{ marginBottom: '0.5rem' }}>🗑 Delete Account</button>
           <button className="btn btn-danger" onClick={logout}>Sign out</button>
         </div>
