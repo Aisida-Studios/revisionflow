@@ -70,6 +70,25 @@ module.exports.handler = async (event) => {
 
   const { action, uid, plan } = body
 
+  // ── Create Customer Portal session ────────────────────────────────────────
+  if (action === 'create-portal') {
+    if (!uid) return respond(400, { error: 'uid required' })
+
+    const userDoc = await db.collection('users').doc(uid).get()
+    const customerId = userDoc.data()?.stripeCustomerId
+
+    if (!customerId) return respond(400, { error: 'No Stripe customer found. Please contact support.' })
+
+    const siteUrl = process.env.SITE_URL || 'https://revision-flow.netlify.app'
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer:   customerId,
+      return_url: siteUrl + '/profile',
+    })
+
+    return respond(200, { url: session.url })
+  }
+
   // ── Create Checkout session ────────────────────────────────────────────────
   if (action === 'create-checkout') {
     if (!uid || !plan) return respond(400, { error: 'uid and plan required' })
