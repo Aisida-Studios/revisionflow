@@ -288,7 +288,7 @@ export default function Layout() {
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 padding: collapsed ? '9px 0' : '9px 12px',
                 borderRadius:12, border:'none', cursor:'pointer',
-                background:'transparent', color, width:'100%',
+                background:'transparent', color: colour, width:'100%',
                 fontSize:'0.85rem', fontWeight:500, minHeight:36,
                 transition:'background 0.15s',
               }}
