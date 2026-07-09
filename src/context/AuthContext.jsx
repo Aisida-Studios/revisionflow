@@ -1,5 +1,5 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
 import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import {
@@ -12,9 +12,11 @@ import {
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user,               setUser]               = useState(null)
+  const [profile,            setProfile]            = useState(null)
+  const [loading,            setLoading]            = useState(true)
+  const [streakCelebration,  setStreakCelebration]  = useState(null) // { streak: N } when streak just went up
+  const prevStreakRef = useRef(null)
 
   useEffect(() => {
     let profileUnsub = () => {}
@@ -47,7 +49,17 @@ export function AuthProvider({ children }) {
         }
 
         profileUnsub = onSnapshot(doc(db, 'users', u.uid), snap => {
-          setProfile(snap.exists() ? { uid: u.uid, ...snap.data() } : null)
+          const data = snap.exists() ? { uid: u.uid, ...snap.data() } : null
+          // Detect streak increase — fire celebration if streak went up
+          if (data && prevStreakRef.current !== null) {
+            const prev = prevStreakRef.current
+            const curr = data.streak || 0
+            if (curr > prev && curr > 0) {
+              setStreakCelebration({ streak: curr })
+            }
+          }
+          if (data) prevStreakRef.current = data.streak || 0
+          setProfile(data)
           setLoading(false)
         }, e => {
           console.error('[AuthContext] profile listener error:', e)
@@ -95,21 +107,10 @@ export function AuthProvider({ children }) {
   const logout          = () => signOut(auth)
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile, streakCelebration, clearStreakCelebration: () => setStreakCelebration(null) }}>
       {!loading && children}
     </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => useContext(AuthContext)
-
-// Convenience hook — also exported from components/ProGate.jsx
-// Use whichever import is more convenient in your component
-export function useIsPro() {
-  const { profile } = useContext(AuthContext)
-  return {
-    isPro:    !!(profile?.isPro || profile?.betaUser),
-    isBeta:   !!profile?.betaUser,
-    isStripe: !!profile?.isPro && !profile?.betaUser,
-  }
-}
