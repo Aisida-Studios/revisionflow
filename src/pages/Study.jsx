@@ -1,5 +1,6 @@
 // src/pages/Study.jsx
 import React, { useState, useEffect, useRef } from 'react'
+import { useIsPro, ProBadge } from '../components/ProGate'
 import { useAuth } from '../context/AuthContext'
 import {
   checkAndAwardBadge, autoCompleteQuest,
@@ -99,7 +100,7 @@ function LearnMode({ cards, onDone }) {
           <div style={{ height:'100%', width:Math.round(mastered.size/cards.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.4s' }} />
         </div>
       </div>
-      <div style={{ padding:'24px 28px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14, minHeight:160 }}>
+      <div style={{ padding:'24px 28px', borderRadius:16, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14, minHeight:160 }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:12 }}>
           {card.attempts>0?`Revisiting (seen ${card.attempts}x)`:'Term'}
         </div>
@@ -261,7 +262,7 @@ function WriteMode({ cards, onDone, uid }) {
           <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
+      <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14 }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Write the definition</div>
         <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:16 }}>{card.q}</div>
         <textarea ref={inputRef} className="textarea"
@@ -291,7 +292,7 @@ function WriteMode({ cards, onDone, uid }) {
         </div>
       )}
       {checked === 'idk' && (
-        <div style={{ marginTop: 10, padding: '12px 16px', borderRadius: 12,
+        <div style={{ marginTop: 10, padding: '12px 16px', borderRadius: 18,
           background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 10 }}>
           <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 6, fontSize: '0.85rem' }}>
             Answer revealed
@@ -387,7 +388,7 @@ function SpellMode({ cards, onDone }) {
           <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3 }} />
         </div>
       </div>
-      <div style={{ padding:'20px 24px', borderRadius:14, background:'var(--bg-surface)', border:'1px solid var(--border)', marginBottom:14 }}>
+      <div style={{ padding:'20px 24px', borderRadius:14, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14 }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Spell the definition</div>
         <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:12 }}>{card.q}</div>
         <div style={{ fontFamily:'monospace', fontSize:'1rem', color:'var(--text-muted)', letterSpacing:'0.15em', marginBottom:14, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:8 }}>{hint}</div>
@@ -519,7 +520,7 @@ ${questions}`
           <div style={{ height: '100%', width: Math.round(idx/qs.length*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 14 }}>
+      <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-card)', border: '2px solid var(--border)', marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             {q.type === 'mc' ? 'Multiple choice' : 'Written answer'}
@@ -533,7 +534,7 @@ ${questions}`
               const isC = opt.a === q.card.a, isSel = q.selected?.a === opt.a, ch = q.checked !== null
               return (
                 <button key={i} onClick={() => selectMC(opt)}
-                  style={{ padding: '10px 16px', borderRadius: 10, border: 'none', cursor: ch ? 'default' : 'pointer',
+                  style={{ padding: '10px 16px', borderRadius: 16, border: 'none', cursor: ch ? 'default' : 'pointer',
                     textAlign: 'left', fontSize: '0.88rem', lineHeight: 1.4, fontWeight: isSel ? 700 : 500, transition: 'all 0.2s',
                     background: !ch ? (isSel ? 'rgba(124,58,237,0.15)' : 'var(--bg-hover)') : isC ? 'rgba(16,185,129,0.15)' : isSel ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)',
                     border: `1.5px solid ${!ch ? (isSel ? 'var(--accent)' : 'var(--border)') : isC ? 'rgba(16,185,129,0.5)' : isSel ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
@@ -559,7 +560,7 @@ ${questions}`
               </div>
             )}
             {q.checked === 'idk' && (
-              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 10,
+              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 16,
                 background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.82rem' }}>Answer</div>
                 <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
@@ -728,7 +729,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
         {MODES.map(m=>(
           <button key={m.id} onClick={()=>setMode(m.id)}
-            style={{ padding:'16px 14px', borderRadius:14, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', textAlign:'left', transition:'all 0.18s' }}
+            style={{ padding:'16px 14px', borderRadius:14, border:'2px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', textAlign:'left', transition:'all 0.18s' }}
             onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='rgba(124,58,237,0.05)'}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg-surface)'}}>
             <div style={{ fontSize:'1.5rem', marginBottom:6 }}>{m.icon}</div>
@@ -757,7 +758,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
               {[{label:'Got it',count:results.scores.filter(v=>v===3).length,c:'var(--success)'},
                 {label:'Partial',count:results.scores.filter(v=>v===2).length,c:'var(--warning)'},
                 {label:'Missed',count:results.scores.filter(v=>v===1).length,c:'var(--danger)'}].map(s=>(
-                <div key={s.label} style={{ textAlign:'center', padding:'8px 16px', background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--border)' }}>
+                <div key={s.label} style={{ textAlign:'center', padding:'8px 16px', background:'var(--bg-card)', borderRadius:10, border:'2px solid var(--border)' }}>
                   <div style={{ fontSize:'1.4rem', fontWeight:800, color:s.c }}>{s.count}</div>
                   <div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{s.label}</div>
                 </div>
@@ -776,7 +777,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <h4 style={{ marginBottom:10, fontSize:'0.9rem' }}>All cards</h4>
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {cards.map((c,i)=>(
-                <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-surface)',
+                <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-card)',
                   border:`1px solid ${results.scores[i]===3?'rgba(16,185,129,0.4)':results.scores[i]===1?'rgba(239,68,68,0.4)':'var(--border)'}` }}>
                   <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
                   <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
@@ -839,7 +840,7 @@ function SaveSetModal({ cards, subject, topic, onSave, onClose }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label className="label">Set title</label><input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Biology — Cell Biology" /></div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{cards.length} cards · {subject}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
             <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Make public</div>
@@ -906,7 +907,7 @@ function CustomSetEditor({ subjects, onSave, onClose }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto' }}>
               {cards.map((card, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <div><label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} placeholder="Question…" /></div>
                   <div><label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} placeholder="Answer…" /></div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
@@ -974,7 +975,7 @@ function EditSetModal({ set, subjects, onSave, onClose }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto' }}>
               {cards.map((card, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <div><label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} /></div>
                   <div><label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} /></div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
@@ -1109,7 +1110,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9rem' }}>{preview.length} cards detected</div>
             <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {preview.slice(0, 10).map((c, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '7px 10px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.8rem' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '7px 10px', background: 'var(--bg-card)', borderRadius: 'var(--r-md)', border: '2px solid var(--border)', fontSize: '0.8rem' }}>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{c.q}</span>
                   <span style={{ color: 'var(--text-secondary)' }}>{c.a}</span>
                 </div>
@@ -1222,7 +1223,7 @@ function QuizTab({ mySets, uid, profile }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {mySets.map(set => (
               <button key={set.id} onClick={() => setSelectedSet(set)}
-                style={{ padding: '12px 16px', borderRadius: 10, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+                style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
                   background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                   cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1254,7 +1255,7 @@ function QuizTab({ mySets, uid, profile }) {
                   { id: 'mixed', label: 'Mixed',           desc: 'Both formats' },
                 ].map(m => (
                   <button key={m.id} onClick={() => setQuizMode(m.id)}
-                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 10,
+                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 16,
                       border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
                       background: quizMode === m.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
                       cursor: 'pointer', textAlign: 'left' }}>
@@ -1320,7 +1321,7 @@ function MarkSchemeReveal({ text }) {
       </button>
       {shown && (
         <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(16,185,129,0.05)',
-          borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
+          borderRadius: 14, border: '1px solid rgba(16,185,129,0.15)' }}>
           <AIOutput text={text} label="Mark scheme" compact />
         </div>
       )}
@@ -1588,7 +1589,7 @@ function ExamMarkScheme({ text }) {
           <span style={{ marginRight: 6 }}>🔒</span> Reveal mark scheme
         </button>
       ) : (
-        <div style={{ padding: '14px 16px', borderRadius: 10,
+        <div style={{ padding: '14px 16px', borderRadius: 16,
           background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
@@ -1691,7 +1692,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Score hero */}
         <div style={{ padding: '20px 24px', borderRadius: 14,
-          background: 'var(--bg-surface)', border: '1px solid var(--border)', textAlign: 'center' }}>
+          background: 'var(--bg-card)', border: '2px solid var(--border)', textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', fontWeight: 900, color, lineHeight: 1 }}>
             {r.awarded != null ? r.awarded : '?'}<span style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-muted)' }}>/{r.outOf}</span>
           </div>
@@ -1707,7 +1708,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Credited points */}
         {r.credited && (
-          <div style={{ padding: '14px 16px', borderRadius: 12,
+          <div style={{ padding: '14px 16px', borderRadius: 18,
             background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -1719,7 +1720,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Points not credited */}
         {r.notCredited && (
-          <div style={{ padding: '14px 16px', borderRadius: 12,
+          <div style={{ padding: '14px 16px', borderRadius: 18,
             background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--danger)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -1731,8 +1732,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Annotation */}
         {r.annotation && (
-          <div style={{ padding: '14px 16px', borderRadius: 12,
-            background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 18,
+            background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Examiner annotation
@@ -1743,8 +1744,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* AO breakdown */}
         {r.aoBreakdown && (
-          <div style={{ padding: '14px 16px', borderRadius: 12,
-            background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 18,
+            background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Mark breakdown
@@ -1755,7 +1756,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* How to improve */}
         {r.improvements && (
-          <div style={{ padding: '14px 16px', borderRadius: 12,
+          <div style={{ padding: '14px 16px', borderRadius: 18,
             background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -1767,7 +1768,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Examiner note */}
         {r.examinerNote && (
-          <div style={{ padding: '12px 16px', borderRadius: 10,
+          <div style={{ padding: '12px 16px', borderRadius: 16,
             background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
             fontSize: '0.84rem', fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             <span style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--warning)' }}>Examiner: </span>
@@ -1856,7 +1857,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                   const colour = (h.result?.pct || 0) >= 70 ? 'var(--success)' : (h.result?.pct || 0) >= 50 ? 'var(--warning)' : 'var(--danger)'
                   return (
                     <button key={i} onClick={() => setHistIdx(histIdx === i ? null : i)}
-                      style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                      style={{ padding: '8px 12px', borderRadius: 14, border: '2px solid var(--border)',
                         background: histIdx === i ? 'var(--bg-surface)' : 'transparent',
                         cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2398,14 +2399,14 @@ export default function Study() {
                       {isOpen && (
                         <div style={{ padding: '0 18px 18px' }}>
                           <div style={{ padding: '14px 16px', background: 'var(--bg-hover)',
-                            borderRadius: 10, marginBottom: 12, marginTop: 6 }}>
+                            borderRadius: 16, marginBottom: 12, marginTop: 6 }}>
                             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
                               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Question</div>
                             <AIOutput text={qText} compact />
                           </div>
                           {msText && <ExamMarkScheme text={msText} />}
                           {tipText && (
-                            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8,
+                            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 14,
                               background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
                               <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--warning)',
                                 letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
