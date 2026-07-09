@@ -201,7 +201,7 @@ export default function Dashboard() {
     setDataLoading(true)
     Promise.all([
       getSessions(user.uid, { limit: 200 }),
-      getPaperAttempts(user.uid, null),
+      getPaperAttempts(user.uid),
     ]).then(([sessions, papers]) => {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const getDate = s => s.date || (s.startTime?.toDate ? format(s.startTime.toDate(), 'yyyy-MM-dd') : (typeof s.startTime === 'string' ? s.startTime.slice(0,10) : null))
@@ -410,7 +410,7 @@ export default function Dashboard() {
       {/* ── Stats row ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
         <StatCard emoji="🔥" label="Streak"    value={`${profile?.streak||0}d`}  sub="Keep it going!" colour="var(--warning)"      link="/analytics" loading={dataLoading} />
-        <StatCard emoji="📄" label="Today"     value={todaySessions.length}        sub={`${todaySessions.filter(s=>s.completed).length} done`} colour="var(--success)" link="/calendar" loading={dataLoading} />
+        <StatCard emoji="📅" label="Sessions today"     value={todaySessions.length}        sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
         <StatCard emoji="🏅" label="Badges"    value={badges.length}               sub="earned"         colour="var(--gold)"         link="/profile"   loading={dataLoading} />
         <StatCard emoji="📅" label="Next exam" value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
       </div>
