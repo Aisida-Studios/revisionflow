@@ -7,11 +7,11 @@ import DailyQuests from '../components/DailyQuests'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { getSessions, getTasks, getPaperAttempts } from '../utils/firestore'
+import { getSessions, getPaperAttempts } from '../utils/firestore'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getDailyAdvice } from '../utils/ai'
-import { countdownLabel, countdownUrgency, gradeColour } from '../utils/calendar'
+import { gradeColour } from '../utils/calendar'
 import { BADGE_LIST } from '../data/badges'
 import { SUBJECT_COLOURS, subjectColour } from '../data/subjects'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
@@ -200,7 +200,7 @@ export default function Dashboard() {
     if (!user) return
     setDataLoading(true)
     Promise.all([
-      getSessions(user.uid, { limit: 200 }),
+      getSessions(user.uid),
       getPaperAttempts(user.uid),
     ]).then(([sessions, papers]) => {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
