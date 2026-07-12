@@ -1,6 +1,6 @@
 // src/App.jsx
 import { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, ScrollRestoration } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { usePushNotifications } from './hooks/usePushNotifications'
@@ -97,7 +97,6 @@ export default function App() {
           <TimerProvider>
             <PriorityProvider>
               <BrowserRouter>
-                <ScrollRestoration />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     {/* Public — no sidebar */}
