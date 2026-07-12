@@ -62,7 +62,10 @@ export default function Layout() {
     return () => window.removeEventListener('resize', fn)
   }, [])
 
-  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    setMobileOpen(false)
+  }, [location.pathname])
 
   function toggleCollapse() {
     setCollapsed(v => { const n=!v; localStorage.setItem('sidebar-collapsed',n?'1':'0'); return n })
