@@ -296,7 +296,7 @@ export default function Topics() {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:12}}>
             <div style={{display:'flex',gap:10}}>
               {[{l:'Struggling',c:weak.length,col:'var(--danger)'},{l:'Building',c:mid.length,col:'var(--warning)'},{l:'Strong',c:strong.length,col:'var(--success)'}].map(s=>(
-                <div key={s.l} style={{textAlign:'center',padding:'6px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
+                <div key={s.l} style={{textAlign:'center',padding:'6px 12px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)'}}>
                   <div style={{fontWeight:800,color:s.col,fontSize:'1.3rem'}}>{s.c}</div>
                   <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>{s.l}</div>
                 </div>
@@ -621,13 +621,13 @@ function TopicResourcesPanel({ subject, topicName }) {
   const { verified, hub, search } = resolveTopicResources(subject, topicName)
   const linkStyle = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-    padding: '9px 12px', borderRadius: 8, background: 'var(--bg-card)',
-    border: '1px solid var(--border)', textDecoration: 'none', color: 'inherit',
+    padding: '9px 12px', borderRadius: 14, background: 'var(--bg-card)',
+    border: '2px solid var(--border)', textDecoration: 'none', color: 'inherit',
     fontSize: '0.82rem', fontWeight: 600,
   }
   return (
-    <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 10,
-      background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+    <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 16,
+      background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
         letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
         Resources for "{topicName}"
@@ -718,7 +718,7 @@ function ResourcesPanel({ subject, allSubjects }) {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
             {resources.map(r => (
               <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
-                style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',textDecoration:'none',color:'inherit',transition:'border-color 0.15s'}}>
+                style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)',textDecoration:'none',color:'inherit',transition:'border-color 0.15s'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                   <span style={{fontWeight:700,fontSize:'0.875rem',color:'var(--text-primary)'}}>{r.name}</span>
                   <ExternalLink size={13} style={{flexShrink:0,color:'var(--text-muted)'}}/>
@@ -731,7 +731,7 @@ function ResourcesPanel({ subject, allSubjects }) {
       )}
 
       {resources.length === 0 && (
-        <div style={{padding:'12px 14px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',marginBottom:20,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
+        <div style={{padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)',marginBottom:20,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
           No subject-specific resources listed yet for {selSubj}. Use the general resources below.
         </div>
       )}
@@ -743,7 +743,7 @@ function ResourcesPanel({ subject, allSubjects }) {
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
         {generic.map(r => (
           <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
-            style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',textDecoration:'none',color:'inherit'}}>
+            style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)',textDecoration:'none',color:'inherit'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
               <span style={{fontWeight:700,fontSize:'0.875rem',color:'var(--text-primary)'}}>{r.name}</span>
               <ExternalLink size={13} style={{flexShrink:0,color:'var(--text-muted)'}}/>
