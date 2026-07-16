@@ -169,19 +169,19 @@ export default function Settings() {
           <h4>Your subjects</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {subjects.map((s, i) => (
-              <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+              <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                 <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
                 <span className="badge badge-grey">{s.board}</span>
                 <span className="badge badge-grey">{s.tier}</span>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grade:</span>
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.currentGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, currentGrade: e.target.value } : x))}>
                     {getGradeOptions(s.name, qual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>→</span>
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.targetGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
                     {getGradeOptions(s.name, qual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
@@ -195,7 +195,7 @@ export default function Settings() {
           </div>
 
           {/* Add subject form */}
-          <div style={{ padding: 12, background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Level:</span>
               {[
@@ -251,7 +251,7 @@ export default function Settings() {
           {/* Dark / light toggle */}
           <div className="card">
             <h4 style={{ marginBottom: 14 }}>Display mode</h4>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 <div>
@@ -299,14 +299,14 @@ export default function Settings() {
             { key: 'profilePublic',       label: 'Public profile',           desc: 'Anyone can view your profile at your public URL' },
             { key: 'friendsCanSeeGrades', label: 'Friends can see grades',   desc: 'Friends can see your subject grades on the leaderboard' },
           ].map(setting => (
-            <div key={setting.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <div key={setting.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{setting.label}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{setting.desc}</div>
               </div>
               <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
                 <input type="checkbox" checked={privacy[setting.key]} onChange={e => setPrivacy(p => ({ ...p, [setting.key]: e.target.checked }))} style={{ opacity: 0, width: 0, height: 0 }} />
-                <span style={{ position: 'absolute', inset: 0, background: privacy[setting.key] ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 12, transition: 'background 0.2s' }} />
+                <span style={{ position: 'absolute', inset: 0, background: privacy[setting.key] ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 18, transition: 'background 0.2s' }} />
                 <span style={{ position: 'absolute', top: 3, left: privacy[setting.key] ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
               </label>
             </div>
@@ -323,7 +323,7 @@ export default function Settings() {
           <div>
             <label className="label" style={{ marginBottom: 8 }}>Subscription</label>
             {isBeta ? (
-              <div style={{ padding: '14px 16px', borderRadius: 12, background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', border: '1px solid rgba(124,58,237,0.25)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', border: '1px solid rgba(124,58,237,0.25)', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Crown size={20} color="var(--accent-light)" style={{ flexShrink: 0 }} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -334,7 +334,7 @@ export default function Settings() {
                 </div>
               </div>
             ) : isPro ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 12, background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Crown size={18} color="var(--accent-light)" style={{ flexShrink: 0 }} />
                   <div>
@@ -348,7 +348,7 @@ export default function Settings() {
                 <PortalButton uid={user?.uid} />
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
@@ -411,7 +411,7 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
         {step === 1 && (
           <div>
             <p style={{ marginBottom: 16 }}>You are switching your qualification to <strong>{newQual}</strong>.</p>
-            <div style={{ padding: 12, background: 'var(--bg-surface)', border: '1px solid var(--danger)', borderRadius: 8, marginBottom: 16 }}>
+            <div style={{ padding: 12, background: 'var(--bg-card)', border: '1px solid var(--danger)', borderRadius: 14, marginBottom: 16 }}>
               <p style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>Action required</p>
               <p style={{ fontSize: '0.85rem' }}>Your current subjects will be replaced. You need to pick your new {newQual} subjects to continue.</p>
             </div>
@@ -427,10 +427,10 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
             <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>Select your new subjects for {newQual}.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {subjects.map((s, i) => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.targetGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
                     {getGradeOptions(s.name, newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
@@ -441,7 +441,7 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                 </div>
               ))}
             </div>
-            <div style={{ padding: 12, background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+            <div style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
               <div className="grid-2" style={{ gap: 8 }}>
                 <select className="select" value={newSubj.name} onChange={e => setNewSubj(s => ({ ...s, name: e.target.value }))}><option value="">Subject…</option>{subjectList.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>{EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}</select>
@@ -509,7 +509,7 @@ function BoundaryViewer({ profile }) {
               if (marks === null || marks === undefined) return null
               const pct = Math.round((marks / bounds.maxMarks) * 100)
               return (
-                <div key={g} style={{ padding: '10px 8px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', textAlign: 'center' }}>
+                <div key={g} style={{ padding: '10px 8px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', textAlign: 'center' }}>
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: gradeColour(g) }}>G{g}</div>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', marginTop: 2 }}>{marks}/{bounds.maxMarks}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{pct}%</div>
@@ -532,7 +532,7 @@ function Toggle({ val, onChange }) {
   return (
     <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
       <input type="checkbox" checked={val} onChange={e => onChange(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
-      <span style={{ position: 'absolute', inset: 0, background: val ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 12, transition: 'background 0.2s' }} />
+      <span style={{ position: 'absolute', inset: 0, background: val ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 18, transition: 'background 0.2s' }} />
       <span style={{ position: 'absolute', top: 3, left: val ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
     </label>
   )
@@ -742,14 +742,14 @@ function NotificationsSettings({ profile, user, onSave }) {
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h4>Notifications</h4>
 
-      <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+      <div style={{ padding: '14px 16px', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', background: 'var(--bg-card)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>Push notifications</div>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
           Push notifications work even when the app is closed.
           You will get exam reminders, streak warnings and daily nudges directly on your device.
         </div>
         {permission === 'denied' ? (
-          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--danger)' }}>
+          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14, fontSize: '0.82rem', color: 'var(--danger)' }}>
             Notifications are blocked. Go to your browser settings and allow notifications for this site.
           </div>
         ) : pushSubscribed ? (
@@ -771,7 +771,7 @@ function NotificationsSettings({ profile, user, onSave }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {SETTINGS.map(s => (
-          <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{s.label}</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.desc}</div>
