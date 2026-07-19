@@ -9,6 +9,7 @@ import { collection, getDocs, query, where, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { checkAndAwardBadge } from '../utils/firestore'
 import { callAI } from '../utils/ai'
+import { getSubjectQualification } from '../data/subjects'
 import { daysUntilExam } from '../utils/calendar'
 import AIOutput from '../components/AIOutput'
 import { AlertTriangle, Zap, ChevronLeft, Clock, Target, Brain, FileText } from 'lucide-react'
@@ -50,7 +51,7 @@ async function generateEmergencyPlan({ subject, board, level, paper, weakTopics,
     '',
     'OUTPUT FORMAT — follow exactly, every section required:',
     '',
-    'PREDICTED GRADE: [e.g. Grade 6]',
+    'PREDICTED GRADE: [' + (level === 'GCSE' ? 'e.g. Grade 6' : 'e.g. B') + ']',
     'GRADE REASONING: [one sentence citing the student data]',
     '',
     'TOP 5 TOPICS TO REVISE:',
@@ -160,7 +161,12 @@ export default function EmergencyMode() {
         )),
       ])
 
-      const allTopics = topicsSnap.docs.map(d => d.data()).sort((a, b) => (a.confidence || 3) - (b.confidence || 3))
+      const subj = profile?.subjects?.find(s => s.name === selectedExam.subject)
+      const subjQual = getSubjectQualification(subj, profile)
+
+      const allTopics = topicsSnap.docs.map(d => d.data())
+        .filter(t => !t.qualification || t.qualification === subjQual)
+        .sort((a, b) => (a.confidence || 3) - (b.confidence || 3))
       const weakTopics = allTopics.filter(t => (t.confidence || 3) <= 2)
       const papers = papersSnap.docs.map(d => d.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 5)
       const avgScore = papers.length
@@ -168,12 +174,10 @@ export default function EmergencyMode() {
         : null
       const mistakes = mistakesSnap.docs.map(d => d.data())
 
-      const subj = profile?.subjects?.find(s => s.name === selectedExam.subject)
-
       const result = await generateEmergencyPlan({
         subject:    selectedExam.subject,
         board:      subj?.board || selectedExam.board || 'AQA',
-        level:      profile?.qualification || 'GCSE',
+        level:      subjQual,
         paper:      selectedExam.paper || null,
         weakTopics,
         allTopics,
