@@ -212,6 +212,19 @@ export function getSubjectList(qualification) {
   return GCSE_SUBJECTS
 }
 
+// All qualification values the app understands, in the order they should appear in pickers.
+export const QUALIFICATIONS = ['GCSE', 'AS-Level', 'A-Level', 'BTEC-L2', 'BTEC-L3']
+
+// A student's account has one primary profile.qualification, but AS-Level and A-Level are
+// deliberately mixable per-subject (e.g. A-Level Maths alongside AS-Level Further Maths) —
+// see Settings/Onboarding. Every place that needs "what qualification is THIS subject at"
+// should go through this helper rather than reading profile.qualification directly, so a
+// per-subject override is never silently ignored. Falls back to the account-level
+// qualification for subjects added before per-subject qualification existed.
+export function getSubjectQualification(subject, profile) {
+  return subject?.qualification || profile?.qualification || 'GCSE'
+}
+
 export const SUBJECT_COLOURS = {
   'Biology':'#27ae60','Chemistry':'#8e44ad','Physics':'#2980b9',
   'Combined Science':'#0d9488',
@@ -241,10 +254,20 @@ export function subjectColour(name) {
   return SUBJECT_COLOURS[name] || SUBJECT_COLOURS.default
 }
 
+// Foundation/Higher tiering is a GCSE-only concept in England (never AS-Level or A-Level — see
+// audit note above). This was previously duplicated, slightly differently, in both
+// examDates2026.js and paperDatabase.js (examDates2026.js and paperDatabase.js agreed with each
+// other on the modern-language subjects but this list here didn't have them at all, meaning
+// isTiered('French') returned false — wrong, GCSE French *is* tiered). This is now the one place
+// it's defined; the other two files import it from here instead of keeping their own copy.
+export const TIERED_SUBJECTS = [
+  'Mathematics','Further Mathematics','Biology','Chemistry','Physics',
+  'Combined Science','Combined Science: Trilogy','Combined Science: Synergy','Statistics',
+  'French','German','Spanish','Italian','Mandarin Chinese','Polish','Urdu','Welsh Second Language',
+]
+
 export function isTiered(subjectName) {
-  const tiered = ['Mathematics','Further Mathematics','Biology','Chemistry','Physics',
-    'Combined Science','Combined Science: Trilogy','Combined Science: Synergy','Statistics']
-  return tiered.includes(subjectName)
+  return TIERED_SUBJECTS.includes(subjectName)
 }
 
 export const XP_REWARDS = {
