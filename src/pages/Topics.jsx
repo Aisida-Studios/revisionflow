@@ -10,7 +10,9 @@ import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
 import { getAllTopicsFlat } from '../data/topics'
 import { resolveTopicResources } from '../data/resourceLinks'
-import { SUBJECT_COLOURS } from '../data/subjects'
+import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
+import { buildTopicId } from '../utils/topicId'
+import { migrateLegacyTopicDocs } from '../utils/firestore'
 import toast from 'react-hot-toast'
 import { Plus, X, Brain, Zap, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen, StickyNote, Layers, Link2 } from 'lucide-react'
 import { saveNote, getNotes, deleteNote } from '../utils/firestore'
@@ -161,7 +163,7 @@ export default function Topics() {
   const subjects   = profile?.subjects?.map(s=>s.name) || []
   const selSubjObj  = profile?.subjects?.find(s => s.name === selSubj)
   const selBoard    = selSubjObj?.board || 'AQA'
-  const selLevel    = profile?.qualification || 'GCSE'
+  const selLevel    = getSubjectQualification(selSubjObj, profile)
 
   useEffect(() => {
     if (!user) return
@@ -171,7 +173,10 @@ export default function Topics() {
 
   async function loadTopics() {
     const snap = await getDocs(collection(db,'users',user.uid,'topics'))
-    const all = snap.docs.map(d=>({id:d.id,...d.data()}))
+    const raw = snap.docs.map(d=>({id:d.id,...d.data()}))
+    // Silently re-key any topic docs still on the old `${subject}_${topic}` id scheme (no board or
+    // qualification) to the new board+qualification-scoped scheme. No-ops once already migrated.
+    const all = await migrateLegacyTopicDocs(user.uid, raw, profile?.subjects, profile?.qualification)
     setAllTopics(all)
     if (selSubj === 'All') {
       setTopics(all)
@@ -213,12 +218,13 @@ export default function Topics() {
     if (!selSubj) return
     setLoading(true)
     const subj = profile?.subjects?.find(s=>s.name===selSubj)
-    const topicList = getAllTopicsFlat(subj?.board||'AQA', selSubj, profile?.qualification||'GCSE')
+    const subjQual = getSubjectQualification(subj, profile)
+    const topicList = getAllTopicsFlat(subj?.board||'AQA', selSubj, subjQual)
     if (!topicList.length) { toast.error('No topics found for this subject/board'); setLoading(false); return }
     for (const t of topicList) {
-      const id = `${selSubj}_${t.name}`.replace(/[^a-zA-Z0-9_]/g,'_').slice(0,100)
+      const id = buildTopicId(subj?.board||'AQA', subjQual, selSubj, t.name)
       await setDoc(doc(db,'users',user.uid,'topics',id), {
-        name:t.name, paper:t.paper, subjectId:selSubj,
+        name:t.name, paper:t.paper, subjectId:selSubj, board:subj?.board||'AQA', qualification:subjQual,
         confidence:3, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
       }, { merge:true })
     }
@@ -229,9 +235,9 @@ export default function Topics() {
 
   async function addTopic() {
     if (!newTopic.name || !selSubj) return
-    const id = `${selSubj}_${newTopic.name}`.replace(/[^a-zA-Z0-9_]/g,'_').slice(0,100)
+    const id = buildTopicId(selBoard, selLevel, selSubj, newTopic.name)
     await setDoc(doc(db,'users',user.uid,'topics',id), {
-      ...newTopic, subjectId:selSubj, createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+      ...newTopic, subjectId:selSubj, board:selBoard, qualification:selLevel, createdAt:serverTimestamp(), updatedAt:serverTimestamp()
     }, { merge:true })
     await awardXP(user.uid, 10, 'Topic added')
     await loadTopics()
