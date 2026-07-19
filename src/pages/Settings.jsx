@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { updateUserProfile } from '../utils/firestore'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
-import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, getGradeOptions, getSubjectList } from '../data/subjects'
+import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification } from '../data/subjects'
 import { GRADE_BOUNDARIES, AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
@@ -89,7 +89,7 @@ export default function Settings() {
     if (!newSubj.name) return
     const gradeOpts = getGradeOptions(newSubj.name, addSubjQual, newSubj.tier)
     const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : gradeOpts[0]
-    setSubjects(s => [...s, { ...newSubj, targetGrade, id: Date.now().toString() }])
+    setSubjects(s => [...s, { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }])
     setNewSubj({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: gradeOpts[0] || '9' })
   }
 
@@ -140,15 +140,11 @@ export default function Settings() {
             <label className="label">Qualification</label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{profile?.qualification || 'GCSE'}</span>
-              {(!profile?.qualification || profile?.qualification === 'GCSE') && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow('A-Level')}>Switch to A-Level →</button>
-              )}
-              {profile?.qualification === 'A-Level' && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow('GCSE')}>Switch to GCSE →</button>
-              )}
-              {(profile?.qualification === 'GCSE' || !profile?.qualification) && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow('BTEC-L3')}>Switch to BTEC →</button>
-              )}
+              {QUALIFICATIONS.filter(q => q !== (profile?.qualification || 'GCSE')).map(q => (
+                <button key={q} className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow(q)}>
+                  Switch to {q === 'BTEC-L2' ? 'BTEC (L2)' : q === 'BTEC-L3' ? 'BTEC (L3)' : q} →
+                </button>
+              ))}
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
               Switching qualifications opens a setup flow to pick your new subjects.
@@ -168,30 +164,34 @@ export default function Settings() {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <h4>Your subjects</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {subjects.map((s, i) => (
+            {subjects.map((s, i) => {
+              const subjQual = getSubjectQualification(s, profile)
+              return (
               <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                 <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
                 <span className="badge badge-grey">{s.board}</span>
+                {subjQual !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{subjQual}</span>}
                 <span className="badge badge-grey">{s.tier}</span>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grade:</span>
                   <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.currentGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, currentGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, qual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                    {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>→</span>
                   <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.targetGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, qual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                    {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
                   <Trash2 size={14} />
                 </button>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Add subject form */}
@@ -200,6 +200,7 @@ export default function Settings() {
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Level:</span>
               {[
                 { v: 'GCSE', label: 'GCSE' },
+                { v: 'AS-Level', label: 'AS-Level' },
                 { v: 'A-Level', label: 'A-Level' },
                 { v: 'BTEC-L2', label: 'BTEC (L2)' },
                 { v: 'BTEC-L3', label: 'BTEC (L3)' },
@@ -372,7 +373,7 @@ export default function Settings() {
           onClose={() => setNewQualFlow(null)}
           onComplete={async (newSubjects) => {
             setSaving(true)
-            await updateUserProfile(user.uid, { qualification: newQualFlow, subjects: newSubjects })
+            await updateUserProfile(user.uid, { qualification: newQualFlow, subjects: newSubjects, examDates: [] })
             await refreshProfile()
             setQual(newQualFlow)
             setSubjects(newSubjects)
@@ -391,13 +392,17 @@ export default function Settings() {
 function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
   const [step,    setStep]    = useState(1)
   const [subjects, setSubjects] = useState([])
-  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9' })
-  const subjectList = getSubjectList(newQual)
+  // Switching into sixth form (AS-Level or A-Level) lets each subject be tagged AS-Level or
+  // A-Level independently — e.g. A-Level Maths alongside AS-Level Further Maths is a normal
+  // combination. For GCSE/BTEC targets there's no sibling to choose between.
+  const isSixthForm = newQual === 'AS-Level' || newQual === 'A-Level'
+  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9', qualification: newQual })
+  const subjectList = getSubjectList(newSubj.qualification || newQual)
 
   function addSubj() {
     if (!newSubj.name) return
-    setSubjects(s => [...s, { ...newSubj, id: Date.now().toString() }])
-    setNewSubj({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9' })
+    setSubjects(s => [...s, { ...newSubj, qualification: newSubj.qualification || newQual, id: Date.now().toString() }])
+    setNewSubj({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9', qualification: newQual })
   }
 
   return (
@@ -413,7 +418,10 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
             <p style={{ marginBottom: 16 }}>You are switching your qualification to <strong>{newQual}</strong>.</p>
             <div style={{ padding: 12, background: 'var(--bg-card)', border: '1px solid var(--danger)', borderRadius: 14, marginBottom: 16 }}>
               <p style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>Action required</p>
-              <p style={{ fontSize: '0.85rem' }}>Your current subjects will be replaced. You need to pick your new {newQual} subjects to continue.</p>
+              <p style={{ fontSize: '0.85rem' }}>
+                Your current subjects and exam dates will be replaced. You need to pick your new {newQual} subjects to continue.
+                {isSixthForm && ' You can set each subject to AS-Level or A-Level individually — they\'re kept completely separate (own topics, exam dates and past papers), so this is safe to mix.'}
+              </p>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
@@ -430,10 +438,11 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
+                  {isSixthForm && <span className="badge badge-grey">{s.qualification}</span>}
                   <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                     value={s.targetGrade}
                     onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                    {getGradeOptions(s.name, s.qualification || newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
                     <Trash2 size={14} />
@@ -442,6 +451,17 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
               ))}
             </div>
             <div style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {isSixthForm && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>This subject:</span>
+                  {['AS-Level', 'A-Level'].map(v => (
+                    <button key={v} onClick={() => setNewSubj(s => ({ ...s, qualification: v, name: '' }))}
+                      style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubj.qualification||newQual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubj.qualification||newQual) === v ? 'rgba(124,58,237,0.15)' : 'transparent', color: (newSubj.qualification||newQual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="grid-2" style={{ gap: 8 }}>
                 <select className="select" value={newSubj.name} onChange={e => setNewSubj(s => ({ ...s, name: e.target.value }))}><option value="">Subject…</option>{subjectList.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>{EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}</select>
@@ -467,16 +487,17 @@ function BoundaryViewer({ profile }) {
   const subjects  = profile?.subjects || []
   const [selSubj,  setSelSubj]  = useState(subjects[0]?.name  || '')
   const [selBoard, setSelBoard] = useState(subjects[0]?.board || 'AQA')
-  const [selTier,  setSelTier]  = useState(subjects[0]?.tier  || 'Higher')
+  const [selTier,  setSelTier]  = useState(subjects[0]?.tier  || 'N/A')
+  const [selQual,  setSelQual]  = useState(subjects[0] ? getSubjectQualification(subjects[0], profile) : (profile?.qualification || 'GCSE'))
   const [selYear,  setSelYear]  = useState(2024)
 
-  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear)
-  const grades  = ['9', '8', '7', '6', '5', '4', '3', '2', '1']
+  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear, selQual)
+  const grades  = bounds?.grades || ['9', '8', '7', '6', '5', '4', '3', '2', '1']
 
   function onSubject(name) {
     setSelSubj(name)
     const s = subjects.find(x => x.name === name)
-    if (s) { setSelBoard(s.board); setSelTier(s.tier || 'Higher') }
+    if (s) { setSelBoard(s.board); setSelTier(s.tier || 'N/A'); setSelQual(getSubjectQualification(s, profile)) }
   }
 
   return (
@@ -501,16 +522,17 @@ function BoundaryViewer({ profile }) {
       {bounds ? (
         <div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-            {selBoard} · {selSubj} · {selTier && selTier !== 'N/A' ? selTier + ' · ' : ''}{selYear} · Max marks: {bounds.maxMarks}
+            {selBoard} · {selSubj} · {selQual} · {selTier && selTier !== 'N/A' ? selTier + ' · ' : ''}{selYear} · Max marks: {bounds.maxMarks}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(80px,1fr))', gap: 8, marginBottom: 12 }}>
             {grades.map((g, i) => {
               const marks = bounds.boundaries[i]
               if (marks === null || marks === undefined) return null
               const pct = Math.round((marks / bounds.maxMarks) * 100)
+              const label = /^[0-9]+$/.test(String(g)) ? `G${g}` : g
               return (
                 <div key={g} style={{ padding: '10px 8px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: gradeColour(g) }}>G{g}</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: gradeColour(g) }}>{label}</div>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', marginTop: 2 }}>{marks}/{bounds.maxMarks}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{pct}%</div>
                 </div>
