@@ -170,24 +170,27 @@ export default function Analytics() {
     }))
   }, [subjectDist, totalMinutes])
 
+  const currentSubjectNames = useMemo(() => new Set((profile?.subjects || []).map(s => s.name)), [profile])
+  const currentTopics = useMemo(() => topics.filter(t => currentSubjectNames.has(t.subjectId)), [topics, currentSubjectNames])
+
   // ── Topic confidence breakdown ────────────────────────────────────────────
   const confidenceBreakdown = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    topics.forEach(t => { if (t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
+    topics.forEach(t => { if (currentSubjectNames.has(t.subjectId) && t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
     const labels = { 1: 'Not started', 2: 'Struggling', 3: 'Getting there', 4: 'Confident', 5: 'Mastered' }
     const colours = { 1: '#ef4444', 2: '#f97316', 3: '#f59e0b', 4: '#10b981', 5: '#7c3aed' }
     return Object.entries(counts).map(([k, v]) => ({ name: labels[k], value: v, colour: colours[k] })).filter(c => c.value > 0)
-  }, [topics])
+  }, [topics, currentSubjectNames])
 
   const weakTopics = useMemo(() =>
-    topics.filter(t => t.confidence <= 2).slice(0, 8)
-      .map(t => ({ subject: t.subject || '–', topic: t.name || t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
-  , [topics])
+    currentTopics.filter(t => t.confidence <= 2).slice(0, 8)
+      .map(t => ({ subject: t.subjectId || '–', topic: t.name || t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
+  , [currentTopics])
 
   const strongTopics = useMemo(() =>
-    topics.filter(t => t.confidence >= 4).slice(0, 6)
-      .map(t => ({ subject: t.subject || '–', topic: t.name || t.topicName || t.topic || t.id }))
-  , [topics])
+    currentTopics.filter(t => t.confidence >= 4).slice(0, 6)
+      .map(t => ({ subject: t.subjectId || '–', topic: t.name || t.topicName || t.topic || t.id }))
+  , [currentTopics])
 
   // ── Grade trajectory ──────────────────────────────────────────────────────
   const gradeTrajectory = useMemo(() => {
