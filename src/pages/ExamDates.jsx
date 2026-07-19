@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { updateUserProfile } from '../utils/firestore'
 import { countdownLabel, countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone } from '../utils/examUtils'
-import { EXAM_BOARDS } from '../data/subjects'
+import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
 import { isTiered, getExamDates, EXAM_DATES_2026 } from '../data/examDates2026'
 import toast from 'react-hot-toast'
 import { Plus, X, Clock, Trash2, Check, Zap, Edit2 } from 'lucide-react'
@@ -18,7 +18,7 @@ export default function ExamDates() {
   const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', paper:'1', paperName:'', examDate:'' })
 
   // Single subject auto-fill state
-  const [autoSubj,    setAutoSubj]    = useState({ name:'', board:'AQA', tier:'N/A' })
+  const [autoSubj,    setAutoSubj]    = useState({ name:'', board:'AQA', tier:'N/A', qualification:'' })
   const [autoMatches, setAutoMatches] = useState([])
 
   const subjects  = profile?.subjects || []
@@ -28,28 +28,30 @@ export default function ExamDates() {
   useEffect(() => {
     if (!autoSubj.name) { setAutoMatches([]); return }
     const qualMap = { 'BTEC-L2': 'Level 2', 'BTEC-L3': 'Level 3', 'Both': null }
-    const levelMatch = qualMap[profile?.qualification] !== undefined ? qualMap[profile?.qualification] : profile?.qualification
+    const qual = autoSubj.qualification || profile?.qualification
+    const levelMatch = qualMap[qual] !== undefined ? qualMap[qual] : qual
     setAutoMatches(getExamDates(autoSubj.name, autoSubj.board, autoSubj.tier, levelMatch))
-  }, [autoSubj.name, autoSubj.board, autoSubj.tier, profile?.qualification])
+  }, [autoSubj.name, autoSubj.board, autoSubj.tier, autoSubj.qualification, profile?.qualification])
 
   async function handleAutoFillAdd() {
     if (!autoMatches.length) return
     const existing = profile?.examDates || []
     const newDates = autoMatches.map(m => ({
       id: `${m.board}-${m.subject}-${m.tier}-P${m.paper}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      subject: m.subject, board: m.board, tier: m.tier,
+      subject: m.subject, board: m.board, tier: m.tier, qualification: m.level,
       paper: String(m.paper), paperName: m.paperName, examDate: m.date,
     }))
     await updateUserProfile(user.uid, { examDates: [...existing, ...newDates] })
     await refreshProfile()
-    setAutoSubj({ name:'', board:'AQA', tier:'N/A' })
+    setAutoSubj({ name:'', board:'AQA', tier:'N/A', qualification:'' })
     setAutoMatches([])
     toast.success(`Added ${newDates.length} exam date${newDates.length!==1?'s':''}`)
   }
 
   async function handleAdd(e) {
     e.preventDefault()
-    const updated = [...(profile?.examDates || []), { ...form, id: Date.now().toString() }]
+    const subjMeta = subjects.find(s => s.name === form.subject)
+    const updated = [...(profile?.examDates || []), { ...form, qualification: getSubjectQualification(subjMeta, profile), id: Date.now().toString() }]
     await updateUserProfile(user.uid, { examDates: updated })
     await refreshProfile()
     setForm({ subject:'', board:'AQA', tier:'N/A', paper:'1', paperName:'', examDate:'' })
@@ -109,7 +111,12 @@ export default function ExamDates() {
           <div>
             <label className="label">Subject</label>
             <select className="select" value={autoSubj.name}
-              onChange={e => setAutoSubj(s => ({...s, name:e.target.value, tier:isTiered(e.target.value)?'Higher':'N/A'}))}>
+              onChange={e => {
+                const name = e.target.value
+                const s = subjects.find(x => x.name === name)
+                const qualification = getSubjectQualification(s, profile)
+                setAutoSubj({ name, board: s?.board || 'AQA', qualification, tier: (isTiered(name) && qualification === 'GCSE') ? 'Higher' : 'N/A' })
+              }}>
               <option value="">Select subject…</option>
               {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
             </select>
@@ -121,7 +128,7 @@ export default function ExamDates() {
               {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
-          {autoSubj.name && isTiered(autoSubj.name) && (
+          {autoSubj.name && isTiered(autoSubj.name) && (autoSubj.qualification || profile?.qualification) === 'GCSE' && (
             <div>
               <label className="label">Tier</label>
               <select className="select" value={autoSubj.tier}
@@ -262,16 +269,22 @@ export default function ExamDates() {
 
 // ── Fill All Modal ────────────────────────────────────────────────────────────
 function FillAllModal({ subjects, qual, onClose, onConfirm }) {
-  // Build initial list: all exam dates for all user subjects using their profile board
+  // Build initial list: all exam dates for all user subjects, using each subject's OWN
+  // qualification (falling back to the account default) rather than one qualification for all —
+  // subjects can be a mix (e.g. AS-Level Further Maths alongside A-Level everything else).
   const qualMap = { 'BTEC-L2': 'Level 2', 'BTEC-L3': 'Level 3', 'Both': null }
-  const levelMatch = qualMap[qual] !== undefined ? qualMap[qual] : qual
+  function levelFor(s) {
+    const subjQual = s.qualification || qual
+    return qualMap[subjQual] !== undefined ? qualMap[subjQual] : subjQual
+  }
   const initialRows = subjects.flatMap(s => {
-    const matches = getExamDates(s.name, s.board, s.tier||'N/A', levelMatch)
+    const matches = getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s))
     return matches.map(m => ({
       id:        `fill-${s.name}-P${m.paper}-${Math.random().toString(36).slice(2)}`,
       subject:   m.subject,
       board:     m.board,
       tier:      m.tier,
+      qualification: m.level,
       paper:     String(m.paper),
       paperName: m.paperName,
       examDate:  m.date,
@@ -282,7 +295,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
   const [rows, setRows] = useState(initialRows)
 
   const notFound = subjects.filter(s =>
-    !getExamDates(s.name, s.board, s.tier||'N/A', levelMatch).length
+    !getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s)).length
   )
 
   function toggleRow(id) {
