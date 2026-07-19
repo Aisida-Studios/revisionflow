@@ -6,7 +6,10 @@ import { recordActivityStreak } from './firestore'
 
 const AI_ENDPOINT = '/api/tutor'
 
-const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE and A-Level revision.
+const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level, A-Level and BTEC revision.
+AS-Level is a standalone one-year qualification, separate from A-Level (not the first year of it) —
+keep their content, depth and grading scale (A-E for AS-Level, A*-E for A-Level) distinct whenever a
+student's qualification is given as one or the other.
 You give specific, practical, encouraging advice tailored to UK students.
 Be concise but thorough. Use bullet points where helpful. Focus on actionable recommendations.
 Always reference specific free resources where relevant:
@@ -149,9 +152,9 @@ Provide:
   return callAI(prompt, SYSTEM, 8192, uid)
 }
 
-export async function getResourceRecommendations(subject, board, tier, weakTopics, uid) {
+export async function getResourceRecommendations(subject, board, tier, weakTopics, qualification, uid) {
   const prompt = `Recommend the best FREE revision resources for:
-Subject: ${subject} (${board || 'AQA'}, ${tier || 'Higher'})
+Subject: ${subject} (${qualification || 'GCSE'}, ${board || 'AQA'}${tier && tier !== 'N/A' ? ', ' + tier : ''})
 Weak topics: ${weakTopics?.join(', ') || 'General revision'}
 
 For each resource:
@@ -160,7 +163,7 @@ For each resource:
 - How to use it effectively
 - Recommended time per week
 
-Only include genuinely free resources. Include at least 5.`
+Only include genuinely free resources, and only ones that actually cover ${qualification || 'GCSE'} content for this subject (not just GCSE, if the student is past GCSE). Include at least 5.`
   return callAI(prompt, SYSTEM, 8192, uid)
 }
 
@@ -202,16 +205,24 @@ export async function chatWithAI(messages, userContext, uid) {
   return callAIChat(messages.slice(-10), systemWithContext, uid)
 }
 
-export async function predictGrade(subject, paperAttempts, topicConfidences, uid) {
+export async function predictGrade(subject, paperAttempts, topicConfidences, qualification, uid) {
+  const qual = qualification || 'GCSE'
   const subjectAttempts = paperAttempts?.filter(a => a.subject === subject) || []
   const weakTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.confidence||3) <= 2) || []
-  const prompt = `Predict the likely GCSE final grade for this student:
+  const exampleRange = qual === 'GCSE' ? 'e.g. grade 7-8' : qual === 'AS-Level' ? 'e.g. B-C' : 'e.g. B-C'
+  const scaleNote = qual === 'GCSE'
+    ? 'Grades are numeric 9 (highest) to 1 (lowest).'
+    : qual === 'AS-Level'
+      ? 'Grades are A (highest) to E (lowest) — AS-Level does not award an A*.'
+      : 'Grades are A* (highest) to E (lowest).'
+  const prompt = `Predict the likely ${qual} final grade for this student:
 Subject: ${subject}
+Qualification: ${qual}. ${scaleNote}
 Paper attempts: ${JSON.stringify(subjectAttempts.slice(0,6).map(a => ({year:a.year,paper:a.paper,percentage:a.percentage,grade:a.grade})))}
 Weak topics (confidence ≤2/5): ${weakTopics.map(t => t.name).join(', ') || 'None logged'}
 
 Provide:
-1. Predicted grade range (e.g. grade 7–8) with confidence level
+1. Predicted grade range (${exampleRange}) with confidence level
 2. What would push the grade up
 3. What risks pulling it down
 4. The single most impactful thing to work on right now`
