@@ -8,6 +8,7 @@ import {
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer } from '../utils/ai'
+import { getSubjectQualification } from '../data/subjects'
 import AIOutput from '../components/AIOutput'
 import toast from 'react-hot-toast'
 import {
@@ -1617,13 +1618,13 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   const [mkHistory, setMkHistory] = React.useState([])
   const [histIdx,   setHistIdx]   = React.useState(null)
 
-  // Auto-fill board from profile
+  // Auto-fill board/level from the first subject's own settings
   React.useEffect(() => {
     if (subjects.length && !mkSubject) {
       setMkSubject(subjects[0])
       const s = profile?.subjects?.[0]
       if (s?.board) setMkBoard(s.board)
-      if (profile?.qualification) setMkLevel(profile.qualification)
+      setMkLevel(getSubjectQualification(s, profile))
     }
   }, [subjects.length])
 
@@ -1801,6 +1802,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                       setMkSubject(e.target.value)
                       const s = profile?.subjects?.find(x => x.name === e.target.value)
                       if (s?.board) setMkBoard(s.board)
+                      setMkLevel(getSubjectQualification(s, profile))
                     }}>
                     <option value="">Select…</option>
                     {subjects.map(s => <option key={s} value={s}>{s}</option>)}
