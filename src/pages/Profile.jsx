@@ -6,7 +6,7 @@ import { db } from '../firebase'
 import { getPaperAttempts, getMistakes } from '../utils/firestore'
 import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
-import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
+import { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { BADGE_LIST, BADGE_CATEGORIES } from '../data/badges'
 import { PROFILE_ICONS } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
@@ -366,6 +366,7 @@ export default function Profile() {
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />
                   <span style={{ fontWeight: 600 }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
+                  {getSubjectQualification(s, profile) !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{getSubjectQualification(s, profile)}</span>}
                   {s.tier && s.tier !== 'N/A' && <span className="badge badge-purple">{s.tier}</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
