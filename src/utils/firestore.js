@@ -26,6 +26,7 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
+import { buildTopicId, isLegacyTopicId } from './topicId'
 
 export { auth, db }
 
@@ -434,6 +435,65 @@ export const getPaperStructures = async (uid) => {
 export const submitPaperStructure = async (uid, data) => {
   const ref = await addDoc(collection(db, 'users', uid, 'paperStructures'), data)
   return ref.id
+}
+
+/* =========================
+   TOPIC ID MIGRATION
+   Old topic docs were keyed `${subject}_${topic}` with no board or qualification, so switching
+   board or qualification for a subject could silently collide with (or overwrite) an unrelated
+   topic's confidence rating. buildTopicId() (src/utils/topicId.js) is the new, collision-safe
+   scheme. This runs automatically, once, the first time a user's topics load after this update —
+   silently re-keying anything still in the old format. See src/pages/Topics.jsx for the call site.
+========================= */
+
+/**
+ * Given topic docs already fetched from Firestore (array of { id, ...data }), finds any still on
+ * the legacy id scheme, re-keys them to the new board+qualification-scoped id, and keeps the
+ * matching `priorities` doc (same id scheme, see PriorityContext) in sync. Returns the corrected
+ * array — callers should render/use this return value, not the array they passed in, since ids
+ * may have changed. Safe to call on every load: once nothing is legacy, it's a single read and a
+ * no-op loop.
+ */
+export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQualification) => {
+  if (!uid || !topicDocs?.length) return topicDocs || []
+  const corrected = []
+  for (const t of topicDocs) {
+    if (!isLegacyTopicId(t.id)) { corrected.push(t); continue }
+    const subjectMeta = subjects?.find(s => s.name === t.subjectId)
+    if (!subjectMeta) { corrected.push(t); continue } // subject no longer selected — leave it, don't guess
+    const board = subjectMeta.board || 'AQA'
+    const qualification = subjectMeta.qualification || profileQualification || 'GCSE'
+    const newId = buildTopicId(board, qualification, t.subjectId, t.name)
+    if (newId === t.id) { corrected.push(t); continue }
+    try {
+      const newRef = doc(db, 'users', uid, 'topics', newId)
+      const existing = await getDoc(newRef)
+      if (existing.exists()) {
+        // A doc already lives at the new id — don't clobber it, just adopt it going forward and
+        // quietly retire the legacy one.
+        await deleteDoc(doc(db, 'users', uid, 'topics', t.id))
+        corrected.push({ id: newId, ...existing.data() })
+        continue
+      }
+      const { id: _oldId, ...data } = t
+      await setDoc(newRef, { ...data, board, qualification, updatedAt: serverTimestamp() })
+      await deleteDoc(doc(db, 'users', uid, 'topics', t.id))
+
+      // Priority docs are keyed by the same topicId (see PriorityContext.setPriority) — keep them
+      // pointed at a topic that still exists.
+      const oldPriRef = doc(db, 'users', uid, 'priorities', t.id)
+      const oldPriSnap = await getDoc(oldPriRef)
+      if (oldPriSnap.exists()) {
+        await setDoc(doc(db, 'users', uid, 'priorities', newId), { ...oldPriSnap.data(), topicId: newId })
+        await deleteDoc(oldPriRef)
+      }
+      corrected.push({ ...t, id: newId, board, qualification })
+    } catch (err) {
+      console.error('Topic ID migration failed for', t.id, err)
+      corrected.push(t) // fail safe — keep the old doc visible rather than losing it from view
+    }
+  }
+  return corrected
 }
 
 /* =========================
