@@ -32,7 +32,8 @@ export function buildAIContext(profile, opts = {}) {
   if (profile.subjects?.length) {
     lines.push('\n=== SUBJECTS ===')
     profile.subjects.forEach(s => {
-      const parts = [`${s.name} (${s.board || 'AQA'}`]
+      const qual = s.qualification || profile.qualification || 'GCSE'
+      const parts = [`${s.name} (${s.board || 'AQA'}, ${qual}`]
       if (s.tier && s.tier !== 'N/A') parts[0] += ` ${s.tier}`
       parts[0] += ')'
       if (s.currentGrade) parts.push(`current: ${s.currentGrade}`)
@@ -58,8 +59,10 @@ export function buildAIContext(profile, opts = {}) {
   // ── Topic confidence ─────────────────────────────────────────────
   if (topics.length) {
     lines.push('\n=== TOPIC CONFIDENCE (1=low, 5=high) ===')
+    const currentSubjectNames = new Set((profile.subjects || []).map(s => s.name))
     const bySubject = {}
     topics.forEach(t => {
+      if (!currentSubjectNames.has(t.subjectId)) return
       if (!bySubject[t.subjectId]) bySubject[t.subjectId] = []
       bySubject[t.subjectId].push(t)
     })
@@ -143,7 +146,7 @@ export function buildAIContext(profile, opts = {}) {
 
 /** Standard system prompt for all RevisionFlow AI features */
 export function getSystemPrompt(context) {
-  return `You are RevisionFlow's AI tutor for UK GCSE, A-Level and BTEC students. You are personalised, practical, and encouraging. You have full access to this student's revision data and should use it to give specific, relevant advice.
+  return `You are RevisionFlow's AI tutor for UK GCSE, AS-Level, A-Level and BTEC students. AS-Level is a standalone qualification separate from A-Level, not its first year — keep them distinct. You are personalised, practical, and encouraging. You have full access to this student's revision data and should use it to give specific, relevant advice.
 
 Free resources to reference when relevant: Dr Frost Maths, Cognito, Physics & Maths Tutor (PMT), SaveMyExams, Seneca Learning, Mr Bruff (English), Craig 'n' Dave (Computer Science), BBC Bitesize, GCSEPod.
 
