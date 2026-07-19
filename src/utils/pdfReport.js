@@ -117,8 +117,8 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   if ((profile?.subjects||[]).length > 0) {
     doc.autoTable({
       startY:y,
-      head:[['Subject','Board','Tier','Starting','Current','Target']],
-      body:profile.subjects.map(s=>[s.name,s.board,s.tier&&s.tier!=='N/A'?s.tier:'–',profile.startingGrades?.[s.name]||'–',s.currentGrade||'–',s.targetGrade||'9']),
+      head:[['Subject','Level','Board','Tier','Starting','Current','Target']],
+      body:profile.subjects.map(s=>[s.name,s.qualification||profile.qualification||'GCSE',s.board,s.tier&&s.tier!=='N/A'?s.tier:'–',profile.startingGrades?.[s.name]||'–',s.currentGrade||'–',s.targetGrade||'9']),
       margin:{left:M,right:M},
       styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
