@@ -6,11 +6,12 @@ import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { generateCalendarPlan } from '../utils/ai'
 import {
-  GCSE_SUBJECTS, ALEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS,
+  GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS,
   EXAM_BOARDS, getGradeOptions, SUBJECT_COLOURS,
 } from '../data/subjects'
 import { isTiered, EXAM_DATES_2026 } from '../data/examDates2026'
 import { getAllTopicsFlat } from '../data/topics'
+import { buildTopicId } from '../utils/topicId'
 import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Users, Brain, Sparkles, Star } from 'lucide-react'
 
@@ -94,6 +95,7 @@ export default function Onboarding() {
   }, [qual])
 
   const subjectList = qual==='A-Level' ? ALEVEL_SUBJECTS
+    : qual==='AS-Level' ? AS_LEVEL_SUBJECTS
     : qual==='BTEC-L2' ? BTEC_L2_SUBJECTS
     : qual==='BTEC-L3' ? BTEC_L3_SUBJECTS
     : GCSE_SUBJECTS
@@ -105,14 +107,14 @@ export default function Onboarding() {
   const xpPreview = 25 + subjects.length * 100 + (planDone ? 50 : 0)
 
   function onSubjName(name) {
-    setNewSubj(s => ({ ...s, name, tier: isTiered(name) ? 'Higher' : 'N/A' }))
+    setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && qual === 'GCSE') ? 'Higher' : 'N/A' }))
   }
 
   function addSubject() {
     if (!newSubj.name || subjects.find(s => s.name === newSubj.name)) return
     const opts   = getGradeOptions(newSubj.name, qual, newSubj.tier)
     const target = newSubj.targetGrade || (opts.includes(globalTarget) ? globalTarget : opts[0])
-    setSubjects(s => [...s, { ...newSubj, targetGrade: target, id: Date.now().toString() }])
+    setSubjects(s => [...s, { ...newSubj, qualification: qual, targetGrade: target, id: Date.now().toString() }])
     setNewSubj({ name:'', board:'AQA', tier:'N/A', currentGrade:'', targetGrade:'' })
   }
 
@@ -128,7 +130,7 @@ export default function Onboarding() {
   async function generatePlan() {
     setAiLoading(true)
     const res = await generateCalendarPlan({
-      subjects: subjects.map(s => ({ name:s.name, board:s.board, currentGrade:s.currentGrade, targetGrade:s.targetGrade })),
+      subjects: subjects.map(s => ({ name:s.name, board:s.board, qualification:s.qualification||qual, currentGrade:s.currentGrade, targetGrade:s.targetGrade })),
       availableDays: Object.entries(availability).filter(([,v]) => v.enabled).map(([k]) => k),
       startTimes: Object.fromEntries(Object.entries(availability).map(([k,v]) => [k, v.startTime])),
       endTime:'21:00', ratio:'2:1', weeksUntilExams:12,
@@ -140,11 +142,12 @@ export default function Onboarding() {
 
   async function seedTopics(uid) {
     for (const s of subjects) {
-      const topics = getAllTopicsFlat(s.board, s.name, qual)
+      const subjQual = s.qualification || qual
+      const topics = getAllTopicsFlat(s.board, s.name, subjQual)
       for (const t of topics) {
-        const id = `${s.name}_${t.name}`.replace(/[^a-zA-Z0-9_]/g,'_').slice(0,100)
+        const id = buildTopicId(s.board, subjQual, s.name, t.name)
         await setDoc(doc(db,'users',uid,'topics',id), {
-          name:t.name, paper:t.paper, subjectId:s.name,
+          name:t.name, paper:t.paper, subjectId:s.name, board:s.board, qualification:subjQual,
           confidence:3, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
         }, { merge:true })
       }
@@ -278,7 +281,8 @@ export default function Onboarding() {
                 Sixth form / college (Year 12–13)
               </div>
               {[
-                { id:'A-Level', label:'A-Level',                    desc:'Grades A*–E · University entrance qualification' },
+                { id:'AS-Level', label:'AS-Level',                  desc:'Grades A–E · Standalone one-year qualification, separate from A-Level' },
+                { id:'A-Level', label:'A-Level',                    desc:'Grades A*–E · Two-year, university entrance qualification' },
                 { id:'BTEC-L3', label:'BTEC National (Level 3)',    desc:'Grades D*D*–U · Vocational, equivalent to A-Levels' },
               ].map(({ id:q, label, desc }) => (
                 <button key={q} onClick={() => setQual(q)} style={{
@@ -356,7 +360,7 @@ export default function Onboarding() {
                       {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
-                  {newSubj.name && isTiered(newSubj.name) && (
+                  {newSubj.name && isTiered(newSubj.name) && qual === 'GCSE' && (
                     <div>
                       <label className="label">Tier</label>
                       <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier:e.target.value }))}>
