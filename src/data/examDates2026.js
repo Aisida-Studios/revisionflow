@@ -1,17 +1,12 @@
 // src/data/examDates2026.js
-// 2026 GCSE and A-Level exam dates — all major UK boards
-// Sources: AQA, Edexcel, OCR, WJEC, CCEA published timetables
+// 2026 GCSE, AS-Level and A-Level exam dates — all major UK boards
+// Sources: AQA, Edexcel, OCR, WJEC/Eduqas, CCEA published timetables
 // Note: Some dates are confirmed, others estimated from typical timetabling patterns
 
-export const TIERED_SUBJECTS = [
-  'Mathematics','Biology','Chemistry','Physics','Combined Science',
-  'French','German','Spanish','Italian','Mandarin Chinese','Polish','Urdu',
-  'Welsh Second Language','Further Mathematics',
-]
-
-export function isTiered(subject) {
-  return TIERED_SUBJECTS.includes(subject)
-}
+// TIERED_SUBJECTS/isTiered now live in subjects.js — this used to be its own, separately
+// maintained list here (and a third one in paperDatabase.js) which had drifted out of sync with
+// each other. Re-exported here so existing imports of `isTiered` from this file keep working.
+export { TIERED_SUBJECTS, isTiered } from './subjects'
 
 // ── GCSE 2026 EXAM DATES ──────────────────────────────────────────────────────
 const GCSE_2026 = [
@@ -3621,6 +3616,170 @@ const ALEVEL_2026 = [
   { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Fields, Capacitors and Particle Physics", "date": "2026-06-15" },
 ]
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AS-LEVEL 2026 — added so AS-Level is fully separate from A-Level everywhere.
+// AS-Level is a standalone, decoupled qualification for AQA/Edexcel/OCR/Eduqas
+// (does not contribute to a later A-Level grade — confirmed against JCQ/Ofqual
+// and each board's own "About AS and A levels" pages). WJEC (Wales) and CCEA
+// keep AS content embedded inside their A-Level unit structure instead (see the
+// existing CCEA A-Level entries above, which already include AS Unit 1/2 papers),
+// so no separate WJEC/CCEA AS-Level entries are added here — selecting AS-Level
+// for those boards is intentionally left empty rather than guessed.
+// All dates below are sourced from each board's own official Summer 2026 exam
+// timetable (see per-board source comments). As with the GCSE/A-Level dates above,
+// always confirm the final personalised timetable with your school/college.
+const ASLEVEL_2026 = [
+// ── AQA AS-Level 2026 — Source: AQA official May/June 2026 A-level, AS, Level 3 exam timetable (aqa.org.uk) ──
+  { "board": "AQA", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "Paper 1", "date": "2026-05-11" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "Paper 2", "date": "2026-05-21" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Business 1", "date": "2026-05-15" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Business 2", "date": "2026-05-21" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Inorganic and Physical Chemistry", "date": "2026-05-12" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Organic and Physical Chemistry", "date": "2026-05-19" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Paper 1", "date": "2026-05-12" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Paper 2", "date": "2026-05-18" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "The Operation of Markets and Market Failure", "date": "2026-05-12" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "The National Economy in a Global Context", "date": "2026-05-18" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Language and the Individual", "date": "2026-05-11" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Language Varieties", "date": "2026-05-18" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Literature A", "tier": "N/A", "paper": 1, "paperName": "Love Through the Ages: Shakespeare and Poetry", "date": "2026-05-14" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Literature A", "tier": "N/A", "paper": 2, "paperName": "Love Through the Ages: Prose", "date": "2026-05-22" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Literature B", "tier": "N/A", "paper": 1, "paperName": "Literary Genres: Drama", "date": "2026-05-14" },
+  { "board": "AQA", "level": "AS-Level", "subject": "English Literature B", "tier": "N/A", "paper": 2, "paperName": "Literary Genres: Prose and Poetry", "date": "2026-05-22" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Further Mathematics", "tier": "N/A", "paper": 1, "paperName": "Paper 1", "date": "2026-05-11" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Further Mathematics", "tier": "N/A", "paper": 2, "paperName": "Paper 2 (any 2 options)", "date": "2026-05-15" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Physical Geography and People and the Environment", "date": "2026-05-12" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Human Geography and the Geography Fieldwork Investigation", "date": "2026-05-20" },
+  { "board": "AQA", "level": "AS-Level", "subject": "German", "tier": "N/A", "paper": 1, "paperName": "Listening, Reading and Writing", "date": "2026-05-13" },
+  { "board": "AQA", "level": "AS-Level", "subject": "German", "tier": "N/A", "paper": 2, "paperName": "Writing", "date": "2026-05-19" },
+  { "board": "AQA", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "Breadth Study with Interpretations (options)", "date": "2026-05-13" },
+  { "board": "AQA", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "Depth Study (options)", "date": "2026-05-18" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 1, "paperName": "Paper 1", "date": "2026-05-14" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 2, "paperName": "Paper 2", "date": "2026-05-22" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Paper 1", "date": "2026-05-13" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Paper 2", "date": "2026-05-20" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Introductory Topics in Psychology", "date": "2026-05-11" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Psychology in Context", "date": "2026-05-19" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Philosophy of Religion and Ethics", "date": "2026-05-15" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Study of Religion (options)", "date": "2026-05-21" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Education with Methods in Context", "date": "2026-05-12" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Research Methods and Topics in Sociology", "date": "2026-05-19" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Spanish", "tier": "N/A", "paper": 1, "paperName": "Listening, Reading and Writing", "date": "2026-05-11" },
+  { "board": "AQA", "level": "AS-Level", "subject": "Spanish", "tier": "N/A", "paper": 2, "paperName": "Writing", "date": "2026-05-18" },
+  { "board": "AQA", "level": "AS-Level", "subject": "French", "tier": "N/A", "paper": 1, "paperName": "Listening, Reading and Writing", "date": "2026-05-15" },
+  { "board": "AQA", "level": "AS-Level", "subject": "French", "tier": "N/A", "paper": 2, "paperName": "Writing", "date": "2026-05-21" },
+// ── Edexcel AS-Level 2026 — Source: Pearson Edexcel GCE Summer 2026 Examination Timetable FINAL (qualifications.pearson.com). 8-prefix codes = AS, 9-prefix = A-Level. ──
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Biology A (Salters Nuffield)", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Lifestyle, Transport, Genes and Health", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Biology A (Salters Nuffield)", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Development, Plants and the Environment", "date": "2026-05-21" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Biology B", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Core Cellular Biology and Microbiology", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Biology B", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Core Physiology and Ecology", "date": "2026-05-21" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Marketing and People", "date": "2026-05-15" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Managing Business Activities", "date": "2026-05-21" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Core Inorganic and Physical Chemistry", "date": "2026-05-12" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Core Organic and Physical Chemistry", "date": "2026-05-19" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Economics A", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Introduction to Markets and Market Failure", "date": "2026-05-12" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Economics A", "tier": "N/A", "paper": 2, "paperName": "Paper 2: The UK Economy - Performance and Policies", "date": "2026-05-18" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Lang & Literature", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Voices in Speech and Writing", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Lang & Literature", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Varieties in Language and Literature", "date": "2026-05-18" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Language: Context and Identity", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Child Language", "date": "2026-05-18" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Poetry & Drama", "date": "2026-05-14" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Prose", "date": "2026-05-22" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Further Mathematics", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Core Pure Mathematics", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Further Mathematics", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Further Mathematics Options", "date": "2026-05-15" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Dynamic Landscapes", "date": "2026-05-12" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Dynamic Places", "date": "2026-05-20" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Breadth Study with Interpretations", "date": "2026-05-13" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Depth Study", "date": "2026-05-18" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Pure Mathematics", "date": "2026-05-14" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Statistics and Mechanics", "date": "2026-05-22" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Music Technology", "tier": "N/A", "paper": 1, "paperName": "Component 3: Listening and Analysing", "date": "2026-05-13" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Music Technology", "tier": "N/A", "paper": 2, "paperName": "Component 4: Producing and Analysing", "date": "2026-05-22" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Core Physics I", "date": "2026-05-13" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Core Physics II", "date": "2026-05-20" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Politics", "tier": "N/A", "paper": 1, "paperName": "Paper 1: UK Politics", "date": "2026-05-13" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Politics", "tier": "N/A", "paper": 2, "paperName": "Paper 2: UK Government", "date": "2026-05-21" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Social and Cognitive Psychology", "date": "2026-05-11" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Biological Psychology and Learning Theories", "date": "2026-05-19" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Paper 1: Philosophy of Religion", "date": "2026-05-15" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Paper 2: Religion and Ethics", "date": "2026-05-21" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 3, "paperName": "Paper 3: New Testament Studies", "date": "2026-06-01" },
+  { "board": "Edexcel", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 4, "paperName": "Paper 4: Study of Religion (options)", "date": "2026-06-05" },
+// ── OCR AS-Level 2026 — Source: OCR AS and A Level Provisional Examination Timetable, June 2026 (ocr.org.uk) ──
+  { "board": "OCR", "level": "AS-Level", "subject": "Biology A", "tier": "N/A", "paper": 1, "paperName": "Breadth in Biology", "date": "2026-05-11" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Biology A", "tier": "N/A", "paper": 2, "paperName": "Depth in Biology", "date": "2026-05-21" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Biology B (Advancing Biology)", "tier": "N/A", "paper": 1, "paperName": "Foundations of Biology", "date": "2026-05-11" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Biology B (Advancing Biology)", "tier": "N/A", "paper": 2, "paperName": "Biology in Depth", "date": "2026-05-21" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "The Local Business Environment", "date": "2026-05-15" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "The Wider Business Environment", "date": "2026-05-21" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Chemistry A", "tier": "N/A", "paper": 1, "paperName": "Breadth in Chemistry", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Chemistry A", "tier": "N/A", "paper": 2, "paperName": "Depth in Chemistry", "date": "2026-05-19" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Chemistry B (Salters)", "tier": "N/A", "paper": 1, "paperName": "Foundations of Chemistry", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Chemistry B (Salters)", "tier": "N/A", "paper": 2, "paperName": "Chemistry in Depth", "date": "2026-05-19" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Computing Principles", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Algorithms and Problem Solving", "date": "2026-05-18" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Microeconomics", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "Macroeconomics", "date": "2026-05-18" },
+  { "board": "OCR", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Exploring Language", "date": "2026-05-11" },
+  { "board": "OCR", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Exploring Contexts", "date": "2026-05-18" },
+  { "board": "OCR", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Shakespeare and Poetry Pre-1900", "date": "2026-05-14" },
+  { "board": "OCR", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Drama and Prose Post-1900", "date": "2026-05-22" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Film Studies", "tier": "N/A", "paper": 1, "paperName": "Elements of Film", "date": "2026-05-13" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Landscape and Place", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Geographical Debates", "date": "2026-05-20" },
+  { "board": "OCR", "level": "AS-Level", "subject": "History A", "tier": "N/A", "paper": 1, "paperName": "British Period Study and Enquiry (Unit Group 1)", "date": "2026-05-13" },
+  { "board": "OCR", "level": "AS-Level", "subject": "History A", "tier": "N/A", "paper": 2, "paperName": "Non-British Period Study (Unit Group 2)", "date": "2026-05-18" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Law", "tier": "N/A", "paper": 1, "paperName": "The Legal System and Criminal Law", "date": "2026-05-15" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Law", "tier": "N/A", "paper": 2, "paperName": "Law Making and the Law of Tort", "date": "2026-05-22" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Mathematics A", "tier": "N/A", "paper": 1, "paperName": "Pure Mathematics and Statistics", "date": "2026-05-14" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Mathematics A", "tier": "N/A", "paper": 2, "paperName": "Pure Mathematics and Mechanics", "date": "2026-05-22" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Mathematics B (MEI)", "tier": "N/A", "paper": 1, "paperName": "Pure Mathematics and Mechanics", "date": "2026-05-14" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Mathematics B (MEI)", "tier": "N/A", "paper": 2, "paperName": "Pure Mathematics and Statistics", "date": "2026-05-22" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Media Today", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Physiological Factors Affecting Performance", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physical Education", "tier": "N/A", "paper": 2, "paperName": "Psychological and Socio-cultural Themes in PE", "date": "2026-05-19" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physics A", "tier": "N/A", "paper": 1, "paperName": "Breadth in Physics", "date": "2026-05-13" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physics A", "tier": "N/A", "paper": 2, "paperName": "Depth in Physics", "date": "2026-05-20" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physics B (Advancing Physics)", "tier": "N/A", "paper": 1, "paperName": "Foundations of Physics", "date": "2026-05-13" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Physics B (Advancing Physics)", "tier": "N/A", "paper": 2, "paperName": "Physics in Depth", "date": "2026-05-20" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Research Methods", "date": "2026-05-11" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Psychological Themes Through Core Studies", "date": "2026-05-19" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Philosophy of Religion", "date": "2026-05-15" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Religion and Ethics", "date": "2026-05-21" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Socialisation, Culture and Identity", "date": "2026-05-12" },
+  { "board": "OCR", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Researching and Understanding Social Inequalities", "date": "2026-05-19" },
+// ── Eduqas AS-Level 2026 — Source: WJEC Wales and Eduqas Summer 2026 FINAL Examination Timetable (wjec.co.uk) ──
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-11" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-21" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-15" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-21" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-19" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Component 2 (on-screen)", "date": "2026-05-18" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-18" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-11" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-18" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-14" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-22" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-20" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Law", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-15" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Law", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-22" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-13" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-20" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-19" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1 (options A to F)", "date": "2026-05-15" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-21" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-19" },
+]
+
+
 // ────────────────────────────────────────────────────────
 // Cambridge Nationals and other L2 vocational quals
 // These have unit exams rather than traditional papers
@@ -3632,21 +3791,33 @@ const L2_2026 = [
   { board:'OCR', level:'Level 2', subject:'Cambridge National Creative Media', tier:'N/A', paper:1, paperName:'Exam Unit', date:'2026-06-03' },
 ]
 
-export const EXAM_DATES_2026 = [...GCSE_2026, ...ALEVEL_2026, ...L2_2026]
+export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...ALEVEL_2026, ...L2_2026]
+
+// subjects.js only offers 'WJEC' as a pickable board (see its audit notes — 'Eduqas' and 'WJEC'
+// are meant to resolve to the same data, same as topics.js's BOARD_ALIASES), but every entry in
+// this file is stored under 'Eduqas'. Without this alias, a WJEC-board student matched zero exam
+// dates for every subject at every level — not a mixing bug, but the opposite failure (silently
+// empty), which is just as much a case of the app getting a board wrong.
+const EXAM_BOARD_ALIASES = { 'WJEC': 'Eduqas', 'wjec': 'Eduqas', 'eduqas': 'Eduqas' }
+function resolveExamBoard(board) {
+  return EXAM_BOARD_ALIASES[board] || board
+}
 
 export function getExamDates(subject, board, tier, level) {
+  const boardKey = resolveExamBoard(board)
   return EXAM_DATES_2026.filter(e =>
     e.subject === subject &&
-    e.board   === board &&
+    e.board   === boardKey &&
     (!level || e.level === level) &&
     (tier === 'N/A' || !tier || e.tier === tier || e.tier === 'N/A')
   )
 }
 
 export function getExamDate(subject, board, tier, paper, level) {
+  const boardKey = resolveExamBoard(board)
   const match = EXAM_DATES_2026.find(e =>
     e.subject === subject &&
-    e.board   === board &&
+    e.board   === boardKey &&
     e.paper   === paper &&
     (!level || e.level === level) &&
     (tier === 'N/A' || !tier || e.tier === tier || e.tier === 'N/A')
@@ -3655,9 +3826,10 @@ export function getExamDate(subject, board, tier, paper, level) {
 }
 
 export function getAllSubjectsForBoard(board, level) {
+  const boardKey = resolveExamBoard(board)
   return [...new Set(
     EXAM_DATES_2026
-      .filter(e => e.board === board && (!level || e.level === level))
+      .filter(e => e.board === boardKey && (!level || e.level === level))
       .map(e => e.subject)
   )].sort()
 }
