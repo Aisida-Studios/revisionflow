@@ -36,7 +36,7 @@ function respond(statusCode, body) {
   }
 }
 
-const DEFAULT_SYSTEM = 'You are RevisionFlow\'s AI tutor — an expert on UK GCSE and A-Level revision. You give specific, practical, encouraging advice tailored to UK students. Be concise but thorough. Use bullet points where helpful.'
+const DEFAULT_SYSTEM = 'You are RevisionFlow\'s AI tutor — an expert on UK GCSE, AS-Level and A-Level revision. AS-Level is a standalone qualification, separate from A-Level. You give specific, practical, encouraging advice tailored to UK students. Be concise but thorough. Use bullet points where helpful.'
 
 module.exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {
