@@ -8,19 +8,19 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 
 // ── Bump this version string whenever you push a topics update ──
-const CURRENT_TOPICS_VERSION = '2.0'
+const CURRENT_TOPICS_VERSION = '3.0-as-level'
 
 export default function TopicUpdateBanner() {
-  const { currentUser } = useAuth()
+  const { user } = useAuth()
   const [show, setShow] = useState(false)
   const [dismissing, setDismissing] = useState(false)
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!user) return
 
     const check = async () => {
       try {
-        const ref = doc(db, 'users', currentUser.uid)
+        const ref = doc(db, 'users', user.uid)
         const snap = await getDoc(ref)
         const seenVersion = snap.data()?.topicsVersionSeen
 
@@ -34,13 +34,13 @@ export default function TopicUpdateBanner() {
     }
 
     check()
-  }, [currentUser])
+  }, [user])
 
   const dismiss = async () => {
     setDismissing(true)
     try {
       await setDoc(
-        doc(db, 'users', currentUser.uid),
+        doc(db, 'users', user.uid),
         { topicsVersionSeen: CURRENT_TOPICS_VERSION },
         { merge: true }
       )
@@ -91,7 +91,7 @@ export default function TopicUpdateBanner() {
       {/* Text */}
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3 }}>
-          Topics just got a big update
+          AS-Level is here
         </p>
         <p style={{
           margin: '0.3rem 0 0',
@@ -99,8 +99,8 @@ export default function TopicUpdateBanner() {
           opacity: 0.88,
           lineHeight: 1.45,
         }}>
-          We've added full topic lists for all 6 exam boards, fixed naming across
-          every subject, and added complete A-Level coverage. Head to the{' '}
+          AS-Level now has its own topic lists, kept completely separate from A-Level —
+          same subject, different spec. Head to the{' '}
           <strong>Topics</strong> page to see the new data.
         </p>
       </div>
