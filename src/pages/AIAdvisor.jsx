@@ -16,7 +16,7 @@ import {
 } from '../utils/ai'
 import { checkAndAwardBadge } from '../utils/firestore'
 import AIOutput from '../components/AIOutput'
-import { SUBJECT_COLOURS } from '../data/subjects'
+import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, FileText, Check, Lightbulb } from 'lucide-react'
 
 const QUICK_PROMPTS = [
@@ -98,14 +98,15 @@ export default function AIAdvisor() {
       const topics   = topicsSnap.docs.map(d=>d.data())
       const mistakes = mistakesSnap.docs.map(d=>d.data())
 
-      const weakTopics   = topics.filter(t=>(t.confidence||3)<=2).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
+      const currentSubjectNames = new Set((profile.subjects||[]).map(s=>s.name))
+      const weakTopics   = topics.filter(t=>(t.confidence||3)<=2 && currentSubjectNames.has(t.subjectId)).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
       const recentPapers = papers.slice(0,5).map(p=>`${p.subject} P${p.paper} ${p.year}: ${p.percentage}% (Grade ${p.grade||'?'})`)
       const topMistakes  = mistakes.filter(m=>!m.resolved).slice(0,5).map(m=>`${m.subject} - ${m.topic}: ${m.description?.slice(0,60)}`)
 
       const ctx = [
         `Student: ${profile.displayName}`,
         `Level: ${profile.level||1} | XP: ${profile.xp||0} | Streak: ${profile.streak||0} days`,
-        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, target: ${s.targetGrade||9})`).join(', ')}`,
+        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, ${getSubjectQualification(s, profile)}, target: ${s.targetGrade||9})`).join(', ')}`,
         `Upcoming exams: ${(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
         weakTopics.length   ? `Weak topics: ${weakTopics.join(', ')}`          : '',
         recentPapers.length ? `Recent papers: ${recentPapers.join(', ')}`      : '',
@@ -141,7 +142,7 @@ export default function AIAdvisor() {
   async function getResources(subject) {
     setLoadingRes(subject)
     const subj = profile?.subjects?.find(s=>s.name===subject)
-    const res  = await getResourceRecommendations(subject, subj?.board, subj?.tier, [])
+    const res  = await getResourceRecommendations(subject, subj?.board, subj?.tier, [], getSubjectQualification(subj, profile), user?.uid)
     setResources(r=>({...r,[subject]:res.text||res.error}))
     setLoadingRes(null)
   }
@@ -196,163 +197,8 @@ export default function AIAdvisor() {
       papers = ps.docs.map(d=>d.data())
       topics = ts.docs.map(d=>d.data())
     } catch(e) {}
-    const res = await predictGrade(gradeSubj, papers, topics)
-    setGradePred(res.text||res.error||'')
-    setGradeLoad(false)
-  }
-
-  async function handleNextTopic() {
-    if (!nextSubj) return
-    setNextLoad(true)
-    let topics = [], examDates = profile?.examDates || []
-    try {
-      const ts = await getDocs(collection(db,'users',user.uid,'topics'))
-      topics = ts.docs.map(d=>d.data())
-    } catch(e) {}
-    const res = await suggestNextTopic(nextSubj, topics, examDates)
-    setNextTopic(res.text||res.error||'')
-    setNextLoad(false)
-  }
-
-  async function handleTechniques() {
-    if (!techSubj) return
-    setTechLoading(true)
-    setTechResult('')
-    const res = await getTopicAdvice(techSubj, `revision techniques for ${techSubj}`, 3, [])
-    setTechResult(res.text||res.error||'')
-    setTechLoading(false)
-  }
-
-
-  useEffect(() => { buildContext() }, [profile, user])
-
-  useEffect(() => {
-    if (!user) return
-    const loadSaved = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid, 'aiData', 'studyPlan'))
-        if (snap.exists() && snap.data().text) {
-          setStudyPlan(snap.data().text)
-          setPlanPrefs(p => ({...p, hoursPerWeek: snap.data().hoursPerWeek||10, preferences: snap.data().preferences||p.preferences}))
-        }
-      } catch(e) {}
-    }
-    loadSaved()
-  }, [user])
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages])
-
-  async function buildContext() {
-    if (!user || !profile) return
-    try {
-      const [papersSnap, topicsSnap, mistakesSnap] = await Promise.all([
-        getDocs(collection(db,'users',user.uid,'paperAttempts')),
-        getDocs(collection(db,'users',user.uid,'topics')),
-        getDocs(collection(db,'users',user.uid,'mistakes')),
-      ])
-      const papers   = papersSnap.docs.map(d=>d.data())
-      const topics   = topicsSnap.docs.map(d=>d.data())
-      const mistakes = mistakesSnap.docs.map(d=>d.data())
-
-      const weakTopics   = topics.filter(t=>(t.confidence||3)<=2).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
-      const recentPapers = papers.slice(0,5).map(p=>`${p.subject} P${p.paper} ${p.year}: ${p.percentage}% (Grade ${p.grade||'?'})`)
-      const topMistakes  = mistakes.filter(m=>!m.resolved).slice(0,5).map(m=>`${m.subject} - ${m.topic}: ${m.description?.slice(0,60)}`)
-
-      const ctx = [
-        `Student: ${profile.displayName}`,
-        `Level: ${profile.level||1} | XP: ${profile.xp||0} | Streak: ${profile.streak||0} days`,
-        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, target: ${s.targetGrade||9})`).join(', ')}`,
-        `Upcoming exams: ${(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
-        weakTopics.length   ? `Weak topics: ${weakTopics.join(', ')}`          : '',
-        recentPapers.length ? `Recent papers: ${recentPapers.join(', ')}`      : '',
-        topMistakes.length  ? `Unresolved mistakes: ${topMistakes.join(', ')}` : '',
-      ].filter(Boolean).join('\n')
-      setUserContext(ctx)
-
-      setMessages([{
-        role:'assistant',
-        content:`Hi ${profile.displayName?.split(' ')[0]}! I'm your AI revision advisor and I can see your full profile.\n\n` +
-          `You're revising: ${(profile.subjects||[]).map(s=>s.name).join(', ')||'no subjects set yet'}.\n\n` +
-          (weakTopics.length ? `Your weakest topics right now: ${weakTopics.slice(0,3).join(', ')}.\n\n` : '') +
-          `Ask me anything — I can predict your grades, suggest what to revise next, mark your practice answers, generate flashcards, or give specific advice on any topic.`
-      }])
-    } catch(e) {
-      setMessages([{role:'assistant',content:`Hi! I'm your AI revision advisor. How can I help you today?`}])
-    }
-  }
-
-  async function sendMessage(text) {
-    const msg = text||input.trim()
-    if (!msg||loading) return
-    setInput('')
-    const newMessages = [...messages,{role:'user',content:msg}]
-    setMessages(newMessages)
-    setLoading(true)
-    const res = await chatWithAI(newMessages, { subjects: profile?.subjects, context: userContext })
-    setMessages(ms=>[...ms,{role:'assistant',content:res.text||res.error||'Sorry, I had trouble responding.'}])
-    setLoading(false)
-    if (res.text) checkAndAwardBadge(user.uid, 'first_ai').catch(()=>{})
-  }
-
-  async function getResources(subject) {
-    setLoadingRes(subject)
-    const subj = profile?.subjects?.find(s=>s.name===subject)
-    const res  = await getResourceRecommendations(subject, subj?.board, subj?.tier, [])
-    setResources(r=>({...r,[subject]:res.text||res.error}))
-    setLoadingRes(null)
-  }
-
-  async function handleStudyPlan() {
-    if (!planPrefs.confirmed) { setPlanPrefs(p=>({...p, showForm:true})); return }
-    setPlanLoading(true)
-    const upcomingExams = (profile?.examDates||[])
-      .filter(e => new Date(e.examDate) > new Date())
-      .sort((a,b) => new Date(a.examDate) - new Date(b.examDate))
-    const firstExam = upcomingExams[0]
-    const lastExam  = upcomingExams[upcomingExams.length-1]
-    const weeksUntilFirst = firstExam
-      ? Math.max(1, Math.ceil((new Date(firstExam.examDate)-new Date())/(7*86400000)))
-      : 12
-    const res = await generateStudyPlan({
-      subjects:       profile?.subjects||[],
-      examDates:      profile?.examDates||[],
-      weakTopics:     [],
-      availableHours: planPrefs.hoursPerWeek,
-      preferences:    planPrefs.preferences,
-      weeksUntilFirst,
-      firstExamDate:  firstExam?.examDate,
-      lastExamDate:   lastExam?.examDate,
-    })
-    const planText = res.text||res.error||''
-    setStudyPlan(planText)
-    if (res.text && user) {
-      await checkAndAwardBadge(user.uid, 'ai_plan').catch(()=>{})
-      try {
-        await setDoc(doc(db, 'users', user.uid, 'aiData', 'studyPlan'), {
-          text:         planText,
-          hoursPerWeek: planPrefs.hoursPerWeek,
-          preferences:  planPrefs.preferences,
-          generatedAt:  serverTimestamp(),
-        })
-      } catch(e) {}
-    }
-    setPlanLoading(false)
-  }
-
-  async function handleGradePredict() {
-    if (!gradeSubj) return
-    setGradeLoad(true)
-    // Fetch paper attempts and topic confidences for this subject
-    let papers = [], topics = []
-    try {
-      const [ps, ts] = await Promise.all([
-        getDocs(collection(db,'users',user.uid,'paperAttempts')),
-        getDocs(collection(db,'users',user.uid,'topics')),
-      ])
-      papers = ps.docs.map(d=>d.data())
-      topics = ts.docs.map(d=>d.data())
-    } catch(e) {}
-    const res = await predictGrade(gradeSubj, papers, topics)
+    const subj = profile?.subjects?.find(s=>s.name===gradeSubj)
+    const res = await predictGrade(gradeSubj, papers, topics, getSubjectQualification(subj, profile), user?.uid)
     setGradePred(res.text||res.error||'')
     setGradeLoad(false)
   }
