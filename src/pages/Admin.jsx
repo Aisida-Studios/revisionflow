@@ -3,6 +3,7 @@
 // All Firestore writes go through /api/admin (server-side) to bypass client rules
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { getSubjectList } from '../data/subjects'
 import toast from 'react-hot-toast'
 import {
   Shield, Users, Star, Search, CheckCircle, XCircle,
@@ -68,17 +69,7 @@ function ContentTab({ email }) {
   const [log,       setLog]       = useState([])
   const stopRef = useRef(false)  // ref-based stop flag — not subject to stale closure
 
-  const SUBJECTS_BY_LEVEL = {
-    GCSE: ['Mathematics','English Language','English Literature','Biology','Chemistry','Physics',
-           'Combined Science','History','Geography','French','Spanish','German',
-           'Computer Science','Business','Economics','Psychology','Sociology',
-           'Religious Studies','Art & Design','Music','Physical Education','Statistics'],
-    'A-Level': ['Mathematics','Further Mathematics','Biology','Chemistry','Physics',
-                'History','Geography','English Literature','Computer Science',
-                'Economics','Psychology','Business','Sociology','Philosophy'],
-  }
-
-  const subjectList = SUBJECTS_BY_LEVEL[level] || SUBJECTS_BY_LEVEL['GCSE']
+  const subjectList = getSubjectList(level)
 
   async function loadTopics() {
     if (!subject) return
@@ -230,7 +221,10 @@ function ContentTab({ email }) {
             <label className="label">Level</label>
             <select className="select" value={level} onChange={e => { setLevel(e.target.value); setSubject('') }}>
               <option value="GCSE">GCSE</option>
+              <option value="AS-Level">AS-Level</option>
               <option value="A-Level">A-Level</option>
+              <option value="BTEC-L2">BTEC (L2)</option>
+              <option value="BTEC-L3">BTEC (L3)</option>
             </select>
           </div>
           <div>
