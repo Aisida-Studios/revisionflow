@@ -3,6 +3,8 @@
 // All boundaries are PER-PAPER (single paper marks, not cumulative totals).
 // Verified: AQA/OCR/Edexcel published grade boundary PDFs June 2024
 // Estimates (marked ~) derived from 3-year historical averages
+
+import { TIERED_SUBJECTS } from './subjects'
 // GCSE format: boundaries [G9,G8,G7,G6,G5,G4,G3,G2,G1]
 // A-Level format: [A*,A,B,C,D,E] — 6 entries
 // NO null values — every subject has a full boundary array
@@ -778,16 +780,32 @@ export const GRADE_BOUNDARIES = {
 }
 
 // ── LOOKUP FUNCTIONS ──────────────────────────────────────────────────────────
-export function getPaperSpec(board, subject, tier, paper) {
-  const t   = tier && tier !== 'N/A' ? tier : 'N/A'
+// `level` matters here as much as board/tier: PAPER_DATABASE keys A-Level papers with an
+// '-Alevel-' infix (e.g. 'AQA-Mathematics-N/A-Alevel-P1') specifically so they can never collide
+// with a same-numbered GCSE paper for the same board+subject (e.g. an untiered GCSE subject's
+// 'AQA-Geography-N/A-P1'). Previously this function didn't take level at all, so it always built
+// the GCSE-style key — meaning it could never find any A-Level paper (always returned null), and
+// for untiered subjects that exist at both GCSE and A-Level, it would have silently handed back
+// the GCSE paper's spec to an A-Level lookup the moment A-Level data was queried this way.
+export function getPaperSpec(board, subject, tier, paper, level) {
+  const t = tier && tier !== 'N/A' ? tier : 'N/A'
+  if (level === 'A-Level') {
+    return PAPER_DATABASE[`${board}-${subject}-N/A-Alevel-P${paper}`] || null
+  }
+  if (level === 'AS-Level') {
+    // No AS-Level paper specs are populated yet (verified duration/mark data wasn't available at
+    // seed time) — returning null here (rather than falling through to the GCSE-style key below)
+    // is deliberate: it means "no auto-fill yet", not "silently reuse the GCSE spec".
+    return PAPER_DATABASE[`${board}-${subject}-N/A-ASLevel-P${paper}`] || null
+  }
   const key = `${board}-${subject}-${t}-P${paper}`
   const alt = `${board}-${subject}-N/A-P${paper}`
   return PAPER_DATABASE[key] || PAPER_DATABASE[alt] || null
 }
 
-const TIERED = ['Mathematics','Further Mathematics','Biology','Chemistry','Physics',
-  'Combined Science','German','French','Spanish','Italian','Mandarin Chinese',
-  'Welsh Second Language','Polish','Urdu']
+// Was a third, separately-drifting copy of this list (see subjects.js's TIERED_SUBJECTS, which is
+// now the single source of truth — imported below).
+const TIERED = TIERED_SUBJECTS
 
 function normSubj(subject) {
   return subject
@@ -809,10 +827,21 @@ export function getBoundaries(board, subject, tier, year, level) {
   const norm = normSubj(subject)
   const isTieredSubj = TIERED.includes(subject) || TIERED.includes(norm)
   const isALevel = level === 'A-Level'
+  const isASLevel = level === 'AS-Level'
 
   if (isALevel) {
     return yearData[`${board}-${subject}-N/A-Alevel`]
         || yearData[`${board}-${norm}-N/A-Alevel`]
+        || null
+  }
+
+  if (isASLevel) {
+    // Mirrors the A-Level branch above. No AS-Level grade-boundary data is seeded yet (raw-mark
+    // boundaries are performance-sensitive per-year figures, not something to guess) — returning
+    // null here means the app falls back to a plain grade dropdown (see getGradeOptions) instead
+    // of ever attaching a GCSE or A-Level boundary to an AS-Level attempt.
+    return yearData[`${board}-${subject}-N/A-ASLevel`]
+        || yearData[`${board}-${norm}-N/A-ASLevel`]
         || null
   }
 
@@ -831,9 +860,17 @@ export function getBoundaries(board, subject, tier, year, level) {
 export function getBoundariesForPaper(board, subject, tier, year, paper, level) {
   const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
   const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
-  if (!yearData) return getBoundaries(board, subject, tier, year, level)
-  const paperKey = `${board}-${subject}-P${paper}`
-  return yearData[paperKey] || getBoundaries(board, subject, tier, year, level)
+  // A handful of untiered GCSE subjects (AQA English Literature, AQA Geography) have a different
+  // maxMarks/boundary set per paper, so they're keyed as `${board}-${subject}-P${paper}` rather
+  // than at subject level. That key was never given a level suffix because it only ever existed
+  // for GCSE — so this lookup must stay GCSE-only. Without the level guard, an A-Level or
+  // AS-Level paper for a same-named subject (e.g. Geography) could silently match a GCSE paper's
+  // boundaries the moment their paper numbers lined up.
+  if (yearData && level !== 'A-Level' && level !== 'AS-Level') {
+    const paperKey = `${board}-${subject}-P${paper}`
+    if (yearData[paperKey]) return yearData[paperKey]
+  }
+  return getBoundaries(board, subject, tier, year, level)
 }
 
 export function calculateGradeFromBoundaries(score, boundaryData) {
