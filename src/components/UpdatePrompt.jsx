@@ -6,12 +6,14 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getAllTopicsFlat } from '../data/topics'
+import { getSubjectQualification } from '../data/subjects'
+import { buildTopicId } from '../utils/topicId'
 import { RefreshCw, X, CheckCircle } from 'lucide-react'
 
 // Bump this ID whenever there is a new update that all users must see
-const UPDATE_ID = 'v22-march-2026-full-database'
-const UPDATE_TITLE = 'Database Updated — March 2026'
-const UPDATE_BODY = 'OCR, Eduqas and CCEA exam dates, real specification topics for all boards, and improved grade boundaries are now live. Click "Reload my topics" to update your topic lists.'
+const UPDATE_ID = 'v23-july-2026-as-level'
+const UPDATE_TITLE = 'AS-Level is here — July 2026'
+const UPDATE_BODY = 'AS-Level is now fully separate from A-Level across topics, exam dates, past papers and settings, with its own topic lists and 2026 exam dates for AQA, Edexcel, OCR and Eduqas. Click "Reload my topics" to pick up the latest topic lists for your subjects.'
 
 export default function UpdatePrompt() {
   const { user, profile } = useAuth()
@@ -53,15 +55,15 @@ export default function UpdatePrompt() {
     setReloading(true)
     try {
       const { setDoc: firestoreSetDoc, doc: firestoreDoc, serverTimestamp: sts } = await import('firebase/firestore')
-      const qual = profile.qualification || 'GCSE'
       let seeded = 0
       for (const s of profile.subjects) {
-        const topics = getAllTopicsFlat(s.board, s.name, qual)
+        const subjQual = getSubjectQualification(s, profile)
+        const topics = getAllTopicsFlat(s.board, s.name, subjQual)
         for (const t of topics) {
-          const id = `${s.name}_${t.name}`.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 100)
+          const id = buildTopicId(s.board, subjQual, s.name, t.name)
           await setDoc(
             firestoreDoc(db, 'users', user.uid, 'topics', id),
-            { name: t.name, paper: t.paper, subjectId: s.name, updatedAt: sts() },
+            { name: t.name, paper: t.paper, subjectId: s.name, board: s.board, qualification: subjQual, updatedAt: sts() },
             { merge: true }
           )
           seeded++
