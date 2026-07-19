@@ -8,7 +8,7 @@ import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
 import { getPaperSpec, getBoundaries, calculateGradeFromBoundaries, AVAILABLE_YEARS, GRADE_BOUNDARIES } from '../data/paperDatabase'
 import { isTiered } from '../data/examDates2026'
-import { SUBJECT_COLOURS, getGradeOptions } from '../data/subjects'
+import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, X, Brain, TrendingUp, FileText, Trash2, Edit2, Check } from 'lucide-react'
@@ -67,7 +67,18 @@ export default function PastPapers() {
     setAiLoading(false)
   }
 
-  const filtered = (selSubject ? attempts.filter(a=>a.subject===selSubject) : [...attempts])
+  // Legacy attempts (logged before qualification was tagged) have no `.qualification` field —
+  // treated as belonging to whatever's currently selected, since we can't know retroactively and
+  // hiding them would look like data loss. Once tagged, an attempt only counts for a subject if
+  // its qualification actually matches that subject's current one — otherwise switching from GCSE
+  // to A-Level (or AS-Level to A-Level) would keep blending old grades into the new average.
+  function matchesCurrentQualification(attempt, subjectName) {
+    const subjMeta = profile?.subjects?.find(s => s.name === subjectName)
+    const subjQual = getSubjectQualification(subjMeta, profile)
+    return !attempt.qualification || attempt.qualification === subjQual
+  }
+
+  const filtered = (selSubject ? attempts.filter(a=>a.subject===selSubject && matchesCurrentQualification(a, selSubject)) : [...attempts])
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       const map = {
@@ -89,7 +100,7 @@ export default function PastPapers() {
   const chartData = [...filtered].reverse().map(a=>({ name:`${a.subject} P${a.paper} ${a.year}`, percentage:a.percentage, grade:a.grade }))
 
   const subjectAverages = subjects.map(s=>{
-    const sub = attempts.filter(a=>a.subject===s)
+    const sub = attempts.filter(a=>a.subject===s && matchesCurrentQualification(a, s))
     const avg = sub.length ? Math.round(sub.reduce((sum,a)=>sum+a.percentage,0)/sub.length) : null
     return { subject:s, avg, count:sub.length, latest:sub[0] }
   })
@@ -263,18 +274,22 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
   const [customBoundaries, setCustomBoundaries] = useState([])
   const [useCustom, setUseCustom] = useState(false)
 
+  const selSubjMeta = subjects.find(s=>s.name===form.subject)
+  const formQual = getSubjectQualification(selSubjMeta, profile)
+
   useEffect(() => {
     if (!form.subject || !form.board || !form.paper) return
     const subj = subjects.find(s=>s.name===form.subject)
     const tier = subj?.tier||'N/A'
+    const subjQual = getSubjectQualification(subj, profile)
     setForm(f=>({...f,tier}))
-    const spec = getPaperSpec(form.board, form.subject, tier, form.paper)
+    const spec = getPaperSpec(form.board, form.subject, tier, form.paper, subjQual)
     setAutoSpec(spec)
     if (spec) {
-      setForm(f=>({...f, maxMarks:spec.maxMarks}))
+      setForm(f=>({...f, maxMarks: spec.maxMarks || f.maxMarks}))
       if (spec.questions) { setQMarks(spec.questions.map(q=>({...q,scored:0}))); setUseQ(true) }
     }
-    const bounds = getBoundaries(form.board, form.subject, tier, form.year)
+    const bounds = getBoundaries(form.board, form.subject, tier, form.year, subjQual)
     setAutoBoundary(bounds)
   }, [form.subject, form.board, form.paper, form.year])
 
@@ -285,11 +300,10 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
     const score   = useQ ? totalScored : parseInt(form.score)
     const max     = parseInt(form.maxMarks)
     const pct     = Math.round((score/max)*100)
-    const qual    = profile?.qualification || 'GCSE'
-    const grades  = autoBoundary?.grades || getGradeOptions(form.subject, qual, form.tier)
+    const grades  = autoBoundary?.grades || getGradeOptions(form.subject, formQual, form.tier)
     const bounds  = useCustom ? { boundaries:customBoundaries.map(Number), maxMarks:max, grades } : autoBoundary
     const grade   = bounds ? calculateGradeFromBoundaries(score, bounds) : null
-    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
+    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, qualification:formQual, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
   }
 
   return (
@@ -307,7 +321,7 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
               <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
                 {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
               </select></div>
-            {form.subject && isTiered(form.subject) && (
+            {form.subject && isTiered(form.subject) && formQual === 'GCSE' && (
               <div><label className="label">Tier</label>
                 <select className="select" value={form.tier} onChange={e=>setForm(f=>({...f,tier:e.target.value}))}>
                   <option value="Higher">Higher</option><option value="Foundation">Foundation</option>
@@ -475,7 +489,10 @@ function BoundaryEditorModal({ profile, onClose }) {
   const [selBoard, setSelBoard] = useState(subjects[0]?.board||'AQA')
   const [selYear, setSelYear] = useState(2024)
 
-  const bounds = getBoundaries(selBoard, selSubj, 'Higher', selYear)
+  const selSubjMeta = subjects.find(s=>s.name===selSubj)
+  const selQual = getSubjectQualification(selSubjMeta, profile)
+  const selTier = selQual === 'GCSE' ? (selSubjMeta?.tier || 'Higher') : 'N/A'
+  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear, selQual)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
