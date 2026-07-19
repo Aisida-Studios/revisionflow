@@ -9,14 +9,14 @@ import {
   Star, Globe, Lock, Shield, Bell, Palette, Link2
 } from 'lucide-react'
 
-const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE and A-Level revision web app. Here is the complete up-to-date feature set:
+const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level revision web app. AS-Level is a standalone qualification, kept completely separate from A-Level throughout the app (own topics, exam dates, past papers, grade scale) — not treated as "year one of A-Level". Here is the complete up-to-date feature set:
 
 PAGES & FEATURES:
 - Dashboard: Today's sessions, next exam countdown, streak, XP level bar (infinite levels, 1.15x XP formula), daily AI briefing, daily quests, badge showcase, recent papers carousel, referral code entry. New users see a personalised welcome card with their subjects listed and suggested first steps.
 - Calendar: Monthly/weekly view, AI-powered 7-step schedule generator, ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
 - Exam Dates: Add upcoming exams with subject, board, paper, date. Emergency Mode triggers when exam is within 7 days.
 - Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019–2025, 2026 estimated). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
-- Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 6 boards, GCSE and A-Level. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
+- Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 6 boards, GCSE, AS-Level and A-Level, each kept fully separate. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
 - Study Tools (/study): Three tabs:
   * Flashcards — AI generator (50 cards), saved sets (private/public), create custom sets, flip-card UI, confidence rating, Quizlet copy, CSV download, public sets library with search/filter
   * Quiz — Multiple choice, written, or mixed mode. Timed challenge mode (countdown bar per question). Quiz history with scores and time taken. Public quiz sets. Filter by subject.
@@ -27,7 +27,7 @@ PAGES & FEATURES:
 - Friends: Add friends by username, accept/decline requests, friends leaderboard.
 - Leaderboard: Global XP leaderboard with opt-out, profile icons shown.
 - Profile: 30 badges (7 categories), public profile URL (/u/username), profile icon selector, badge audit button. Public profiles are viewable without login.
-- Settings: Subjects/boards/tiers, themes (10 colour themes, Pro/beta users unlock all), profile icon, privacy, notifications, grade boundaries viewer, qualification toggle (GCSE/A-Level).
+- Settings: Subjects/boards/tiers (with per-subject qualification — you can mix AS-Level and A-Level subjects on the same account), themes (10 colour themes, Pro/beta users unlock all), profile icon, privacy, notifications, grade boundaries viewer, qualification switcher (GCSE/AS-Level/A-Level/BTEC).
 - Help: AI assistant + FAQ (this page).
 - Emergency Mode: AI generates a last-minute revision plan when an exam is within 7 days.
 
@@ -61,7 +61,7 @@ FLASHCARDS & QUIZ:
 - Admin can bulk-generate public flashcard sets for all topics in a subject
 
 EXAM QUESTIONS & MARKING:
-- Board-specific: AQA, Edexcel, OCR, WJEC, Eduqas, CCEA at GCSE and A-Level
+- Board-specific: AQA, Edexcel, OCR, WJEC, Eduqas, CCEA at GCSE, AS-Level and A-Level
 - Correct command words per board per mark value (e.g. AQA 6-mark = Evaluate/Discuss)
 - Mark scheme formats: point-mark for lower marks, level-based for higher marks
 - Maths questions use plain-text notation (no LaTeX)
@@ -111,7 +111,7 @@ const QUICK_QUESTIONS = [
   'How does the referral system work?',
   'How do I view my public profile?',
   'How do I use Emergency Mode?',
-  'How do I switch from GCSE to A-Level?',
+  'How do I switch from GCSE to A-Level or AS-Level?',
   'How do I find resources for a topic?',
   'How do exam questions work?',
 ]
@@ -178,8 +178,8 @@ const FAQ = [
     a: 'Go to Topics, select your subject, and rate each topic 1–5 (1=struggling, 5=strong). The AI uses these to personalise all advice. The Mastery tab shows your overall progress. Click Resources on any topic to find revision materials for that specific topic.'
   },
   {
-    q: 'Can I use RevisionFlow for A-Levels?',
-    a: 'Yes. Go to Settings → Profile and change your qualification to A-Level. The app supports GCSE (9-1) and A-Level (A*-E) with correct grade scales and spec topics for all 6 boards. Topic lists, exam questions, and flashcards all adjust to A-Level content when you switch.'
+    q: 'Can I use RevisionFlow for A-Levels or AS-Levels?',
+    a: 'Yes. Go to Settings → Qualification and switch to AS-Level or A-Level. The app supports GCSE (9–1), AS-Level (A–E) and A-Level (A*–E) with correct grade scales and spec topics for all 6 boards — AS-Level is kept completely separate from A-Level (its own topics, exam dates and past papers), not treated as the first year of A-Level. You can even mix them: when switching, you can set each subject to AS-Level or A-Level individually, so e.g. A-Level Maths alongside AS-Level Further Maths works correctly. Topic lists, exam questions, and flashcards all adjust automatically.'
   },
   {
     q: 'Is my data private?',
@@ -316,6 +316,8 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           <span>✦ <strong>Admin: bulk flashcards</strong> — Generate 50-card public sets for every topic in a subject</span>
           <span>✦ <strong>All themes unlocked</strong> for beta users</span>
           <span>✦ <strong>A-Level topic fix</strong> — Switching to A-Level now correctly loads A-Level spec topics</span>
+          <span>✦ <strong>AS-Level launch</strong> — AS-Level is now a fully separate qualification from A-Level everywhere: onboarding, topics, exam dates, past papers and settings, with its own 2026 exam dates for AQA, Edexcel, OCR and Eduqas. Mix AS-Level and A-Level subjects on one account.</span>
+          <span>✦ <strong>Board/level separation fix</strong> — Fixed several places where the same subject at a different exam board or qualification (e.g. AQA A-Level Physics vs AQA GCSE Physics) could show the wrong topics, exam dates or grade boundaries. They're now always kept fully separate.</span>
         </div>
       </div>
 
