@@ -212,7 +212,7 @@ export default function PrivacyPolicy() {
 
         <section style={SECTION_STYLE}>
           <h2 style={H2_STYLE}>9. Children and Age Requirements</h2>
-          <p style={P_STYLE}>RevisionFlow is designed for GCSE and A-Level students. Under UK GDPR and the Children and Families Act, special rules apply to users under 13. <strong>Users under 13 must not create an account without verifiable parental consent.</strong></p>
+          <p style={P_STYLE}>RevisionFlow is designed for GCSE, AS-Level and A-Level students. Under UK GDPR and the Children and Families Act, special rules apply to users under 13. <strong>Users under 13 must not create an account without verifiable parental consent.</strong></p>
           <p style={P_STYLE}>We recommend the service for users aged <strong>13 and over</strong>. If we become aware that a child under 13 has registered without parental consent, we will delete their account and associated data promptly.</p>
           <p style={P_STYLE}>Parents or guardians who believe their child has registered may contact us at <a href="mailto:femiaisida1@gmail.com" style={{ color:'var(--accent-light)' }}>femiaisida1@gmail.com</a> to request deletion.</p>
         </section>
