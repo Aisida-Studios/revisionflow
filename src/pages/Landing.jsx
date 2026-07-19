@@ -51,7 +51,7 @@ export default function Landing() {
       {/* Hero */}
       <section style={{textAlign:'center',padding:'80px 24px 60px',maxWidth:820,margin:'0 auto'}}>
         <div className="badge badge-purple" style={{marginBottom:20,display:'inline-flex',gap:6}}>
-          <Flame size={12}/> Built for GCSE & A-Level students in the UK
+          <Flame size={12}/> Built for GCSE, AS-Level & A-Level students in the UK
         </div>
         <h1 style={{marginBottom:20,lineHeight:1.1}}>
           Your AI-powered<br/>
@@ -170,7 +170,7 @@ export default function Landing() {
           <span style={{fontWeight:700,fontSize:'0.88rem'}}>RevisionFlow</span>
         </div>
         <p style={{fontSize:'0.78rem',margin:0,color:'var(--text-muted)'}}>
-          Built by <strong style={{color:'var(--accent-light)'}}>Oluwafemi Aisida · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></strong> · GCSE & A-Level students · Free · AI-powered
+          Built by <strong style={{color:'var(--accent-light)'}}>Oluwafemi Aisida · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></strong> · GCSE, AS-Level & A-Level students · Free · AI-powered
         </p>
         <div style={{display:'flex',gap:14}}>
           <Link to="/login"  style={{fontSize:'0.8rem',color:'var(--text-secondary)'}}>Sign in</Link>
