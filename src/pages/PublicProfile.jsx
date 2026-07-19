@@ -174,7 +174,7 @@ export default function PublicProfile() {
           <div style={{ fontSize:'1.5rem', marginBottom:8 }}>⚡</div>
           <h4 style={{ marginBottom:6 }}>Track your own revision</h4>
           <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginBottom:16, maxWidth:300, margin:'0 auto 16px' }}>
-            Join {p.displayName?.split(' ')[0] || 'them'} on RevisionFlow — free AI-powered revision for UK GCSE &amp; A-Level.
+            Join {p.displayName?.split(' ')[0] || 'them'} on RevisionFlow — free AI-powered revision for UK GCSE, AS-Level &amp; A-Level.
           </p>
           <Link to="/signup" className="btn btn-primary">Start revising free →</Link>
         </div>
