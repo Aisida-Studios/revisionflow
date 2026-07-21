@@ -1,14 +1,21 @@
 // src/utils/streakCard.js
 // Generates a shareable streak card image using Canvas API
 // Returns a data URL PNG suitable for download or Web Share API
+//
+// Design note: the previous version leaned on near-black backgrounds with lots of
+// 4-25%-opacity white "frosted glass" overlays. Every pixel was technically opaque, but
+// against a dark phone background or a dark-mode Instagram/TikTok feed it read as washed-out
+// and hard to see — easy to mistake for a transparent PNG. Rebuilt Duolingo-style instead:
+// one fully-saturated solid background colour, a solid (not translucent) white content card,
+// and high-contrast text everywhere. Nothing on this card should ever look "see-through".
 
-export async function generateStreakCard({ 
-  displayName, 
-  streak, 
-  xp, 
-  level, 
+export async function generateStreakCard({
+  displayName,
+  streak,
+  xp,
+  level,
   levelTitle,
-  badges, 
+  badges,
   subjects,
   bestStreak,
   profileIcon,
@@ -21,185 +28,133 @@ export async function generateStreakCard({
   canvas.height = H
   const ctx     = canvas.getContext('2d')
 
-  // ── Background gradient ───────────────────────────────────────────
-  const bg = ctx.createLinearGradient(0, 0, W, H)
-  bg.addColorStop(0,   '#0a0012')
-  bg.addColorStop(0.5, '#0d0018')
-  bg.addColorStop(1,   '#100020')
-  ctx.fillStyle = bg
+  const dark = darken(accentColor, 40)
+
+  // ── Solid, fully-saturated background (no gradients-to-black, no translucency) ────
+  ctx.fillStyle = accentColor
   ctx.fillRect(0, 0, W, H)
 
-  // ── Noise texture overlay (subtle grain) ─────────────────────────
-  const grain = ctx.createImageData(W, H)
-  for (let i = 0; i < grain.data.length; i += 4) {
-    const v = Math.floor(Math.random() * 18)
-    grain.data[i] = grain.data[i+1] = grain.data[i+2] = v
-    grain.data[i+3] = 22
-  }
-  ctx.putImageData(grain, 0, 0)
+  // Chunky decorative shapes (solid, low-key darker/lighter tone of the same colour —
+  // Duolingo-style playful background detail, not a moody glow)
+  circleSolid(ctx, W * 0.88, H * 0.08, 130, lighten(accentColor, 25))
+  circleSolid(ctx, W * 0.06, H * 0.92, 160, dark)
+  circleSolid(ctx, W * 0.92, H * 0.90, 90, dark)
 
-  // ── Accent glow circles ───────────────────────────────────────────
-  const glows = [
-    { x: 0.15, y: 0.1,  r: 340, c: accentColor, a: 0.13 },
-    { x: 0.85, y: 0.85, r: 380, c: '#ec4899',   a: 0.09 },
-    { x: 0.5,  y: 0.5,  r: 280, c: accentColor, a: 0.06 },
-  ]
-  glows.forEach(g => {
-    const rad = ctx.createRadialGradient(g.x*W, g.y*H, 0, g.x*W, g.y*H, g.r)
-    rad.addColorStop(0, hexToRgba(g.c, g.a))
-    rad.addColorStop(1, hexToRgba(g.c, 0))
-    ctx.fillStyle = rad
-    ctx.fillRect(0, 0, W, H)
-  })
-
-  // ── Card panel (frosted glass effect) ────────────────────────────
-  roundRect(ctx, 60, 60, W-120, H-120, 40)
-  ctx.fillStyle = 'rgba(255,255,255,0.04)'
-  ctx.fill()
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)'
-  ctx.lineWidth = 1.5
-  ctx.stroke()
-
-  // ── Top accent bar ────────────────────────────────────────────────
-  const barGrad = ctx.createLinearGradient(60, 0, W-60, 0)
-  barGrad.addColorStop(0,   accentColor)
-  barGrad.addColorStop(0.5, lighten(accentColor, 30))
-  barGrad.addColorStop(1,   '#ec4899')
-  roundRect(ctx, 60, 60, W-120, 6, [3, 3, 0, 0])
-  ctx.fillStyle = barGrad
-  ctx.fill()
-
-  // ── Branding ──────────────────────────────────────────────────────
-  ctx.font = 'bold 28px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'
+  // ── Branding strip ──────────────────────────────────────────────────
+  ctx.font = 'bold 30px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'left'
-  ctx.fillText('RevisionFlow', 108, 130)
+  ctx.fillText('RevisionFlow', 72, 96)
+  ctx.font = '24px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.fillText('revisionflow.netlify.app', 72, 128)
 
-  // Dot separator
+  // ── Solid white content card ────────────────────────────────────────
+  const cardX = 56, cardY = 168, cardW = W - 112, cardH = H - 168 - 56
+  roundRect(ctx, cardX, cardY, cardW, cardH, 36)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+
+  // ── Avatar — solid colour circle, bold ring, no translucency ───────
+  const avatarX = W / 2, avatarY = cardY + 100, avatarR = 66
   ctx.beginPath()
-  ctx.arc(108 + ctx.measureText('RevisionFlow').width + 14, 124, 3, 0, Math.PI*2)
+  ctx.arc(avatarX, avatarY, avatarR + 8, 0, Math.PI * 2)
   ctx.fillStyle = accentColor
   ctx.fill()
-
-  ctx.font = '26px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.3)'
-  ctx.fillText('revisionflow.netlify.app', 108 + ctx.measureText('RevisionFlow').width + 26, 130)
-
-  // ── Profile icon / avatar ─────────────────────────────────────────
-  const avatarX = W/2, avatarY = 230, avatarR = 72
-  // Outer ring gradient
-  const ringGrad = ctx.createLinearGradient(avatarX-avatarR, avatarY-avatarR, avatarX+avatarR, avatarY+avatarR)
-  ringGrad.addColorStop(0, accentColor)
-  ringGrad.addColorStop(1, '#ec4899')
   ctx.beginPath()
-  ctx.arc(avatarX, avatarY, avatarR + 5, 0, Math.PI*2)
-  ctx.strokeStyle = ringGrad
-  ctx.lineWidth = 4
-  ctx.stroke()
-  // Inner circle
-  ctx.beginPath()
-  ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI*2)
-  ctx.fillStyle = 'rgba(255,255,255,0.08)'
+  ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2)
+  ctx.fillStyle = lighten(accentColor, 15)
   ctx.fill()
-  // Icon or initials
   ctx.font = `${avatarR * 0.85}px serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#ffffff'
-  ctx.fillText(profileIcon || displayName?.[0]?.toUpperCase() || '📚', avatarX, avatarY)
+  ctx.fillText(profileIcon || displayName?.[0]?.toUpperCase() || '📚', avatarX, avatarY + 4)
 
-  // ── Display name ──────────────────────────────────────────────────
+  // ── Display name + level ────────────────────────────────────────────
   ctx.textBaseline = 'alphabetic'
-  ctx.font = 'bold 52px -apple-system, system-ui, sans-serif'
+  ctx.font = 'bold 48px -apple-system, system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillStyle = '#ffffff'
-  ctx.shadowColor = accentColor
-  ctx.shadowBlur = 20
-  ctx.fillText(truncate(displayName || 'Student', 18), W/2, 348)
-  ctx.shadowBlur = 0
+  ctx.fillStyle = '#1a1025'
+  ctx.fillText(truncate(displayName || 'Student', 18), W / 2, avatarY + 108)
 
-  // Level badge under name
   const lvlText = `Level ${level} · ${levelTitle}`
-  ctx.font = '28px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.55)'
-  ctx.fillText(lvlText, W/2, 390)
+  ctx.font = 'bold 26px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = accentColor
+  ctx.fillText(lvlText, W / 2, avatarY + 144)
 
-  // ── Main streak number ────────────────────────────────────────────
-  // Fire emoji
-  ctx.font = '110px serif'
+  // ── Main streak number — bold solid orange badge, no glow-on-black tricks ──
+  const streakBadgeY = avatarY + 200
+  roundRect(ctx, W / 2 - 220, streakBadgeY, 440, 230, 32)
+  ctx.fillStyle = '#fff4e8'
+  ctx.fill()
+
+  ctx.font = '90px serif'
   ctx.textAlign = 'center'
-  ctx.fillText('🔥', W/2, 530)
+  ctx.fillText('🔥', W / 2, streakBadgeY + 95)
 
-  ctx.font = 'bold 140px -apple-system, system-ui, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.shadowColor = '#f97316'
-  ctx.shadowBlur = 40
-  ctx.fillStyle = '#ffffff'
-  ctx.fillText(String(streak), W/2, 670)
-  ctx.shadowBlur = 0
+  ctx.font = 'bold 110px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = '#f97316'
+  ctx.fillText(String(streak), W / 2, streakBadgeY + 195)
 
-  ctx.font = 'bold 36px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.6)'
-  ctx.fillText('day streak', W/2, 718)
+  ctx.font = 'bold 28px -apple-system, system-ui, sans-serif'
+  ctx.fillStyle = '#c2410c'
+  ctx.fillText('DAY STREAK', W / 2, streakBadgeY + 228)
 
-  // ── Stats row ─────────────────────────────────────────────────────
+  // ── Stats row — solid coloured badges, high-contrast white text ────
+  const statsY = streakBadgeY + 260
   const stats = [
-    { label: 'XP',          val: formatXP(xp),      emoji: '⚡' },
-    { label: 'Best streak', val: `${bestStreak || streak}d`, emoji: '🏆' },
-    { label: 'Badges',      val: String(badges),     emoji: '🎖' },
+    { label: 'XP',          val: formatXP(xp),              emoji: '⚡', bg: accentColor },
+    { label: 'Best streak', val: `${bestStreak || streak}d`, emoji: '🏆', bg: dark },
+    { label: 'Badges',      val: String(badges),             emoji: '🎖', bg: accentColor },
   ]
-  const statW = (W - 120 - 80) / 3  // 3 cols with padding
+  const gap = 20
+  const statW = (cardW - 64 - gap * 2) / 3
   stats.forEach((s, i) => {
-    const cx = 100 + i * (statW + 40) + statW/2
+    const x  = cardX + 32 + i * (statW + gap)
+    const cx = x + statW / 2
 
-    // Stat card background
-    roundRect(ctx, 100 + i * (statW + 40), 752, statW, 110, 16)
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'
+    roundRect(ctx, x, statsY, statW, 118, 20)
+    ctx.fillStyle = s.bg
     ctx.fill()
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'
-    ctx.lineWidth = 1
-    ctx.stroke()
 
-    ctx.font = '32px serif'
+    ctx.font = '30px serif'
     ctx.textAlign = 'center'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(s.emoji, cx, 792)
+    ctx.fillText(s.emoji, cx, statsY + 40)
 
     ctx.font = 'bold 34px -apple-system, system-ui, sans-serif'
     ctx.fillStyle = '#ffffff'
-    ctx.fillText(s.val, cx, 832)
+    ctx.fillText(s.val, cx, statsY + 78)
 
-    ctx.font = '22px -apple-system, system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(255,255,255,0.4)'
-    ctx.fillText(s.label, cx, 858)
+    ctx.font = 'bold 20px -apple-system, system-ui, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.fillText(s.label, cx, statsY + 102)
   })
 
-  // ── Subjects row ──────────────────────────────────────────────────
+  // ── Subjects row — solid pill badges ────────────────────────────────
   if (subjects?.length) {
-    const subList = subjects.slice(0, 5)
-    const subW    = Math.min(160, (W - 200) / subList.length)
-    const totalW  = subList.length * (subW + 8) - 8
+    const subY    = statsY + 148
+    const subList = subjects.slice(0, 4)
+    const subW    = Math.min(180, (cardW - 64) / subList.length)
+    const totalW  = subList.length * (subW + 10) - 10
     const startX  = (W - totalW) / 2
     subList.forEach((s, i) => {
-      const x = startX + i * (subW + 8)
-      roundRect(ctx, x, 888, subW, 38, 8)
-      ctx.fillStyle = hexToRgba(accentColor, 0.25)
+      const x = startX + i * (subW + 10)
+      roundRect(ctx, x, subY, subW, 44, 22)
+      ctx.fillStyle = '#f4f0fa'
       ctx.fill()
-      ctx.strokeStyle = hexToRgba(accentColor, 0.5)
-      ctx.lineWidth = 1
-      ctx.stroke()
-      ctx.font = '20px -apple-system, system-ui, sans-serif'
+      ctx.font = 'bold 19px -apple-system, system-ui, sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillStyle = 'rgba(255,255,255,0.8)'
-      ctx.fillText(truncate(s, 10), x + subW/2, 912)
+      ctx.fillStyle = accentColor
+      ctx.fillText(truncate(s, 11), x + subW / 2, subY + 28)
     })
   }
 
   // ── Bottom CTA ────────────────────────────────────────────────────
-  ctx.font = '24px -apple-system, system-ui, sans-serif'
+  ctx.font = 'bold 24px -apple-system, system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillStyle = 'rgba(255,255,255,0.25)'
-  ctx.fillText('Join the revision revolution 🚀', W/2, 965)
+  ctx.fillStyle = '#9b8bb0'
+  ctx.fillText('Join the revision revolution 🚀', W / 2, cardY + cardH - 32)
 
   return canvas.toDataURL('image/png')
 }
@@ -220,27 +175,41 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
+function circleSolid(ctx, x, y, r, colour) {
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = colour
+  ctx.fill()
+}
+
 function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3), 16)
-  const g = parseInt(hex.slice(3,5), 16)
-  const b = parseInt(hex.slice(5,7), 16)
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
   return `rgba(${r},${g},${b},${alpha})`
 }
 
 function lighten(hex, amount) {
-  const r = Math.min(255, parseInt(hex.slice(1,3), 16) + amount)
-  const g = Math.min(255, parseInt(hex.slice(3,5), 16) + amount)
-  const b = Math.min(255, parseInt(hex.slice(5,7), 16) + amount)
-  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount)
+  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount)
+  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount)
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+function darken(hex, amount) {
+  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount)
+  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount)
+  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount)
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
 function formatXP(xp) {
   if (!xp) return '0'
-  if (xp >= 1000) return `${(xp/1000).toFixed(1)}k`
+  if (xp >= 1000) return `${(xp / 1000).toFixed(1)}k`
   return String(xp)
 }
 
 function truncate(str, max) {
   if (!str) return ''
-  return str.length > max ? str.slice(0, max-1) + '…' : str
+  return str.length > max ? str.slice(0, max - 1) + '…' : str
 }
