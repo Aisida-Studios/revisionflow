@@ -422,14 +422,15 @@ code {
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .tabs {
-  display: flex; gap: 4px;
+  display: flex; flex-wrap: wrap; gap: 4px;
   background: var(--bg-muted);
   padding: 5px;
   border-radius: var(--r-full);
   border: 2px solid var(--border);
 }
 .tab {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 9px 18px;
   border-radius: var(--r-full);
   font-size: 0.85rem; font-weight: 600;
@@ -439,6 +440,8 @@ code {
   background: transparent;
   transition: all var(--dur) var(--ease-bounce);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   text-align: center;
 }
