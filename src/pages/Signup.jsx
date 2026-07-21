@@ -31,30 +31,28 @@ export default function Signup() {
     }
   }, [searchParams])
 
-  // Look up referrer name whenever the code field changes
+  // Look up referrer name whenever the code field changes.
+  // This goes through /api/referral-lookup (server-side, Admin SDK) rather than querying
+  // Firestore directly from the client — a signed-out visitor doing a `where()` query against
+  // the users collection is a `list` operation, which Firestore rules correctly deny before
+  // login (only a direct get-by-id is public, which is what powers public profiles).
   useEffect(() => {
     const code = form.referralCode.trim().toUpperCase()
     if (code.length < 8) { setReferrerName(''); return }
     let cancelled = false
     setCodeChecking(true)
-    import('../utils/firestore').then(({ default: _, ...fs }) => {
-      // Use firestore directly
-      return import('firebase/firestore').then(({ collection, query, where, limit, getDocs }) => {
-        return import('../firebase').then(({ db }) => {
-          const q = query(collection(db, 'users'), where('referralCode', '==', code), limit(1))
-          return getDocs(q).then(snap => {
-            if (cancelled) return
-            if (!snap.empty) {
-              const name = snap.docs[0].data().displayName || 'a friend'
-              setReferrerName(name)
-            } else {
-              setReferrerName(null)  // null = invalid code entered
-            }
-            setCodeChecking(false)
-          })
-        })
+    fetch('/api/referral-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (cancelled) return
+        setReferrerName(data.found ? data.displayName : null) // null = invalid code entered
+        setCodeChecking(false)
       })
-    }).catch(() => { if (!cancelled) setCodeChecking(false) })
+      .catch(() => { if (!cancelled) setCodeChecking(false) })
     return () => { cancelled = true }
   }, [form.referralCode])
 
