@@ -531,6 +531,38 @@ export async function incrementTopicNoteViews(slug) {
   try { await updateDoc(doc(db, 'topicNotes', slug), { views: increment(1) }) } catch(e) {}
 }
 
+// ── Flashcard generation cache ──────────────────────────────────────────────
+// Mirrors getTopicNoteFromCache/saveTopicNoteToCache above: a shared, top-level cache (not
+// per-user) so every student generating flashcards for the same board+level+subject+topic gets
+// an instant result after the first person ever generates it, instead of paying for and waiting
+// on a fresh AI call every single time. Deliberately includes `level` in the key — a subject
+// name alone (e.g. "Biology") isn't unique across GCSE/AS-Level/A-Level, and reusing another
+// qualification's flashcards would be exactly the kind of mixing bug fixed elsewhere this
+// session. Requires a Firestore rule for the new `flashcardCache` collection (see chat).
+export async function getFlashcardSetFromCache(board, level, subject, topic, count) {
+  const { doc, getDoc } = await import('firebase/firestore')
+  const { db } = await import('../firebase')
+  const slug = slugify(board + '_' + level + '_' + subject + '_' + (topic || 'general') + '_' + count)
+  try {
+    const snap = await getDoc(doc(db, 'flashcardCache', slug))
+    if (snap.exists()) return { cached: true, ...snap.data() }
+    return null
+  } catch (e) { return null }
+}
+
+export async function saveFlashcardSetToCache(board, level, subject, topic, count, cards) {
+  const { doc, setDoc, serverTimestamp } = await import('firebase/firestore')
+  const { db } = await import('../firebase')
+  const slug = slugify(board + '_' + level + '_' + subject + '_' + (topic || 'general') + '_' + count)
+  await setDoc(doc(db, 'flashcardCache', slug), {
+    board, level, subject, topic: topic || '', count,
+    cards, slug,
+    generatedAt: serverTimestamp(),
+    views: 1,
+  })
+  return slug
+}
+
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 200)
 }
