@@ -61,6 +61,11 @@
   to     = "/.netlify/functions/stripe"
   status = 200
 
+[[redirects]]
+  from   = "/api/referral-lookup"
+  to     = "/.netlify/functions/referral-lookup"
+  status = 200
+
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
   from   = "/*"
