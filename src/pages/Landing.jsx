@@ -50,6 +50,10 @@ export default function Landing() {
 
       {/* Hero */}
       <section style={{textAlign:'center',padding:'80px 24px 60px',maxWidth:820,margin:'0 auto'}}>
+        <div className="badge badge-amber" style={{marginBottom:12,display:'inline-flex',gap:6}}>
+          <Calendar size={12}/> Beta closes 31 July 2026 · Full launch September 2026
+        </div>
+        <br/>
         <div className="badge badge-purple" style={{marginBottom:20,display:'inline-flex',gap:6}}>
           <Flame size={12}/> Built for GCSE, AS-Level & A-Level students in the UK
         </div>
@@ -101,11 +105,11 @@ export default function Landing() {
         <div className="card accent-card" style={{padding:36}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:20}}>
             <div style={{width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem'}}>
-              F
+              A
             </div>
             <div style={{textAlign:'left'}}>
-              <div style={{fontWeight:700,fontSize:'1.05rem'}}>Oluwafemi Aisida · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></div>
-              <div style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>GCSE student · Aspiring CS @ Oxford/Cambridge</div>
+              <div style={{fontWeight:700,fontSize:'1.05rem'}}>Aisida Studios · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></div>
+              <div style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Founded by a GCSE student · Aspiring CS @ Oxford/Cambridge</div>
             </div>
           </div>
           <p style={{lineHeight:1.8,marginBottom:16}}>
@@ -134,7 +138,7 @@ export default function Landing() {
         <div style={{maxWidth:860,margin:'0 auto'}}>
           <h2 style={{textAlign:'center',marginBottom:8,fontSize:'1.4rem'}}>Your data, your control</h2>
           <p style={{textAlign:'center',color:'var(--text-secondary)',marginBottom:32,maxWidth:560,margin:'0 auto 32px'}}>
-            RevisionFlow is built by a student, not a corporation. We handle your data with care and full transparency.
+            RevisionFlow is built by Aisida Studios, not a corporation. We handle your data with care and full transparency.
           </p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16,marginBottom:28}}>
             {[
@@ -143,7 +147,7 @@ export default function Landing() {
               { icon:'🗑️', title:'Delete anytime', desc:'Delete your account and all associated data permanently from Settings at any time — no questions asked.' },
               { icon:'👶', title:'Age 13+', desc:'Designed for secondary school students. Users under 13 require parental consent. We do not knowingly collect data from under-13s.' },
               { icon:'🤖', title:'AI transparency', desc:'AI requests use Mistral AI. Mistral does not train on API data by default and may retain request logs for up to 30 days for abuse detection.' },
-              { icon:'📧', title:'Right to access', desc:'Email femiaisida1@gmail.com to request a copy of your data, corrections, or deletion under UK GDPR Article 15–17.' },
+              { icon:'📧', title:'Right to access', desc:'Email aisidastudios@gmail.com to request a copy of your data, corrections, or deletion under UK GDPR Article 15–17.' },
             ].map(item => (
               <div key={item.title} style={{padding:'16px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
                 <div style={{fontSize:'1.5rem',marginBottom:8}}>{item.icon}</div>
@@ -158,7 +162,7 @@ export default function Landing() {
             {' '}· Complaints to the{' '}
             <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{color:'var(--accent-light)'}}>ICO</a>
             {' '}· Contact:{' '}
-            <a href="mailto:femiaisida1@gmail.com" style={{color:'var(--accent-light)'}}>femiaisida1@gmail.com</a>
+            <a href="mailto:aisidastudios@gmail.com" style={{color:'var(--accent-light)'}}>aisidastudios@gmail.com</a>
           </p>
         </div>
       </section>
@@ -170,7 +174,7 @@ export default function Landing() {
           <span style={{fontWeight:700,fontSize:'0.88rem'}}>RevisionFlow</span>
         </div>
         <p style={{fontSize:'0.78rem',margin:0,color:'var(--text-muted)'}}>
-          Built by <strong style={{color:'var(--accent-light)'}}>Oluwafemi Aisida · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></strong> · GCSE, AS-Level & A-Level students · Free · AI-powered
+          Built by <strong style={{color:'var(--accent-light)'}}>Aisida Studios · <a href="/privacy" style={{color:"inherit",opacity:0.6,textDecoration:"underline"}}>Privacy Policy</a></strong> · GCSE, AS-Level & A-Level students · Free · AI-powered
         </p>
         <div style={{display:'flex',gap:14}}>
           <Link to="/login"  style={{fontSize:'0.8rem',color:'var(--text-secondary)'}}>Sign in</Link>
