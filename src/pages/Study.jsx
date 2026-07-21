@@ -7,7 +7,7 @@ import {
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
-import { generateFlashcards, generatePredictedQuestions, markAnswer } from '../utils/ai'
+import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
 import AIOutput from '../components/AIOutput'
 import toast from 'react-hot-toast'
@@ -19,20 +19,6 @@ import {
 } from 'lucide-react'
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
-function parseFlashcards(text) {
-  const cards = []
-  let current = null
-  for (const line of (text || '').split('\n')) {
-    const q = line.match(/^Q:\s*(.+)/)
-    const a = line.match(/^A:\s*(.+)/)
-    if (q) { if (current?.q && current?.a) cards.push(current); current = { q: q[1].trim(), a: '' } }
-    else if (a && current) current.a = a[1].trim()
-    else if (current && line.trim() && !current.a) current.a += line.trim()
-    else if (current && line.trim() && current.a) current.a += ' ' + line.trim()
-  }
-  if (current?.q && current?.a) cards.push(current)
-  return cards.filter(c => c.q && c.a)
-}
 
 /* ── Flip card ─────────────────────────────────────────────────────────────── */
 function FlipCard({ card, index, total, onRate, showRate }) {
@@ -2001,10 +1987,21 @@ export default function Study() {
     if (!fcSubject) { toast.error('Select a subject first'); return }
     setFcLoading(true)
     try {
-      const res = await generateFlashcards(fcSubject, fcTopic, fcCount, user?.uid)
-      if (res.error) { toast.error(res.error); return }
-      const parsed = parseFlashcards(res.text || '')
-      if (!parsed.length) { toast.error('Could not parse flashcards — try again'); return }
+      const subjMeta = profile?.subjects?.find(s => s.name === fcSubject)
+      const board = subjMeta?.board || 'AQA'
+      const level = getSubjectQualification(subjMeta, profile)
+
+      const cached = await getFlashcardSetFromCache(board, level, fcSubject, fcTopic, fcCount)
+      let parsed
+      if (cached?.cards?.length) {
+        parsed = cached.cards
+      } else {
+        const res = await generateFlashcards(fcSubject, fcTopic, fcCount, user?.uid)
+        if (res.error) { toast.error(res.error); return }
+        parsed = parseFlashcards(res.text || '')
+        if (!parsed.length) { toast.error('Could not parse flashcards — try again'); return }
+        saveFlashcardSetToCache(board, level, fcSubject, fcTopic, fcCount, parsed).catch(() => {})
+      }
       setStudyCards(parsed)
       setStudyTitle(fcSubject + (fcTopic ? ' — ' + fcTopic : '') + ' (AI)')
       setStudySubj(fcSubject)
