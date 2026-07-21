@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { awardXP } from '../utils/firestore'
 import { db } from '../firebase'
 import { generateCalendarPlan } from '../utils/ai'
 import {
@@ -168,6 +169,7 @@ export default function Onboarding() {
         updatedAt: serverTimestamp(),
       })
       await seedTopics(user.uid)
+      await awardXP(user.uid, xpPreview, 'Onboarding complete')
       await refreshProfile()
       navigate('/dashboard')
       toast.success('Welcome to RevisionFlow! 🎉')
