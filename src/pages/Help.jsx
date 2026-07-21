@@ -409,7 +409,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
         <h4 style={{ marginBottom: 6 }}>Still need help?</h4>
         <p style={{ fontSize: '0.85rem', marginBottom: 4 }}>
-          Contact us at <strong style={{ color: 'var(--accent-light)' }}>femiaisida1@gmail.com</strong>
+          Contact us at <strong style={{ color: 'var(--accent-light)' }}>aisidastudios@gmail.com</strong>
         </p>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>We usually respond within 24 hours</p>
       </div>
