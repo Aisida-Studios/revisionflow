@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { updateUserProfile } from '../utils/firestore'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
-import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification } from '../data/subjects'
+import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
 import { GRADE_BOUNDARIES, AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
@@ -52,7 +52,7 @@ export default function Settings() {
     friendsCanSeeGrades:   profile?.settings?.friendsCanSeeGrades   ?? true,
   })
   const [subjects,     setSubjects]     = useState(profile?.subjects || [])
-  const [newSubj,      setNewSubj]      = useState({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9' })
+  const [newSubj,      setNewSubj]      = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9' })
   const [newSubjLevel, setNewSubjLevel] = useState(null)
   const [newQualFlow,  setNewQualFlow]  = useState(null)
   const [qual,         setQual]         = useState(profile?.qualification || 'GCSE')
@@ -90,7 +90,7 @@ export default function Settings() {
     const gradeOpts = getGradeOptions(newSubj.name, addSubjQual, newSubj.tier)
     const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : gradeOpts[0]
     setSubjects(s => [...s, { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }])
-    setNewSubj({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: gradeOpts[0] || '9' })
+    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: gradeOpts[0] || '9' })
   }
 
   async function handleDeleteAccount() {
@@ -108,7 +108,7 @@ export default function Settings() {
       <div className="tabs" style={{ marginBottom: 20 }}>
         {TABS.map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'boundaries' ? 'Grade Boundaries' : t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'boundaries' ? 'Boundaries' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -212,18 +212,23 @@ export default function Settings() {
               ))}
             </div>
             <div className="grid-2" style={{ gap: 8 }}>
-              <select className="select" value={newSubj.name} onChange={e => setNewSubj(s => ({ ...s, name: e.target.value }))}>
+              <select className="select" value={newSubj.name}
+                onChange={e => {
+                  const name = e.target.value
+                  setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && addSubjQual === 'GCSE') ? 'Higher' : 'N/A' }))
+                }}>
                 <option value="">Subject…</option>
                 {addSubjList.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>
                 {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
-              <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
-                <option value="Higher">Higher</option>
-                <option value="Foundation">Foundation</option>
-                <option value="N/A">N/A</option>
-              </select>
+              {newSubj.name && isTiered(newSubj.name) && addSubjQual === 'GCSE' && (
+                <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
+                  <option value="Higher">Higher</option>
+                  <option value="Foundation">Foundation</option>
+                </select>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Current:</label>
@@ -396,13 +401,13 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
   // A-Level independently — e.g. A-Level Maths alongside AS-Level Further Maths is a normal
   // combination. For GCSE/BTEC targets there's no sibling to choose between.
   const isSixthForm = newQual === 'AS-Level' || newQual === 'A-Level'
-  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9', qualification: newQual })
+  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9', qualification: newQual })
   const subjectList = getSubjectList(newSubj.qualification || newQual)
 
   function addSubj() {
     if (!newSubj.name) return
     setSubjects(s => [...s, { ...newSubj, qualification: newSubj.qualification || newQual, id: Date.now().toString() }])
-    setNewSubj({ name: '', board: 'AQA', tier: 'Higher', currentGrade: '', targetGrade: '9', qualification: newQual })
+    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9', qualification: newQual })
   }
 
   return (
@@ -463,11 +468,18 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                 </div>
               )}
               <div className="grid-2" style={{ gap: 8 }}>
-                <select className="select" value={newSubj.name} onChange={e => setNewSubj(s => ({ ...s, name: e.target.value }))}><option value="">Subject…</option>{subjectList.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                <select className="select" value={newSubj.name}
+                  onChange={e => {
+                    const name = e.target.value
+                    const effQual = newSubj.qualification || newQual
+                    setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && effQual === 'GCSE') ? 'Higher' : 'N/A' }))
+                  }}><option value="">Subject…</option>{subjectList.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>{EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
-                  <option value="Higher">Higher</option><option value="Foundation">Foundation</option><option value="N/A">N/A</option>
-                </select>
+                {newSubj.name && isTiered(newSubj.name) && (newSubj.qualification || newQual) === 'GCSE' && (
+                  <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
+                    <option value="Higher">Higher</option><option value="Foundation">Foundation</option>
+                  </select>
+                )}
               </div>
               <button className="btn btn-secondary btn-sm" onClick={addSubj} disabled={!newSubj.name}><Plus size={14} /> Add subject</button>
             </div>
