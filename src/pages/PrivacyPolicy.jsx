@@ -1,6 +1,6 @@
 // src/pages/PrivacyPolicy.jsx
 // GDPR-compliant privacy policy for RevisionFlow
-// Data controller: Oluwafemi Aisida, England, United Kingdom
+// Data controller: Aisida Studios (trading name of Oluwafemi Aisida), England, United Kingdom
 // Last updated: July 2026
 
 import { Link } from 'react-router-dom'
@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <h1 style={{ marginBottom: '0.4rem' }}>Privacy Policy</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Last updated: 1 July 2026 · Effective date: 1 July 2026
+          Last updated: 20 July 2026 · Effective date: 20 July 2026
         </p>
 
         <div style={{ padding:'14px 18px', background:'rgba(124,58,237,0.08)', border:'1px solid var(--accent)', borderRadius:'var(--radius-md)', marginBottom:'2rem', fontSize:'0.875rem', lineHeight:1.7 }}>
@@ -43,12 +43,12 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>1. Data Controller</h2>
           <p style={P_STYLE}>The data controller responsible for your personal data is:</p>
           <p style={P_STYLE}>
-            <strong>Oluwafemi Aisida</strong><br/>
+            <strong>Aisida Studios</strong><br/>
             England, United Kingdom<br/>
-            Contact: <a href="mailto:femiaisida1@gmail.com" style={{ color:'var(--accent-light)' }}>femiaisida1@gmail.com</a>
+            Contact: <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a>
           </p>
           <p style={P_STYLE}>
-            RevisionFlow is an independent educational web application. It is not a registered company. If you have any questions about how your data is handled, please contact us at the email address above.
+            RevisionFlow is built and operated by Aisida Studios, the trading name of an independent UK developer. It is not a registered company. If you have any questions about how your data is handled, please contact us at the email address above.
           </p>
         </section>
 
@@ -183,7 +183,7 @@ export default function PrivacyPolicy() {
             <li><strong>Right to withdraw consent:</strong> Where processing is based on consent (e.g. leaderboard visibility), you can withdraw it at any time in Settings</li>
           </ul>
           <p style={P_STYLE}>
-            To exercise any of these rights, contact us at <a href="mailto:femiaisida1@gmail.com" style={{ color:'var(--accent-light)' }}>femiaisida1@gmail.com</a>. We will respond within <strong>30 days</strong>. You also have the right to lodge a complaint with the <strong>Information Commissioner's Office (ICO)</strong> at <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{ color:'var(--accent-light)' }}>ico.org.uk</a> or by phone on 0303 123 1113.
+            To exercise any of these rights, contact us at <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a>. We will respond within <strong>30 days</strong>. You also have the right to lodge a complaint with the <strong>Information Commissioner's Office (ICO)</strong> at <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{ color:'var(--accent-light)' }}>ico.org.uk</a> or by phone on 0303 123 1113.
           </p>
         </section>
 
@@ -214,7 +214,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>9. Children and Age Requirements</h2>
           <p style={P_STYLE}>RevisionFlow is designed for GCSE, AS-Level and A-Level students. Under UK GDPR and the Children and Families Act, special rules apply to users under 13. <strong>Users under 13 must not create an account without verifiable parental consent.</strong></p>
           <p style={P_STYLE}>We recommend the service for users aged <strong>13 and over</strong>. If we become aware that a child under 13 has registered without parental consent, we will delete their account and associated data promptly.</p>
-          <p style={P_STYLE}>Parents or guardians who believe their child has registered may contact us at <a href="mailto:femiaisida1@gmail.com" style={{ color:'var(--accent-light)' }}>femiaisida1@gmail.com</a> to request deletion.</p>
+          <p style={P_STYLE}>Parents or guardians who believe their child has registered may contact us at <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a> to request deletion.</p>
         </section>
 
         <section style={SECTION_STYLE}>
@@ -238,6 +238,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>12. Changes to This Policy</h2>
           <p style={P_STYLE}>We may update this Privacy Policy from time to time. When we make significant changes, we will display a notice within the app and update the "Last updated" date above. Continued use of RevisionFlow after changes are posted constitutes your acceptance of the updated policy.</p>
           <p style={P_STYLE}><strong>July 2026 update:</strong> Added sections covering flashcard sets and quiz history data; clarified that public profiles are viewable without login; added referral code to social data list; updated data collection to reflect quiz result storage.</p>
+          <p style={P_STYLE}><strong>20 July 2026 update:</strong> Rebranded the data controller from an individual name to Aisida Studios (no change to who actually operates RevisionFlow or how your data is handled); AS-Level was added alongside GCSE, A-Level and BTEC as a qualification level — this uses the same "qualification level" field already described in Section 2 and does not introduce a new category of data.</p>
           <p style={P_STYLE}>For minor changes (e.g. clarifications), we will simply update the date. For material changes (e.g. new data uses or third parties), we will seek renewed consent where required by UK GDPR.</p>
         </section>
 
@@ -245,7 +246,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>13. Contact and Complaints</h2>
           <p style={P_STYLE}>For any privacy-related questions, requests or complaints:</p>
           <p style={P_STYLE}>
-            <strong>Email:</strong> <a href="mailto:femiaisida1@gmail.com" style={{ color:'var(--accent-light)' }}>femiaisida1@gmail.com</a><br/>
+            <strong>Email:</strong> <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a><br/>
             <strong>Response time:</strong> Within 30 days of receipt
           </p>
           <p style={P_STYLE}>If you are not satisfied with our response, you have the right to complain to the <strong>Information Commissioner's Office (ICO)</strong>:</p>
