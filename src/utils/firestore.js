@@ -17,7 +17,9 @@ import {
   doc,
   query, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  arrayUnion,
+  increment 
 } from 'firebase/firestore';
 
 // ==========================================
@@ -57,7 +59,6 @@ export const logout = async () => {
 // 3. User Profile & Lifecycle Helpers
 // ==========================================
 
-// Creates a user document in Firestore if they don't already exist
 export const ensureUser = async (user) => {
   if (!user) return;
   try {
@@ -70,8 +71,10 @@ export const ensureUser = async (user) => {
         displayName: user.displayName || '',
         createdAt: serverTimestamp(),
         streak: 0,
-        lastLogin: new Date().toISOString(),
-        badges: []
+        xp: 0,
+        badges: [],
+        unlockedIcons: [],
+        lastLogin: new Date().toISOString()
       });
     }
   } catch (error) {
@@ -103,8 +106,44 @@ export const updateUserProfile = async (userId, data) => {
 };
 
 // ==========================================
-// 4. Gamification (Streaks & Badges)
+// 4. Gamification (XP, Badges, Icons & Streaks)
 // ==========================================
+
+export const awardXP = async (userId, amount) => {
+  if (!userId || !amount) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      xp: increment(amount)
+    });
+  } catch (error) {
+    console.error('Error awarding XP:', error);
+  }
+};
+
+export const checkAndAwardBadge = async (userId, badgeId) => {
+  if (!userId || !badgeId) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      badges: arrayUnion(badgeId)
+    });
+  } catch (error) {
+    console.error('Error awarding badge:', error);
+  }
+};
+
+export const unlockReferralIcon = async (userId, iconId) => {
+  if (!userId || !iconId) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      unlockedIcons: arrayUnion(iconId)
+    });
+  } catch (error) {
+    console.error('Error unlocking referral icon:', error);
+  }
+};
 
 export const updateStreakOnLogin = async (userId) => {
   if (!userId) return;
@@ -125,14 +164,12 @@ export const updateStreakOnLogin = async (userId) => {
 
       let newStreak = data.streak || 0;
       
-      // If logged in yesterday, increment. If missed a day, reset to 1.
       if (lastLoginDate === yesterdayString) {
         newStreak += 1;
       } else if (lastLoginDate !== todayString) {
         newStreak = 1; 
       }
 
-      // Only update database if they haven't logged in yet today
       if (lastLoginDate !== todayString) {
         await updateDoc(userRef, {
           streak: newStreak,
@@ -148,23 +185,18 @@ export const updateStreakOnLogin = async (userId) => {
 export const runBadgeAudit = async (userId) => {
   if (!userId) return;
   try {
-    // Implement badge calculation logic here in the future.
-    // Kept as a safe placeholder to satisfy AuthContext imports.
     const userRef = doc(db, 'users', userId);
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
-    
-    // Example: const stats = snap.data();
-    // if (stats.quizzesTaken > 10 && !stats.badges.includes("Quiz Master")) { ... }
-    
   } catch (error) {
     console.error('Error running badge audit:', error);
   }
 };
 
 // ==========================================
-// 5. Quiz Results
+// 5. Quizzes & Study Sessions
 // ==========================================
+
 export const saveQuizResult = async (userId, quizData) => {
   if (!userId) {
     console.warn('saveQuizResult: No userId provided.');
