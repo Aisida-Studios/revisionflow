@@ -1,10 +1,6 @@
 // src/utils/referrals.js
-import {
-  doc, getDoc, setDoc, getDocs,
-  collection, query, where, limit, serverTimestamp, updateDoc
-} from 'firebase/firestore'
-import { db } from '../firebase'
-import { awardXP, checkAndAwardBadge, unlockReferralIcon } from './firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db, auth } from '../firebase'
 
 export function generateReferralCode(uid) {
   return uid.slice(0, 8).toUpperCase()
@@ -16,74 +12,51 @@ export function getReferralUrl(uid) {
   return `https://revision-flow.netlify.app/signup?ref=${code}`
 }
 
+async function callReferralApi(action, params = {}) {
+  let idToken = ''
+  try {
+    if (auth.currentUser) idToken = await auth.currentUser.getIdToken()
+  } catch (e) { console.warn('[referrals] could not get ID token:', e.message) }
+
+  try {
+    const res = await fetch('/api/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ action, ...params }),
+    })
+    return await res.json()
+  } catch (e) {
+    // A referral is a bonus on top of signup, never something that should block or error out
+    // account creation itself if the network hiccups.
+    console.warn('[referrals] API call failed:', e.message)
+    return { found: false, applied: false }
+  }
+}
+
+// Looks up just the referrer's display name — public, no auth needed (used on the signup page
+// before the visitor has an account). See netlify/functions/referral.js for why this can't be a
+// direct client-side Firestore query.
+export async function lookupReferrer(code) {
+  if (!code || code.length < 8) return { found: false }
+  try { return await callReferralApi('lookup', { code }) }
+  catch (e) { return { found: false } }
+}
+
+// Applies a referral code for the CURRENTLY AUTHENTICATED user (new signup or existing user
+// entering one later) and grants rewards to both sides. This used to write directly to the
+// referrer's Firestore document from the client — which Firestore rules correctly block, since
+// a user can only write their own document — causing "Missing or insufficient permissions" partway
+// through signup. Now goes through /api/referral (Admin SDK, server-side) instead.
 export async function applyReferralCode(newUid, referralCode) {
-  if (!referralCode) return
-
-  const ownCode = generateReferralCode(newUid)
-  if (referralCode.toUpperCase() === ownCode) return
-
-  const q = query(
-    collection(db, 'users'),
-    where('referralCode', '==', referralCode.toUpperCase()),
-    limit(1)
-  )
-  const snap = await getDocs(q)
-  if (snap.empty) return false // code not found
-
-  const referrerDoc  = snap.docs[0]
-  const referrerId   = referrerDoc.id
-
-  // Save referral info on new user
-  await setDoc(doc(db, 'users', newUid), {
-    referredBy:  referrerId,
-    referredAt:  serverTimestamp(),
-  }, { merge: true })
-
-  // Reward the referrer: XP + badge + unlock rocket icon
-  await awardXP(referrerId, 200)
-  await checkAndAwardBadge(referrerId, 'referral')
-  await unlockReferralIcon(referrerId)
-
-  // Reward the new user: XP + unlock rocket icon
-  await awardXP(newUid, 100)
-  await unlockReferralIcon(newUid)
-
-  return true
+  if (!referralCode) return false
+  const result = await callReferralApi('apply', { code: referralCode })
+  return !!result.applied
 }
 
 export async function applyReferralCodeForExistingUser(uid, referralCode) {
   if (!referralCode) return false
-
-  const ownCode = generateReferralCode(uid)
-  if (referralCode.toUpperCase() === ownCode) return false
-
-  // Don't let users apply a code twice
-  const userSnap = await getDoc(doc(db, 'users', uid))
-  if (userSnap.data()?.referredBy) return false
-
-  const q = query(
-    collection(db, 'users'),
-    where('referralCode', '==', referralCode.toUpperCase()),
-    limit(1)
-  )
-  const snap = await getDocs(q)
-  if (snap.empty) return false
-
-  const referrerId = snap.docs[0].id
-
-  await setDoc(doc(db, 'users', uid), {
-    referredBy: referrerId,
-    referredAt: serverTimestamp(),
-  }, { merge: true })
-
-  await awardXP(referrerId, 200)
-  await checkAndAwardBadge(referrerId, 'referral')
-  await unlockReferralIcon(referrerId)
-
-  await awardXP(uid, 100)
-  await unlockReferralIcon(uid)
-
-  return true
+  const result = await callReferralApi('apply', { code: referralCode })
+  return !!result.applied
 }
 
 export async function ensureReferralCode(uid) {
