@@ -182,6 +182,16 @@ export const updateStreakOnLogin = async (userId) => {
   }
 };
 
+// Exported for src/utils/ai.js and active study session trackers
+export const recordActivityStreak = async (userId) => {
+  if (!userId) return;
+  try {
+    await updateStreakOnLogin(userId);
+  } catch (error) {
+    console.error('Error recording activity streak:', error);
+  }
+};
+
 export const runBadgeAudit = async (userId) => {
   if (!userId) return;
   try {
