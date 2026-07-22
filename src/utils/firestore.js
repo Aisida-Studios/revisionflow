@@ -22,9 +22,7 @@ import {
   serverTimestamp,
   increment,
   where,
-  limit,
-  arrayUnion,
-  arrayRemove
+  limit
 } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
@@ -43,23 +41,16 @@ export const loginWithEmail   = (e, p)   => signInWithEmailAndPassword(auth, e, 
 export const signupWithEmail  = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
 export const resetPassword    = (e)      => sendPasswordResetEmail(auth, e)
 export const logout           = ()       => signOut(auth)
-export const logoutUser       = ()       => signOut(auth)
 
 /* =========================
    USER / PROFILE
 ========================= */
 
 export async function ensureUser(uid, initialData = {}) {
-  // Support both object user syntax ensureUser(user) and ensureUser(uid, initialData)
-  const userId = typeof uid === 'object' && uid !== null ? uid.uid : uid
-  if (!userId) return
-
-  const ref          = doc(db, 'users', userId)
+  const ref          = doc(db, 'users', uid)
   const snap         = await getDoc(ref)
-  const referralCode = userId.slice(0, 8).toUpperCase()
-
-  const defaultDisplayName = typeof uid === 'object' ? (uid.displayName || '') : (initialData.displayName || '')
-  const defaultEmail = typeof uid === 'object' ? (uid.email || '') : (initialData.email || '')
+  // Referral code is always the first 8 chars of uid — deterministic, no query needed
+  const referralCode = uid.slice(0, 8).toUpperCase()
 
   if (!snap.exists()) {
     await setDoc(ref, {
@@ -70,33 +61,21 @@ export async function ensureUser(uid, initialData = {}) {
       badges:       [],
       friends:      [],
       referralCode,
-      displayName:  defaultDisplayName,
+      displayName:  initialData.displayName || '',
       profile: {
-        displayName: defaultDisplayName,
-        email:       defaultEmail,
-        avatarUrl:   initialData.avatarUrl || '',
+        displayName: initialData.displayName || '',
+        email:       initialData.email       || '',
+        avatarUrl:   initialData.avatarUrl   || '',
       },
     })
   } else {
     // Patch any fields missing from old accounts
     const existing = snap.data()
     const patches  = {}
-    if (!existing.referralCode) patches.referralCode = referralCode
-    if (!existing.displayName && defaultDisplayName) patches.displayName = defaultDisplayName
-    if (!existing.profile?.displayName && defaultDisplayName) patches['profile.displayName'] = defaultDisplayName
+    if (!existing.referralCode)                                    patches.referralCode           = referralCode
+    if (!existing.displayName  && initialData.displayName)         patches.displayName             = initialData.displayName
+    if (!existing.profile?.displayName && initialData.displayName) patches['profile.displayName'] = initialData.displayName
     if (Object.keys(patches).length > 0) await updateDoc(ref, patches)
-  }
-}
-
-export async function getUserProfile(userId) {
-  if (!userId) return null
-  try {
-    const userDocRef = doc(db, 'users', userId)
-    const docSnap = await getDoc(userDocRef)
-    return docSnap.exists() ? docSnap.data() : null
-  } catch (error) {
-    console.error('Error fetching user profile:', error)
-    return null
   }
 }
 
@@ -105,15 +84,13 @@ export const updateUserProfile = (uid, updates) =>
   updateDoc(doc(db, 'users', uid), updates)
 
 // Unlock a specific profile icon (stored as unlockedIcons array)
-export const unlockReferralIcon = async (uid, iconId = 'rocket') => {
-  if (!uid) return
+export const unlockReferralIcon = async (uid) => {
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
   const current = snap.data().unlockedIcons || []
-  const iconToAdd = iconId || 'rocket'
-  if (!current.includes(iconToAdd)) {
-    await updateDoc(ref, { unlockedIcons: arrayUnion(iconToAdd) })
+  if (!current.includes('rocket')) {
+    await updateDoc(ref, { unlockedIcons: [...current, 'rocket'] })
   }
 }
 
@@ -122,11 +99,12 @@ export const unlockReferralIcon = async (uid, iconId = 'rocket') => {
 ========================= */
 
 export async function updateStreakOnLogin(uid) {
-  if (!uid) return
+  // Login alone does NOT extend the streak.
+  // Only recordActivityStreak() does — called when user logs real activity.
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
-  const data      = snap.data()
+  const data     = snap.data()
   const todayStr = new Date().toDateString()
   const lastLogin = data.lastLogin?.toDate ? data.lastLogin.toDate() : null
   if (!lastLogin || lastLogin.toDateString() !== todayStr) {
@@ -136,7 +114,6 @@ export async function updateStreakOnLogin(uid) {
 
 // Call whenever user logs real revision activity (session, paper, task, note, mistake).
 export async function recordActivityStreak(uid) {
-  if (!uid) return
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
@@ -164,6 +141,7 @@ export async function recordActivityStreak(uid) {
   if (newStreak === 30)  await checkAndAwardBadge(uid, 'streak_30')
   if (newStreak === 100) await checkAndAwardBadge(uid, 'streak_100')
 }
+
 
 export function xpForLevel(n) {
   return Math.floor(100 * Math.pow(1.15, n - 1))
@@ -207,7 +185,7 @@ export const checkAndAwardBadge = async (uid, badgeId) => {
   if (earned.includes(badgeId)) return
 
   await updateDoc(ref, {
-    badges: arrayUnion(badgeId),
+    badges: [...earned, badgeId],
     xp:     increment(badge.xp || 0),
   })
 }
@@ -230,17 +208,20 @@ const QUEST_XP = {
 export const autoCompleteQuest = async (uid, questId) => {
   if (!uid || !questId) return
 
+  // Use same date key format as DailyQuests.jsx component
   const today = new Date().toDateString().replace(/ /g, '_')
   const ref   = doc(db, 'users', uid, 'quests', today)
   const snap  = await getDoc(ref)
   const data  = snap.exists() ? snap.data() : {}
 
+  // DailyQuests.jsx stores completion as { [questId]: true } flat keys
   if (data[questId]) return // already marked complete
 
   const xp = QUEST_XP[questId] || 10
   await setDoc(ref, { [questId]: true, updatedAt: serverTimestamp() }, { merge: true })
   await awardXP(uid, xp, 'Daily quest')
 
+  // Count how many quests are now done to check for all-3 bonus
   const updatedData = { ...data, [questId]: true }
   const doneCount   = Object.keys(QUEST_XP).filter(id => updatedData[id]).length
   if (doneCount >= 3 && !data.bonusAwarded) {
@@ -300,6 +281,7 @@ export const getGlobalLeaderboard = async (maxResults = 100) => {
 
 /* =========================
    SESSIONS
+   XP: +50 on complete, +bonus for long sessions
 ========================= */
 
 export const addSession = async (uid, data) => {
@@ -316,10 +298,12 @@ export const getSessions = async (uid) => {
 }
 
 export const completeSession = async (uid, id, notes = '') => {
+  // Mark the session complete
   await updateDoc(doc(db, 'users', uid, 'sessions', id), {
     completed: true,
     notes:     notes || '',
   })
+  // Award XP: base 50, +25 if session is 60+ mins
   const snap = await getDoc(doc(db, 'users', uid, 'sessions', id))
   const dur  = snap.exists() ? (snap.data().duration || 0) : 0
   const xp   = dur >= 60 ? 75 : 50
@@ -337,6 +321,7 @@ export const deleteSession = (uid, id) =>
 
 /* =========================
    TASKS
+   XP: +20 on complete
 ========================= */
 
 export const addTask = async (uid, task) => {
@@ -362,6 +347,7 @@ export const deleteTask = (uid, id) =>
 
 /* =========================
    NOTES
+   XP: +10 on save
 ========================= */
 
 export const saveNote = async (uid, note) => {
@@ -385,6 +371,7 @@ export const deleteNote = (uid, id) =>
 
 /* =========================
    MISTAKES
+   XP: +10 on log, +20 on resolve
 ========================= */
 
 export const addMistake = async (uid, data) => {
@@ -410,6 +397,7 @@ export const resolveMistake = async (uid, id) => {
 
 /* =========================
    PAPER ATTEMPTS
+   XP: +100 on save
 ========================= */
 
 export const savePaperAttempt = async (uid, data) => {
@@ -450,53 +438,29 @@ export const submitPaperStructure = async (uid, data) => {
 }
 
 /* =========================
-   QUIZZES
-========================= */
-
-export const saveQuizResult = async (userId, quizData) => {
-  if (!userId) return
-  try {
-    const quizResultsRef = collection(db, 'users', userId, 'quizResults')
-    await addDoc(quizResultsRef, {
-      ...quizData,
-      createdAt: serverTimestamp(),
-      timestamp: quizData.timestamp || new Date().toISOString()
-    })
-    await awardXP(userId, 25, 'Quiz complete')
-    await recordActivityStreak(userId)
-  } catch (error) {
-    console.error('Error saving quiz result to Firestore:', error)
-    throw error
-  }
-}
-
-export const getUserQuizResults = async (userId) => {
-  if (!userId) return []
-  try {
-    const quizResultsRef = collection(db, 'users', userId, 'quizResults')
-    const q = query(quizResultsRef, orderBy('createdAt', 'desc'))
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
-  } catch (error) {
-    console.error('Error fetching quiz results:', error)
-    return []
-  }
-}
-
-/* =========================
    TOPIC ID MIGRATION
+   Old topic docs were keyed `${subject}_${topic}` with no board or qualification, so switching
+   board or qualification for a subject could silently collide with (or overwrite) an unrelated
+   topic's confidence rating. buildTopicId() (src/utils/topicId.js) is the new, collision-safe
+   scheme. This runs automatically, once, the first time a user's topics load after this update —
+   silently re-keying anything still in the old format. See src/pages/Topics.jsx for the call site.
 ========================= */
 
+/**
+ * Given topic docs already fetched from Firestore (array of { id, ...data }), finds any still on
+ * the legacy id scheme, re-keys them to the new board+qualification-scoped id, and keeps the
+ * matching `priorities` doc (same id scheme, see PriorityContext) in sync. Returns the corrected
+ * array — callers should render/use this return value, not the array they passed in, since ids
+ * may have changed. Safe to call on every load: once nothing is legacy, it's a single read and a
+ * no-op loop.
+ */
 export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQualification) => {
   if (!uid || !topicDocs?.length) return topicDocs || []
   const corrected = []
   for (const t of topicDocs) {
     if (!isLegacyTopicId(t.id)) { corrected.push(t); continue }
     const subjectMeta = subjects?.find(s => s.name === t.subjectId)
-    if (!subjectMeta) { corrected.push(t); continue }
+    if (!subjectMeta) { corrected.push(t); continue } // subject no longer selected — leave it, don't guess
     const board = subjectMeta.board || 'AQA'
     const qualification = subjectMeta.qualification || profileQualification || 'GCSE'
     const newId = buildTopicId(board, qualification, t.subjectId, t.name)
@@ -505,6 +469,8 @@ export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQu
       const newRef = doc(db, 'users', uid, 'topics', newId)
       const existing = await getDoc(newRef)
       if (existing.exists()) {
+        // A doc already lives at the new id — don't clobber it, just adopt it going forward and
+        // quietly retire the legacy one.
         await deleteDoc(doc(db, 'users', uid, 'topics', t.id))
         corrected.push({ id: newId, ...existing.data() })
         continue
@@ -513,6 +479,8 @@ export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQu
       await setDoc(newRef, { ...data, board, qualification, updatedAt: serverTimestamp() })
       await deleteDoc(doc(db, 'users', uid, 'topics', t.id))
 
+      // Priority docs are keyed by the same topicId (see PriorityContext.setPriority) — keep them
+      // pointed at a topic that still exists.
       const oldPriRef = doc(db, 'users', uid, 'priorities', t.id)
       const oldPriSnap = await getDoc(oldPriRef)
       if (oldPriSnap.exists()) {
@@ -522,7 +490,7 @@ export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQu
       corrected.push({ ...t, id: newId, board, qualification })
     } catch (err) {
       console.error('Topic ID migration failed for', t.id, err)
-      corrected.push(t)
+      corrected.push(t) // fail safe — keep the old doc visible rather than losing it from view
     }
   }
   return corrected
@@ -556,6 +524,8 @@ export const getReceivedRequests = async (uid) => {
 }
 
 export const acceptFriendRequest = async (requestId, fromUid, toUid) => {
+  const { arrayUnion } = await import('firebase/firestore')
+  // Store friends as arrays of UIDs — never use increment() which produces a number
   await updateDoc(doc(db, 'users', fromUid), { friends: arrayUnion(toUid) })
   await updateDoc(doc(db, 'users', toUid),   { friends: arrayUnion(fromUid) })
   await deleteDoc(doc(db, 'friendRequests', requestId))
@@ -569,6 +539,7 @@ export const declineFriendRequest = (requestId) =>
   deleteDoc(doc(db, 'friendRequests', requestId))
 
 export const removeFriend = async (uid, friendUid) => {
+  const { arrayRemove } = await import('firebase/firestore')
   await updateDoc(doc(db, 'users', uid),       { friends: arrayRemove(friendUid) })
   await updateDoc(doc(db, 'users', friendUid), { friends: arrayRemove(uid) })
 }
@@ -597,12 +568,14 @@ export const getFriendProfiles = async (friendUids) => {
 export const getUserByUsername = async (username) => {
   if (!username) return null
   try {
+    // 1. Try exact username field match (set in Onboarding / Settings)
     const q1    = query(collection(db, 'users'), where('username', '==', username), limit(1))
     const snap1 = await getDocs(q1)
     if (!snap1.empty) {
       const d = snap1.docs[0]
       return { uid: d.id, ...d.data() }
     }
+    // 2. Fallback: treat as uid (profile URLs fall back to uid when no username is set)
     const snap2 = await getDoc(doc(db, 'users', username))
     if (snap2.exists()) return { uid: snap2.id, ...snap2.data() }
     return null
@@ -612,6 +585,8 @@ export const getUserByUsername = async (username) => {
 export const searchUsersByName = async (searchTerm) => {
   if (!searchTerm) return []
   try {
+    // Firestore doesn't support full-text search — fetch and filter client-side
+    // For a small user base this is fine; replace with Algolia if scale demands it
     const q    = query(collection(db, 'users'), orderBy('displayName'), limit(50))
     const snap = await getDocs(q)
     const lower = searchTerm.toLowerCase()
@@ -624,11 +599,15 @@ export const searchUsersByName = async (searchTerm) => {
 
 /* =========================
    BADGE AUDIT
+   Retroactively awards any badges the user has earned
+   but not yet received. Safe to call multiple times —
+   checkAndAwardBadge is idempotent.
 ========================= */
 
 export async function runBadgeAudit(uid) {
   if (!uid) return { awarded: [] }
 
+  // Fetch everything in parallel
   const [userSnap, sessionsSnap, papersSnap, mistakesSnap, notesSnap, topicsSnap] =
     await Promise.all([
       getDoc(doc(db, 'users', uid)),
@@ -653,24 +632,30 @@ export async function runBadgeAudit(uid) {
   const streak            = user.streak || 0
   const friendCount       = Array.isArray(user.friends) ? user.friends.length : (user.friends || 0)
 
+  // Build candidates: { badgeId, condition }
   const checks = []
 
+  // ── Milestones ───────────────────────────────────────────────────────────────
   if (completedSessions.length >= 1)  checks.push('first_session')
   if (completedSessions.length >= 10) checks.push('ten_sessions')
-  if (papers.length >= 1)              checks.push('first_paper')
-  if (papers.length >= 10)             checks.push('ten_papers')
-  if (papers.length >= 50)             checks.push('fifty_papers')
+  if (papers.length >= 1)             checks.push('first_paper')
+  if (papers.length >= 10)            checks.push('ten_papers')
+  if (papers.length >= 50)            checks.push('fifty_papers')
   if ((user.profile?.displayName || user.displayName) &&
       (user.subjects || []).length > 0 &&
       (user.examDates || []).length > 0) checks.push('profile_complete')
 
+  // ── Streaks ──────────────────────────────────────────────────────────────────
   if (streak >= 3)   checks.push('streak_3')
   if (streak >= 7)   checks.push('streak_7')
   if (streak >= 14)  checks.push('streak_14')
   if (streak >= 30)  checks.push('streak_30')
   if (streak >= 100) checks.push('streak_100')
 
+  // ── Improvement ──────────────────────────────────────────────────────────────
+  // grade_up: improved grade on same subject+paper vs earlier attempt
   const gradeOrder = ['U','G','F','E','D','C','B','A','A*','9','8','7','6','5','4','3','2','1']
+  // Sort lowest grade first
   const gradeIndex = g => {
     const idx = gradeOrder.indexOf(String(g))
     return idx === -1 ? -1 : idx
@@ -695,11 +680,17 @@ export async function runBadgeAudit(uid) {
   })
   if (gradeUp) checks.push('grade_up')
 
+  // full_marks: 90%+
   if (papers.some(p => (p.percentage || 0) >= 90)) checks.push('full_marks')
 
+  // comeback: topic went from confidence 1 → 4 or 5 (can't fully detect without history,
+  // so check if any topic is now 4+ after having any old low-confidence record — approximate)
+  // We check if user has any topic at 4+ and also has any resolved mistake (shows improvement)
   const highTopics = topics.filter(t => (t.confidence || 0) >= 4)
   if (highTopics.length > 0 && resolvedMistakes.length > 0) checks.push('comeback')
 
+  // ── Subject Mastery ───────────────────────────────────────────────────────────
+  // Group topics by subject
   const topicsBySubject = {}
   topics.forEach(t => {
     const subj = t.subjectId || t.subject || 'unknown'
@@ -717,6 +708,8 @@ export async function runBadgeAudit(uid) {
   if (maxHighConfidence >= 20)    checks.push('mastery_silver')
   if (anySubjectAllHigh)          checks.push('mastery_gold')
 
+  // ── Consistency ───────────────────────────────────────────────────────────────
+  // early_bird: any session started before 08:00
   const earlyBird = completedSessions.some(s => {
     const time = s.start || s.startTime || ''
     if (typeof time === 'string' && time.includes('T')) {
@@ -730,6 +723,7 @@ export async function runBadgeAudit(uid) {
   })
   if (earlyBird) checks.push('early_bird')
 
+  // night_owl: any session started after 22:00
   const nightOwl = completedSessions.some(s => {
     const time = s.start || s.startTime || ''
     if (typeof time === 'string' && time.includes('T')) {
@@ -743,17 +737,20 @@ export async function runBadgeAudit(uid) {
   })
   if (nightOwl) checks.push('night_owl')
 
+  // weekend_warrior: sessions on both Saturday and Sunday in the same week
   const weekendDays = new Set()
   completedSessions.forEach(s => {
     const d = s.date || s.startTime?.split?.('T')?.[0]
     if (!d) return
     const day = new Date(d).getDay()
     if (day === 0 || day === 6) {
+      // Use ISO week + year as key, day as distinguisher
       const dt  = new Date(d)
       const wk  = `${dt.getFullYear()}-W${Math.ceil(dt.getDate() / 7)}`
       weekendDays.add(`${wk}-${day}`)
     }
   })
+  // Check if both Sat (6) and Sun (0) appear in the same week
   const weekKeys = {}
   weekendDays.forEach(k => {
     const [week, day] = k.split(/-(?=\d$)/)
@@ -763,16 +760,36 @@ export async function runBadgeAudit(uid) {
   const weekendWarrior = Object.values(weekKeys).some(days => days.has('6') && days.has('0'))
   if (weekendWarrior) checks.push('weekend_warrior')
 
+  // marathon_session: any timer session >= 120 minutes
   if (completedSessions.some(s => (s.duration || 0) >= 120)) checks.push('marathon_session')
 
+  // ── Social ────────────────────────────────────────────────────────────────────
   if (friendCount >= 1) checks.push('first_friend')
   if (friendCount >= 3) checks.push('three_friends')
 
+  // ── Notes ─────────────────────────────────────────────────────────────────────
+  // (no specific badge, but add_note quest handled elsewhere)
+
+  // ── first_ai: check if user has any AI briefing cached (proxy for having used AI) ──
   try {
     const aiSnap = await getDoc(doc(db, 'users', uid, 'dailyBriefing', 'latest'))
     if (aiSnap.exists()) checks.push('first_ai')
   } catch {}
 
+  // ── emergency_mode: check if user has ever opened emergency mode ──
+  // We can't retroactively detect this, so skip in audit (real-time trigger handles it)
+
+  // ── top_three: can't check without querying global board — skip in audit ──
+  // (real-time trigger in Leaderboard.jsx handles this)
+
+  // ── ten_sessions ──────────────────────────────────────────────────────────────
+  if (completedSessions.length >= 10) checks.push('ten_sessions')
+
+  // ── ten_papers / fifty_papers ─────────────────────────────────────────────────
+  if (papers.length >= 10) checks.push('ten_papers')
+  if (papers.length >= 50) checks.push('fifty_papers')
+
+  // ── Award any missing badges ──────────────────────────────────────────────────
   const alreadyEarned = new Set(user.badges || [])
   const toAward       = checks.filter(id => !alreadyEarned.has(id))
   const awarded       = []
@@ -782,6 +799,7 @@ export async function runBadgeAudit(uid) {
     awarded.push(badgeId)
   }
 
+  // Stamp last audit time so we don't run constantly
   await updateDoc(doc(db, 'users', uid), {
     lastBadgeAudit: serverTimestamp(),
   })
@@ -791,9 +809,11 @@ export async function runBadgeAudit(uid) {
 
 /* =========================
    FLASHCARD SETS
+   Stored at: users/{uid}/flashcardSets/{id}
+   Public sets also stored at: publicFlashcards/{id}
 ========================= */
 
-export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType }) => {
+export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType }) => {  // Resolve display name for author
   let resolvedAuthor = author
   if (!resolvedAuthor && uid) {
     try {
@@ -814,13 +834,16 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
   let refId
   const isOfficial = authorType === 'official'
   if (uid && !isOfficial) {
+    // Save to user's private collection (skip for official/admin bulk sets)
     const ref = await addDoc(collection(db, 'users', uid, 'flashcardSets'), data)
     refId = ref.id
   }
   if (isPublic || isOfficial) {
+    // Save to global public collection
     if (refId) {
       await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
     } else {
+      // Official sets with no user subcollection entry
       const ref = await addDoc(collection(db, 'publicFlashcards'), { ...data, setId: null })
       await updateDoc(ref, { setId: ref.id })
       refId = ref.id
@@ -833,6 +856,40 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
   return refId
 }
 
+// ── Official flashcard sets (deterministic ID) ──────────────────────────────
+// Used by the admin auto-generate pipeline instead of saveFlashcardSet's addDoc (random ID)
+// path, specifically so "does an official set already exist for this board+level+subject+topic"
+// is a cheap, always-indexed single-document get — not a multi-field query that risks needing a
+// composite index. Kept separate from saveFlashcardSet so regular user-created sets (which can
+// legitimately share a title) are untouched.
+export const getOfficialFlashcardSet = async (board, level, subject, topic) => {
+  const id = officialSetId(board, level, subject, topic)
+  const snap = await getDoc(doc(db, 'publicFlashcards', id))
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+}
+
+export const saveOfficialFlashcardSet = async (board, level, subject, topic, cards) => {
+  const id = officialSetId(board, level, subject, topic)
+  await setDoc(doc(db, 'publicFlashcards', id), {
+    uid: 'official',
+    setId: id,
+    title: `${board} ${level} ${subject}${topic ? ' — ' + topic : ''}`,
+    subject, topic: topic || '', board, level,
+    cards, cardCount: cards.length,
+    isPublic: true,
+    author: 'RevisionFlow',
+    authorType: 'official',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+  return id
+}
+
+function officialSetId(board, level, subject, topic) {
+  const raw = `official_${board}_${level}_${subject}_${topic || 'general'}`
+  return raw.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').slice(0, 180)
+}
+
 export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
   const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
   const snap = await getDoc(ref)
@@ -843,31 +900,85 @@ export const updateFlashcardSet = async (uid, setId, { title, subject, topic, ca
     cards, isPublic,
     cardCount: cards.length,
     updatedAt: serverTimestamp(),
+    // preserve existing author — don't overwrite official sets
     ...(prev.authorType !== 'official' && { author: prev.author }),
   }
   await updateDoc(ref, updates)
-
+  // Sync public collection
   if (isPublic) {
     await setDoc(doc(db, 'publicFlashcards', setId), { ...prev, ...updates, uid, setId })
   } else if (prev.isPublic && !isPublic) {
-    await deleteDoc(doc(db, 'publicFlashcards', setId))
+    try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
   }
-}
-
-export const deleteFlashcardSet = async (uid, setId) => {
-  if (uid) {
-    await deleteDoc(doc(db, 'users', uid, 'flashcardSets', setId))
-  }
-  await deleteDoc(doc(db, 'publicFlashcards', setId))
+  await recordActivityStreak(uid)
 }
 
 export const getFlashcardSets = async (uid) => {
-  if (!uid) return []
   const snap = await getDocs(collection(db, 'users', uid, 'flashcardSets'))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export const getPublicFlashcardSets = async () => {
-  const snap = await getDocs(collection(db, 'publicFlashcards'))
+export const deleteFlashcardSet = async (uid, setId, isPublic = false) => {
+  await deleteDoc(doc(db, 'users', uid, 'flashcardSets', setId))
+  if (isPublic) {
+    try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
+  }
+}
+
+export const getPublicFlashcardSets = async (subject = null, limitN = 50) => {
+  let q = subject
+    ? query(collection(db, 'publicFlashcards'), where('subject', '==', subject), limit(limitN))
+    : query(collection(db, 'publicFlashcards'), orderBy('createdAt', 'desc'), limit(limitN))
+  const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
+  const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  await updateDoc(ref, { isPublic, updatedAt: serverTimestamp() })
+  if (isPublic) {
+    await setDoc(doc(db, 'publicFlashcards', setId), { ...snap.data(), isPublic: true, setId })
+  } else {
+    try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
+  }
+}
+
+/* ── Topic note rate limiting ────────────────────────────────────────────── */
+// Free users: 5 topic note generations per day
+// Pro/beta users: unlimited
+// Usage tracked in users/{uid}/usage/topicNotes doc
+
+export async function checkTopicNoteLimit(uid, profile) {
+  if (profile?.isPro || profile?.betaUser) return { allowed: true, remaining: Infinity }
+
+  const today = new Date().toISOString().slice(0, 10)  // YYYY-MM-DD
+  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists() || snap.data().date !== today) {
+      // New day — reset counter
+      await setDoc(ref, { date: today, count: 0 })
+      return { allowed: true, remaining: 5 }
+    }
+    const count = snap.data().count || 0
+    const remaining = Math.max(0, 5 - count)
+    return { allowed: remaining > 0, remaining, count }
+  } catch(e) {
+    return { allowed: true, remaining: 5 }  // fail open
+  }
+}
+
+export async function incrementTopicNoteUsage(uid) {
+  const today = new Date().toISOString().slice(0, 10)
+  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists() || snap.data().date !== today) {
+      await setDoc(ref, { date: today, count: 1 })
+    } else {
+      await updateDoc(ref, { count: increment(snap.data().count + 1) })
+    }
+  } catch(e) {}
 }
