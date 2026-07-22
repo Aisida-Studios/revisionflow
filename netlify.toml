@@ -62,8 +62,8 @@
   status = 200
 
 [[redirects]]
-  from   = "/api/referral-lookup"
-  to     = "/.netlify/functions/referral-lookup"
+  from   = "/api/referral"
+  to     = "/.netlify/functions/referral"
   status = 200
 
 # ── React app — catch-all must be last ───────────────────────────────────────
