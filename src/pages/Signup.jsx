@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ensureReferralCode, applyReferralCode, getPendingReferral, clearPendingReferral } from '../utils/referrals'
+import { ensureReferralCode, applyReferralCode, lookupReferrer, getPendingReferral, clearPendingReferral } from '../utils/referrals'
 import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
@@ -41,12 +41,7 @@ export default function Signup() {
     if (code.length < 8) { setReferrerName(''); return }
     let cancelled = false
     setCodeChecking(true)
-    fetch('/api/referral-lookup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    })
-      .then(res => res.json())
+    lookupReferrer(code)
       .then(data => {
         if (cancelled) return
         setReferrerName(data.found ? data.displayName : null) // null = invalid code entered
