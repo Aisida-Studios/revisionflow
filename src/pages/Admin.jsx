@@ -1,537 +1,1031 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from '../firebase';
+// src/pages/Admin.jsx
+// RevisionFlow admin panel — only accessible to femiaisida1@gmail.com
+// All Firestore writes go through /api/admin (server-side) to bypass client rules
+import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { getSubjectList } from '../data/subjects'
+import AdminAutoGenerate from '../components/AdminAutoGenerate'
+import toast from 'react-hot-toast'
+import {
+  Shield, Users, Star, Search, CheckCircle, XCircle,
+  BarChart2, Zap, RefreshCw, AlertTriangle, ChevronDown, ChevronUp,
+} from 'lucide-react'
 
-const ADMIN_EMAIL = 'femiaisida1@gmail.com';
+const ADMIN_EMAIL = 'femiaisida1@gmail.com'
 
-export default function Admin() {
-  const [activeTab, setActiveTab] = useState('generator');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [statusMessage, setStatusMessage] = useState('');
+/* ── Admin API helper ──────────────────────────────────────────── */
+async function adminCall(action, callerEmail, params = {}) {
+  // Get a fresh Firebase ID token — verified server-side, cannot be faked
+  let idToken = ''
+  try {
+    const { getAuth } = await import('firebase/auth')
+    const { app } = await import('../firebase')
+    const currentUser = getAuth(app).currentUser
+    if (currentUser) idToken = await currentUser.getIdToken()
+  } catch(e) { console.warn('[adminCall] could not get ID token:', e.message) }
 
-  // CRUD State
-  const [usersList, setUsersList] = useState([]);
-  const [resourceLinks, setResourceLinks] = useState([]);
-  const [selectedUserEmail, setSelectedUserEmail] = useState('');
-  const [userSearchResult, setUserSearchResult] = useState(null);
+  const res = await fetch('/api/admin', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + idToken,
+    },
+    body: JSON.stringify({ action, callerEmail, ...params }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || 'Admin call failed')
+  return data
+}
 
-  // Form State for Resource Links
-  const [newResource, setNewResource] = useState({
-    subject: '',
-    qualification: 'GCSE',
-    board: 'AQA',
-    topic: '',
-    title: '',
-    url: '',
-    type: 'video'
-  });
+/* ── Section wrapper ───────────────────────────────────────────── */
+function Section({ title, icon, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="card" style={{ marginBottom: 16, padding: 0, overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+        borderBottom: open ? '1px solid var(--border)' : 'none',
+      }}>
+        <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
+          {icon} {title}
+        </h4>
+        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {open && <div style={{ padding: '16px 18px' }}>{children}</div>}
+    </div>
+  )
+}
 
-  // Automated Generator State
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationLogs, setGenerationLogs] = useState([]);
-  const [genQualification, setGenQualification] = useState('GCSE');
-  const [genSubject, setGenSubject] = useState('Physics');
-  const [genBoard, setGenBoard] = useState('AQA');
+/* ── Main page ─────────────────────────────────────────────────── */
+/* ── Content tab — bulk AI generation ─────────────────────────────────────── */
+function ContentTab({ email }) {
+  const { user } = useAuth()
+  const [subject,   setSubject]   = useState('')
+  const [board,     setBoard]     = useState('AQA')
+  const [level,     setLevel]     = useState('GCSE')
+  const [topics,    setTopics]    = useState([])
+  const [progress,  setProgress]  = useState(null)  // { done, total, current, errors }
+  const [running,   setRunning]   = useState(false)
+  const [log,       setLog]       = useState([])
+  const stopRef = useRef(false)  // ref-based stop flag — not subject to stale closure
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+  const subjectList = getSubjectList(level)
 
-  const getAdminToken = async () => {
-    if (!auth.currentUser) throw new Error("Not authenticated");
-    return await auth.currentUser.getIdToken(true);
-  };
-
-  const callAdminApi = async (action, payload = {}) => {
-    const token = await getAdminToken();
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ action, ...payload })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Admin request failed");
-    return data;
-  };
-
-  // User Management Handlers
-  const handleFetchUsers = async () => {
+  async function loadTopics() {
+    if (!subject) return
     try {
-      setStatusMessage("Fetching user directory...");
-      const data = await callAdminApi('listUsers');
-      setUsersList(data.users || []);
-      setStatusMessage("User directory updated successfully.");
-    } catch (err) {
-      setStatusMessage(`Error fetching users: ${err.message}`);
-    }
-  };
+      const { getTopicsForSubject } = await import('../data/topics')
+      const papers = getTopicsForSubject(board, subject, level) || {}
+      const flat = Object.values(papers).flat().filter(t => typeof t === 'string' && t.trim())
+      const list = [...new Set(flat)]
+      setTopics(list)
+    } catch(e) { toast.error(e.message) }
+  }
 
-  const handleSearchUser = async () => {
-    if (!selectedUserEmail) return;
-    try {
-      setStatusMessage(`Searching for ${selectedUserEmail}...`);
-      const data = await callAdminApi('findByEmail', { email: selectedUserEmail });
-      setUserSearchResult(data.user);
-      setStatusMessage("User found.");
-    } catch (err) {
-      setStatusMessage(`User lookup failed: ${err.message}`);
-      setUserSearchResult(null);
-    }
-  };
+  useEffect(() => { loadTopics() }, [subject, board, level])
 
-  const handleGrantPro = async (targetUid, status) => {
-    try {
-      setStatusMessage("Updating user entitlement...");
-      await callAdminApi('setUserField', {
-        targetUid,
-        field: 'isPro',
-        value: status
-      });
-      setStatusMessage("User access level updated successfully.");
-      if (userSearchResult) handleSearchUser();
-      handleFetchUsers();
-    } catch (err) {
-      setStatusMessage(`Failed to update user: ${err.message}`);
-    }
-  };
+  function addLog(msg, type = 'info') {
+    setLog(l => [...l, { msg, type, ts: new Date().toLocaleTimeString() }])
+  }
 
-  // Resource Link Handlers
-  const handleFetchResources = async () => {
-    try {
-      setStatusMessage("Loading topic resources...");
-      const data = await callAdminApi('listResourceLinks');
-      setResourceLinks(data.links || []);
-      setStatusMessage("Resource list loaded.");
-    } catch (err) {
-      setStatusMessage(`Error loading resources: ${err.message}`);
-    }
-  };
+  async function runBulkGenerate() {
+    if (!topics.length || !subject) { toast.error('Select a subject with topics first'); return }
+    stopRef.current = false
+    setRunning(true)
+    setLog([])
+    setProgress({ done: 0, total: topics.length, current: '', errors: 0 })
+    addLog('Starting bulk generation: ' + topics.length + ' topics for ' + board + ' ' + level + ' ' + subject)
 
-  const handleAddResource = async (e) => {
-    e.preventDefault();
     try {
-      setStatusMessage("Adding resource link...");
-      const compoundTopicKey = `${newResource.board}_${newResource.qualification}_${newResource.subject}_${newResource.topic}`.replace(/\s+/g, '_');
-      
-      await callAdminApi('addResourceLink', {
-        linkData: {
-          ...newResource,
-          compoundTopicKey,
-          createdAt: new Date().toISOString()
+      const { generateTopicNote, getTopicNoteFromCache, saveTopicNoteToCache } = await import('../utils/ai')
+      let done = 0, errors = 0
+
+      for (const topic of topics) {
+        if (stopRef.current) { addLog('Stopped by user', 'error'); break }
+        setProgress(p => ({ ...p, current: topic }))
+        addLog('Checking cache: ' + topic)
+
+        try {
+          const cached = await getTopicNoteFromCache(board, level, subject, topic)
+          if (cached) {
+            addLog('CACHED (skipping): ' + topic, 'cached')
+            done++
+            setProgress(p => ({ ...p, done }))
+            continue
+          }
+
+          addLog('Generating: ' + topic)
+          const res = await generateTopicNote({ subject, board, level, topic, uid: null })
+          if (res.error) {
+            addLog('ERROR: ' + topic + ' — ' + res.error, 'error')
+            errors++
+          } else {
+            await saveTopicNoteToCache(board, level, subject, topic, res.text)
+            addLog('DONE: ' + topic, 'success')
+            done++
+          }
+        } catch(e) {
+          addLog('ERROR: ' + topic + ' — ' + e.message, 'error')
+          errors++
         }
-      });
-      setStatusMessage("Resource added successfully.");
-      setNewResource({ subject: '', qualification: 'GCSE', board: 'AQA', topic: '', title: '', url: '', type: 'video' });
-      handleFetchResources();
-    } catch (err) {
-      setStatusMessage(`Failed to add resource: ${err.message}`);
-    }
-  };
 
-  const handleDeleteResource = async (linkId) => {
-    try {
-      setStatusMessage("Deleting resource...");
-      await callAdminApi('deleteResourceLink', { linkId });
-      setStatusMessage("Resource deleted.");
-      handleFetchResources();
-    } catch (err) {
-      setStatusMessage(`Delete failed: ${err.message}`);
-    }
-  };
-
-  // Content Generator Engine
-  const handleAutomatedGeneration = async () => {
-    setIsGenerating(true);
-    setGenerationLogs(["Initiating automated content pipeline..."]);
-
-    const appendLog = (msg) => {
-      setGenerationLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-    };
-
-    try {
-      appendLog(`Targeting qualification: ${genQualification} | Subject: ${genSubject} | Board: ${genBoard}`);
-      
-      // Step 1: Request Flashcard and Note Generation via /api/tutor proxy
-      appendLog("Requesting board-accurate study material generation...");
-      const token = await auth.currentUser.getIdToken();
-      
-      const promptText = `Generate structured flashcards and summary notes for ${genQualification} ${genSubject} (${genBoard}). Provide 5 key concepts with question/answer pairs. Plain text notation only, no LaTeX.`;
-
-      const tutorRes = await fetch('/api/tutor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: promptText }]
-        })
-      });
-
-      if (!tutorRes.ok) {
-        throw new Error("Failed to reach tutor generation API");
+        setProgress(p => ({ ...p, done, errors }))
+        await new Promise(r => setTimeout(r, 1500))
       }
 
-      const tutorData = await tutorRes.json();
-      appendLog("Generated content received successfully.");
-
-      // Step 2: Cache generated material as official set using Admin API
-      appendLog("Publishing official topic flashcards to database...");
-      const docKey = `${genBoard}_${genQualification}_${genSubject}_General`.replace(/\s+/g, '_');
-      
-      await callAdminApi('addResourceLink', {
-        linkData: {
-          compoundTopicKey: docKey,
-          title: `${genQualification} ${genSubject} (${genBoard}) Core Flashcards`,
-          type: 'official_set',
-          content: tutorData.reply || tutorData.choices?.[0]?.message?.content || '',
-          createdAt: new Date().toISOString()
-        }
-      });
-
-      appendLog("Content successfully indexed and published.");
-    } catch (err) {
-      appendLog(`Pipeline error: ${err.message}`);
-      appendLog("Attempting auto-recovery retry sequence...");
+      addLog('Complete: ' + done + ' generated, ' + errors + ' errors', done > 0 ? 'success' : 'error')
+    } catch(e) {
+      addLog('Fatal error: ' + e.message, 'error')
     } finally {
-      setIsGenerating(false);
+      setRunning(false)
+      setProgress(p => p ? ({ ...p, current: '' }) : null)
     }
-  };
-
-  if (loading) {
-    return <div className="p-8 text-center font-medium">Checking authorization permissions...</div>;
   }
 
-  if (!user || user.email !== ADMIN_EMAIL) {
-    return (
-      <div className="p-8 max-w-md mx-auto text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h1>
-        <p className="text-gray-600">You must be signed in as the system administrator to view this control panel.</p>
-      </div>
-    );
+  // ── Bulk flashcards state ─────────────────────────────────────────────────
+  const [fcRunning,  setFcRunning]  = useState(false)
+  const [fcProgress, setFcProgress] = useState(null)
+  const [fcLog,      setFcLog]      = useState([])
+  const fcStopRef = useRef(false)
+
+  async function runBulkFlashcards() {
+    if (!topics.length || !subject) { toast.error('Select a subject with topics first'); return }
+    fcStopRef.current = false
+    setFcRunning(true)
+    setFcLog([])
+    setFcProgress({ done: 0, total: topics.length, current: '', errors: 0 })
+    const addFcLog = (msg, type = 'info') => setFcLog(l => [...l, { msg, type, ts: new Date().toLocaleTimeString() }])
+    addFcLog('Starting bulk flashcard generation: ' + topics.length + ' topics for ' + board + ' ' + level + ' ' + subject)
+
+    try {
+      const { generateFlashcards, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } = await import('../utils/ai')
+      const { getOfficialFlashcardSet, saveOfficialFlashcardSet } = await import('../utils/firestore')
+      let done = 0, errors = 0, skipped = 0
+
+      for (const topic of topics) {
+        if (fcStopRef.current) { addFcLog('Stopped by user', 'error'); break }
+        setFcProgress(p => ({ ...p, current: topic }))
+
+        try {
+          const existing = await getOfficialFlashcardSet(board, level, subject, topic)
+          if (existing) {
+            addFcLog('Already exists, skipped: ' + topic, 'cached')
+            skipped++
+            setFcProgress(p => ({ ...p, done: done + errors + skipped, errors }))
+            continue
+          }
+
+          addFcLog('Generating: ' + topic)
+          let cards = null
+          const cachedRaw = await getFlashcardSetFromCache(board, level, subject, topic, 50)
+          if (cachedRaw?.cards?.length) {
+            cards = cachedRaw.cards
+          } else {
+            for (let attempt = 1; attempt <= 3 && !cards; attempt++) {
+              const res = await generateFlashcards(subject, topic, 50, null)
+              if (res.error) { addFcLog('  attempt ' + attempt + '/3 failed: ' + res.error, 'error'); continue }
+              const parsed = parseFlashcards(res.text || '')
+              if (parsed.length < 5) { addFcLog('  attempt ' + attempt + '/3 invalid: only ' + parsed.length + ' cards parsed', 'error'); continue }
+              cards = parsed
+            }
+            if (cards) saveFlashcardSetToCache(board, level, subject, topic, 50, cards).catch(() => {})
+          }
+          if (!cards) throw new Error('Gave up after 3 attempts')
+
+          // Deterministic ID (board+level+subject+topic) — same slot the new auto-generate tool
+          // checks, so this never creates a duplicate official set on a re-run.
+          await saveOfficialFlashcardSet(board, level, subject, topic, cards)
+          addFcLog('DONE (' + cards.length + ' cards): ' + topic, 'success')
+          done++
+        } catch(e) {
+          addFcLog('ERROR: ' + topic + ' — ' + e.message, 'error')
+          errors++
+        }
+
+        setFcProgress(p => ({ ...p, done: done + errors + skipped, errors }))
+        await new Promise(r => setTimeout(r, 2000))
+      }
+
+      addFcLog('Complete: ' + done + ' generated, ' + skipped + ' already existed, ' + errors + ' errors', errors === 0 ? 'success' : 'error')
+    } catch(e) {
+      addFcLog('Fatal error: ' + e.message, 'error')
+    } finally {
+      setFcRunning(false)
+      setFcProgress(p => p ? ({ ...p, current: '' }) : null)
+    }
   }
+
+  const logColour = { info: 'var(--text-muted)', success: 'var(--success)', error: 'var(--danger)', cached: 'var(--info)' }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <header className="flex justify-between items-center pb-6 mb-6 border-b">
-        <div>
-          <h1 className="text-3xl font-bold">RevisionFlow Control Center</h1>
-          <p className="text-sm text-gray-500 mt-1">Administrator: {ADMIN_EMAIL}</p>
+    <div>
+      <AdminAutoGenerate />
+
+      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Manual single-subject generator</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          For spot-checking or regenerating one subject at a time. For everything else, use auto-generate above.
+          Already-cached topics are skipped. Costs API tokens but saves them for every future student request.
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('generator')}
-            className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${activeTab === 'generator' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            Auto Content Generator
-          </button>
-          <button
-            onClick={() => { setActiveTab('users'); handleFetchUsers(); }}
-            className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${activeTab === 'users' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            User Directory
-          </button>
-          <button
-            onClick={() => { setActiveTab('resources'); handleFetchResources(); }}
-            className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${activeTab === 'resources' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            Topic Resources
-          </button>
-        </div>
-      </header>
+      </div>
 
-      {statusMessage && (
-        <div className="mb-6 p-4 bg-purple-50 border border-purple-200 text-purple-800 rounded-lg text-sm font-medium">
-          {statusMessage}
-        </div>
-      )}
-
-      {/* TAB 1: AUTOMATED CONTENT GENERATOR */}
-      {activeTab === 'generator' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 border rounded-xl shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Automated Content Engine</h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Generate official study sets and flashcards for specific exam boards and qualifications.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Qualification</label>
-                <select
-                  value={genQualification}
-                  onChange={(e) => setGenQualification(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                >
-                  <option value="GCSE">GCSE</option>
-                  <option value="AS-Level">AS-Level</option>
-                  <option value="A-Level">A-Level</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Subject</label>
-                <input
-                  type="text"
-                  value={genSubject}
-                  onChange={(e) => setGenSubject(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                  placeholder="e.g. Physics, Chemistry, Maths"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Exam Board</label>
-                <select
-                  value={genBoard}
-                  onChange={(e) => setGenBoard(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                >
-                  <option value="AQA">AQA</option>
-                  <option value="Edexcel">Edexcel</option>
-                  <option value="OCR">OCR</option>
-                  <option value="WJEC">WJEC</option>
-                  <option value="Eduqas">Eduqas</option>
-                  <option value="CCEA">CCEA</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              onClick={handleAutomatedGeneration}
-              disabled={isGenerating}
-              className="w-full bg-purple-600 text-white py-3 rounded-full font-semibold hover:bg-purple-700 disabled:opacity-50 transition-colors"
-            >
-              {isGenerating ? 'Generation Sequence Active...' : 'Run Content Generation Pipeline'}
-            </button>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10, marginBottom: 14 }}>
+          <div>
+            <label className="label">Level</label>
+            <select className="select" value={level} onChange={e => { setLevel(e.target.value); setSubject('') }}>
+              <option value="GCSE">GCSE</option>
+              <option value="AS-Level">AS-Level</option>
+              <option value="A-Level">A-Level</option>
+              <option value="BTEC-L2">BTEC (L2)</option>
+              <option value="BTEC-L3">BTEC (L3)</option>
+            </select>
           </div>
+          <div>
+            <label className="label">Board</label>
+            <select className="select" value={board} onChange={e => setBoard(e.target.value)}>
+              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Subject</label>
+            <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+              <option value="">Select subject</option>
+              {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
 
-          {generationLogs.length > 0 && (
-            <div className="bg-gray-900 text-green-400 p-4 rounded-xl font-mono text-xs h-48 overflow-y-auto shadow-inner">
-              <div className="font-bold text-gray-400 mb-2 border-b border-gray-800 pb-1">CONSOLE LOGS</div>
-              {generationLogs.map((log, index) => (
-                <div key={index} className="py-0.5">{log}</div>
-              ))}
+        {topics.length > 0 && (
+          <div style={{ marginBottom: 12, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {topics.length} topics found for {board} {level} {subject}
+          </div>
+        )}
+
+        {progress && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 6 }}>
+              <span>{progress.done}/{progress.total} topics</span>
+              <span>{progress.errors > 0 && <span style={{ color: 'var(--danger)' }}>{progress.errors} errors</span>}</span>
             </div>
+            <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: Math.round(progress.done/progress.total*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
+            </div>
+            {progress.current && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 5 }}>Processing: {progress.current}</div>}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-primary" onClick={runBulkGenerate} disabled={running || !subject || !topics.length}>
+            {running ? 'Generating...' : `Generate all ${topics.length} topics`}
+          </button>
+          {running && (
+            <button className="btn btn-secondary" onClick={() => { stopRef.current = true; setRunning(false) }}>Stop</button>
           )}
         </div>
+      </div>
+
+      {log.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+            Generation log
+            <button className="btn btn-ghost btn-sm" onClick={() => setLog([])}>Clear</button>
+          </div>
+          <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {log.map((l, i) => (
+              <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
+                <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* TAB 2: USER DIRECTORY */}
-      {activeTab === 'users' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 border rounded-xl shadow-sm">
-            <h2 className="text-xl font-bold mb-4">User Lookup & Entitlements</h2>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="email"
-                placeholder="Enter user email..."
-                value={selectedUserEmail}
-                onChange={(e) => setSelectedUserEmail(e.target.value)}
-                className="flex-1 p-2.5 border rounded-lg text-sm"
-              />
-              <button
-                onClick={handleSearchUser}
-                className="bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-black"
-              >
-                Find User
-              </button>
-            </div>
+      {/* ── BULK FLASHCARD GENERATOR ── */}
+      <div style={{ marginBottom: 20, marginTop: 28, padding: '12px 16px', borderRadius: 10,
+        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Bulk flashcard generator</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Generate a public flashcard set for every topic in a subject. Saved to Public Sets — all students can quiz on them.
+          Uses the same subject/board/level selection above.
+        </div>
+      </div>
 
-            {userSearchResult && (
-              <div className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center">
-                <div>
-                  <div className="font-bold">{userSearchResult.displayName || 'No Name'}</div>
-                  <div className="text-xs text-gray-500">{userSearchResult.email} (UID: {userSearchResult.uid})</div>
-                  <div className="text-xs mt-1">
-                    Status: <span className="font-semibold">{userSearchResult.isPro || userSearchResult.betaUser ? 'Pro Access Active' : 'Free Access'}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleGrantPro(userSearchResult.uid, true)}
-                    className="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-green-700"
-                  >
-                    Grant Pro Access
-                  </button>
-                  <button
-                    onClick={() => handleGrantPro(userSearchResult.uid, false)}
-                    className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-red-700"
-                  >
-                    Revoke Pro Access
-                  </button>
-                </div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+              {topics.length > 0 ? topics.length + ' topics loaded for ' + board + ' ' + level + ' ' + subject : 'Select subject above'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Each topic generates ~50 flashcards and saves as a public set
+            </div>
+          </div>
+          {fcProgress && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {fcProgress.done}/{fcProgress.total}
+            </span>
+          )}
+        </div>
+
+        {fcProgress && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: Math.round(fcProgress.done/fcProgress.total*100)+'%',
+                background: 'var(--success)', borderRadius: 3, transition: 'width 0.3s' }} />
+            </div>
+            {fcProgress.current && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 5 }}>
+                Processing: {fcProgress.current}
               </div>
             )}
           </div>
+        )}
 
-          <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b bg-gray-50 font-bold text-sm">System User Roster</div>
-            <div className="divide-y max-h-96 overflow-y-auto">
-              {usersList.length === 0 ? (
-                <div className="p-4 text-sm text-gray-500 text-center">Click "User Directory" tab to load user list.</div>
-              ) : (
-                usersList.map((u) => (
-                  <div key={u.uid} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                    <div>
-                      <div className="font-semibold text-sm">{u.displayName || u.email}</div>
-                      <div className="text-xs text-gray-500">{u.email}</div>
-                    </div>
-                    <button
-                      onClick={() => handleGrantPro(u.uid, !u.isPro)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${u.isPro ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {u.isPro ? 'Pro User' : 'Standard User'}
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: TOPIC RESOURCES */}
-      {activeTab === 'resources' && (
-        <div className="space-y-6">
-          <form onSubmit={handleAddResource} className="bg-white p-6 border rounded-xl shadow-sm space-y-4">
-            <h2 className="text-xl font-bold">Add Topic Resource Link</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Qualification</label>
-                <select
-                  value={newResource.qualification}
-                  onChange={(e) => setNewResource({ ...newResource, qualification: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                >
-                  <option value="GCSE">GCSE</option>
-                  <option value="AS-Level">AS-Level</option>
-                  <option value="A-Level">A-Level</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Subject</label>
-                <input
-                  type="text"
-                  required
-                  value={newResource.subject}
-                  onChange={(e) => setNewResource({ ...newResource, subject: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                  placeholder="e.g. Maths"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Exam Board</label>
-                <select
-                  value={newResource.board}
-                  onChange={(e) => setNewResource({ ...newResource, board: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                >
-                  <option value="AQA">AQA</option>
-                  <option value="Edexcel">Edexcel</option>
-                  <option value="OCR">OCR</option>
-                  <option value="WJEC">WJEC</option>
-                  <option value="Eduqas">Eduqas</option>
-                  <option value="CCEA">CCEA</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Topic Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newResource.topic}
-                  onChange={(e) => setNewResource({ ...newResource, topic: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                  placeholder="e.g. Algebra"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Link Title</label>
-                <input
-                  type="text"
-                  required
-                  value={newResource.title}
-                  onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                  placeholder="e.g. Video Walkthrough"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Resource URL</label>
-                <input
-                  type="url"
-                  required
-                  value={newResource.url}
-                  onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Resource Type</label>
-                <select
-                  value={newResource.type}
-                  onChange={(e) => setNewResource({ ...newResource, type: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg text-sm"
-                >
-                  <option value="video">Video</option>
-                  <option value="article">Article/Notes</option>
-                  <option value="past_paper">Past Paper PDF</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="bg-purple-600 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-purple-700"
-            >
-              Add Resource
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" disabled={fcRunning || !subject || !topics.length}
+            onClick={runBulkFlashcards}>
+            {fcRunning ? 'Generating flashcards...' : 'Generate flashcards for all ' + topics.length + ' topics'}
+          </button>
+          {fcRunning && (
+            <button className="btn btn-secondary" onClick={() => { fcStopRef.current = true; setFcRunning(false) }}>
+              Stop
             </button>
-          </form>
+          )}
+        </div>
+      </div>
 
-          <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b bg-gray-50 font-bold text-sm">Indexed Resources</div>
-            <div className="divide-y max-h-96 overflow-y-auto">
-              {resourceLinks.length === 0 ? (
-                <div className="p-4 text-sm text-gray-500 text-center">No resources found in database.</div>
-              ) : (
-                resourceLinks.map((item) => (
-                  <div key={item.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                    <div>
-                      <div className="font-semibold text-sm">{item.title}</div>
-                      <div className="text-xs text-gray-500">{item.compoundTopicKey}</div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteResource(item.id)}
-                      className="text-red-600 text-xs font-semibold hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+      {fcLog.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem',
+            display: 'flex', justifyContent: 'space-between' }}>
+            Flashcard log
+            <button className="btn btn-ghost btn-sm" onClick={() => setFcLog([])}>Clear</button>
+          </div>
+          <div style={{ maxHeight: 260, overflowY: 'auto', padding: '8px 14px',
+            fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {fcLog.map((l, i) => (
+              <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
+                <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
+              </div>
+            ))}
           </div>
         </div>
       )}
     </div>
-  );
+  )
+}
+
+
+export default function Admin() {
+  const { user } = useAuth()
+  const [tab, setTab] = useState('users')
+
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+        <Shield size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+        <h3>Access denied</h3>
+        <p style={{ color: 'var(--text-muted)' }}>Admin panel is restricted.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fade-in">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <Shield size={22} color="var(--accent)" />
+        <h2 style={{ margin: 0 }}>Admin Panel</h2>
+        <span className="badge badge-red">Internal only</span>
+      </div>
+
+      <div className="tabs" style={{ marginBottom: 20 }}>
+        {['users', 'beta', 'stats', 'content', 'resources'].map(t => (
+          <button key={t} className={`tab${tab === t ? ' active' : ''}`}
+            onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
+        ))}
+      </div>
+
+      {tab === 'users' && <UsersTab email={user.email} />}
+      {tab === 'beta'  && <BetaTab  email={user.email} />}
+      {tab === 'stats'   && <StatsTab   email={user.email} />}
+      {tab === 'content' && <ContentTab email={user.email} />}
+      {tab === 'resources' && <ResourcesTab email={user.email} />}
+    </div>
+  )
+}
+
+/* ── Resources tab — import verified topic resource links ───────── */
+function ResourcesTab({ email }) {
+  const [links,      setLinks]      = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [mode,       setMode]       = useState('single')   // 'single' | 'bulk'
+  const [saving,     setSaving]     = useState(false)
+  const [filterSubj, setFilterSubj] = useState('')
+
+  // Single-entry form
+  const [subject,  setSubject]  = useState('Mathematics')
+  const [keywords, setKeywords] = useState('')
+  const [name,      setName]    = useState('')
+  const [url,       setUrl]     = useState('')
+  const [site,      setSite]    = useState('')
+
+  // Bulk paste
+  const [bulkText, setBulkText] = useState('')
+  const [bulkPreview, setBulkPreview] = useState([])
+  const [bulkErrors,  setBulkErrors]  = useState([])
+
+  const SUBJECTS = [
+    'Mathematics','Further Mathematics','Biology','Chemistry','Physics','Combined Science',
+    'English Language','English Literature','History','Geography','Computer Science',
+    'Business Studies','Economics','Psychology','Sociology','French','German','Spanish',
+    'Religious Studies','Law','Media Studies',
+  ]
+
+  async function loadLinks() {
+    setLoading(true)
+    try {
+      const data = await adminCall('listResourceLinks', email)
+      setLinks(data.links || [])
+    } catch(e) { toast.error(e.message) }
+    setLoading(false)
+  }
+
+  useEffect(() => { loadLinks() }, [])
+
+  async function addSingle() {
+    if (!subject || !keywords.trim() || !name.trim() || !url.trim()) {
+      toast.error('Fill in all fields'); return
+    }
+    setSaving(true)
+    try {
+      await adminCall('addResourceLink', email, {
+        subject, keywords: keywords.trim(), name: name.trim(), url: url.trim(), site: site.trim() || name.trim(),
+      })
+      toast.success('Link added')
+      setKeywords(''); setName(''); setUrl(''); setSite('')
+      loadLinks()
+    } catch(e) { toast.error(e.message) }
+    setSaving(false)
+  }
+
+  async function deleteLink(id) {
+    try {
+      await adminCall('deleteResourceLink', email, { linkId: id })
+      setLinks(l => l.filter(x => x.id !== id))
+      toast.success('Deleted')
+    } catch(e) { toast.error(e.message) }
+  }
+
+  // Bulk paste format: Subject | keyword1,keyword2 | Link name | URL | Site name (optional)
+  function parseBulk(text) {
+    const rows = []
+    const errors = []
+    text.split('\n').forEach((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return
+      const parts = trimmed.split('|').map(p => p.trim())
+      if (parts.length < 4) {
+        errors.push('Line ' + (i + 1) + ': needs at least 4 fields separated by |')
+        return
+      }
+      const [subj, kw, nm, u, st] = parts
+      if (!subj || !kw || !nm || !u) {
+        errors.push('Line ' + (i + 1) + ': missing required field')
+        return
+      }
+      if (!u.startsWith('http')) {
+        errors.push('Line ' + (i + 1) + ': URL must start with http(s)://')
+        return
+      }
+      rows.push({ subject: subj, keywords: kw, name: nm, url: u, site: st || nm })
+    })
+    return { rows, errors }
+  }
+
+  function handleBulkChange(text) {
+    setBulkText(text)
+    const { rows, errors } = parseBulk(text)
+    setBulkPreview(rows)
+    setBulkErrors(errors)
+  }
+
+  async function submitBulk() {
+    if (!bulkPreview.length) { toast.error('Nothing to import'); return }
+    setSaving(true)
+    try {
+      const data = await adminCall('bulkAddResourceLinks', email, { rows: bulkPreview })
+      toast.success(data.added + ' links imported')
+      setBulkText(''); setBulkPreview([]); setBulkErrors([])
+      loadLinks()
+    } catch(e) { toast.error(e.message) }
+    setSaving(false)
+  }
+
+  const filteredLinks = filterSubj ? links.filter(l => l.subject === filterSubj) : links
+  const subjectsInUse = [...new Set(links.map(l => l.subject))].sort()
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Verified resource links</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          These power the "Resources" button on each topic in Topics.jsx. Keywords are matched as
+          case-insensitive substrings against the topic name — e.g. keyword "bidmas" matches the topic
+          "Number — Integers: Order of Operations (BIDMAS)".
+        </div>
+      </div>
+
+      {/* Mode toggle */}
+      <div className="tabs" style={{ marginBottom: 16 }}>
+        <button className={'tab' + (mode === 'single' ? ' active' : '')} onClick={() => setMode('single')}>Add one link</button>
+        <button className={'tab' + (mode === 'bulk' ? ' active' : '')} onClick={() => setMode('bulk')}>Bulk paste</button>
+      </div>
+
+      {mode === 'single' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h4 style={{ marginBottom: 14, fontSize: '0.9rem' }}>Add a single verified link</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10, marginBottom: 12 }}>
+            <div>
+              <label className="label">Subject</label>
+              <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+                {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Keywords (comma-separated)</label>
+              <input className="input" placeholder="e.g. bidmas, order of operations" value={keywords} onChange={e => setKeywords(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Link display name</label>
+              <input className="input" placeholder="e.g. Corbett Maths — BIDMAS" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Site name (optional)</label>
+              <input className="input" placeholder="e.g. Corbett Maths" value={site} onChange={e => setSite(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label className="label">URL</label>
+            <input className="input" placeholder="https://..." value={url} onChange={e => setUrl(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" onClick={addSingle} disabled={saving}>
+            {saving ? 'Saving...' : 'Add link'}
+          </button>
+        </div>
+      )}
+
+      {mode === 'bulk' && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Bulk paste links</h4>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
+            One link per line, fields separated by <code>|</code>:<br />
+            <code style={{ display: 'block', marginTop: 4, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 6 }}>
+              Subject | keyword1,keyword2 | Link name | https://url.com | Site name (optional)
+            </code>
+          </p>
+          <textarea className="textarea" rows={8}
+            placeholder={'Mathematics | bidmas,order of operations | Corbett Maths — BIDMAS | https://corbettmaths.com/2013/06/08/order-of-operations/ | Corbett Maths\nBiology | photosynthesis | Cognito — Photosynthesis | https://www.cognitoedu.org/topics/photosynthesis-gcse | Cognito'}
+            value={bulkText} onChange={e => handleBulkChange(e.target.value)} />
+
+          {bulkErrors.length > 0 && (
+            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8,
+              background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {bulkErrors.map((e, i) => (
+                <div key={i} style={{ fontSize: '0.78rem', color: 'var(--danger)' }}>{e}</div>
+              ))}
+            </div>
+          )}
+
+          {bulkPreview.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, color: 'var(--success)' }}>
+                {bulkPreview.length} link{bulkPreview.length !== 1 ? 's' : ''} ready to import
+              </div>
+              <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {bulkPreview.map((r, i) => (
+                  <div key={i} style={{ fontSize: '0.75rem', padding: '6px 10px', borderRadius: 6,
+                    background: 'var(--bg-hover)', display: 'flex', gap: 8 }}>
+                    <span className="badge badge-purple" style={{ fontSize: '0.68rem' }}>{r.subject}</span>
+                    <span style={{ fontWeight: 600 }}>{r.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button className="btn btn-primary" style={{ marginTop: 14 }}
+            onClick={submitBulk} disabled={saving || !bulkPreview.length}>
+            {saving ? 'Importing...' : 'Import ' + bulkPreview.length + ' link' + (bulkPreview.length !== 1 ? 's' : '')}
+          </button>
+        </div>
+      )}
+
+      {/* Existing links list */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <h4 style={{ margin: 0 }}>{links.length} link{links.length !== 1 ? 's' : ''} stored</h4>
+        {subjectsInUse.length > 1 && (
+          <select className="select" style={{ width: 'auto', fontSize: '0.82rem' }} value={filterSubj} onChange={e => setFilterSubj(e.target.value)}>
+            <option value="">All subjects</option>
+            {subjectsInUse.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="empty-state"><div className="spinner" /></div>
+      ) : filteredLinks.length === 0 ? (
+        <div className="empty-state"><p>No resource links yet — add some above.</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filteredLinks.map(l => (
+            <div key={l.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px' }}>
+              <span className="badge badge-purple" style={{ flexShrink: 0, fontSize: '0.7rem' }}>{l.subject}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {(l.keywords || []).join(', ')}
+                </div>
+              </div>
+              <a href={l.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }}>Open</a>
+              <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', flexShrink: 0 }}
+                onClick={() => deleteLink(l.id)}><XCircle size={14} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Users tab ─────────────────────────────────────────────────── */
+function UsersTab({ email }) {
+  const [users,   setUsers]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search,  setSearch]  = useState('')
+  const [page,    setPage]    = useState(0)
+  const PAGE_SIZE = 25
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await adminCall('listUsers', email, { limitN: 300 })
+      setUsers(data.users || [])
+    } catch(e) { toast.error(e.message) }
+    finally { setLoading(false) }
+  }
+
+  async function setField(uid, field, value, label) {
+    try {
+      await adminCall('setUserField', email, { targetUid: uid, field, value })
+      setUsers(us => us.map(u => u.id === uid ? { ...u, [field]: value } : u))
+      toast.success(label)
+    } catch(e) { toast.error('Failed: ' + e.message) }
+  }
+
+  const filtered = users.filter(u => {
+    const q = search.toLowerCase()
+    return !q || (u.displayName || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+  })
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const pages = Math.ceil(filtered.length / PAGE_SIZE)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+        <input className="input" style={{ maxWidth: 280 }} placeholder="Search by name or email…"
+          value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
+        <button className="btn btn-secondary btn-sm" onClick={load}>
+          <RefreshCw size={13} /> Refresh
+        </button>
+        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+          {filtered.length} users
+        </span>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Loading…</div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {paged.map(u => (
+              <div key={u.id} style={{ padding: '10px 14px', borderRadius: 10,
+                background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {u.displayName || '(no name)'}
+                    {u.betaUser && <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>Beta</span>}
+                    {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
+                  </div>
+                  <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    {u.email || u.id.slice(0, 16)} · {(u.xp || 0).toLocaleString()} XP · 🔥 {u.streak || 0}d
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => setField(u.id, 'betaUser', !u.betaUser,
+                    (u.betaUser ? 'Beta revoked' : 'Beta granted') + ' — ' + (u.displayName || u.email))}
+                    className={'btn btn-sm ' + (u.betaUser ? 'btn-primary' : 'btn-secondary')}
+                    style={{ fontSize: '0.75rem' }}>
+                    {u.betaUser ? '★ Beta' : '+ Beta'}
+                  </button>
+                  <button onClick={() => setField(u.id, 'isPro', !u.isPro,
+                    (u.isPro ? 'Pro revoked' : 'Pro granted') + ' — ' + (u.displayName || u.email))}
+                    className={'btn btn-sm ' + (u.isPro ? 'btn-primary' : 'btn-secondary')}
+                    style={{ fontSize: '0.75rem' }}>
+                    {u.isPro ? '⚡ Pro' : '+ Pro'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {pages > 1 && (
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {Array.from({ length: pages }, (_, i) => (
+                <button key={i} onClick={() => setPage(i)}
+                  className={'btn btn-sm ' + (page === i ? 'btn-primary' : 'btn-secondary')}
+                  style={{ minWidth: 36 }}>{i + 1}</button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ── Beta tab ──────────────────────────────────────────────────── */
+function BetaTab({ email }) {
+  const [betaUsers,    setBetaUsers]    = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [searchQ,      setSearchQ]      = useState('')
+  const [searching,    setSearching]    = useState(false)
+  const [found,        setFound]        = useState(null)
+  const [bulkInput,    setBulkInput]    = useState('')
+  const [bulkLoading,  setBulkLoading]  = useState(false)
+  const [bulkResult,   setBulkResult]   = useState(null)
+
+  useEffect(() => { loadBeta() }, [])
+
+  async function loadBeta() {
+    setLoading(true)
+    try {
+      const data = await adminCall('listUsers', email, { filterField: 'betaUser', filterValue: true, limitN: 500 })
+      setBetaUsers(data.users || [])
+    } catch(e) { toast.error(e.message) }
+    finally { setLoading(false) }
+  }
+
+  async function findUser() {
+    if (!searchQ.trim()) return
+    setSearching(true); setFound(null)
+    try {
+      const data = await adminCall('findByEmail', email, { email: searchQ.trim() })
+      if (data.user) setFound(data.user)
+      else toast.error('No user found with that email')
+    } catch(e) { toast.error(e.message) }
+    finally { setSearching(false) }
+  }
+
+  async function grantBeta(uid, name) {
+    try {
+      await adminCall('setUserField', email, { targetUid: uid, field: 'betaUser', value: true })
+      toast.success('Beta granted to ' + name)
+      setFound(f => f ? { ...f, betaUser: true } : f)
+      loadBeta()
+    } catch(e) { toast.error(e.message) }
+  }
+
+  async function revokeBeta(uid, name) {
+    try {
+      await adminCall('setUserField', email, { targetUid: uid, field: 'betaUser', value: false })
+      toast.success('Beta revoked from ' + name)
+      setBetaUsers(us => us.filter(u => u.id !== uid))
+    } catch(e) { toast.error(e.message) }
+  }
+
+  async function bulkGrant() {
+    const lines = bulkInput.split('\n').map(l => l.trim()).filter(Boolean)
+    if (!lines.length) return
+    setBulkLoading(true); setBulkResult(null)
+
+    const results = { granted: [], notFound: [], alreadyBeta: [] }
+
+    for (const line of lines) {
+      try {
+        // Try find by email
+        const data = await adminCall('findByEmail', email, { email: line })
+        const user = data.user
+        if (!user) { results.notFound.push(line); continue }
+        if (user.betaUser) { results.alreadyBeta.push(user.displayName || line); continue }
+        await adminCall('setUserField', email, { targetUid: user.id, field: 'betaUser', value: true })
+        results.granted.push(user.displayName || line)
+      } catch(e) { results.notFound.push(line) }
+    }
+
+    setBulkResult(results)
+    setBulkLoading(false)
+    if (results.granted.length) loadBeta()
+    toast.success('Done — ' + results.granted.length + ' user(s) granted beta')
+  }
+
+  return (
+    <div>
+      {/* What beta means */}
+      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(124,58,237,0.06)',
+        border: '1px solid rgba(124,58,237,0.2)', marginBottom: 20 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Star size={15} color="var(--accent)" /> What beta means
+        </div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          <strong>Beta (betaUser: true)</strong> — lifetime free access. These users signed up early and were promised they'd never pay. When Stripe launches, the <code>isPro()</code> hook must treat betaUser as equivalent to isPro so they never hit a paywall.<br />
+          <strong>Pro (isPro: true)</strong> — active paying subscriber. Set manually here for now; will be automated by Stripe webhooks later.
+        </div>
+      </div>
+
+      <Section title={`Current beta users (${betaUsers.length})`} icon={<Star size={15} />}>
+        {loading ? <div style={{ color: 'var(--text-muted)' }}>Loading…</div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+            {betaUsers.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No beta users flagged yet — use the tools below to add them.</p>
+            )}
+            {betaUsers.map(u => (
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{u.displayName || '(no name)'}</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 8 }}>{u.email || u.id.slice(0, 14)}</span>
+                </div>
+                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', fontSize: '0.75rem' }}
+                  onClick={() => revokeBeta(u.id, u.displayName || u.email)}>
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section title="Find by email & flag" icon={<Search size={15} />}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input className="input" placeholder="Email address"
+            value={searchQ} onChange={e => setSearchQ(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && findUser()} />
+          <button className="btn btn-primary" onClick={findUser} disabled={searching || !searchQ.trim()}>
+            {searching ? '…' : 'Find'}
+          </button>
+        </div>
+        {found && (
+          <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--bg-surface)',
+            border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{found.displayName || '(no name)'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {found.email} · XP {(found.xp || 0).toLocaleString()} · {found.betaUser ? '★ Already beta' : 'Not beta'}
+              </div>
+            </div>
+            {found.betaUser
+              ? <span className="badge badge-purple">Beta ✓</span>
+              : <button className="btn btn-primary btn-sm" onClick={() => grantBeta(found.id, found.displayName || found.email)}>
+                  Grant beta
+                </button>
+            }
+          </div>
+        )}
+      </Section>
+
+      <Section title="Bulk grant beta by email" icon={<Users size={15} />} defaultOpen={false}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+          One email address per line. Matches against the email field in Firestore.
+        </p>
+        <textarea className="textarea" style={{ minHeight: 120, fontFamily: 'monospace', fontSize: '0.82rem' }}
+          value={bulkInput} onChange={e => setBulkInput(e.target.value)}
+          placeholder={'user@example.com\nanother@example.com'} />
+        <button className="btn btn-primary" style={{ marginTop: 10 }}
+          onClick={bulkGrant} disabled={bulkLoading || !bulkInput.trim()}>
+          {bulkLoading ? 'Granting…' : 'Grant beta to all'}
+        </button>
+
+        {bulkResult && (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {bulkResult.granted.length > 0 && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.08)',
+                border: '1px solid rgba(16,185,129,0.3)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle size={13} /> Granted ({bulkResult.granted.length})
+                </div>
+                <div style={{ fontSize: '0.8rem' }}>{bulkResult.granted.join(', ')}</div>
+              </div>
+            )}
+            {bulkResult.alreadyBeta.length > 0 && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.08)',
+                border: '1px solid rgba(245,158,11,0.25)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4 }}>
+                  Already beta ({bulkResult.alreadyBeta.length})
+                </div>
+                <div style={{ fontSize: '0.8rem' }}>{bulkResult.alreadyBeta.join(', ')}</div>
+              </div>
+            )}
+            {bulkResult.notFound.length > 0 && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.25)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <XCircle size={13} /> Not found ({bulkResult.notFound.length})
+                </div>
+                <div style={{ fontSize: '0.8rem' }}>{bulkResult.notFound.join(', ')}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+    </div>
+  )
+}
+
+/* ── Stats tab ─────────────────────────────────────────────────── */
+function StatsTab({ email }) {
+  const [stats,   setStats]   = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await adminCall('listUsers', email, { limitN: 500 })
+        const users = data.users || []
+        const total = users.length
+        const beta  = users.filter(u => u.betaUser).length
+        const pro   = users.filter(u => u.isPro).length
+        const active7 = users.filter(u => {
+          if (!u.lastActivityDate) return false
+          return (Date.now() - new Date(u.lastActivityDate).getTime()) < 7 * 86400000
+        }).length
+        const avgXP  = total ? Math.round(users.reduce((s, u) => s + (u.xp || 0), 0) / total) : 0
+        const avgStr = total ? Math.round(users.reduce((s, u) => s + (u.streak || 0), 0) / total) : 0
+        const topUsers = [...users].sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 10)
+        setStats({ total, beta, pro, active7, avgXP, avgStr, topUsers })
+      } catch(e) { toast.error(e.message) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  if (loading) return <div style={{ color: 'var(--text-muted)' }}>Loading stats…</div>
+  if (!stats)  return null
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
+        {[
+          { label: 'Total users',  val: stats.total,                    colour: 'var(--accent-light)', icon: <Users size={16} />    },
+          { label: 'Beta users',   val: stats.beta,                     colour: 'var(--warning)',       icon: <Star size={16} />     },
+          { label: 'Pro users',    val: stats.pro,                      colour: 'var(--success)',       icon: <Zap size={16} />      },
+          { label: 'Active (7d)',  val: stats.active7,                  colour: 'var(--info)',          icon: <BarChart2 size={16} />},
+          { label: 'Avg XP',       val: stats.avgXP.toLocaleString(),   colour: 'var(--purple-300)',    icon: <Zap size={16} />      },
+          { label: 'Avg streak',   val: stats.avgStr + 'd',             colour: 'var(--warning)',       icon: <BarChart2 size={16} />},
+        ].map(s => (
+          <div key={s.label} className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
+            <div style={{ color: s.colour, marginBottom: 4 }}>{s.icon}</div>
+            <div style={{ fontWeight: 800, fontSize: '1.35rem', color: s.colour }}>{s.val}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <Section title="Top 10 by XP" icon={<BarChart2 size={15} />}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {stats.topUsers.map((u, i) => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 14px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: 24 }}>#{i+1}</span>
+              <span style={{ fontWeight: 600, flex: 1, fontSize: '0.88rem' }}>{u.displayName || '(anon)'}</span>
+              {u.betaUser && <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>Beta</span>}
+              {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>🔥 {u.streak || 0}d</span>
+              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-light)' }}>
+                {(u.xp || 0).toLocaleString()} XP
+              </span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 10,
+        background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--warning)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertTriangle size={15} /> Pre-Stripe checklist
+        </div>
+        <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.9 }}>
+          <li>{stats.beta > 0 ? '✓' : '✗'} {stats.beta} beta user{stats.beta !== 1 ? 's' : ''} flagged</li>
+          <li>✗ isPro() hook — must return true if betaUser OR isPro (not built yet)</li>
+          <li>✗ Stripe webhook — must set isPro: true on payment, false on cancel (not built yet)</li>
+          <li>✗ Paywall gates on Pro features (not built yet)</li>
+        </ul>
+      </div>
+    </div>
+  )
 }
