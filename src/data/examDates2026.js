@@ -397,3 +397,21 @@ export const EXAM_DATES_2027 = [
 ];
 
 export const ALL_EXAM_DATES = [...EXAM_DATES_2026, ...EXAM_DATES_2027];
+
+/**
+ * Helper function to retrieve exam dates, with flexible filtering.
+ */
+export function getExamDates(subject, board, qualification, year) {
+  let list = year === 2027 ? EXAM_DATES_2027 : year === 2026 ? EXAM_DATES_2026 : ALL_EXAM_DATES;
+
+  if (!subject && !board && !qualification) {
+    return list;
+  }
+
+  return list.filter(exam => {
+    const matchSubject = !subject || exam.subject.toLowerCase().includes(subject.toLowerCase());
+    const matchBoard = !board || exam.board.toLowerCase() === board.toLowerCase();
+    const matchQual = !qualification || exam.qualification.toLowerCase() === qualification.toLowerCase();
+    return matchSubject && matchBoard && matchQual;
+  });
+}
