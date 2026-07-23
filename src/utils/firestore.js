@@ -2,8 +2,7 @@
 
 import {
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -37,16 +36,11 @@ export { auth, db }
 
 const googleProvider = new GoogleAuthProvider()
 
-// signInWithRedirect navigates the whole page away to Google and back —
-// it does NOT return a credential synchronously. Call getGoogleRedirectResult()
-// on page load (in the component that initiated sign-in) to pick up the result
-// once the user lands back on the app.
-export const loginWithGoogle        = ()       => signInWithRedirect(auth, googleProvider)
-export const getGoogleRedirectResult = ()       => getRedirectResult(auth)
-export const loginWithEmail         = (e, p)   => signInWithEmailAndPassword(auth, e, p)
-export const signupWithEmail        = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
-export const resetPassword          = (e)      => sendPasswordResetEmail(auth, e)
-export const logout                 = ()       => signOut(auth)
+export const loginWithGoogle = ()       => signInWithPopup(auth, googleProvider)
+export const loginWithEmail  = (e, p)   => signInWithEmailAndPassword(auth, e, p)
+export const signupWithEmail = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
+export const resetPassword   = (e)      => sendPasswordResetEmail(auth, e)
+export const logout          = ()       => signOut(auth)
 
 /* =========================
    USER / PROFILE
