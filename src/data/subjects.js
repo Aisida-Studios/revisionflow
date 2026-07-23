@@ -1,5 +1,17 @@
 // src/data/subjects.js
 // ─────────────────────────────────────────────────────────────────────────────
+// AUDIT NOTES (v3 — checked against topics.js/paperDatabase.js/examDates2026.js's July 2026
+// AS-Level depth pass and 2027 dates addition; no data below needed changing)
+//
+// - Re-verified 'OCR' is still the correct board key to use throughout this app even though the
+//   board itself legally renamed to "Cambridge OCR" in September 2025 — same organisation, same
+//   qualifications, new corporate name. Not changed here since 'OCR' is what topics.js,
+//   paperDatabase.js and examDates2026.js all key off; renaming it here alone would break every
+//   lookup into those files. If the app's UI should start showing "Cambridge OCR" as a label,
+//   that's a display-layer change (e.g. in Settings.jsx/Onboarding.jsx), not a data-key change.
+// - GRADE_OPTIONS' AS-Level A–E (no A*) scale and EXAM_BOARDS' acknowledged 'Cambridge' (CIE) gap
+//   were both re-checked and are correct as documented in the v2 notes below.
+// ─────────────────────────────────────────────────────────────────────────────
 // AUDIT NOTES (v2 — reconciled against topics.js after its GCSE/AS-Level/A-Level rebuild)
 //
 // Every subject below was checked against what actually exists in topics.js (i.e. has a real
