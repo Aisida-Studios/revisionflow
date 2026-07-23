@@ -7,12 +7,13 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
 export default function Signup() {
-  const { user, signup, loginWithGoogle, checkGoogleRedirect } = useAuth()
+  const { user, signup, loginWithGoogle } = useAuth()
   const navigate      = useNavigate()
   const [searchParams] = useSearchParams()
   // Guards against handleSignupComplete (referral code application) running
-  // twice — once from the direct email-signup path and once from the
-  // user-effect below that also fires once `user` appears in context.
+  // twice — once from the direct Google/email signup path and once from the
+  // user-effect below (which also fires once `user` appears in context, as
+  // a safety net for e.g. session-restore-while-on-this-page edge cases).
   const completedRef = useRef(false)
 
   const [form,    setForm]    = useState({
@@ -25,7 +26,6 @@ export default function Signup() {
   const [consent,     setConsent]      = useState(false)
   const [referrerName,setReferrerName] = useState('')
   const [codeChecking,setCodeChecking] = useState(false)
-  const [checkingRedirect, setCheckingRedirect] = useState(true)
 
   // If ?ref= in URL, store it
   useEffect(() => {
@@ -56,16 +56,9 @@ export default function Signup() {
     return () => { cancelled = true }
   }, [form.referralCode])
 
-  // The reliable signal that a Google sign-up succeeded is `user` becoming
-  // truthy in AuthContext — NOT the getRedirectResult() promise below.
-  // AuthProvider only renders its children once its own onAuthStateChanged
-  // listener has already resolved (loading === false), which means by the
-  // time this component mounts after the redirect round trip, `user` may
-  // already be set even if a second, separate call to getRedirectResult()
-  // here returns null (Firebase doesn't guarantee it keeps re-serving the
-  // same result to every caller). So: apply the referral code and move on
-  // to onboarding based on `user`, always — this also doubles as the
-  // completion path for email/password sign-up below.
+  // Safety net: if `user` is ever already set while this page is showing,
+  // complete referral application and move to onboarding. This also serves
+  // as the completion path for the Google popup handler below.
   useEffect(() => {
     if (user) completeAndGo(user.uid)
   }, [user])
@@ -76,23 +69,6 @@ export default function Signup() {
     try { await handleSignupComplete(uid) } catch (e) { /* non-fatal */ }
     navigate('/onboarding', { replace: true })
   }
-
-  // Still call checkGoogleRedirect() — this is where any *error* from the
-  // redirect flow (blocked domain, account-exists-with-different-credential,
-  // etc.) actually surfaces, since those live on the rejected promise, not
-  // on `user`. It's just no longer what triggers success/navigation.
-  useEffect(() => {
-    let cancelled = false
-    checkGoogleRedirect()
-      .catch(err => {
-        if (cancelled) return
-        toast.error(err.message)
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingRedirect(false)
-      })
-    return () => { cancelled = true }
-  }, [])
 
   function validate() {
     const e = {}
@@ -130,15 +106,17 @@ export default function Signup() {
     } finally { setLoading(false) }
   }
 
-  function handleGoogle() {
-    // signInWithRedirect navigates the whole page away — there is nothing to
-    // await here. The result (and referral code application) is handled in
-    // the useEffect above once the user lands back on this page.
+  async function handleGoogle() {
     setLoading(true)
-    loginWithGoogle().catch(err => {
-      toast.error(err.message)
-      setLoading(false)
-    })
+    try {
+      const cred = await loginWithGoogle()
+      const uid  = cred?.user?.uid
+      if (uid) await completeAndGo(uid)
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        toast.error(err.message)
+      }
+    } finally { setLoading(false) }
   }
 
   const field = (key) => ({
@@ -148,14 +126,6 @@ export default function Signup() {
       setErrors(er => ({ ...er, [key]: '' }))
     },
   })
-
-  if (checkingRedirect) {
-    return (
-      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg-base)'}}>
-        <p style={{color:'var(--text-muted)'}}>Signing you in…</p>
-      </div>
-    )
-  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg-base)' }}>
