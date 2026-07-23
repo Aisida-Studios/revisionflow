@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
-  const { login, loginWithGoogle, checkGoogleRedirect } = useAuth()
+  const { user, login, loginWithGoogle, checkGoogleRedirect } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,24 +15,31 @@ export default function Login() {
   const [resetMode, setResetMode] = useState(false)
   const [checkingRedirect, setCheckingRedirect] = useState(true)
 
-  // Google sign-in now uses signInWithRedirect, which leaves the page entirely
-  // and comes back here once complete. On mount, check whether we just landed
-  // back from that round trip and finish the login if so.
+  // The reliable signal that Google sign-in succeeded is `user` becoming
+  // truthy in AuthContext — NOT the getRedirectResult() promise below.
+  // AuthProvider only renders its children once its own onAuthStateChanged
+  // listener has already resolved (loading === false), which means by the
+  // time this component mounts after the redirect round trip, `user` may
+  // already be set even if a second, separate call to getRedirectResult()
+  // here returns null (Firebase doesn't guarantee it keeps re-serving the
+  // same result to every caller). So: navigate off of `user`, always.
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true })
+  }, [user])
+
+  // Still call checkGoogleRedirect() — this is where any *error* from the
+  // redirect flow (blocked domain, account-exists-with-different-credential,
+  // etc.) actually surfaces, since those live on the rejected promise, not
+  // on `user`. It's just no longer what triggers navigation on success.
   useEffect(() => {
     let cancelled = false
     checkGoogleRedirect()
-      .then(result => {
-        if (cancelled) return
-        if (result?.user) {
-          navigate('/dashboard')
-        } else {
-          setCheckingRedirect(false)
-        }
-      })
       .catch(err => {
         if (cancelled) return
         toast.error(err.message)
-        setCheckingRedirect(false)
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingRedirect(false)
       })
     return () => { cancelled = true }
   }, [])
