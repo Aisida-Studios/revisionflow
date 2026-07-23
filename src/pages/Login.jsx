@@ -6,43 +6,19 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
-  const { user, login, loginWithGoogle, checkGoogleRedirect } = useAuth()
+  const { user, login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resetMode, setResetMode] = useState(false)
-  const [checkingRedirect, setCheckingRedirect] = useState(true)
 
-  // The reliable signal that Google sign-in succeeded is `user` becoming
-  // truthy in AuthContext — NOT the getRedirectResult() promise below.
-  // AuthProvider only renders its children once its own onAuthStateChanged
-  // listener has already resolved (loading === false), which means by the
-  // time this component mounts after the redirect round trip, `user` may
-  // already be set even if a second, separate call to getRedirectResult()
-  // here returns null (Firebase doesn't guarantee it keeps re-serving the
-  // same result to every caller). So: navigate off of `user`, always.
+  // Safety net: if `user` is ever already set while this page is showing
+  // (e.g. session restored on load), get out of the login form automatically.
   useEffect(() => {
     if (user) navigate('/dashboard', { replace: true })
   }, [user])
-
-  // Still call checkGoogleRedirect() — this is where any *error* from the
-  // redirect flow (blocked domain, account-exists-with-different-credential,
-  // etc.) actually surfaces, since those live on the rejected promise, not
-  // on `user`. It's just no longer what triggers navigation on success.
-  useEffect(() => {
-    let cancelled = false
-    checkGoogleRedirect()
-      .catch(err => {
-        if (cancelled) return
-        toast.error(err.message)
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingRedirect(false)
-      })
-    return () => { cancelled = true }
-  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -55,23 +31,17 @@ export default function Login() {
     } finally { setLoading(false) }
   }
 
-  function handleGoogle() {
-    // signInWithRedirect navigates the whole page away — there is nothing to
-    // await here. The result is picked up in the useEffect above once the
-    // user lands back on this page after completing sign-in with Google.
+  async function handleGoogle() {
     setLoading(true)
-    loginWithGoogle().catch(err => {
-      toast.error(err.message)
-      setLoading(false)
-    })
-  }
-
-  if (checkingRedirect) {
-    return (
-      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg-base)'}}>
-        <p style={{color:'var(--text-muted)'}}>Signing you in…</p>
-      </div>
-    )
+    try {
+      await loginWithGoogle()
+      navigate('/dashboard')
+    } catch (err) {
+      // Don't show an error toast if the user just closed the popup themselves
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        toast.error(err.message)
+      }
+    } finally { setLoading(false) }
   }
 
   return (
