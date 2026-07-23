@@ -1,18 +1,41 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
-  const { login, loginWithGoogle } = useAuth()
+  const { login, loginWithGoogle, checkGoogleRedirect } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resetMode, setResetMode] = useState(false)
+  const [checkingRedirect, setCheckingRedirect] = useState(true)
+
+  // Google sign-in now uses signInWithRedirect, which leaves the page entirely
+  // and comes back here once complete. On mount, check whether we just landed
+  // back from that round trip and finish the login if so.
+  useEffect(() => {
+    let cancelled = false
+    checkGoogleRedirect()
+      .then(result => {
+        if (cancelled) return
+        if (result?.user) {
+          navigate('/dashboard')
+        } else {
+          setCheckingRedirect(false)
+        }
+      })
+      .catch(err => {
+        if (cancelled) return
+        toast.error(err.message)
+        setCheckingRedirect(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -25,13 +48,23 @@ export default function Login() {
     } finally { setLoading(false) }
   }
 
-  async function handleGoogle() {
+  function handleGoogle() {
+    // signInWithRedirect navigates the whole page away — there is nothing to
+    // await here. The result is picked up in the useEffect above once the
+    // user lands back on this page after completing sign-in with Google.
     setLoading(true)
-    try {
-      await loginWithGoogle()
-      navigate('/dashboard')
-    } catch (err) { toast.error(err.message) }
-    finally { setLoading(false) }
+    loginWithGoogle().catch(err => {
+      toast.error(err.message)
+      setLoading(false)
+    })
+  }
+
+  if (checkingRedirect) {
+    return (
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg-base)'}}>
+        <p style={{color:'var(--text-muted)'}}>Signing you in…</p>
+      </div>
+    )
   }
 
   return (
