@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
 import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import LoadingScreen from '../components/LoadingScreen'
 import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
@@ -113,7 +114,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, checkGoogleRedirect, resetPassword, logout, refreshProfile, streakCelebration, clearStreakCelebration: () => setStreakCelebration(null) }}>
-      {!loading && children}
+      {loading ? <LoadingScreen /> : children}
     </AuthContext.Provider>
   )
 }
