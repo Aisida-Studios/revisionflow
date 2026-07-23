@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
 export default function Signup() {
-  const { signup, loginWithGoogle } = useAuth()
+  const { signup, loginWithGoogle, checkGoogleRedirect } = useAuth()
   const navigate      = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -21,6 +21,7 @@ export default function Signup() {
   const [consent,     setConsent]      = useState(false)
   const [referrerName,setReferrerName] = useState('')
   const [codeChecking,setCodeChecking] = useState(false)
+  const [checkingRedirect, setCheckingRedirect] = useState(true)
 
   // If ?ref= in URL, store it
   useEffect(() => {
@@ -50,6 +51,31 @@ export default function Signup() {
       .catch(() => { if (!cancelled) setCodeChecking(false) })
     return () => { cancelled = true }
   }, [form.referralCode])
+
+  // Google sign-up now uses signInWithRedirect, which leaves the page entirely
+  // and comes back here once complete. On mount, check whether we just landed
+  // back from that round trip; if so, apply the referral code (same as the
+  // in-page Google handler used to do with the credential it got directly)
+  // and continue to onboarding.
+  useEffect(() => {
+    let cancelled = false
+    checkGoogleRedirect()
+      .then(async result => {
+        if (cancelled) return
+        if (result?.user) {
+          try { await handleSignupComplete(result.user.uid) } catch (e) { /* non-fatal */ }
+          navigate('/onboarding')
+        } else {
+          setCheckingRedirect(false)
+        }
+      })
+      .catch(err => {
+        if (cancelled) return
+        toast.error(err.message)
+        setCheckingRedirect(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   function validate() {
     const e = {}
@@ -88,16 +114,15 @@ export default function Signup() {
     } finally { setLoading(false) }
   }
 
-  async function handleGoogle() {
+  function handleGoogle() {
+    // signInWithRedirect navigates the whole page away — there is nothing to
+    // await here. The result (and referral code application) is handled in
+    // the useEffect above once the user lands back on this page.
     setLoading(true)
-    try {
-      const cred = await loginWithGoogle()
-      const uid  = cred?.user?.uid
-      if (uid) await handleSignupComplete(uid)
-      navigate('/onboarding')
-    } catch (err) {
+    loginWithGoogle().catch(err => {
       toast.error(err.message)
-    } finally { setLoading(false) }
+      setLoading(false)
+    })
   }
 
   const field = (key) => ({
@@ -107,6 +132,14 @@ export default function Signup() {
       setErrors(er => ({ ...er, [key]: '' }))
     },
   })
+
+  if (checkingRedirect) {
+    return (
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'var(--bg-base)'}}>
+        <p style={{color:'var(--text-muted)'}}>Signing you in…</p>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg-base)' }}>
