@@ -5,6 +5,7 @@ import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/fi
 import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
+  getGoogleRedirectResult as _getGoogleRedirectResult,
   resetPassword as _resetPassword,
   ensureUser, updateStreakOnLogin, runBadgeAudit,
 } from '../utils/firestore'
@@ -103,11 +104,15 @@ export function AuthProvider({ children }) {
   }
 
   const loginWithGoogle = () => _loginWithGoogle()
+  // Call this on mount in whichever page triggered loginWithGoogle() (Login.jsx / Signup.jsx)
+  // to pick up the signed-in user after Google's signInWithRedirect flow bounces back.
+  // Resolves to null if the page was just loaded normally (no redirect in progress).
+  const checkGoogleRedirect = () => _getGoogleRedirectResult()
   const resetPassword   = email => _resetPassword(email)
   const logout          = () => signOut(auth)
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile, streakCelebration, clearStreakCelebration: () => setStreakCelebration(null) }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, checkGoogleRedirect, resetPassword, logout, refreshProfile, streakCelebration, clearStreakCelebration: () => setStreakCelebration(null) }}>
       {!loading && children}
     </AuthContext.Provider>
   )
