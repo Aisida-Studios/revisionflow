@@ -1,5 +1,5 @@
 // src/pages/Signup.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ensureReferralCode, applyReferralCode, lookupReferrer, getPendingReferral, clearPendingReferral } from '../utils/referrals'
@@ -7,9 +7,13 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
 export default function Signup() {
-  const { signup, loginWithGoogle, checkGoogleRedirect } = useAuth()
+  const { user, signup, loginWithGoogle, checkGoogleRedirect } = useAuth()
   const navigate      = useNavigate()
   const [searchParams] = useSearchParams()
+  // Guards against handleSignupComplete (referral code application) running
+  // twice — once from the direct email-signup path and once from the
+  // user-effect below that also fires once `user` appears in context.
+  const completedRef = useRef(false)
 
   const [form,    setForm]    = useState({
     name: '', email: '', password: '', confirm: '',
@@ -52,27 +56,40 @@ export default function Signup() {
     return () => { cancelled = true }
   }, [form.referralCode])
 
-  // Google sign-up now uses signInWithRedirect, which leaves the page entirely
-  // and comes back here once complete. On mount, check whether we just landed
-  // back from that round trip; if so, apply the referral code (same as the
-  // in-page Google handler used to do with the credential it got directly)
-  // and continue to onboarding.
+  // The reliable signal that a Google sign-up succeeded is `user` becoming
+  // truthy in AuthContext — NOT the getRedirectResult() promise below.
+  // AuthProvider only renders its children once its own onAuthStateChanged
+  // listener has already resolved (loading === false), which means by the
+  // time this component mounts after the redirect round trip, `user` may
+  // already be set even if a second, separate call to getRedirectResult()
+  // here returns null (Firebase doesn't guarantee it keeps re-serving the
+  // same result to every caller). So: apply the referral code and move on
+  // to onboarding based on `user`, always — this also doubles as the
+  // completion path for email/password sign-up below.
+  useEffect(() => {
+    if (user) completeAndGo(user.uid)
+  }, [user])
+
+  async function completeAndGo(uid) {
+    if (completedRef.current) return
+    completedRef.current = true
+    try { await handleSignupComplete(uid) } catch (e) { /* non-fatal */ }
+    navigate('/onboarding', { replace: true })
+  }
+
+  // Still call checkGoogleRedirect() — this is where any *error* from the
+  // redirect flow (blocked domain, account-exists-with-different-credential,
+  // etc.) actually surfaces, since those live on the rejected promise, not
+  // on `user`. It's just no longer what triggers success/navigation.
   useEffect(() => {
     let cancelled = false
     checkGoogleRedirect()
-      .then(async result => {
-        if (cancelled) return
-        if (result?.user) {
-          try { await handleSignupComplete(result.user.uid) } catch (e) { /* non-fatal */ }
-          navigate('/onboarding')
-        } else {
-          setCheckingRedirect(false)
-        }
-      })
       .catch(err => {
         if (cancelled) return
         toast.error(err.message)
-        setCheckingRedirect(false)
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingRedirect(false)
       })
     return () => { cancelled = true }
   }, [])
@@ -106,8 +123,7 @@ export default function Signup() {
     try {
       const cred = await signup(form.email, form.password, form.name)
       const uid  = cred?.user?.uid
-      if (uid) await handleSignupComplete(uid)
-      navigate('/onboarding')
+      if (uid) await completeAndGo(uid)
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') toast.error('Email already in use')
       else toast.error(err.message)
