@@ -1,6 +1,6 @@
-// RevisionFlow Service Worker v5 — Web Push + caching
-const CACHE_STATIC  = 'rf-static-v5'
-const CACHE_DYNAMIC = 'rf-dynamic-v5'
+// RevisionFlow Service Worker v6 — Web Push + caching
+const CACHE_STATIC  = 'rf-static-v6'
+const CACHE_DYNAMIC = 'rf-dynamic-v6'
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json']
 
 // ── Install ──────────────────────────────────────────────────────
@@ -32,11 +32,20 @@ self.addEventListener('fetch', e => {
     url.hostname.includes('api.mistral.ai')
   ) return
 
+  // Only handle requests to our own origin. Cross-origin resources (Google
+  // Fonts, etc.) are left entirely to the browser's normal network stack.
+  // Fetching them from inside the service worker subjects them to the page's
+  // CSP connect-src, and if that origin isn't explicitly allowed there, the
+  // fetch throws — which, combined with an empty cache, was resolving
+  // e.respondWith() with `undefined` below and breaking the request (and,
+  // via the shared handler, unrelated requests too).
+  if (url.origin !== self.location.origin) return
+
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
         .then(res => { const clone = res.clone(); caches.open(CACHE_DYNAMIC).then(c => c.put(e.request, clone)); return res })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match('/index.html').then(cached => cached || Response.error()))
     )
     return
   }
@@ -44,11 +53,15 @@ self.addEventListener('fetch', e => {
   if (url.pathname.match(/\.(js|css|woff2?|ttf|png|jpg|svg|ico|webp)$/) || url.pathname.startsWith('/assets/')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
-        const networkFetch = fetch(e.request).then(res => {
-          if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
-          return res
-        }).catch(() => cached)
-        return cached || networkFetch
+        if (cached) return cached
+        // No cache entry — go to network, but never let a failure here
+        // resolve to undefined. Response.error() is always a valid Response.
+        return fetch(e.request)
+          .then(res => {
+            if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
+            return res
+          })
+          .catch(() => Response.error())
       })
     )
     return
@@ -60,7 +73,7 @@ self.addEventListener('fetch', e => {
         if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_DYNAMIC).then(c => c.put(e.request, clone)) }
         return res
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request).then(cached => cached || Response.error()))
   )
 })
 
