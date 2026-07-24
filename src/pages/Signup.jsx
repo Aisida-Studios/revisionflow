@@ -1,5 +1,5 @@
 // src/pages/Signup.jsx
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ensureReferralCode, applyReferralCode, lookupReferrer, getPendingReferral, clearPendingReferral } from '../utils/referrals'
@@ -7,14 +7,9 @@ import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
 
 export default function Signup() {
-  const { user, signup, loginWithGoogle } = useAuth()
+  const { signup, loginWithGoogle } = useAuth()
   const navigate      = useNavigate()
   const [searchParams] = useSearchParams()
-  // Guards against handleSignupComplete (referral code application) running
-  // twice — once from the direct Google/email signup path and once from the
-  // user-effect below (which also fires once `user` appears in context, as
-  // a safety net for e.g. session-restore-while-on-this-page edge cases).
-  const completedRef = useRef(false)
 
   const [form,    setForm]    = useState({
     name: '', email: '', password: '', confirm: '',
@@ -56,20 +51,6 @@ export default function Signup() {
     return () => { cancelled = true }
   }, [form.referralCode])
 
-  // Safety net: if `user` is ever already set while this page is showing,
-  // complete referral application and move to onboarding. This also serves
-  // as the completion path for the Google popup handler below.
-  useEffect(() => {
-    if (user) completeAndGo(user.uid)
-  }, [user])
-
-  async function completeAndGo(uid) {
-    if (completedRef.current) return
-    completedRef.current = true
-    try { await handleSignupComplete(uid) } catch (e) { /* non-fatal */ }
-    navigate('/onboarding', { replace: true })
-  }
-
   function validate() {
     const e = {}
     if (!form.name.trim())               e.name     = 'Name is required'
@@ -99,7 +80,8 @@ export default function Signup() {
     try {
       const cred = await signup(form.email, form.password, form.name)
       const uid  = cred?.user?.uid
-      if (uid) await completeAndGo(uid)
+      if (uid) await handleSignupComplete(uid)
+      navigate('/onboarding')
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') toast.error('Email already in use')
       else toast.error(err.message)
@@ -111,11 +93,10 @@ export default function Signup() {
     try {
       const cred = await loginWithGoogle()
       const uid  = cred?.user?.uid
-      if (uid) await completeAndGo(uid)
+      if (uid) await handleSignupComplete(uid)
+      navigate('/onboarding')
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast.error(err.message)
-      }
+      toast.error(err.message)
     } finally { setLoading(false) }
   }
 
