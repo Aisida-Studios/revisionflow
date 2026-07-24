@@ -9,7 +9,7 @@ export function generateReferralCode(uid) {
 // Link goes directly to /signup so the referral code field is pre-filled
 export function getReferralUrl(uid) {
   const code = generateReferralCode(uid)
-  return `https://revision-flow.netlify.app/signup?ref=${code}`
+  return `https://www.revisionflow.co.uk/signup?ref=${code}`
 }
 
 async function callReferralApi(action, params = {}) {
