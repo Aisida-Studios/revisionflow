@@ -11,7 +11,7 @@
 //   STRIPE_MONTHLY_PRICE_ID    — price_... for £3.99/month
 //   STRIPE_ANNUAL_PRICE_ID     — price_... for £29.99/year
 //   FIREBASE_SERVICE_ACCOUNT   — JSON string of your Firebase service account
-//   SITE_URL                   — https://revision-flow.netlify.app
+//   SITE_URL                   — https://www.revisionflow.co.uk
 
 const stripe      = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const admin       = require('firebase-admin')
@@ -79,7 +79,7 @@ module.exports.handler = async (event) => {
 
     if (!customerId) return respond(400, { error: 'No Stripe customer found. Please contact support.' })
 
-    const siteUrl = process.env.SITE_URL || 'https://revision-flow.netlify.app'
+    const siteUrl = process.env.SITE_URL || 'https://www.revisionflow.co.uk'
 
     const session = await stripe.billingPortal.sessions.create({
       customer:   customerId,
@@ -137,7 +137,7 @@ module.exports.handler = async (event) => {
       }
     }
 
-    const siteUrl = process.env.SITE_URL || 'https://revision-flow.netlify.app'
+    const siteUrl = process.env.SITE_URL || 'https://www.revisionflow.co.uk'
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
