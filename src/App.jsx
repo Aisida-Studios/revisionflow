@@ -8,6 +8,7 @@ import { AppProvider } from './context/AppContext'
 import { TimerProvider } from './context/TimerContext'
 import { PriorityProvider } from './context/PriorityContext'
 import Layout from './components/Layout'
+import LoadingScreen from './components/LoadingScreen'
 import { Toaster } from 'react-hot-toast'
 import XPToast from './components/XPToast'
 import StreakCelebration from './components/StreakCelebration'
@@ -52,7 +53,7 @@ const Pro          = lazy(() => import('./pages/Pro'))
 function PrivateRoute({ children }) {
   usePushNotifications()
   const { user, profile, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
   // Profile loaded and onboarding not done → send to onboarding
   if (profile && !profile.onboardingComplete) {
@@ -65,7 +66,7 @@ function PrivateRoute({ children }) {
 // (prevents going back to onboarding after finishing it)
 function OnboardingRoute({ children }) {
   const { user, profile, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
   if (profile?.onboardingComplete) return <Navigate to="/dashboard" replace />
   return children
@@ -73,7 +74,7 @@ function OnboardingRoute({ children }) {
 
 function PublicOnly({ children }) {
   const { user, profile, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (!user) return children
   // Logged in but onboarding not done — go to onboarding
   if (profile && !profile.onboardingComplete) return <Navigate to="/onboarding" replace />
