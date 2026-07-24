@@ -1,4 +1,4 @@
-// RevisionFlow Service Worker v6 — Web Push + caching
+// RevisionFlow Service Worker v6 — Web Push + caching (same-origin only fetch handling)
 const CACHE_STATIC  = 'rf-static-v6'
 const CACHE_DYNAMIC = 'rf-dynamic-v6'
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json']
@@ -20,25 +20,17 @@ self.addEventListener('activate', e => {
 })
 
 // ── Fetch ────────────────────────────────────────────────────────
+// Same-origin requests only. Cross-origin requests (Google Fonts, Firebase, Mistral, Stripe,
+// etc.) are left completely alone — not even inspected — so the browser handles them with its
+// own normal network behaviour. Trying to selectively allow/deny specific cross-origin hostnames
+// here previously missed some (fonts.googleapis.com/fonts.gstatic.com), and a failed cross-origin
+// fetch with nothing cached yet could resolve respondWith() with undefined, which throws
+// "Failed to convert value to 'Response'" — and that failure could cascade into unrelated
+// same-page requests (e.g. dynamic JS chunk imports) failing too.
 self.addEventListener('fetch', e => {
-  if (!e.request.url.startsWith('http')) return
-  const url = new URL(e.request.url)
   if (e.request.method !== 'GET') return
-  if (
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('identitytoolkit.googleapis.com') ||
-    url.hostname.includes('securetoken.googleapis.com') ||
-    url.hostname.includes('apis.google.com') ||
-    url.hostname.includes('api.mistral.ai')
-  ) return
-
-  // Only handle requests to our own origin. Cross-origin resources (Google
-  // Fonts, etc.) are left entirely to the browser's normal network stack.
-  // Fetching them from inside the service worker subjects them to the page's
-  // CSP connect-src, and if that origin isn't explicitly allowed there, the
-  // fetch throws — which, combined with an empty cache, was resolving
-  // e.respondWith() with `undefined` below and breaking the request (and,
-  // via the shared handler, unrelated requests too).
+  let url
+  try { url = new URL(e.request.url) } catch (err) { return }
   if (url.origin !== self.location.origin) return
 
   if (e.request.mode === 'navigate') {
@@ -53,15 +45,11 @@ self.addEventListener('fetch', e => {
   if (url.pathname.match(/\.(js|css|woff2?|ttf|png|jpg|svg|ico|webp)$/) || url.pathname.startsWith('/assets/')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
-        if (cached) return cached
-        // No cache entry — go to network, but never let a failure here
-        // resolve to undefined. Response.error() is always a valid Response.
-        return fetch(e.request)
-          .then(res => {
-            if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
-            return res
-          })
-          .catch(() => Response.error())
+        const networkFetch = fetch(e.request).then(res => {
+          if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
+          return res
+        }).catch(() => cached || Response.error())
+        return cached || networkFetch
       })
     )
     return
