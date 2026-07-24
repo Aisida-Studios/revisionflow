@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /admin
+Disallow: /onboarding
 
-Sitemap: https://revisionflow.netlify.app/sitemap.xml
+Sitemap: https://www.revisionflow.co.uk/sitemap.xml
