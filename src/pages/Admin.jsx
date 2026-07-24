@@ -38,7 +38,7 @@ async function adminCall(action, callerEmail, params = {}) {
 }
 
 /* ── Section wrapper ───────────────────────────────────────────── */
-function Section({ title, icon, children, defaultOpen = true }) {
+export function Section({ title, icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="card" style={{ marginBottom: 16, padding: 0, overflow: 'hidden' }}>
@@ -160,7 +160,11 @@ function ContentTab({ email }) {
 
     try {
       const { generateFlashcards, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } = await import('../utils/ai')
-      const { getOfficialFlashcardSet, saveOfficialFlashcardSet } = await import('../utils/firestore')
+      const { getOfficialFlashcardSet, saveOfficialFlashcardSet, migrateLegacyOfficialFlashcardSets } = await import('../utils/firestore')
+
+      const migResult = await migrateLegacyOfficialFlashcardSets()
+      if (migResult.migrated > 0) addFcLog(`Recognized ${migResult.migrated} existing flashcard set(s) made before cache-checking existed`, 'success')
+
       let done = 0, errors = 0, skipped = 0
 
       for (const topic of topics) {
