@@ -2948,187 +2948,264 @@ const ASLEVEL = {
 
     // ── English Language (AQA AS 7701 — subset of A-level 7702) ───────────────
     'English Language': { papers: {
-      1: [
-        'Paper 1 – Section A: Textual Variations and Representations — Comparing Two Texts',
-        'Paper 1 – Section B: Children\'s Language Development (AS-Level Subset)',
-        'Language Levels: Phonetics, Lexis, Semantics, Grammar, Pragmatics, Discourse',
+      1: [ // Language and the Individual
+        'Section A – Textual Variations and Representations: Comparing Two Unseen Texts',
+        'Section A: Analysing Audience, Purpose, Genre and Mode',
+        'Section B – Children\'s Language Development: Spoken Language Development 0–5 Years',
+        'Section B: Theories of Language Acquisition (Chomsky, Skinner, Bruner — AS-Level Subset)',
+        'Language Levels: Phonetics and Phonology, Lexis and Semantics',
+        'Language Levels: Grammar (Word Class, Sentence Structure), Pragmatics and Discourse',
         'Applying Language Frameworks to Unseen Texts',
       ],
-      2: [
-        'Paper 2 – Language Diversity: Regional, Social and Ethnic Variation (AS-Level Subset)',
-        'Non-Exam Assessment: Not Required at AS-Level (A-Level Only)',
-        'Investigating Attitudes to Language Change and Variation',
+      2: [ // Language Varieties
+        'Language Diversity: Regional Variation — Dialect and Accent',
+        'Language Diversity: Social Variation — Class, Occupation, Age',
+        'Language Diversity: Ethnic Variation and Multicultural London English (AS-Level Subset)',
+        'Attitudes to Language: Received Pronunciation, Language Prejudice, Prescriptivism',
+        'Language Discourses: Studying How Language Diversity is Discussed and Debated',
+        'Investigating Language Change: Introductory Coverage (Full Depth is A-Level Only)',
       ],
     }},
 
     // ── English Literature (AQA AS Literature A — 7711) ────────────────────────
     'English Literature': { papers: {
-      1: [
-        'Component 1 – Love Through the Ages: Set Poetry — Pre-1900 Poetry',
-        'Component 1 – Love Through the Ages: Set Prose Text',
-        'Component 1 – Unseen Poetry: Comparison and Analysis',
+      1: [ // Love Through the Ages: Shakespeare and Poetry
+        'Set Shakespeare Play: Detailed Study of Language, Form and Structure',
+        'Set Shakespeare Play: the Presentation of Love and Relationships',
+        'Set Poetry: Pre-1900 Poetry Anthology — Studying the Love Through the Ages Theme',
+        'Poetic Form, Structure and Language: Close Analysis of Set Poems',
+        'Unseen Poetry: Comparing an Unseen Poem with a Studied Poem',
         'Literary Terminology and Close Textual Analysis (AO2)',
       ],
-      2: [
-        'Component 2 – Texts in Shared Contexts: Set Drama Text',
-        'Component 2 – Texts in Shared Contexts: Comparative Essay with a Second Text',
-        'Contextual Factors: Social, Historical and Literary Context (AO3)',
+      2: [ // Love Through the Ages: Prose
+        'Set Prose Text: Detailed Study of One Novel Exploring Love Through the Ages',
+        'Comparative Essay: Comparing the Set Prose Text with the Set Shakespeare Play',
+        'Contextual Factors: Social, Historical and Literary Context of the Set Texts (AO3)',
+        'Critical Interpretations: Different Readings of the Set Texts (AO5, AS-Level Subset)',
       ],
     }},
 
     // ── History (AQA AS 7041 — subset of A-level 7042) ────────────────────────
     'History': { papers: {
-      1: [
-        'Breadth Study (choice of one): The Tudors: England 1485–1603 (AS-Level Breadth)',
-        'Breadth Study (choice of one): The Age of the Crusades c.1071–1204',
-        'Breadth Study (choice of one): Russia and Its Rulers 1855–1964 (AS-Level Breadth)',
-        'Breadth Study (choice of one): The Making of Modern Britain 1951–2007',
-        'Historical Interpretations: Analysing Historians\' Views (AS-Level Extract Questions)',
+      1: [ // Breadth Study (AS covers a shorter date range than the equivalent A-level Paper 1)
+        'Breadth Study (choice of one): The Age of the Crusades c.1071–1149 (AS-Level Date Range)',
+        'Breadth Study (choice of one): The Tudors — England 1485–1547 (AS-Level Date Range)',
+        'Breadth Study (choice of one): Stuart Britain and the Crisis of Monarchy 1603–1649',
+        'Breadth Study (choice of one): Industrialisation and the People — Britain c1783–1832',
+        'Breadth Study (choice of one): Tsarist and Communist Russia 1855–1917 (AS-Level Date Range)',
+        'Breadth Study (choice of one): The British Empire c1857–1914 (AS-Level Date Range)',
+        'Breadth Study (choice of one): The Making of a Superpower — USA 1865–1920',
+        'Breadth Study (choice of one): The Quest for Political Stability — Germany 1871–1929',
+        'Historical Interpretations: Analysing and Evaluating Historians\' Views (AS-Level Extract Questions)',
+        'Key Themes: Change, Continuity, Cause and Consequence Across the Breadth Period',
       ],
-      2: [
-        'Depth Study (choice of one): The Reformation in Europe c.1500–1564',
-        'Depth Study (choice of one): The English Revolution 1625–1660',
-        'Depth Study (choice of one): Germany 1871–1945',
-        'Depth Study (choice of one): The Cold War 1945–1991 (AS-Level Depth)',
-        'Source Analysis: Evaluating Primary Source Evidence',
+      2: [ // Depth Study (AS covers a shorter date range than the equivalent A-level Paper 2)
+        'Depth Study (choice of one): Royal Authority and the Angevin Kings 1154–1189',
+        'Depth Study (choice of one): The Wars of the Roses 1450–1471',
+        'Depth Study (choice of one): Religious Conflict and the Church in England c1529–1547',
+        'Depth Study (choice of one): The English Revolution 1625–1642',
+        'Depth Study (choice of one): The Birth of the USA 1760–1776',
+        'Depth Study (choice of one): Revolution and Dictatorship — Russia 1917–1929',
+        'Depth Study (choice of one): Democracy and Nazism — Germany 1918–1933',
+        'Depth Study (choice of one): The Cold War c1945–1963 (AS-Level Date Range)',
+        'Source Analysis: Evaluating Primary Source Evidence in Its Historical Context',
+        'Historical Concepts: Similarity, Difference and Significance Within the Depth Period',
       ],
     }},
 
     // ── Geography (AQA AS 7036 — subset of A-level 7037) ──────────────────────
     'Geography': { papers: {
-      1: [
-        'Physical Geography – Water and Carbon Cycles (AS-Level Subset)',
-        'Physical Geography – Coastal Systems and Landscapes (AS-Level Option)',
-        'Physical Geography – Hazards (AS-Level Option)',
-        'Fieldwork Skills: Data Collection and Presentation (Introductory)',
+      1: [ // Physical Geography and People and the Environment
+        'Water and Carbon Cycles: Systems, Stores and Transfers (AS-Level Subset)',
+        'Water and Carbon Cycles: Human Impact on the Water and Carbon Cycles',
+        'Coastal Systems and Landscapes (choice of option): Processes and Landforms',
+        'Coastal Systems and Landscapes: Coastal Management Strategies (AS-Level Subset)',
+        'Hazards (choice of option): Plate Tectonics Theory, Volcanic and Seismic Hazards',
+        'Hazards: Hazard Management Frameworks and Case Studies (AS-Level Subset)',
+        'Fieldwork Skills: Data Collection Techniques and Methodology (Introductory)',
+        'Fieldwork Skills: Presentation and Analysis of Fieldwork Data',
       ],
-      2: [
-        'Human Geography – Global Systems and Global Governance (AS-Level Subset)',
-        'Human Geography – Changing Places (AS-Level Subset)',
-        'Geographical Skills: Cartographic, Graphical, Statistical Techniques',
+      2: [ // Human Geography and the Geography Fieldwork Investigation
+        'Global Systems and Global Governance: Globalisation — Causes and Consequences (AS-Level Subset)',
+        'Global Systems and Global Governance: Global Governance of the Earth\'s Oceans (AS-Level Subset)',
+        'Changing Places: Understanding Places — Characteristics, Meaning and Representation',
+        'Changing Places: Endogenous and Exogenous Factors in Place-Making',
+        'Geographical Skills: Cartographic Techniques — OS Maps, Choropleth and Isoline Maps',
+        'Geographical Skills: Graphical and Statistical Techniques — Mean, Median, Standard Deviation',
+        'Geography Fieldwork Investigation: Planning and Independent Data Collection (AS-Level, Written Up)',
       ],
     }},
 
     // ── Business (AQA AS 7137 — subset of A-level 7138) ───────────────────────
     'Business': { papers: {
-      1: [
-        '1 – What is Business? Dynamic Nature of Business, Objectives',
-        '2 – Managers, Leadership and Decision-Making (AS-Level Subset)',
-        '3 – Decision-Making to Improve Marketing Performance (AS-Level Subset)',
-        '4 – Decision-Making to Improve Operational Performance (AS-Level Subset)',
+      1: [ // Business 1 (new AS spec)
+        '1 – What is Business? Dynamic Nature of Business, Objectives and Stakeholders',
+        '1 – Business Structures: Sole Traders, Partnerships, Private and Public Limited Companies',
+        '2 – Managers, Leadership and Decision-Making: Management Styles (AS-Level Subset)',
+        '2 – Decision-Making: Scientific Decision-Making, Influences on Decisions',
+        '3 – Decision-Making to Improve Marketing Performance: Market Research, the Marketing Mix',
+        '3 – Marketing: Segmentation, Targeting and Positioning (AS-Level Subset)',
+        '4 – Decision-Making to Improve Operational Performance: Production Methods, Quality',
+        '4 – Operations: Managing Stock, Suppliers and Procurement (AS-Level Subset)',
       ],
-      2: [
-        '5 – Decision-Making to Improve Financial Performance (AS-Level Subset)',
-        '6 – Decision-Making to Improve Human Resource Performance (AS-Level Subset)',
-        'Analysing and Evaluating Business Data (AS-Level Case Study Skills)',
+      2: [ // Business 2 (new AS spec)
+        '5 – Decision-Making to Improve Financial Performance: Costs, Revenue and Profit',
+        '5 – Finance: Sources of Finance, Cash Flow Forecasting (AS-Level Subset)',
+        '5 – Finance: Break-Even Analysis and Interpreting Financial Statements',
+        '6 – Decision-Making to Improve Human Resource Performance: Organisational Design',
+        '6 – Human Resources: Recruitment, Selection and Motivation Theory (AS-Level Subset)',
+        'Analysing and Evaluating Business Data: Case Study and Data-Response Skills',
       ],
     }},
 
     // ── Economics (AQA AS 7135 — subset of A-level 7136) ──────────────────────
     'Economics': { papers: {
-      1: [
-        'Individuals, Firms, Markets and Market Failure: Economic Methodology',
-        'Consumer and Producer Behaviour, Demand and Supply (AS-Level Subset)',
-        'Market Failure and Government Intervention (AS-Level Subset)',
+      1: [ // The Operation of Markets and Market Failure
+        'Economic Methodology and the Economic Problem: Positive and Normative Statements',
+        'Price Determination: Demand and Supply Curves, Equilibrium, Elasticity',
+        'Production, Costs and Revenue: Short-Run and Long-Run Costs (AS-Level Subset)',
+        'Perfect Competition and Monopoly: Market Structures (AS-Level Subset)',
+        'The Labour Market: Demand and Supply of Labour, Wage Determination (AS-Level Subset)',
+        'Market Failure: Externalities, Public Goods, Information Gaps',
+        'Government Intervention: Taxes, Subsidies, Price Controls, Regulation (AS-Level Subset)',
       ],
-      2: [
-        'The National and International Economy: Measures of Economic Performance',
-        'Aggregate Demand and Aggregate Supply (AS-Level Subset)',
-        'Fiscal and Monetary Policy (AS-Level Subset)',
+      2: [ // The National Economy in a Global Context
+        'Measures of Economic Performance: Inflation, Employment, Growth, Balance of Payments',
+        'Aggregate Demand: Consumption, Investment, Government Spending, Net Trade',
+        'Aggregate Supply: Short-Run and Long-Run Aggregate Supply (AS-Level Subset)',
+        'National Income: The Circular Flow of Income, Determination of Equilibrium National Income',
+        'Economic Growth: Causes and Consequences of Growth (AS-Level Subset)',
+        'Fiscal Policy: Government Spending, Taxation and the Budget (AS-Level Subset)',
+        'Monetary Policy: Interest Rates, the Role of the Bank of England (AS-Level Subset)',
       ],
     }},
 
     // ── Sociology (AQA AS 7191 — subset of A-level 7192) ──────────────────────
     'Sociology': { papers: {
-      1: [
-        'Education: Perspectives on the Role of Education',
-        'Education: Class, Gender and Ethnic Differences in Achievement',
-        'Research Methods: Methods in Context (Applied to Education)',
+      1: [ // Education with Methods in Context
+        'Education: Functionalist, Marxist and Feminist Perspectives on the Role of Education',
+        'Education: Class Differences in Achievement — Internal and External Factors',
+        'Education: Gender Differences in Achievement and Subject Choice',
+        'Education: Ethnic Differences in Achievement (AS-Level Subset)',
+        'Education Policy: Selection, Marketisation and the Role of the State (AS-Level Subset)',
+        'Research Methods: Quantitative and Qualitative Methods, Sampling',
+        'Methods in Context: Applying Research Methods to the Study of Education',
       ],
-      2: [
-        'Families and Households: Perspectives on the Family, Family Diversity',
-        'Families and Households: Demographic Trends, Childhood',
-        'Sociological Theory: Consensus, Conflict, Social Action and Postmodern Approaches (AS-Level Subset)',
+      2: [ // Research Methods and Topics in Sociology
+        'Families and Households: Functionalist, Marxist and Feminist Perspectives on the Family',
+        'Families and Households: Family Diversity — Changing Patterns of Family Life',
+        'Families and Households: Demographic Trends — Birth Rate, Death Rate, Ageing Population',
+        'Families and Households: Childhood as a Social Construction (AS-Level Subset)',
+        'Sociological Theory: Consensus, Conflict, Social Action and Postmodern Approaches (Introductory)',
+        'Research Methods: Theoretical, Practical and Ethical Considerations in Research Design',
       ],
     }},
 
     // ── Psychology (AQA AS 7181 — subset of A-level 7182) ─────────────────────
     'Psychology': { papers: {
-      1: [
-        'Social Influence: Conformity, Obedience (Milgram), Resistance to Social Influence',
-        'Memory: Multi-Store Model, Working Memory Model, Eyewitness Testimony',
-        'Attachment: Caregiver-Infant Interactions, Stages, Animal Studies, Explanations',
+      1: [ // Introductory Topics in Psychology
+        'Social Influence: Types of Conformity and Explanations (Asch, Conformity to Social Roles — Zimbardo)',
+        'Social Influence: Obedience — Milgram\'s Research and Explanations for Obedience',
+        'Social Influence: Resistance to Social Influence, Minority Influence, Social Change',
+        'Memory: The Multi-Store Model — Sensory Register, Short-Term and Long-Term Memory',
+        'Memory: Types of Long-Term Memory, the Working Memory Model',
+        'Memory: Explanations for Forgetting — Interference and Retrieval Failure',
+        'Memory: Eyewitness Testimony — Misleading Information and Anxiety',
+        'Attachment: Caregiver-Infant Interactions, Schaffer\'s Stages of Attachment',
+        'Attachment: Animal Studies of Attachment (Lorenz, Harlow), Explanations (Learning Theory, Bowlby)',
+        'Attachment: Ainsworth\'s Strange Situation, Cultural Variations, Bowlby\'s Theory of Maternal Deprivation',
       ],
-      2: [
-        'Approaches in Psychology: Origins, Learning Approaches, the Cognitive Approach',
-        'Approaches: The Biological Approach, the Psychodynamic Approach (AS-Level Subset)',
-        'Psychopathology: Definitions of Abnormality, Phobias, Depression, OCD',
-        'Research Methods: Experimental Method, Scientific Processes, Data Analysis (AS-Level Subset)',
+      2: [ // Psychology in Context
+        'Approaches in Psychology: Origins of Psychology — Wundt and Introspection',
+        'Approaches: The Learning Approaches — Behaviourism and Social Learning Theory',
+        'Approaches: The Cognitive Approach — Schema, the Emergence of Cognitive Neuroscience',
+        'Approaches: The Biological Approach — Genes, Neurochemistry, the Nervous System',
+        'Approaches: The Psychodynamic Approach — the Role of the Unconscious, Defence Mechanisms',
+        'Biopsychology: The Nervous System and Endocrine System (AS-Level Subset)',
+        'Psychopathology: Definitions of Abnormality (Deviation from Social Norms, Failure to Function)',
+        'Psychopathology: Phobias, Depression and OCD — Behavioural, Cognitive and Biological Explanations',
+        'Research Methods: Experimental Method, Aims, Hypotheses, Sampling Techniques',
+        'Research Methods: Scientific Processes, Data Analysis and Presentation (AS-Level Subset)',
       ],
     }},
 
 
 
     // ── French (AQA AS 7651 — subset of A-level 7652) ─────────────────────────
+    // Note: AS French/German/Spanish (2 papers: Listening/Reading/Writing + Writing) have no
+    // separately-timetabled speaking test at AS — speaking is assessed as part of teaching, not
+    // certificated the way A-level's Paper 3 speaking exam is. Listed here for teaching reference.
     'French': { papers: {
-      1: [
-        'Listening, Reading and Writing – Theme 1: Aspects of French-Speaking Society (AS-Level Subset)',
-        'Listening, Reading and Writing – Theme 2: Artistic Culture in the French-Speaking World (AS-Level Subset)',
+      1: [ // Listening, Reading and Writing
+        'Theme 1 – Aspects of French-Speaking Society: Family Structures, Cyber-Society, Volunteering',
+        'Theme 2 – Artistic Culture in the French-Speaking World: Music, Media, Festivals',
+        'Listening: Identifying Detail, Opinion and Gist in Authentic Recordings',
+        'Reading: Authentic Texts — Articles, Literary Extracts, Adverts',
         'Grammar – Tenses: Present, Perfect, Imperfect, Future, Conditional',
-        'Grammar – Subjunctive Mood (Introductory), Pronouns, Comparative/Superlative',
-        'Translation – Into and From French (Shorter Passages than A-Level)',
+        'Grammar – the Subjunctive Mood (Introductory), Object Pronouns, Comparative/Superlative',
+        'Translation – Into English and Into French (Shorter Passages than A-Level)',
       ],
-      2: [
-        'Speaking – Individual Research Project (Shorter than A-Level Independent Research)',
-        'Speaking – General Conversation Based on Sub-Themes Studied',
-        'Set Text or Film: One Studied Work (AS-Level — Fewer than A-Level Requirement)',
+      2: [ // Writing
+        'Writing: Structured Written Response to a Question on Theme 1 or 2',
+        'Writing: Grammatical Accuracy and Range of Structures at AS-Level',
+        'Set Text or Film Study: One Studied Work (AS-Level — Fewer Requirements than A-Level)',
+        'General Conversation Skills: Discussion of Sub-Themes Studied (Teaching Preparation for Speaking)',
       ],
     }},
 
     // ── German (AQA AS 7661 — subset of A-level 7662) ─────────────────────────
     'German': { papers: {
-      1: [
-        'Listening, Reading and Writing – Theme 1: Aspects of German-Speaking Society (AS-Level Subset)',
-        'Listening, Reading and Writing – Theme 2: Artistic Culture in the German-Speaking World (AS-Level Subset)',
-        'Grammar – Cases, Tenses (Present, Perfect, Imperfect, Future), Word Order',
-        'Grammar – Subordinate Clauses, Modal Verbs, Passive Voice (Introductory)',
-        'Translation – Into and From German (Shorter Passages than A-Level)',
+      1: [ // Listening, Reading and Writing
+        'Theme 1 – Aspects of German-Speaking Society: Family Structures, Digital Life, Volunteering',
+        'Theme 2 – Artistic Culture in the German-Speaking World: Music, Media, Festivals',
+        'Listening: Identifying Detail, Opinion and Gist in Authentic Recordings',
+        'Reading: Authentic Texts — Articles, Literary Extracts, Adverts',
+        'Grammar – Cases (Nominative, Accusative, Dative, Genitive), Word Order',
+        'Grammar – Tenses: Present, Perfect, Imperfect, Future',
+        'Grammar – Subordinate Clauses, Modal Verbs, the Passive Voice (Introductory)',
+        'Translation – Into English and Into German (Shorter Passages than A-Level)',
       ],
-      2: [
-        'Speaking – Individual Research Project (Shorter than A-Level)',
-        'Speaking – General Conversation Based on Sub-Themes Studied',
-        'Set Text or Film: One Studied Work (AS-Level)',
+      2: [ // Writing
+        'Writing: Structured Written Response to a Question on Theme 1 or 2',
+        'Writing: Grammatical Accuracy and Range of Structures at AS-Level',
+        'Set Text or Film Study: One Studied Work (AS-Level — Fewer Requirements than A-Level)',
+        'General Conversation Skills: Discussion of Sub-Themes Studied (Teaching Preparation for Speaking)',
       ],
     }},
 
     // ── Spanish (AQA AS 7691 — subset of A-level 7692) ────────────────────────
     'Spanish': { papers: {
-      1: [
-        'Listening, Reading and Writing – Theme 1: Aspects of Hispanic Society (AS-Level Subset)',
-        'Listening, Reading and Writing – Theme 2: Artistic Culture in the Hispanic World (AS-Level Subset)',
-        'Grammar – Ser/Estar, Tenses (Present, Preterite, Imperfect, Future), Subjunctive (Introductory)',
-        'Grammar – Pronouns, Comparatives, Por/Para',
-        'Translation – Into and From Spanish (Shorter Passages than A-Level)',
+      1: [ // Listening, Reading and Writing
+        'Theme 1 – Aspects of Hispanic Society: Family Structures, Digital Life, Volunteering',
+        'Theme 2 – Artistic Culture in the Hispanic World: Music, Media, Festivals',
+        'Listening: Identifying Detail, Opinion and Gist in Authentic Recordings',
+        'Reading: Authentic Texts — Articles, Literary Extracts, Adverts',
+        'Grammar – Ser/Estar, Tenses (Present, Preterite, Imperfect, Future)',
+        'Grammar – the Subjunctive Mood (Introductory), Pronouns, Comparatives, Por/Para',
+        'Translation – Into English and Into Spanish (Shorter Passages than A-Level)',
       ],
-      2: [
-        'Speaking – Individual Research Project (Shorter than A-Level)',
-        'Speaking – General Conversation Based on Sub-Themes Studied',
-        'Set Text or Film: One Studied Work (AS-Level)',
+      2: [ // Writing
+        'Writing: Structured Written Response to a Question on Theme 1 or 2',
+        'Writing: Grammatical Accuracy and Range of Structures at AS-Level',
+        'Set Text or Film Study: One Studied Work (AS-Level — Fewer Requirements than A-Level)',
+        'General Conversation Skills: Discussion of Sub-Themes Studied (Teaching Preparation for Speaking)',
       ],
     }},
 
     // ── Art & Design (AQA AS 7201) ─────────────────────────────────────────────
     'Art & Design': { papers: {
-      1: [
-        'Personal Investigation (AS-Level, Coursework Portfolio — Smaller Scale than A-Level)',
-        'AO1 – Develop: Research and Contextual Sources',
-        'AO2 – Explore: Experimentation with Media and Techniques',
-        'AO3 – Record: Observational Studies and Annotation',
-        'AO4 – Present: Personal Response and Outcome',
+      1: [ // Component 1 — Personal Investigation (Coursework Portfolio)
+        'Personal Investigation: Developing a Theme (AS-Level — Smaller Scale than A-Level)',
+        'AO1 – Develop: Research and Contextual Sources, Recording Initial Ideas',
+        'AO2 – Explore: Experimentation with Media, Materials and Techniques',
+        'AO3 – Record: Observational Studies, Annotation and Visual Recording',
+        'AO4 – Present: Personal, Meaningful Response and Realisation of Intentions',
+        'Contextual Sources: Analysing the Work of Other Artists and Movements',
       ],
-      2: [
-        'Externally Set Assignment (AS-Level — Shorter Preparatory Period than A-Level)',
-        'Supervised Time: Final Piece (AS-Level — Shorter than A-Level)',
+      2: [ // Component 2 — Externally Set Assignment
+        'Externally Set Assignment: Responding to an Exam Board Starting Point (AS — Shorter Prep than A-Level)',
+        'Preparatory Studies: Developing Ideas from the Starting Point',
+        'Supervised Time: Realising a Final Piece Under Timed Conditions (AS-Level — Shorter than A-Level)',
       ],
     }},
 
@@ -3137,203 +3214,295 @@ const ASLEVEL = {
     // Art Craft and Design, Fine Art, Graphic Communication, Photography, Textile Design,
     // Three-Dimensional Design. Built out separately here since it's commonly chosen on its own.
     'Photography': { papers: {
-      1: [
-        'Personal Investigation (AS-Level, Coursework Portfolio — Smaller Scale than A-Level)',
+      1: [ // Component 1 — Personal Investigation
+        'Personal Investigation: Developing a Theme (AS-Level — Smaller Scale than A-Level)',
         'AO1 – Develop: Research Into Photographers and Photographic Movements',
         'AO2 – Explore: Experimentation with Camera Techniques, Lighting, Composition',
         'AO3 – Record: Photo Shoots, Contact Sheets, Annotation',
         'AO4 – Present: Personal Response and Final Photographic Outcome',
+        'Digital Editing and Manipulation Techniques (Introductory)',
       ],
-      2: [
-        'Externally Set Assignment (AS-Level — Shorter Preparatory Period than A-Level)',
-        'Supervised Time: Final Piece (AS-Level — Shorter than A-Level)',
+      2: [ // Component 2 — Externally Set Assignment
+        'Externally Set Assignment: Responding to an Exam Board Starting Point (AS — Shorter Prep than A-Level)',
+        'Preparatory Studies: Test Shoots and Development of Ideas from the Starting Point',
+        'Supervised Time: Final Photographic Outcome Under Timed Conditions (AS-Level — Shorter than A-Level)',
       ],
     }},
 
     // ── Law (AQA AS 7161 — subset of A-level 7162) ─────────────────────────────
     'Law': { papers: {
-      1: [
+      1: [ // The Legal System and Criminal Law
         'The Nature of Law and the English Legal System: Civil and Criminal Courts',
-        'The Nature of Law: Sources of Law (Legislation, Judicial Precedent)',
-        'The Legal Profession and Access to Justice (AS-Level Subset)',
-      ],
-      2: [
+        'The Nature of Law: Sources of Law — Legislation, Delegated Legislation, Judicial Precedent',
+        'The Nature of Law: Statutory Interpretation — Rules and Aids',
+        'The Legal Profession: Barristers, Solicitors, and Access to Justice (AS-Level Subset)',
         'Criminal Law: General Principles — Actus Reus and Mens Rea',
-        'Criminal Law: Offences Against the Person (AS-Level Subset — Fewer Offences than A-Level)',
-        'Criminal Law: General Defences (Introductory)',
+        'Criminal Law: Non-Fatal Offences Against the Person (AS-Level Subset — Fewer than A-Level)',
+        'Criminal Law: General Defences — Introductory Coverage of Self-Defence and Consent',
+      ],
+      2: [ // Criminal Law Continued / Introduction to Tort
+        'Criminal Law: Property Offences — Theft and Basic Robbery (AS-Level Subset)',
+        'Criminal Law: Preliminary Offences — Attempts (Introductory)',
+        'The Law of Tort: Negligence — Duty of Care, Breach and Causation (AS-Level Subset)',
+        'The Law of Tort: Occupiers\' Liability (Introductory)',
+        'Law-Making: Parliamentary Law-Making Process and Influences on It',
       ],
     }},
 
     // ── Philosophy (AQA AS 7171 — subset of A-level 7172) ─────────────────────
     'Philosophy': { papers: {
-      1: [
-        'Epistemology: The Definition of Knowledge, Perception (AS-Level Subset)',
-        'Moral Philosophy: Normative Ethical Theories — Utilitarianism, Kantian Ethics (AS-Level Subset)',
-        'Moral Philosophy: Applied Ethics (Introductory)',
+      1: [ // Epistemology and Moral Philosophy
+        'Epistemology: The Definition of Knowledge — Tripartite View and Gettier Problem',
+        'Epistemology: Perception as a Source of Knowledge — Direct and Indirect Realism',
+        'Epistemology: Reason as a Source of Knowledge — Innatism (AS-Level Subset)',
+        'Moral Philosophy: Normative Ethical Theories — Utilitarianism (Act and Rule)',
+        'Moral Philosophy: Normative Ethical Theories — Kantian Deontological Ethics',
+        'Moral Philosophy: Applied Ethics — Stealing and Simulated Killing (AS-Level Subset)',
+        'Moral Philosophy: Metaethics — Moral Realism vs Anti-Realism (Introductory)',
       ],
-      2: [
-        'Metaphysics of God: Ontological, Cosmological and Teleological Arguments (AS-Level Subset)',
-        'Metaphysics of Mind: The Mind-Body Problem, Dualism (AS-Level Subset)',
+      2: [ // The Metaphysics of God and of Mind
+        'Metaphysics of God: The Concept and Nature of God (Omniscience, Omnipotence, Eternity)',
+        'Metaphysics of God: The Design Argument (Paley, Hume\'s Criticisms)',
+        'Metaphysics of God: The Cosmological Argument (Aquinas\' Three Ways)',
+        'Metaphysics of God: The Ontological Argument (Anselm, Descartes, Gaunilo\'s Objection)',
+        'Metaphysics of God: The Problem of Evil — Logical and Evidential Forms (AS-Level Subset)',
+        'Metaphysics of Mind: Substance Dualism (Descartes)',
+        'Metaphysics of Mind: Philosophical Behaviourism and Mind-Brain Type Identity Theory (AS-Level Subset)',
       ],
     }},
 
     // ── Accounting (AQA AS 7126 — subset of A-level 7127) ─────────────────────
     'Accounting': { papers: {
-      1: [
-        'The Purpose of Accounting; Types of Business Organisation',
-        'Recording Financial Transactions: Double-Entry Bookkeeping',
-        'Verification of Accounting Records: the Trial Balance, Correction of Errors',
-        'Preparation of Financial Statements: Sole Traders (AS-Level Subset)',
+      1: [ // Introduction to Accounting and Double-Entry
+        'The Purpose of Accounting; Types of Business Organisation (Sole Trader, Partnership, Limited Company)',
+        'Recording Financial Transactions: Source Documents, Books of Prime Entry',
+        'Recording Financial Transactions: Double-Entry Bookkeeping — Ledger Accounts',
+        'Verification of Accounting Records: the Trial Balance',
+        'Verification of Accounting Records: Correction of Errors and Suspense Accounts',
+        'Preparation of Financial Statements: Sole Traders — Income Statement and Statement of Financial Position',
+        'Accounting Concepts and Adjustments: Accruals, Prepayments, Depreciation, Irrecoverable Debts',
       ],
-      2: [
-        'Limited Company Accounts (AS-Level — Introductory, Less Depth than A-Level)',
-        'Analysis and Evaluation of Financial Information: Ratio Analysis (AS-Level Subset)',
+      2: [ // Further Financial Accounting and Analysis (AS Subset)
+        'Partnership Accounts: Appropriation Accounts, Partners\' Current and Capital Accounts (AS-Level Subset)',
+        'Limited Company Accounts: Introductory Coverage of Share Capital and Reserves (AS-Level Subset)',
+        'Not-for-Profit Organisations: Receipts and Payments, Income and Expenditure Accounts (AS-Level Subset)',
+        'Analysis and Evaluation of Financial Information: Profitability and Liquidity Ratios',
+        'Analysis and Evaluation: Limitations of Ratio Analysis and Accounting Information',
       ],
     }},
 
     // ── Politics (AQA AS 7151 — subset of A-level 7152) ───────────────────────
     'Politics': { papers: {
-      1: [
-        'Government and Politics of the UK: Democracy and Participation',
-        'Government and Politics of the UK: Political Parties, Electoral Systems',
-        'Government and Politics of the UK: Voting Behaviour and the Media (AS-Level Subset)',
+      1: [ // Paper 1 — Government and Politics of the UK
+        'Democracy and Participation: Direct and Representative Democracy, the Franchise',
+        'Democracy and Participation: Pressure Groups and Other Influences (AS-Level Subset)',
+        'Political Parties: Established Parties, Emerging and Minor Parties, Funding',
+        'Electoral Systems: First Past the Post and Alternative Systems Used in the UK',
+        'Voting Behaviour and the Media: Factors Affecting Voting, Opinion Polls (AS-Level Subset)',
+        'Core Political Ideas: Conservatism — Core Ideas and Principles (AS-Level Subset)',
       ],
-      2: [
-        'Government and Politics of the UK: The Constitution, Parliament (AS-Level Subset)',
-        'Government and Politics of the UK: The Prime Minister and Executive, Relationships Between Branches',
+      2: [ // Paper 2 — Government and Politics of the UK (continued)
+        'The Constitution: Sources, Nature and Debates on Codification',
+        'Parliament: Structure and Role of the Commons and Lords, the Legislative Process',
+        'The Prime Minister and Executive: Powers, Cabinet Government, Accountability',
+        'Relationships Between the Branches: Parliament, Executive and Judiciary (AS-Level Subset)',
+        'Core Political Ideas: Liberalism — Core Ideas and Principles (AS-Level Subset)',
       ],
     }},
 
     // ── Religious Studies (AQA AS 7061 — subset of A-level 7062) ──────────────
     'Religious Studies': { papers: {
-      1: [
-        'Philosophy of Religion: Ancient Philosophical Influences (Plato, Aristotle — AS-Level Subset)',
-        'Philosophy of Religion: The Nature of the Soul, Mind and Body',
-        'Philosophy of Religion: Arguments for the Existence of God (Design, Cosmological — AS-Level Subset)',
-        'Philosophy of Religion: The Problem of Evil',
+      1: [ // Philosophy of Religion and Ethics
+        'Philosophy of Religion: Ancient Philosophical Influences — Plato\'s and Aristotle\'s Views (AS-Level Subset)',
+        'Philosophy of Religion: The Nature of the Soul, Mind and Body — Dualism and Materialism',
+        'Philosophy of Religion: The Design Argument (Paley, Hume\'s Criticisms — AS-Level Subset)',
+        'Philosophy of Religion: The Cosmological Argument (Aquinas, Copleston — AS-Level Subset)',
+        'Philosophy of Religion: Religious Experience — Types and Challenges',
+        'Philosophy of Religion: The Problem of Evil — Logical and Evidential Forms',
+        'Religion and Ethics: Natural Law (Aquinas)',
+        'Religion and Ethics: Situation Ethics (Fletcher)',
+        'Religion and Ethics: Kantian Deontological Ethics (AS-Level Subset)',
+        'Religion and Ethics: Utilitarianism — Act and Rule (AS-Level Subset)',
       ],
-      2: [
-        'Religion and Ethics: Normative Ethical Theories (Natural Law, Situation Ethics — AS-Level Subset)',
-        'Religion and Ethics: Ethical Language and Thought',
-        'Religion and Ethics: Deontological and Teleological Approaches (AS-Level Subset)',
+      2: [ // Study of Religion (choice of Buddhism/Christianity/Hinduism/Islam/Judaism)
+        'Religious Beliefs, Values and Teachings: Sources of Wisdom and Authority (AS-Level Subset)',
+        'Religious Beliefs, Values and Teachings: Core Beliefs of the Chosen Religion',
+        'Religious Practices: Worship, Festivals and Ways of Life (AS-Level Subset)',
+        'Religious Identity: How Religious Identity Varies Within the Chosen Tradition',
+        'Sources of Wisdom and Authority: Interpretation of Scripture or Sacred Text',
       ],
     }},
 
     // ── Physical Education (AQA AS 7581 — subset of A-level 7582) ─────────────
     'Physical Education': { papers: {
-      1: [
-        'Applied Anatomy and Physiology: The Cardiovascular and Respiratory Systems',
-        'Applied Anatomy and Physiology: The Neuromuscular System, Energy Systems (AS-Level Subset)',
-        'Skill Acquisition: Characteristics and Classification of Skill',
-        'Skill Acquisition: Methods of Practice, Transfer of Learning (AS-Level Subset)',
+      1: [ // Factors Affecting Participation in Physical Activity and Sport
+        'Applied Anatomy and Physiology: The Cardiovascular System — Structure and Function',
+        'Applied Anatomy and Physiology: The Respiratory System — Mechanics of Breathing, Gas Exchange',
+        'Applied Anatomy and Physiology: The Neuromuscular System — Muscle Fibre Types (AS-Level Subset)',
+        'Applied Anatomy and Physiology: Energy Systems — ATP-PC, Glycolytic, Aerobic (AS-Level Subset)',
+        'Skill Acquisition: Characteristics and Classification of Skill (Simple/Complex, Open/Closed)',
+        'Skill Acquisition: Methods of Practice — Whole, Part and Progressive Part',
+        'Skill Acquisition: Transfer of Learning, Guidance and Feedback (AS-Level Subset)',
+        'Sport and Society: Pre-Industrial and Industrial Sport in Britain',
       ],
-      2: [
-        'Sport and Society: Pre and Post-Industrial Sport in Britain',
+      2: [ // Factors Affecting Optimal Performance
         'Sport and Society: Emergence and Evolution of Modern Sport (AS-Level Subset)',
-        'Practical Performance (NEA): One Practical Activity (AS-Level — Fewer than A-Level)',
+        'Sport Psychology: Aspects of Personality and Attitudes to Sport (AS-Level Subset)',
+        'Sport Psychology: Arousal, Anxiety and Aggression in Sport',
+        'Sport and Society: Ethics and Deviance in Sport (Introductory)',
+        'Practical Performance (NEA): One Practical Activity as Player, Performer or Coach (AS — Fewer than A-Level)',
+        'Practical Performance (NEA): Written/Verbal Analysis of Performance',
       ],
     }},
 
     // ── Media Studies (AQA AS 7571 — subset of A-level 7572) ──────────────────
     'Media Studies': { papers: {
-      1: [
-        'Media Language and Representation: Set Product Analysis (AS-Level Subset — Fewer Set Products)',
-        'Media Industries: Ownership, Regulation, Funding (AS-Level Subset)',
+      1: [ // Paper 1 — Media Language and Representation (AS Set Products: fewer than A-level)
+        'Media Language: Camera, Editing, Mise-en-Scène, Sound (AS Set Products)',
+        'Media Language: Media Forms and Conventions of Genre',
+        'Media Representation: Stereotypes, Perspectives, Media Values and Ideology',
+        'Set Product – Advertising and Marketing: Print and Online Campaign',
+        'Set Product – Music Video: One Studied Video Analysed for Language and Representation',
+        'Set Product – Newspapers: Analysing Front Pages (AS-Level Subset)',
+        'Theoretical Framework: Applying Barthes, Lévi-Strauss and Todorov (Introductory)',
       ],
-      2: [
-        'Media Audiences: Targeting and Response Theories (AS-Level Subset)',
-        'Non-Exam Assessment: Creating Media Products (AS-Level — Smaller-Scale Brief than A-Level)',
+      2: [ // Paper 2 — Media Industries and Audiences
+        'Media Industries: Ownership, Ownership Patterns, Conglomeration (AS-Level Subset)',
+        'Media Industries: Regulation — Statutory and Self-Regulation, Ofcom, IPSO, BBFC',
+        'Media Industries: Funding Models — Public Funding, Advertising, Subscription',
+        'Media Audiences: Targeting, Categorising and Reaching Audiences',
+        'Media Audiences: Effects Theories, Uses and Gratifications (AS-Level Subset)',
+        'Set Product – Radio: One Studied Extract Analysed for Industry and Audience',
+        'Non-Exam Assessment: Creating a Media Product to a Brief (AS-Level — Shorter Brief than A-Level)',
       ],
     }},
 
     // ── Drama and Theatre (AQA AS 7261 — subset of A-level 7262) ──────────────
     'Drama and Theatre': { papers: {
-      1: [
-        'Set Play Study: Social, Historical and Cultural Context (AS-Level — One Set Text)',
-        'Live Theatre Evaluation: Analysis of a Professional Production',
+      1: [ // Component 1 — Drama and Theatre (written exam)
+        'Set Play Study: Structure, Character and Language of the Set Text',
+        'Set Play: Social, Historical and Cultural Context of Writing and Original Staging',
+        'Set Play: Practical Interpretation — Directorial, Design and Performance Choices',
+        'Live Theatre Evaluation: Analysing a Professional Production Seen Live',
+        'Live Theatre Evaluation: Use of Performance and Design Elements in Review',
+        'Theatrical Practitioners: Introductory Study of One Influential Practitioner',
       ],
-      2: [
-        'Practical: Devised Drama Based on a Text Extract (AS-Level — Shorter than A-Level)',
-        'Practical: Performance of Two Extracts from the Same Play (AS-Level Subset)',
+      2: [ // Component 2 — Creating Original Drama (NEA, practical)
+        'Devised Piece: Stimulus Response and Development of Original Material',
+        'Devised Piece: Process Portfolio Documenting Rehearsal and Development (AS — Shorter than A-Level)',
+        'Devised Piece: Performance to an Audience',
+        'Group Work Skills: Collaboration, Role and Responsibility Within an Ensemble',
+        'Reflection: Evaluating Own Contribution to the Devising Process',
       ],
     }},
 
     // ── Latin (AQA AS 7681 — subset of A-level 7682) ──────────────────────────
     'Latin': { papers: {
-      1: [
-        'Language – Grammar: Noun Declensions, Adjective Agreement, Pronouns',
+      1: [ // Language
+        'Language – Grammar: Noun Declensions (1st–5th), Adjective Agreement, Pronouns',
         'Language – Grammar: Verb Tenses (Present, Imperfect, Future, Perfect, Pluperfect) — Active Voice',
+        'Language – Grammar: Introduction to the Passive Voice (AS-Level Subset)',
         'Language – Syntax: Purpose Clauses, Indirect Statement (AS-Level Subset)',
-        'Unseen Translation: Latin Prose (Shorter Passages than A-Level)',
+        'Language – Syntax: Ablative Absolute, Participles (Introductory)',
+        'Unseen Translation: Latin Prose (Shorter, More Accessible Passages than A-Level)',
+        'Comprehension: Short Unseen Passage with Questions in English',
       ],
-      2: [
-        'Prescribed Literature: One Verse and One Prose Set Text (AS-Level — Fewer than A-Level)',
-        'Literary Appreciation: Style, Content and Context of Set Texts',
+      2: [ // Literature
+        'Prescribed Verse Literature: One Set Text Extract (AS-Level — Fewer Lines than A-Level)',
+        'Prescribed Prose Literature: One Set Text Extract (AS-Level — Fewer Lines than A-Level)',
+        'Literary Appreciation: Style, Content and Structure of Set Texts',
+        'Roman Contexts: Historical and Cultural Background to the Set Texts',
       ],
     }},
 
     // ── Classical Greek (AQA AS 7881 — subset of A-level 7882) ────────────────
     'Classical Greek': { papers: {
-      1: [
-        'Language – Grammar: Noun Declensions, Adjective Agreement, Pronouns',
+      1: [ // Language
+        'Language – Grammar: Noun Declensions (1st, 2nd, 3rd), Adjective Agreement, Pronouns',
         'Language – Grammar: Verb Tenses (Present, Imperfect, Future, Aorist) — Active and Middle Voice',
-        'Unseen Translation: Greek Prose (Shorter Passages than A-Level)',
+        'Language – Grammar: Introduction to the Passive Voice (AS-Level Subset)',
+        'Language – Syntax: Simple and Compound Sentences, Participles (Introductory)',
+        'Unseen Translation: Greek Prose (Shorter, More Accessible Passages than A-Level)',
+        'Comprehension: Short Unseen Passage with Questions in English',
       ],
-      2: [
-        'Prescribed Literature: One Verse and One Prose Set Text (AS-Level — Fewer than A-Level)',
-        'Literary Appreciation: Style, Content and Context of Set Texts',
+      2: [ // Literature
+        'Prescribed Verse Literature: One Set Text Extract (AS-Level — Fewer Lines than A-Level)',
+        'Prescribed Prose Literature: One Set Text Extract (AS-Level — Fewer Lines than A-Level)',
+        'Literary Appreciation: Style, Content and Structure of Set Texts',
+        'Historical and Cultural Context of the Set Texts (Introductory)',
       ],
     }},
 
     // ── Music (AQA AS 7271 — subset of A-level 7272) ──────────────────────────
     'Music': { papers: {
-      1: [
-        'Listening: Areas of Study — Western Classical Tradition, Pop Music, Rock and Jazz (AS-Level Subset)',
-        'Analysis of Set Works (AS-Level — Fewer Set Works than A-Level)',
-        'Score-Reading and Aural Perception Skills',
+      1: [ // Appraising Music
+        'Areas of Study – Western Classical Tradition: Set Works (AS-Level — Fewer Works than A-Level)',
+        'Areas of Study – Pop Music: Set Works and Wider Listening',
+        'Areas of Study – Rock and Jazz OR Musical Theatre OR Music for Media (Choice of One, AS Subset)',
+        'Dictation and Score-Reading: Melodic and Rhythmic Dictation',
+        'Aural Perception: Identifying Chords, Cadences and Intervals by Ear',
+        'Analysis: Harmony, Structure, Texture and Instrumentation of Set Works',
       ],
-      2: [
-        'Performance (NEA): Solo and/or Ensemble Performance (AS-Level — Shorter Minimum Time than A-Level)',
-        'Composition (NEA): One Composition to a Brief (AS-Level — Fewer than A-Level)',
+      2: [ // Performing and Composing (NEA)
+        'Performance (NEA): Solo and/or Ensemble Performance (AS — Shorter Minimum Time than A-Level)',
+        'Performance (NEA): Choice of Repertoire and Technical Demand',
+        'Composition (NEA): One Composition to a Brief (AS — Fewer Compositions than A-Level)',
+        'Composition (NEA): Using Musical Elements — Melody, Harmony, Structure, Texture',
       ],
     }},
 
     // ── English Language and Literature (AQA AS 7706 — subset of A-level 7707) ─
     'English Language & Literature': { papers: {
-      1: [
-        'Telling Stories: Studying a Novel Through Language and Literature Lenses (AS-Level Subset)',
-        'Telling Stories: Narrative Theory, Point of View, Voice',
-        'Telling Stories: Combining Linguistic and Literary Methods of Analysis',
+      1: [ // Paper 1 — Telling Stories
+        'Telling Stories: Studying a Prose Fiction Text Through Language and Literature Lenses',
+        'Telling Stories: Narrative Theory — Narrative Voice, Point of View, Focalisation',
+        'Telling Stories: Combining Linguistic Methods (Lexis, Grammar) with Literary Analysis',
+        'Telling Stories: Studying a Poetry Anthology Alongside the Prose Text (AS-Level Subset)',
+        'Applying Frameworks: Genre, Register and Style Across Texts',
       ],
-      2: [
-        'Exploring Conflict: Studying a Poetry Text and Related Material (AS-Level Subset)',
-        'Non-Exam Assessment: Not Required at AS-Level (A-Level Only)',
+      2: [ // Paper 2 — Varieties in Language and Literature (AS Subset)
+        'Varieties in Language and Literature: Studying a Second Prose or Drama Text (AS-Level Subset)',
+        'Varieties in Language and Literature: Comparing Texts Across Genre and Mode',
+        'Language Methods: Phonological, Lexical, Grammatical and Discourse Analysis Applied to Literary Texts',
+        'Contextual Factors: Social, Historical and Cultural Influence on Meaning (AS-Level Subset)',
       ],
     }},
 
     // ── Design and Technology: Product Design (AQA AS 7551 — subset of A-level 7552) ─
     'Design and Technology: Product Design': { papers: {
-      1: [
-        'Technical Principles: New and Emerging Technologies, Materials (AS-Level Subset)',
+      1: [ // Technical Principles
+        'Technical Principles: New and Emerging Technologies (AS-Level Subset)',
+        'Technical Principles: Energy Generation and Storage (Introductory)',
+        'Technical Principles: Materials — Papers/Boards, Timbers, Metals, Polymers, Textiles',
+        'Technical Principles: Performance Characteristics of Materials (AS-Level Subset)',
         'Technical Principles: Systems Approach to Designing, Mechanical Devices',
         'Technical Principles: Selection of Materials and Components',
       ],
-      2: [
-        'Designing and Making Principles: Investigation, the Work of Others (AS-Level Subset)',
-        'Designing and Making Principles: Design Communication and Prototyping',
-        'NEA – Design and Make Task (AS-Level — Smaller-Scale Than A-Level)',
+      2: [ // Designing and Making Principles
+        'Designing and Making Principles: Investigation — Primary and Secondary Data (AS-Level Subset)',
+        'Designing and Making Principles: the Work of Past and Present Designers',
+        'Designing and Making Principles: Design Communication, Sketching and Annotation',
+        'Designing and Making Principles: Prototyping and 3D Modelling (Introductory)',
+        'NEA – Design and Make Task: Portfolio and Prototype (AS-Level — Smaller-Scale Than A-Level)',
       ],
     }},
 
     // ── Environmental Science (AQA AS 7446 — subset of A-level 7447) ───────────
     'Environmental Science': { papers: {
       1: [
-        'The Living Environment: Biogeochemical Cycles, Ecosystems (AS-Level Subset)',
-        'The Physical Environment: Lithosphere and Atmosphere (AS-Level Subset)',
+        'The Living Environment: Biogeochemical Cycles (Carbon and Nitrogen — AS-Level Subset)',
+        'The Living Environment: Ecosystems — Structure, Energy Flow, Trophic Levels',
+        'The Living Environment: Biodiversity — Measuring and Valuing Biodiversity',
+        'The Physical Environment: the Lithosphere — Structure and Plate Tectonics (AS-Level Subset)',
+        'The Physical Environment: the Atmosphere — Structure and Circulation (AS-Level Subset)',
+        'The Physical Environment: the Hydrosphere — the Water Cycle',
       ],
       2: [
-        'Energy Resources and Pollution (AS-Level Subset)',
-        'Biological Resources and Sustainability (AS-Level Subset)',
+        'Energy Resources: Fossil Fuels and Renewable Energy Technologies (AS-Level Subset)',
+        'Pollution: Types, Sources and Effects of Air and Water Pollution (AS-Level Subset)',
+        'Biological Resources: Agriculture and Food Production (AS-Level Subset)',
+        'Sustainability: Principles of Sustainable Development (Introductory)',
+        'Practical and Fieldwork Skills: Data Collection and Analysis Techniques',
       ],
     }},
 
@@ -3447,91 +3616,143 @@ const ASLEVEL = {
 
     // ── History (Edexcel AS 8HI0 — subset of A-level 9HI0) ─────────────────────
     'History': { papers: {
-      1: [
-        'Breadth Study with Interpretations (choice of one, AS-Level Extract): e.g. Russia 1917–91',
-        'Depth Study (choice of one, AS-Level): e.g. The USA, 1954–75: Conflict at Home and Abroad',
+      1: [ // Breadth Study with Interpretations (AS-Level Route)
+        'Breadth Study with Interpretations (choice of one): Russia 1917–91 — Communism to Collapse (AS Range)',
+        'Breadth Study with Interpretations (choice of one): Germany 1918–45: Democracy to Dictatorship (AS Range)',
+        'Breadth Study with Interpretations (choice of one): England 1509–1558: Henrician and Edwardian Reformations',
+        'Historical Interpretations: Evaluating Historians\' Extracts and Views',
+        'Key Themes: Change, Continuity, Cause and Consequence Across the Period',
       ],
-      2: [
-        'Depth Study (choice of one, AS-Level): e.g. Anglo-Saxon England and the Norman Conquest 1053–66',
-        'Coursework Not Required at AS-Level (A-Level Only)',
+      2: [ // Depth Study
+        'Depth Study (choice of one): The USA, 1954–75 — Conflict at Home and Abroad (AS-Level Depth)',
+        'Depth Study (choice of one): Anglo-Saxon England and the Norman Conquest 1053–66',
+        'Depth Study (choice of one): The Reformation in Europe 1500–1531 (AS-Level Depth)',
+        'Source Analysis: Evaluating Primary Source Evidence in Historical Context',
+        'Coursework/Non-Exam Assessment: Not Required at AS-Level (A-Level Only)',
       ],
     }},
 
     // ── Economics A (Edexcel AS 8EC0 — subset of A-level 9EC0) ─────────────────
     'Economics': { papers: {
-      1: [
-        'Theme 1 – Introduction to Markets and Market Failure (AS-Level Subset)',
+      1: [ // Theme 1 — Introduction to Markets and Market Failure
+        'Nature of Economics: Positive and Normative Statements, Ceteris Paribus',
+        'How Markets Work: Rational Decision-Making, Demand and Supply Curves',
+        'How Markets Work: Price Determination, Price Mechanism, Elasticities of Demand and Supply',
+        'Market Failure: Externalities, Public Goods, Information Gaps',
+        'Government Intervention: Indirect Taxes, Subsidies, Price Controls, Regulation (AS-Level Subset)',
       ],
-      2: [
-        'Theme 2 – The UK Economy — Performance and Policies (AS-Level Subset)',
+      2: [ // Theme 2 — The UK Economy: Performance and Policies
+        'Measures of Economic Performance: Economic Growth, Inflation, Employment, Balance of Payments',
+        'Aggregate Demand: Components — Consumption, Investment, Government Spending, Net Trade',
+        'Aggregate Supply: Short-Run and Long-Run Aggregate Supply (AS-Level Subset)',
+        'National Income: Equilibrium Levels of Real National Output, the Multiplier (AS-Level Subset)',
+        'Economic Policy: Fiscal Policy, Monetary Policy, Supply-Side Policy (AS-Level Subset)',
       ],
     }},
 
     // ── Geography (Edexcel AS 8GE0 — subset of A-level 9GE0) ───────────────────
     'Geography': { papers: {
-      1: [
-        'Topic 1 – Tectonic Processes and Hazards (AS-Level Option)',
-        'Topic 2 – Landscape Systems, Processes and Change (AS-Level Option — Coasts or Glaciated)',
+      1: [ // Dynamic Landscapes and Dynamic Places
+        'Topic 1 – Tectonic Processes and Hazards: Plate Tectonics, Volcanic and Seismic Hazards',
+        'Topic 1 – Hazard Management and Case Studies (AS-Level Subset)',
+        'Topic 2 – Landscape Systems, Processes and Change (choice: Coastal or Glaciated Landscapes)',
+        'Topic 2 – Landscape Management Strategies (AS-Level Subset)',
+        'Topic 3 – Globalisation: Causes, Flows and Impacts of Globalisation',
       ],
-      2: [
-        'Topic 3 – Globalisation (AS-Level Subset)',
-        'Topic 4 – Shaping Places (AS-Level Option)',
-        'Fieldwork Skills: Introductory (AS-Level — No Independent Investigation, A-Level Only)',
+      2: [ // People and Environment
+        'Topic 4 – Shaping Places (choice: Regenerating Places or Diverse Places)',
+        'Topic 4 – Factors Influencing Change in Places (AS-Level Subset)',
+        'Topic 5 – Health, Human Rights and Intervention OR Migration, Identity and Sovereignty (AS-Level Option)',
+        'Fieldwork Skills: Introductory Data Collection Techniques (AS-Level — No Independent Investigation)',
+        'Geographical Skills: Graphical, Cartographic and Statistical Techniques (AS-Level Subset)',
       ],
     }},
 
     // ── Computer Science (Edexcel AS 8CP0 — subset of A-level 9CP0) ────────────
     'Computer Science': { papers: {
-      1: [
-        'Component 1 – Principles of Computer Science: Data Representation, Computer Systems',
-        'Component 1 – Computer Networks, Algorithms and Programming Fundamentals (AS-Level Subset)',
+      1: [ // Component 1 — Principles of Computer Science
+        'Data Representation: Number Systems, Binary Arithmetic, Text and Image Representation',
+        'Computer Systems: Hardware, the CPU, the Fetch-Decode-Execute Cycle (AS-Level Subset)',
+        'Software: Systems Software and Application Software (AS-Level Subset)',
+        'Exchanging Data: Networks, Protocols and Layers (AS-Level Subset)',
+        'Data Types, Structures and Algorithms: Arrays, Records, Searching and Sorting',
+        'Legal, Moral and Ethical Issues in Computing (Introductory)',
       ],
-      2: [
-        'Component 2 – Application of Computational Thinking: Problem-Solving with Programming',
-        'Component 2 – Non-Exam Task (AS-Level — Shorter Than A-Level NEA)',
+      2: [ // Component 2 — Application of Computational Thinking
+        'Elements of Computational Thinking: Abstraction, Decomposition, Algorithmic Thinking',
+        'Problem Solving with Programming: Programming Techniques (AS-Level Subset)',
+        'Computational Methods: Following and Writing Algorithms, Pseudocode and Flowcharts',
+        'Non-Exam Task: On-Screen Programming Test (AS-Level — Shorter Than A-Level NEA)',
       ],
     }},
 
     // ── Business (Edexcel AS 8BS0 — subset of A-level 9BS0) ────────────────────
     'Business': { papers: {
-      1: [
-        'Theme 1 – Marketing and People (AS-Level Subset)',
+      1: [ // Theme 1 — Marketing and People
+        'Meeting Customer Needs: Market Research, Market Positioning, Market Segmentation',
+        'The Market: Demand, Supply, Competition and Market Size (AS-Level Subset)',
+        'Marketing Mix and Strategy: Product, Price, Promotion, Place (AS-Level Subset)',
+        'Managing People: Organisational Design, Recruitment and Selection',
+        'Entrepreneurs and Leaders: Motivation Theory, Leadership Styles (AS-Level Subset)',
       ],
-      2: [
-        'Theme 2 – Managing Business Activities (AS-Level Subset)',
+      2: [ // Theme 2 — Managing Business Activities
+        'Raising Finance: Sources of Finance, Cash Flow Forecasting',
+        'Financial Planning: Break-Even Analysis, Budgeting (AS-Level Subset)',
+        'Managing Finance: Analysing Profitability and Liquidity Ratios (AS-Level Subset)',
+        'Resource Management: Production, Efficiency and Quality',
+        'External Influences: Stakeholders and the Economic, Legal and Ethical Environment (AS-Level Subset)',
       ],
     }},
 
     // ── Psychology (Edexcel AS 8PS0 — subset of A-level 9PS0) ──────────────────
     'Psychology': { papers: {
-      1: [
-        'Social Psychology: Social Influence (Conformity and Obedience)',
-        'Cognitive Psychology: Memory (AS-Level Subset)',
+      1: [ // Social and Cognitive Psychology
+        'Social Psychology: Social Influence — Conformity (Asch) and Obedience (Milgram)',
+        'Social Psychology: Explanations of Obedience and Independent Behaviour (AS-Level Subset)',
+        'Cognitive Psychology: Memory — the Multi-Store Model',
+        'Cognitive Psychology: Eyewitness Testimony and Factors Affecting Accuracy (AS-Level Subset)',
+        'Research Methods: Experimental Design Applied to Social and Cognitive Studies',
       ],
-      2: [
-        'Biological Psychology: One Approach — Genes and Behaviour (AS-Level Subset)',
-        'Learning Theories: Behaviourism, Social Learning Theory (AS-Level Subset)',
-        'Research Methods: Applied Across the AS-Level Content',
+      2: [ // Biological and Learning Psychology
+        'Biological Psychology: One Approach to Explaining Behaviour — Genes and Behaviour (AS-Level Subset)',
+        'Biological Psychology: The Nervous System and Neurotransmission (AS-Level Subset)',
+        'Learning Theories: Classical and Operant Conditioning (Behaviourism)',
+        'Learning Theories: Social Learning Theory — Bandura\'s Bobo Doll Studies',
+        'Research Methods: Data Analysis and Presentation Applied Across AS-Level Content',
       ],
     }},
 
     // ── Arabic (Edexcel AS 8AA0 — subset of A-level 9AA0) ──────────────────────
     'Arabic': { papers: {
-      1: [
-        'Reading and Translation into English (AS-Level Subset)',
+      1: [ // Listening, Reading and Translation
+        'Aspects of Arabic-Speaking Society: Family, Youth Culture and Social Issues (AS-Level Subset)',
+        'Arabic-Speaking Culture: Festivals, Traditions and the Arts (AS-Level Subset)',
+        'Listening: Identifying Detail, Opinion and Gist in Authentic Recordings',
+        'Reading: Authentic Arabic Texts — Articles and Literary Extracts',
+        'Grammar: Verb Forms, Root and Pattern System, Sentence Structure (AS-Level Subset)',
+        'Translation: Arabic Into English (Shorter Passages than A-Level)',
       ],
-      2: [
-        'Listening and Writing in Arabic (AS-Level Subset)',
+      2: [ // Writing and Speaking
+        'Writing: Structured Response in Arabic on a Studied Theme',
+        'Translation: English Into Arabic (Shorter Passages than A-Level)',
+        'Speaking: General Conversation on Studied Themes (Teaching Preparation)',
       ],
     }},
 
     // ── Mandarin Chinese (Edexcel AS 8CN0 — subset of A-level 9CN0) ────────────
     'Mandarin Chinese': { papers: {
-      1: [
-        'Reading, Listening and Translation into English (AS-Level Subset)',
+      1: [ // Listening, Reading and Translation
+        'Aspects of Chinese-Speaking Society: Family, Youth Culture and Social Issues (AS-Level Subset)',
+        'Chinese Culture: Festivals, Traditions and the Arts (AS-Level Subset)',
+        'Listening: Identifying Detail, Opinion and Gist in Authentic Recordings',
+        'Reading: Authentic Chinese Texts, Including Simplified Characters',
+        'Grammar and Characters: Sentence Structure, Measure Words, Character Recognition (AS-Level Subset)',
+        'Translation: Chinese Into English (Shorter Passages than A-Level)',
       ],
-      2: [
-        'Writing in Chinese and Speaking Assessment (AS-Level Subset)',
+      2: [ // Writing and Speaking
+        'Writing: Structured Response in Chinese on a Studied Theme',
+        'Translation: English Into Chinese (Shorter Passages than A-Level)',
+        'Speaking: General Conversation on Studied Themes (Teaching Preparation)',
       ],
     }},
 
@@ -3564,13 +3785,15 @@ const ASLEVEL = {
     // ── Further Mathematics (OCR AS H235 — subset of A-level H245) ────────────
     'Further Mathematics': { papers: {
       1: [
-        'Pure Core – Complex Numbers, Matrices, Series (AS-Level Subset)',
-        'Pure Core – Vectors and Further Algebra (AS-Level Subset)',
+        'Pure Core – Complex Numbers: Argand Diagrams, Modulus-Argument Form (AS-Level Subset)',
+        'Pure Core – Matrices: 2×2 and 3×3, Determinants, Transformations',
+        'Pure Core – Series: Sums of Natural Numbers, Squares and Cubes (AS-Level Subset)',
+        'Pure Core – Vectors and Further Algebra: Roots of Polynomials, the Vector Product',
       ],
       2: [
-        'Minor Option A (choice, AS-Level Subset): Mechanics',
-        'Minor Option B (choice, AS-Level Subset): Statistics',
-        'Minor Option C (choice, AS-Level Subset): Discrete Mathematics',
+        'Minor Option A (choice, AS-Level Subset): Mechanics — Momentum, Impulse, Work and Energy',
+        'Minor Option B (choice, AS-Level Subset): Statistics — Discrete Probability Distributions',
+        'Minor Option C (choice, AS-Level Subset): Discrete Mathematics — Graphs, Algorithms, Networks',
       ],
     }},
 
@@ -3582,11 +3805,15 @@ const ASLEVEL = {
         'Module 1 – Development of Practical Skills in Biology',
         'Module 2 – Foundations in Biology: Cell Structure, Biological Molecules, Enzymes',
         'Module 2 – Foundations in Biology: Cell Division, Cellular Transport, the Immune System',
-        'Module 3 – Exchange and Transport (AS-Level Subset)',
+        'Module 3 – Exchange and Transport: Gas Exchange Surfaces (AS-Level Subset)',
+        'Module 3 – Exchange and Transport: Transport in Animals — the Heart, Blood Vessels',
+        'Module 3 – Exchange and Transport: Transport in Plants — Xylem and Phloem',
       ],
       2: [
-        'Module 4 – Biodiversity, Evolution and Disease (AS-Level Subset)',
+        'Module 4 – Biodiversity, Evolution and Disease: Communicable Diseases and the Immune System',
+        'Module 4 – Biodiversity: Classification and Biodiversity, Natural Selection and Evolution (AS Subset)',
         'Required Practicals: Microscopy, Enzyme Investigation, Dissection (AS-Level Subset of Full List)',
+        'Practical Skills: Data Recording, Presentation and Statistical Analysis (AS-Level Subset)',
       ],
     }},
 
@@ -3594,11 +3821,15 @@ const ASLEVEL = {
     'Chemistry': { papers: {
       1: [
         'Module 1 – Development of Practical Skills in Chemistry',
-        'Module 2 – Foundations in Chemistry: Atoms, Compounds, Moles, Acid-Base and Redox',
-        'Module 3 – Periodic Table and Energy (AS-Level Subset)',
+        'Module 2 – Foundations in Chemistry: Atoms, Compounds and Moles',
+        'Module 2 – Foundations in Chemistry: Acid-Base and Redox Reactions, Electrons',
+        'Module 3 – Periodic Table and Energy: Periodicity, Group 2, Group 7 (AS-Level Subset)',
+        'Module 3 – Periodic Table and Energy: Enthalpy Changes, Reaction Rates (AS-Level Subset)',
       ],
       2: [
-        'Module 4 – Core Organic Chemistry (AS-Level Subset)',
+        'Module 4 – Core Organic Chemistry: Basic Concepts, Alkanes, Alkenes',
+        'Module 4 – Core Organic Chemistry: Halogenoalkanes, Alcohols, Organic Synthesis (AS Subset)',
+        'Module 4 – Analytical Techniques: Mass Spectrometry, Infrared Spectroscopy (AS-Level Subset)',
         'Required Practicals: Titration, Preparation of a Standard Solution (AS-Level Subset)',
       ],
     }},
@@ -3608,10 +3839,14 @@ const ASLEVEL = {
       1: [
         'Module 1 – Development of Practical Skills in Physics',
         'Module 2 – Foundations of Physics: Physical Quantities, Units, Scalars and Vectors',
-        'Module 3 – Forces and Motion (AS-Level Subset)',
+        'Module 2 – Foundations of Physics: Estimation, Error Analysis and Uncertainty (AS-Level Subset)',
+        'Module 3 – Forces and Motion: Motion, SUVAT Equations, Projectiles',
+        'Module 3 – Forces and Motion: Newton\'s Laws, Momentum, Work, Energy and Power (AS-Level Subset)',
       ],
       2: [
-        'Module 4 – Electrons, Waves and Photons (AS-Level Subset)',
+        'Module 4 – Electrons, Waves and Photons: Charge, Current, Resistance, Circuits',
+        'Module 4 – Waves: Wave Properties, Superposition and Interference (AS-Level Subset)',
+        'Module 4 – Quantum Physics: Photon Model, the Photoelectric Effect (AS-Level Subset)',
         'Required Practicals: Determination of g, Resistivity, Investigating Waves (AS-Level Subset)',
       ],
     }},
@@ -3619,56 +3854,78 @@ const ASLEVEL = {
     // ── Computer Science (OCR AS H046 — subset of A-level H446) ────────────────
     'Computer Science': { papers: {
       1: [
-        'Component 1 – Computing Principles: The CPU, Memory, Storage, Software (AS-Level Subset)',
-        'Component 1 – Data Representation, Communication and Networking (AS-Level Subset)',
+        'Component 1 – Computing Principles: The CPU, Memory, Storage (AS-Level Subset)',
+        'Component 1 – Computing Principles: Operating Systems and Software Classification',
+        'Component 1 – Data Representation: Binary, Number Bases, Text and Image Representation',
+        'Component 1 – Communication and Networking: Networks, Topologies, Protocols (AS-Level Subset)',
       ],
       2: [
-        'Component 2 – Algorithms and Problem Solving: Computational Thinking, Algorithms',
-        'Component 2 – Programming: Programming Techniques (AS-Level Subset — No Full NEA)',
+        'Component 2 – Algorithms and Problem Solving: Computational Thinking, Decomposition',
+        'Component 2 – Algorithms: Searching and Sorting Algorithms, Pseudocode',
+        'Component 2 – Programming: Programming Techniques and Data Structures (AS-Level Subset — No Full NEA)',
+        'Component 2 – Legal, Moral and Ethical Issues in Computing (Introductory)',
       ],
     }},
 
     // ── History (OCR AS H105 — subset of A-level H505) ─────────────────────────
     'History': { papers: {
-      1: [
-        'British Period Study (choice of one, AS-Level): e.g. The Making of Modern Britain 1951–2007',
+      1: [ // British Period Study and Enquiry
+        'British Period Study (choice of one, AS-Level): The Making of Modern Britain 1951–2007',
+        'British Period Study (choice of one, AS-Level): The Making of Georgian Britain 1714–1760',
+        'British Period Study: Analysing Change, Continuity, Cause and Consequence',
+        'Historical Enquiry: Evaluating Primary Source Evidence Within the Period Study',
       ],
-      2: [
-        'Non-British Period Study (choice of one, AS-Level): e.g. The Cold War in Europe 1941–95',
+      2: [ // Non-British Period Study
+        'Non-British Period Study (choice of one, AS-Level): The Cold War in Europe 1941–95',
+        'Non-British Period Study (choice of one, AS-Level): Civil Rights in the USA 1865–1992',
+        'Non-British Period Study: Analysing Change, Continuity, Cause and Consequence',
+        'Historical Interpretations: Evaluating Historians\' Views on the Non-British Period',
       ],
     }},
 
     // ── Geography (OCR AS H081 — subset of A-level H481) ───────────────────────
     'Geography': { papers: {
-      1: [
-        'Physical Systems: Landscape Systems (AS-Level Option — Coastal or Glaciated)',
-        'Physical Systems: Earth\'s Life Support Systems (AS-Level Subset)',
+      1: [ // Physical Systems
+        'Landscape Systems: Coastal Landscapes — Processes, Landforms and Management (AS-Level Option)',
+        'Landscape Systems: Glaciated Landscapes — Processes, Landforms and Management (AS-Level Option)',
+        'Earth\'s Life Support Systems: the Water Cycle and Carbon Cycle (AS-Level Subset)',
+        'Earth\'s Life Support Systems: Human Impact on the Water and Carbon Cycles',
       ],
-      2: [
-        'Human Interactions: Changing Spaces, Making Places (AS-Level Subset)',
-        'Human Interactions: Global Connections (AS-Level Option)',
+      2: [ // Human Interactions
+        'Changing Spaces, Making Places: Understanding Place, Meaning and Representation (AS-Level Subset)',
+        'Changing Spaces, Making Places: Categorising, Bidding for and Engaging with Places',
+        'Global Connections: Trade in the Contemporary World OR Human Rights (AS-Level Option)',
+        'Geographical Skills: Fieldwork and Data Presentation Techniques (AS-Level Subset)',
       ],
     }},
 
     // ── Latin (OCR AS H043 — subset of A-level H443) ───────────────────────────
     'Latin': { papers: {
       1: [
-        'Language: Grammar and Syntax (AS-Level Subset — Narrower than A-Level)',
-        'Unseen Translation: Latin Prose (Shorter than A-Level)',
+        'Language – Grammar: Noun Declensions, Adjective Agreement, Pronouns (AS-Level Subset)',
+        'Language – Grammar: Verb Tenses — Active Voice (Present, Imperfect, Future, Perfect)',
+        'Language – Syntax: Simple Subordinate Clauses (AS-Level Subset — Narrower than A-Level)',
+        'Unseen Translation: Latin Prose (Shorter Passages than A-Level)',
       ],
       2: [
-        'Prescribed Literature: One Verse and One Prose Set Text (AS-Level)',
+        'Prescribed Verse Literature: One Set Text Extract (AS-Level)',
+        'Prescribed Prose Literature: One Set Text Extract (AS-Level)',
+        'Literary Appreciation and Contextual Background of Set Texts',
       ],
     }},
 
     // ── Classical Greek (OCR AS H044 — subset of A-level H444) ─────────────────
     'Classical Greek': { papers: {
       1: [
-        'Language: Grammar and Syntax (AS-Level Subset — Narrower than A-Level)',
-        'Unseen Translation: Greek Prose (Shorter than A-Level)',
+        'Language – Grammar: Noun Declensions, Adjective Agreement, Pronouns (AS-Level Subset)',
+        'Language – Grammar: Verb Tenses — Active Voice (Present, Imperfect, Future, Aorist)',
+        'Language – Syntax: Simple Subordinate Clauses (AS-Level Subset — Narrower than A-Level)',
+        'Unseen Translation: Greek Prose (Shorter Passages than A-Level)',
       ],
       2: [
-        'Prescribed Literature: One Verse and One Prose Set Text (AS-Level)',
+        'Prescribed Verse Literature: One Set Text Extract (AS-Level)',
+        'Prescribed Prose Literature: One Set Text Extract (AS-Level)',
+        'Literary Appreciation and Contextual Background of Set Texts',
       ],
     }},
 
@@ -3680,72 +3937,115 @@ const ASLEVEL = {
     // ── Mathematics (Eduqas AS B300 — subset of A-level A420) ──────────────────
     'Mathematics': { papers: {
       1: [
-        'Pure Mathematics A: Algebra, Coordinate Geometry, Trigonometry (AS-Level Subset)',
-        'Pure Mathematics A: Differentiation, Integration, Exponentials (AS-Level Subset)',
+        'Pure Mathematics A: Algebraic Expressions, Quadratics, Simultaneous Equations',
+        'Pure Mathematics A: Coordinate Geometry — Straight Lines and Circles (AS-Level Subset)',
+        'Pure Mathematics A: Trigonometry — Sine and Cosine Rules, Identities (AS-Level Subset)',
+        'Pure Mathematics A: Differentiation, Integration, Exponentials and Logarithms',
       ],
       2: [
-        'Applied Mathematics A: Statistics — Data, Probability, Binomial Distribution (AS-Level Subset)',
-        'Applied Mathematics A: Mechanics — Kinematics, Forces (AS-Level Subset)',
+        'Applied Mathematics A – Statistics: Data Presentation, Probability, Binomial Distribution',
+        'Applied Mathematics A – Statistics: Statistical Hypothesis Testing (AS-Level Subset)',
+        'Applied Mathematics A – Mechanics: Kinematics (Constant Acceleration)',
+        'Applied Mathematics A – Mechanics: Forces and Newton\'s Laws (AS-Level Subset)',
       ],
     }},
 
     // ── Biology (Eduqas AS B100 — subset of A-level A420-series) ───────────────
     'Biology': { papers: {
-      1: [
-        'Component 1 – Basic Biochemistry and Cell Organisation (AS-Level Subset)',
+      1: [ // Component 1 — Basic Biochemistry and Cell Organisation
+        'Biological Molecules: Carbohydrates, Lipids, Proteins and Nucleic Acids',
+        'Cell Structure and Organisation: Eukaryotic and Prokaryotic Cell Structure',
+        'Enzymes: Mechanism of Enzyme Action, Factors Affecting Enzyme Activity',
+        'Cell Membranes: Structure and Transport Across Membranes (AS-Level Subset)',
+        'Nucleic Acids: DNA Structure and Replication (AS-Level Subset)',
       ],
-      2: [
-        'Component 2 – Biodiversity and Physiology of Body Systems (AS-Level Subset)',
+      2: [ // Component 2 — Biodiversity and Physiology of Body Systems
+        'Classification and Biodiversity: Principles of Classification, Measuring Biodiversity',
+        'Adaptations for Gas Exchange: Gas Exchange Surfaces in Different Organisms',
+        'Physiology of Body Systems: the Circulatory System, the Heart and Blood Vessels (AS-Level Subset)',
+        'Physiology of Body Systems: the Digestive System (AS-Level Subset)',
+        'Practical Biology and Data Analysis: Required Practicals and Statistical Skills (AS-Level Subset)',
       ],
     }},
 
     // ── Chemistry (Eduqas AS) ───────────────────────────────────────────────────
     'Chemistry': { papers: {
-      1: [
-        'Component 1 – The Language of Chemistry, Structure of Matter and Simple Reactions (AS-Level Subset)',
+      1: [ // Component 1 — The Language of Chemistry, Structure of Matter and Simple Reactions
+        'The Language of Chemistry: Formulae, Equations, the Mole and Chemical Calculations',
+        'The Language of Chemistry: Amount of Substance, Concentration',
+        'Structure of Matter: Atomic Structure, Electron Configuration, the Periodic Table',
+        'Structure of Matter: Bonding — Ionic, Covalent and Metallic (AS-Level Subset)',
+        'Simple Equilibria and Acid-Base Reactions (AS-Level Subset)',
       ],
-      2: [
-        'Component 2 – Energy, Rate and Chemistry of Carbon Compounds (AS-Level Subset)',
+      2: [ // Component 2 — Energy, Rate and Chemistry of Carbon Compounds
+        'Energy: Enthalpy Changes, Hess\'s Law, Calorimetry (AS-Level Subset)',
+        'Rate of Reaction: Factors Affecting Rate, Collision Theory (AS-Level Subset)',
+        'Chemistry of Carbon Compounds: Alkanes and Alkenes — Nomenclature and Reactions',
+        'Chemistry of Carbon Compounds: Halogenoalkanes and Alcohols (AS-Level Subset)',
+        'Practical Chemistry: Required Practicals — Titration, Preparing a Standard Solution',
       ],
     }},
 
     // ── Physics (Eduqas AS) ─────────────────────────────────────────────────────
     'Physics': { papers: {
-      1: [
-        'Component 1 – Motion, Energy and Matter (AS-Level Subset)',
+      1: [ // Component 1 — Motion, Energy and Matter
+        'Basic Physics: Units, Scalars and Vectors, Estimation (AS-Level Subset)',
+        'Kinematics: Motion Graphs, the SUVAT Equations, Projectile Motion',
+        'Dynamics: Newton\'s Laws of Motion, Momentum (AS-Level Subset)',
+        'Energy Concepts: Work, Energy and Power, Conservation of Energy',
+        'Properties of Matter: Density, the Behaviour of Springs, the Young Modulus (AS-Level Subset)',
       ],
-      2: [
-        'Component 2 – Electricity and Light (AS-Level Subset)',
+      2: [ // Component 2 — Electricity and Light
+        'Electric Current: Charge, Current, Potential Difference, Resistance and Resistivity',
+        'Circuits: Series and Parallel Circuits, EMF and Internal Resistance (AS-Level Subset)',
+        'Waves: Wave Properties, the Electromagnetic Spectrum, Superposition',
+        'Light: Refraction, Total Internal Reflection, Diffraction (AS-Level Subset)',
+        'Practical Physics: Required Practicals — Determination of g, Resistivity',
       ],
     }},
 
     // ── Geography (Eduqas AS) ───────────────────────────────────────────────────
     'Geography': { papers: {
-      1: [
-        'Component 1 – Changing Physical and Human Landscapes (AS-Level Subset)',
+      1: [ // Component 1 — Changing Physical and Human Landscapes
+        'Changing Landscapes: Coastal Landscapes — Processes, Landforms and Management (AS-Level Option)',
+        'Changing Landscapes: River Landscapes — Processes, Landforms and Management (AS-Level Option)',
+        'Changing Places: Urban Landscapes — Characteristics and Change in Places',
+        'Weather and Climate: UK Weather Systems and Extreme Weather (AS-Level Subset)',
       ],
-      2: [
-        'Component 2 – Global Systems and Global Governance (AS-Level Subset)',
+      2: [ // Component 2 — Global Systems and Global Governance
+        'Global Systems: Globalisation — Economic, Social and Cultural Change',
+        'Global Governance: Managing Environmental and Development Issues at a Global Scale',
+        'Development and Resource Issues: Development Measures and Disparities (AS-Level Subset)',
+        'Geographical Skills: Fieldwork Techniques and Data Presentation (AS-Level Subset)',
       ],
     }},
 
     // ── English Literature (Eduqas AS) ──────────────────────────────────────────
     'English Literature': { papers: {
-      1: [
-        'Component 1 – Poetry and Prose (AS-Level Subset — One Poetry, One Prose Text)',
+      1: [ // Component 1 — Poetry and Prose
+        'Unseen Poetry: Analysis of an Unseen Poem (AS-Level Subset)',
+        'Poetry: Study of a Poetry Anthology or Poetry Collection (AS-Level — Fewer Poems than A-Level)',
+        'Prose: Study of One Prose Set Text — Themes, Character and Narrative Technique',
+        'Contextual Factors: Social, Historical and Literary Context of Set Texts (AS-Level Subset)',
       ],
-      2: [
-        'Component 2 – Drama (AS-Level Subset — One Set Play)',
+      2: [ // Component 2 — Drama
+        'Shakespeare: Study of One Set Play — Language, Character and Dramatic Method',
+        'Post-1900 Drama: Study of One Additional Set Play (AS-Level Subset)',
+        'Critical Approaches: Applying Different Interpretations to Set Drama Texts (AS-Level Subset)',
       ],
     }},
 
     // ── History (Eduqas AS) ──────────────────────────────────────────────────────
     'History': { papers: {
-      1: [
-        'Unit 1 – Depth Study (choice of one, AS-Level): e.g. Wales and the Third Reform Act 1868–86',
+      1: [ // Unit 1 — Depth Study
+        'Unit 1 – Depth Study (choice of one, AS-Level): Wales and the Third Reform Act 1868–86',
+        'Unit 1 – Depth Study (choice of one, AS-Level): The Age of the Crusades 1071–1204',
+        'Unit 1 – Source Analysis: Evaluating Primary Evidence Within the Depth Period',
       ],
-      2: [
-        'Unit 2 – Breadth Study (choice of one, AS-Level): e.g. The Cold War in Europe 1945–91',
+      2: [ // Unit 2 — Breadth Study
+        'Unit 2 – Breadth Study (choice of one, AS-Level): The Cold War in Europe 1945–91',
+        'Unit 2 – Breadth Study (choice of one, AS-Level): Germany — Change and Continuity 1919–91',
+        'Unit 2 – Historical Interpretations: Evaluating Historians\' Views Across the Breadth Period',
       ],
     }},
 
@@ -3758,20 +4058,25 @@ const ASLEVEL = {
     // ── Mathematics (CCEA AS — Units AS1 and AS2) ───────────────────────────────
     'Mathematics': { papers: {
       1: [
-        'AS1 – Pure Mathematics: Algebra, Coordinate Geometry, Trigonometry, Differentiation, Integration',
+        'AS1 – Pure Mathematics: Algebra, Functions, Coordinate Geometry (Straight Lines and Circles)',
+        'AS1 – Pure Mathematics: Trigonometry, Sequences and Series (AS-Level Subset)',
+        'AS1 – Pure Mathematics: Differentiation and Integration (AS-Level Subset)',
       ],
       2: [
-        'AS2 – Applied Mathematics: Mechanics (Kinematics, Forces) and Statistics (Data, Probability)',
+        'AS2 – Applied Mathematics: Mechanics — Kinematics, Forces, Newton\'s Laws',
+        'AS2 – Applied Mathematics: Statistics — Data Representation, Probability, the Binomial Distribution',
       ],
     }},
 
     // ── Biology (CCEA AS — Units AS1, AS2, AS3 Practical) ───────────────────────
     'Biology': { papers: {
       1: [
-        'AS1 – Molecules and Cells: Biological Molecules, Enzymes, Cell Structure, Cell Division',
+        'AS1 – Molecules and Cells: Biological Molecules — Carbohydrates, Lipids, Proteins',
+        'AS1 – Molecules and Cells: Enzymes, Cell Structure and Cell Division (AS-Level Subset)',
       ],
       2: [
-        'AS2 – Organisms and Biodiversity: Enzymes and Homeostasis, Ecology, Classification',
+        'AS2 – Organisms and Biodiversity: Enzymes and Homeostasis (AS-Level Subset)',
+        'AS2 – Organisms and Biodiversity: Ecology, Biodiversity and Classification',
         'AS3 – Practical Skills: Assessment of Practical Techniques (Internally/Externally Assessed)',
       ],
     }},
@@ -3779,10 +4084,12 @@ const ASLEVEL = {
     // ── Chemistry (CCEA AS — Units AS1, AS2, AS3 Practical) ─────────────────────
     'Chemistry': { papers: {
       1: [
-        'AS1 – Basic Concepts in Physical and Inorganic Chemistry: Atomic Structure, Bonding, the Periodic Table',
+        'AS1 – Basic Concepts: Atomic Structure, Formulae and Equations, the Mole',
+        'AS1 – Physical and Inorganic Chemistry: Bonding, Periodicity, the Periodic Table',
       ],
       2: [
-        'AS2 – Further Physical and Inorganic Chemistry, and Introductory Organic Chemistry',
+        'AS2 – Further Physical and Inorganic Chemistry: Rates, Equilibrium, Energetics (AS-Level Subset)',
+        'AS2 – Introductory Organic Chemistry: Alkanes, Alkenes and Halogenoalkanes',
         'AS3 – Practical Skills: Assessment of Practical Techniques',
       ],
     }},
@@ -3790,10 +4097,12 @@ const ASLEVEL = {
     // ── Physics (CCEA AS — Units AS1, AS2, AS3 Practical) ───────────────────────
     'Physics': { papers: {
       1: [
-        'AS1 – Forces, Energy and Electricity',
+        'AS1 – Forces, Energy and Electricity: Kinematics, Forces and Newton\'s Laws',
+        'AS1 – Forces, Energy and Electricity: Work, Energy, Power and Electric Circuits',
       ],
       2: [
-        'AS2 – Waves, Photons and Medical Physics',
+        'AS2 – Waves, Photons and Medical Physics: Wave Properties and Superposition',
+        'AS2 – Waves, Photons and Medical Physics: Quantum Physics and Medical Imaging (AS-Level Subset)',
         'AS3 – Practical Skills: Assessment of Practical Techniques',
       ],
     }},
@@ -3801,20 +4110,26 @@ const ASLEVEL = {
     // ── History (CCEA AS — Units AS1, AS2) ──────────────────────────────────────
     'History': { papers: {
       1: [
-        'AS1 – Change Over Time (choice of one option, e.g. International Relations 1945–2003)',
+        'AS1 – Change Over Time (choice of one option): International Relations 1945–2003',
+        'AS1 – Change Over Time (choice of one option): Society, Change and Continuity in NI 1965–98',
       ],
       2: [
-        'AS2 – Depth Study (choice of one option, e.g. The Reign of Charles I 1625–49)',
+        'AS2 – Depth Study (choice of one option): The Reign of Charles I 1625–49',
+        'AS2 – Depth Study (choice of one option): Partition of Ireland 1900–25',
       ],
     }},
 
     // ── Geography (CCEA AS — Units AS1, AS2) ────────────────────────────────────
     'Geography': { papers: {
       1: [
-        'AS1 – Physical Geography: River Environments, Atmospheric Processes, Ecosystems',
+        'AS1 – Physical Geography: River Environments and Fluvial Processes',
+        'AS1 – Physical Geography: Atmospheric Processes and Weather Systems',
+        'AS1 – Physical Geography: Ecosystems and Sustainability',
       ],
       2: [
-        'AS2 – Human Geography: Population, Settlement, Development',
+        'AS2 – Human Geography: Population Change and Migration',
+        'AS2 – Human Geography: Settlement and Urbanisation',
+        'AS2 – Human Geography: Development Issues and Global Inequality',
       ],
     }},
 
@@ -5796,17 +6111,25 @@ const ALEVEL = {
 
     // ── History (CCEA A-level) ──────────────────────────────────────────────────
     'History': { papers: {
-      1: [
-        'AS 1 – Change and Continuity (choice of one): e.g. Ireland Under the Union 1801–70',
+      1: [ // AS 1 — Change and Continuity
+        'AS 1 – Change and Continuity (choice of one): Ireland Under the Union 1801–70',
+        'AS 1 – Change and Continuity (choice of one): The Councils, Provinces and Kings of Britain 1350–1500',
+        'AS 1 – Key Concepts: Political, Social and Economic Change Across the Period',
       ],
-      2: [
-        'AS 2 – Dictatorship and Democracy (choice of one): Germany 1918–39, Russia 1917–41, or the USA 1918–41',
+      2: [ // AS 2 — Dictatorship and Democracy
+        'AS 2 – Dictatorship and Democracy (choice of one): Germany 1918–39 — the Rise of Nazism',
+        'AS 2 – Dictatorship and Democracy (choice of one): Russia 1917–41 — Bolshevik Rule to Stalinism',
+        'AS 2 – Dictatorship and Democracy (choice of one): The USA 1918–41 — Boom, Bust and the New Deal',
       ],
-      3: [
-        'A2 1 – Breadth Study (choice of one Modern Topic): e.g. International Relations 1945–2003',
+      3: [ // A2 1 — Breadth Study
+        'A2 1 – Breadth Study (choice of one Modern Topic): International Relations 1945–2003',
+        'A2 1 – Breadth Study (choice of one Modern Topic): Ireland and Britain 1900–25',
+        'A2 1 – Historical Interpretations: Evaluating Historians\' Views Across the Breadth Period',
       ],
-      4: [
+      4: [ // A2 2 — Historical Investigation
         'A2 2 – Historical Investigation (NEA): Independent Research and Extended Essay',
+        'A2 2 – Historical Investigation: Selecting and Evaluating a Range of Primary and Secondary Sources',
+        'A2 2 – Historical Investigation: Constructing a Structured Historical Argument',
       ],
     }},
 
