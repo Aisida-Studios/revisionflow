@@ -51,6 +51,21 @@ export default function AdminAutoGenerate() {
     setLog(l => [...l.slice(-300), { msg, type, ts: new Date().toLocaleTimeString() }])
   }
 
+  const [migrating, setMigrating] = useState(false)
+
+  async function runMigrationOnly() {
+    setMigrating(true)
+    addLog('Checking for existing flashcard sets made before cache-checking existed…')
+    try {
+      const fs = await import('../utils/firestore')
+      const result = await fs.migrateLegacyOfficialFlashcardSets()
+      addLog(`Done — ${result.migrated} recognized, ${result.skipped} already fine, ${result.unparseable} unparseable titles left untouched`, 'success')
+    } catch (e) {
+      addLog('Migration failed: ' + e.message, 'error')
+    }
+    setMigrating(false)
+  }
+
   async function buildQueue() {
     const { getSubjectsForBoard, getTopicsForSubject } = await import('../data/topics')
     const queue = []
@@ -133,6 +148,16 @@ export default function AdminAutoGenerate() {
     setLog([])
     addLog('Building queue…')
 
+    const ai = await import('../utils/ai')
+    const fs = await import('../utils/firestore')
+
+    if (types.includes('flashcards')) {
+      addLog('Checking for existing flashcard sets made before cache-checking existed…')
+      const migResult = await fs.migrateLegacyOfficialFlashcardSets()
+      if (migResult.migrated > 0) addLog(`Recognized ${migResult.migrated} existing flashcard set(s) so they won't be regenerated`, 'success')
+      if (migResult.unparseable > 0) addLog(`${migResult.unparseable} existing set(s) had a title I couldn't match to a board/level — left as-is, won't block the run`, 'error')
+    }
+
     const queue = await buildQueue()
     if (!queue.length) {
       addLog('Nothing matches this scope', 'error')
@@ -141,9 +166,6 @@ export default function AdminAutoGenerate() {
     }
     addLog(`Queue built: ${queue.length} items (${levels.join(', ')} · ${boards.join(', ')} · ${types.join(' + ')})`)
     setProgress({ done: 0, total: queue.length, cached: 0, generated: 0, failed: 0, current: '' })
-
-    const ai = await import('../utils/ai')
-    const fs = await import('../utils/firestore')
 
     let done = 0, cachedCount = 0, generated = 0, failed = 0
     const startTime = Date.now()
@@ -268,6 +290,11 @@ export default function AdminAutoGenerate() {
         </button>
         {running && (
           <button className="btn btn-secondary" onClick={() => { stopRef.current = true }}>Stop</button>
+        )}
+        {!running && (
+          <button className="btn btn-secondary" onClick={runMigrationOnly} disabled={migrating}>
+            {migrating ? 'Checking…' : 'Just recognize existing flashcard sets'}
+          </button>
         )}
       </div>
 
