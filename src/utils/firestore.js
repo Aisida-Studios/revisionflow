@@ -36,11 +36,11 @@ export { auth, db }
 
 const googleProvider = new GoogleAuthProvider()
 
-export const loginWithGoogle = ()       => signInWithPopup(auth, googleProvider)
-export const loginWithEmail  = (e, p)   => signInWithEmailAndPassword(auth, e, p)
-export const signupWithEmail = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
-export const resetPassword   = (e)      => sendPasswordResetEmail(auth, e)
-export const logout          = ()       => signOut(auth)
+export const loginWithGoogle  = ()       => signInWithPopup(auth, googleProvider)
+export const loginWithEmail   = (e, p)   => signInWithEmailAndPassword(auth, e, p)
+export const signupWithEmail  = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
+export const resetPassword    = (e)      => sendPasswordResetEmail(auth, e)
+export const logout           = ()       => signOut(auth)
 
 /* =========================
    USER / PROFILE
@@ -888,6 +888,64 @@ export const saveOfficialFlashcardSet = async (board, level, subject, topic, car
 function officialSetId(board, level, subject, topic) {
   const raw = `official_${board}_${level}_${subject}_${topic || 'general'}`
   return raw.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').slice(0, 180)
+}
+
+const OFFICIAL_TITLE_BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA']
+const OFFICIAL_TITLE_LEVELS = ['GCSE', 'AS-Level', 'A-Level']
+
+// Old runBulkFlashcards (pre-fix) saved official sets as `{board} {level} {subject} — {topic}`
+// with no separate board/level fields — only ai.js/Admin.jsx's newer code stamps those. This
+// parses that predictable, code-generated (not user-typed) format back out.
+function parseOfficialTitle(title) {
+  if (!title) return null
+  for (const board of OFFICIAL_TITLE_BOARDS) {
+    if (!title.startsWith(board + ' ')) continue
+    const rest = title.slice(board.length + 1)
+    for (const level of OFFICIAL_TITLE_LEVELS) {
+      if (!rest.startsWith(level + ' ')) continue
+      const afterLevel = rest.slice(level.length + 1)
+      const [subject, topic] = afterLevel.split(' — ')
+      if (!subject) continue
+      return { board, level, subject: subject.trim(), topic: (topic || '').trim() }
+    }
+  }
+  return null
+}
+
+// Re-keys any pre-fix official flashcard sets (random Firestore ID, no board/level fields) onto
+// the new deterministic ID scheme, so the cache-check in the auto-generate pipeline and the
+// manual bulk generator both recognize them as already done instead of regenerating duplicates.
+// Safe to call repeatedly — already-migrated sets (which have board/level fields) are skipped.
+export const migrateLegacyOfficialFlashcardSets = async () => {
+  const snap = await getDocs(collection(db, 'publicFlashcards'))
+  let migrated = 0, skipped = 0, unparseable = 0
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data()
+    if (data.authorType !== 'official') continue
+    if (data.board && data.level) { skipped++; continue } // already on the new scheme
+
+    const parsed = parseOfficialTitle(data.title)
+    if (!parsed) { unparseable++; continue }
+
+    const newId = officialSetId(parsed.board, parsed.level, parsed.subject, parsed.topic)
+    if (newId === docSnap.id) { skipped++; continue }
+
+    try {
+      const newRef = doc(db, 'publicFlashcards', newId)
+      const existing = await getDoc(newRef)
+      if (!existing.exists()) {
+        await setDoc(newRef, {
+          ...data, setId: newId,
+          board: parsed.board, level: parsed.level, subject: parsed.subject, topic: parsed.topic,
+        })
+      }
+      await deleteDoc(doc(db, 'publicFlashcards', docSnap.id))
+      migrated++
+    } catch (e) {
+      console.error('Flashcard set migration failed for', docSnap.id, e)
+    }
+  }
+  return { migrated, skipped, unparseable }
 }
 
 export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
