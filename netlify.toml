@@ -26,9 +26,11 @@
     # Force HTTPS for 1 year, include subdomains
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
 
-    # Allow Firebase Auth popup (signInWithPopup) to communicate back to the
-    # opener window. Without this, some browsers/CDNs default to a stricter
-    # COOP that silently breaks popup sign-in with a generic "popup closed" error.
+    # Required for Firebase Auth's signInWithPopup to work reliably. Without this, some
+    # browsers/CDNs default to a stricter Cross-Origin-Opener-Policy that silently breaks the
+    # popup's ability to postMessage its result back to this window — the Google sign-in itself
+    # completes, but Firebase never finds out, times out, and reports a generic "popup closed"
+    # error even though nobody closed anything.
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
 
     # Content Security Policy — controls what resources the browser is allowed to load
@@ -36,7 +38,9 @@
     # firebase/google = Firebase Auth + Firestore
     # stripe.com      = Stripe Checkout redirect (not an embed)
     # mistral         = not called from browser (server-side only, omitted)
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://fonts.gstatic.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self';"
+    # frame-src       = Firebase Auth's popup/iframe handshake (accounts.google.com,
+    #                   *.firebaseapp.com) plus the Stripe Checkout embed
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self';"
 
 # ── Bot detection — serve static landing page to crawlers ─────────────────────
 [[redirects]]
