@@ -156,7 +156,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     doc.setPage(p)
     doc.setFillColor(...PURPLE);doc.rect(0,H-7,W,7,'F')
     doc.setTextColor(...WHITE);doc.setFontSize(6);doc.setFont('helvetica','normal')
-    doc.text('RevisionFlow — revision-flow.netlify.app', M, H-2.5)
+    doc.text('RevisionFlow — www.revisionflow.co.uk', M, H-2.5)
     doc.text(`Page ${p} of ${pages}`, W-M, H-2.5, {align:'right'})
   }
 
