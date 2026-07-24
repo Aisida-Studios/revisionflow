@@ -1,4 +1,36 @@
 // src/data/examDatabase.js
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠ AUDIT FLAG (July 2026) — READ BEFORE EXTENDING THIS FILE
+//
+// This file substantially duplicates data that now lives — in a more current, more carefully
+// audited form — in three other files: BOARD_SUBJECTS overlaps subjects.js, SPEC_TOPICS overlaps
+// topics.js, and EXAM_DATES_2026/PAPER_STRUCTURES overlap examDates2026.js/paperDatabase.js. This
+// file is also NOT listed in the project's own "Key file paths" documentation, which only lists
+// subjects.js/topics.js/themes.js/paperDatabase.js/resourceLinks.js under src/data/ — suggesting
+// this file may already be legacy/superseded and possibly not imported anywhere live.
+//
+// Two concrete problems found this pass, neither fixed here (see reasoning below):
+//   1. BOARD_SUBJECTS uses older naming that had drifted from the canonical subjects.js (e.g. this
+//      file said 'Business Studies' where subjects.js/topics.js say 'Business' — the clearest
+//      instances of that specific mismatch were corrected in this pass, but this file was not
+//      otherwise re-synced subject-by-subject against subjects.js). It also has no AS-Level
+//      breakdown at all, unlike subjects.js which now separates GCSE/AS-Level/A-Level fully.
+//   2. EXAM_DATES_2026 contains genuine data corruption, not just staleness: roughly 100 entries
+//      have their fields scrambled (real dates like "04 Jun 2026 PM" sitting in the `duration`
+//      field; paper-title fragments sitting in `date`/`session`) in at least 5 places where
+//      differently-formatted data blocks were concatenated together without reconciling schemas.
+//      Anything reading dates from THIS file's EXAM_DATES_2026 (as opposed to the separate,
+//      clean examDates2026.js file) should be treated as unreliable until that's fixed.
+//
+// Given the scale of this file (~16,000 lines) and that it duplicates better-maintained data
+// elsewhere, it wasn't rebuilt in this pass — doing so risks being wasted effort if nothing
+// imports it. Before extending or fixing this file further: confirm what (if anything) in the
+// app actually imports from examDatabase.js specifically, rather than from subjects.js/topics.js/
+// examDates2026.js/paperDatabase.js. If nothing does, deleting this file removes both the
+// corruption risk above and an ongoing double-maintenance burden. If something does import it,
+// identify exactly which export it uses so that surface can be fixed or migrated specifically,
+// rather than reconciling all ~16,000 lines against the newer files on the chance they're needed.
+// ─────────────────────────────────────────────────────────────────────────────
 // Verified 2026 exam dates sourced from official AQA, Edexcel/Pearson, OCR, WJEC, CCEA timetables
 // Last verified: March 2026
 // Grade boundaries: sourced from published 2024 results (2026 boundaries available after results day Aug 2026)
@@ -32,7 +64,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','German','Spanish','Mandarin Chinese','Arabic','Polish','Urdu',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies','Film Studies',
       'Food Preparation & Nutrition',
       'Design & Technology',
@@ -67,7 +99,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','German','Spanish','Italian','Chinese',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies',
       'Food Technology',
       'Design & Technology',
@@ -135,7 +167,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','German','Spanish','Welsh','Welsh Literature',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies','Film Studies',
       'Food & Nutrition',
       'Design & Technology',
@@ -150,7 +182,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','German','Spanish','Welsh',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies','Film Studies',
     ],
   },
@@ -165,7 +197,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','Spanish','Irish',
       'Religious Studies','Sociology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies',
       'Technology & Design',
       'Home Economics',
@@ -180,7 +212,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','Spanish','Irish',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics',
+      'Business','Economics',
       'Media Studies',
       'Technology & Design',
     ],
@@ -196,7 +228,7 @@ export const BOARD_SUBJECTS = {
       'Physical Education',
       'French','German','Spanish','Mandarin Chinese','Arabic',
       'Religious Studies','Sociology','Psychology',
-      'Business Studies','Economics','Accounting',
+      'Business','Economics','Accounting',
       'Design & Technology','Food & Nutrition',
     ],
     ALEVEL: [
@@ -10533,7 +10565,7 @@ export const EXAM_DATES_2026 = [
   ]},
 
   // Business Studies (AQA GCSE)
-  { board:'AQA', subject:'Business Studies', qualification:'GCSE', papers:[
+  { board:'AQA', subject:'Business', qualification:'GCSE', papers:[
     { name:'Paper 1: Influences of Technology & Digital Marketing on Business Activity', date:'2026-05-22', session:'AM', duration:105, code:'8132/1' },
     { name:'Paper 2: Influences of Finance, HR & Marketing on Business Activity', date:'2026-06-11', session:'PM', duration:105, code:'8132/2' },
   ]},
@@ -11250,7 +11282,7 @@ export const EXAM_DATES_2026 = [
   { board:'CCEA', subject:'Technology and Design', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
     { name:'Unit 1: Designing and Making', date:'2026-06-10', session:'PM', duration:120, code:'GTD11' },
   ]},
-  { board:'CCEA', subject:'Business Studies', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
+  { board:'CCEA', subject:'Business', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
     { name:'Unit 1: The Business Environment', date:'2026-05-11', session:'PM', duration:90, code:'GBS11' },
     { name:'Unit 2: Business Growth and Development', date:'2026-05-21', session:'PM', duration:90, code:'GBS12' },
   ]},
