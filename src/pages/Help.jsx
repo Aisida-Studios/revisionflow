@@ -42,7 +42,7 @@ GAMIFICATION:
 
 REFERRALS:
 - Each user has a unique referral code (first 8 chars of their UID), found in Profile
-- Referral link: revision-flow.netlify.app/signup?ref=CODE
+- Referral link: www.revisionflow.co.uk/signup?ref=CODE
 - When signing up with a code, the referrer's name is shown in real-time before you submit
 - Both referrer and new user receive XP and unlock the Rocket profile icon
 - Existing users can enter a referral code from the Dashboard
@@ -159,7 +159,7 @@ const FAQ = [
   },
   {
     q: 'How does the referral system work?',
-    a: 'Your referral code is shown in Profile. Share your link (revision-flow.netlify.app/signup?ref=YOURCODE) with a friend. When they type your code into the signup form, your name appears in real-time confirming the code works. When they complete signup, you both get XP and unlock the Rocket profile icon. Existing users can enter a referral code from the Dashboard.'
+    a: 'Your referral code is shown in Profile. Share your link (www.revisionflow.co.uk/signup?ref=YOURCODE) with a friend. When they type your code into the signup form, your name appears in real-time confirming the code works. When they complete signup, you both get XP and unlock the Rocket profile icon. Existing users can enter a referral code from the Dashboard.'
   },
   {
     q: 'How do public profiles work?',
@@ -409,7 +409,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
         <h4 style={{ marginBottom: 6 }}>Still need help?</h4>
         <p style={{ fontSize: '0.85rem', marginBottom: 4 }}>
-          Contact us at <strong style={{ color: 'var(--accent-light)' }}>aisidastudios@gmail.com</strong>
+          Contact us at <strong style={{ color: 'var(--accent-light)' }}>admin@revisionflow.co.uk</strong>
         </p>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>We usually respond within 24 hours</p>
       </div>
