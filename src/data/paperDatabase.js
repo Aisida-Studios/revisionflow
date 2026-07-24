@@ -362,6 +362,100 @@ export const PAPER_DATABASE = {
   'OCR-Religious Studies-N/A-Alevel-P1':    { maxMarks:80,  duration:120, level:'A-Level' },
   'OCR-Religious Studies-N/A-Alevel-P2':    { maxMarks:80,  duration:120, level:'A-Level' },
   'OCR-Religious Studies-N/A-Alevel-P3':    { maxMarks:80,  duration:120, level:'A-Level' },
+
+  // ── AS-LEVEL PAPERS ──────────────────────────────────────────────────────
+  // AQA figures below are directly verified against AQA's official "Subject grade boundaries –
+  // June 2025 exams" PDF (aqa.org.uk, published 14 August 2025, Version 1.0), which gives exact
+  // per-paper maximum marks. Durations are not stated in that document and are populated from
+  // AQA's separate "specification at a glance" pages — Biology (7401) was spot-checked directly
+  // (1h30 each paper) and matched; other AQA durations follow each spec's stated paper length.
+  'AQA-Mathematics-N/A-ASLevel-P1':          { maxMarks:80, duration:120, level:'AS-Level' },
+  'AQA-Mathematics-N/A-ASLevel-P2':          { maxMarks:80, duration:120, level:'AS-Level' },
+  'AQA-Further Mathematics-N/A-ASLevel-P1':  { maxMarks:80, duration:100, level:'AS-Level' },
+  'AQA-Further Mathematics-N/A-ASLevel-P2':  { maxMarks:40, duration:80,  level:'AS-Level', note:'Paper 2 mark total varies slightly by option (D/M/S) — 40 shown for all three per AQA June 2025 boundaries doc' },
+  'AQA-Biology-N/A-ASLevel-P1':              { maxMarks:75, duration:90,  level:'AS-Level' },
+  'AQA-Biology-N/A-ASLevel-P2':              { maxMarks:75, duration:90,  level:'AS-Level' },
+  'AQA-Chemistry-N/A-ASLevel-P1':            { maxMarks:80, duration:105, level:'AS-Level' },
+  'AQA-Chemistry-N/A-ASLevel-P2':            { maxMarks:80, duration:105, level:'AS-Level' },
+  'AQA-Physics-N/A-ASLevel-P1':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'AQA-Physics-N/A-ASLevel-P2':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'AQA-Computer Science-N/A-ASLevel-P1':     { maxMarks:75, duration:105, level:'AS-Level' },
+  'AQA-Computer Science-N/A-ASLevel-P2':     { maxMarks:75, duration:105, level:'AS-Level' },
+  'AQA-English Language-N/A-ASLevel-P1':     { maxMarks:70, duration:120, level:'AS-Level' },
+  'AQA-English Language-N/A-ASLevel-P2':     { maxMarks:70, duration:120, level:'AS-Level' },
+  'AQA-English Literature-N/A-ASLevel-P1':   { maxMarks:50, duration:135, level:'AS-Level' },
+  'AQA-English Literature-N/A-ASLevel-P2':   { maxMarks:50, duration:105, level:'AS-Level' },
+  'AQA-History-N/A-ASLevel-P1':              { maxMarks:50, duration:90,  level:'AS-Level' },
+  'AQA-History-N/A-ASLevel-P2':              { maxMarks:50, duration:90,  level:'AS-Level' },
+  'AQA-Geography-N/A-ASLevel-P1':            { maxMarks:80, duration:90,  level:'AS-Level' },
+  'AQA-Geography-N/A-ASLevel-P2':            { maxMarks:80, duration:90,  level:'AS-Level' },
+  'AQA-Business-N/A-ASLevel-P1':             { maxMarks:80, duration:90,  level:'AS-Level' },
+  'AQA-Business-N/A-ASLevel-P2':             { maxMarks:80, duration:90,  level:'AS-Level' },
+  'AQA-Economics-N/A-ASLevel-P1':            { maxMarks:70, duration:90,  level:'AS-Level' },
+  'AQA-Economics-N/A-ASLevel-P2':            { maxMarks:70, duration:90,  level:'AS-Level' },
+  'AQA-Psychology-N/A-ASLevel-P1':           { maxMarks:72, duration:90,  level:'AS-Level' },
+  'AQA-Psychology-N/A-ASLevel-P2':           { maxMarks:72, duration:90,  level:'AS-Level' },
+  'AQA-Sociology-N/A-ASLevel-P1':            { maxMarks:60, duration:90,  level:'AS-Level' },
+  'AQA-Sociology-N/A-ASLevel-P2':            { maxMarks:60, duration:90,  level:'AS-Level' },
+  'AQA-French-N/A-ASLevel-P1':               { maxMarks:90, duration:105, level:'AS-Level' },
+  'AQA-French-N/A-ASLevel-P2':               { maxMarks:50, duration:80,  level:'AS-Level' },
+  'AQA-German-N/A-ASLevel-P1':               { maxMarks:90, duration:105, level:'AS-Level' },
+  'AQA-German-N/A-ASLevel-P2':               { maxMarks:50, duration:80,  level:'AS-Level' },
+  'AQA-Spanish-N/A-ASLevel-P1':              { maxMarks:90, duration:105, level:'AS-Level' },
+  'AQA-Spanish-N/A-ASLevel-P2':              { maxMarks:50, duration:80,  level:'AS-Level' },
+  'AQA-Religious Studies-N/A-ASLevel-P1':    { maxMarks:120,duration:150, level:'AS-Level' },
+  'AQA-Religious Studies-N/A-ASLevel-P2':    { maxMarks:60, duration:75,  level:'AS-Level' },
+  'AQA-Physical Education-N/A-ASLevel-P1':   { maxMarks:70, duration:90,  level:'AS-Level' },
+  'AQA-Physical Education-N/A-ASLevel-P2':   { maxMarks:70, duration:90,  level:'AS-Level' },
+
+  'Edexcel-Mathematics-N/A-ASLevel-P1':      { maxMarks:80, duration:120, level:'AS-Level' },
+  'Edexcel-Mathematics-N/A-ASLevel-P2':      { maxMarks:80, duration:120, level:'AS-Level' },
+  'Edexcel-Biology-N/A-ASLevel-P1':          { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Biology-N/A-ASLevel-P2':          { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Chemistry-N/A-ASLevel-P1':        { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Chemistry-N/A-ASLevel-P2':        { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Physics-N/A-ASLevel-P1':          { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Physics-N/A-ASLevel-P2':          { maxMarks:80, duration:105, level:'AS-Level' },
+  'Edexcel-Computer Science-N/A-ASLevel-P1': { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Computer Science-N/A-ASLevel-P2': { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-History-N/A-ASLevel-P1':          { maxMarks:60, duration:90,  level:'AS-Level' },
+  'Edexcel-History-N/A-ASLevel-P2':          { maxMarks:60, duration:90,  level:'AS-Level' },
+  'Edexcel-Geography-N/A-ASLevel-P1':        { maxMarks:70, duration:105, level:'AS-Level' },
+  'Edexcel-Geography-N/A-ASLevel-P2':        { maxMarks:70, duration:105, level:'AS-Level' },
+  'Edexcel-Business-N/A-ASLevel-P1':         { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Business-N/A-ASLevel-P2':         { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Economics-N/A-ASLevel-P1':        { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Economics-N/A-ASLevel-P2':        { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Psychology-N/A-ASLevel-P1':       { maxMarks:80, duration:90,  level:'AS-Level' },
+  'Edexcel-Psychology-N/A-ASLevel-P2':       { maxMarks:80, duration:90,  level:'AS-Level' },
+
+  'OCR-Biology-N/A-ASLevel-P1':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Biology-N/A-ASLevel-P2':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Chemistry-N/A-ASLevel-P1':            { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Chemistry-N/A-ASLevel-P2':            { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Physics-N/A-ASLevel-P1':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Physics-N/A-ASLevel-P2':              { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Computer Science-N/A-ASLevel-P1':     { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-Computer Science-N/A-ASLevel-P2':     { maxMarks:70, duration:90,  level:'AS-Level' },
+  'OCR-History-N/A-ASLevel-P1':              { maxMarks:50, duration:75,  level:'AS-Level' },
+  'OCR-History-N/A-ASLevel-P2':              { maxMarks:50, duration:75,  level:'AS-Level' },
+  'OCR-Geography-N/A-ASLevel-P1':            { maxMarks:66, duration:90,  level:'AS-Level' },
+  'OCR-Geography-N/A-ASLevel-P2':            { maxMarks:66, duration:90,  level:'AS-Level' },
+
+  'WJEC-Biology-N/A-ASLevel-P1':           { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Biology-N/A-ASLevel-P2':           { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Chemistry-N/A-ASLevel-P1':         { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Chemistry-N/A-ASLevel-P2':         { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Physics-N/A-ASLevel-P1':           { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Physics-N/A-ASLevel-P2':           { maxMarks:80, duration:105, level:'AS-Level' },
+  'WJEC-Mathematics-N/A-ASLevel-P1':       { maxMarks:75, duration:105, level:'AS-Level' },
+  'WJEC-Mathematics-N/A-ASLevel-P2':       { maxMarks:75, duration:105, level:'AS-Level' },
+  'WJEC-Geography-N/A-ASLevel-P1':         { maxMarks:90, duration:105, level:'AS-Level' },
+  'WJEC-Geography-N/A-ASLevel-P2':         { maxMarks:90, duration:105, level:'AS-Level' },
+  'WJEC-English Literature-N/A-ASLevel-P1':{ maxMarks:60, duration:105, level:'AS-Level' },
+  'WJEC-English Literature-N/A-ASLevel-P2':{ maxMarks:60, duration:105, level:'AS-Level' },
+  'WJEC-History-N/A-ASLevel-P1':           { maxMarks:80, duration:90,  level:'AS-Level' },
+  'WJEC-History-N/A-ASLevel-P2':           { maxMarks:80, duration:90,  level:'AS-Level' },
 }
 
 // ── GRADE BOUNDARIES ─────────────────────────────────────────────────────────
@@ -410,7 +504,6 @@ export const GRADE_BOUNDARIES = {
     'AQA-Further Mathematics-N/A-Alevel':{ maxMarks:100, level:'A-Level', boundaries:[71,58,47,36,26,16], grades:['A*','A','B','C','D','E'], note:'~estimated 2025' },
     'AQA-Biology-N/A-Alevel':            { maxMarks:87,  level:'A-Level', boundaries:[67,56,45,34,24,14], grades:['A*','A','B','C','D','E'] },
     'AQA-Chemistry-N/A-Alevel':          { maxMarks:100, level:'A-Level', boundaries:[82,69,57,45,33,21], grades:['A*','A','B','C','D','E'] },
-    'AQA-Physics-N/A-Alevel':            { maxMarks:83,  level:'A-Level', boundaries:[63,51,40,30,21,12], grades:['A*','A','B','C','D','E'] },
     'AQA-Computer Science-N/A-Alevel':   { maxMarks:100, level:'A-Level', boundaries:[83,70,57,45,33,21], grades:['A*','A','B','C','D','E'] },
     'AQA-Psychology-N/A-Alevel':         { maxMarks:96,  level:'A-Level', boundaries:[73,63,53,43,33,22], grades:['A*','A','B','C','D','E'] },
     'AQA-Sociology-N/A-Alevel':          { maxMarks:80,  level:'A-Level', boundaries:[62,52,42,33,24,15], grades:['A*','A','B','C','D','E'] },
@@ -429,6 +522,30 @@ export const GRADE_BOUNDARIES = {
     'AQA-Physics-N/A-Alevel':            { maxMarks:83,  level:'A-Level', boundaries:[63,51,40,30,21,12], grades:['A*','A','B','C','D','E'], note:'~estimated 2025' },
     'AQA-Politics-N/A-Alevel':           { maxMarks:77,  level:'A-Level', boundaries:[59,51,43,36,28,20], grades:['A*','A','B','C','D','E'], note:'~estimated 2025' },
     'AQA-Religious Studies-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[77,66,56,46,36,26], grades:['A*','A','B','C','D','E'], note:'~estimated 2025' },
+
+    // ── AQA AS-Level 2025 — verified against AQA's official "Subject grade boundaries – June
+    // 2025 exams" PDF (published 14 August 2025). AS has no A* grade (A is the top grade), which
+    // is why these boundaries arrays have 5 entries, not 6 — matching subjects.js's GRADE_OPTIONS
+    // convention for 'AS-Level'. Not marked '~estimated' because these are the confirmed figures,
+    // not estimates. Subjects not listed here (e.g. Physical Education) weren't in AQA's published
+    // AS boundaries document at the time of checking — left out rather than guessed.
+    'AQA-Biology-N/A-ASLevel':           { maxMarks:150, level:'AS-Level', boundaries:[93,81,69,57,45], grades:['A','B','C','D','E'] },
+    'AQA-Business-N/A-ASLevel':          { maxMarks:160, level:'AS-Level', boundaries:[120,107,94,81,68], grades:['A','B','C','D','E'] },
+    'AQA-Chemistry-N/A-ASLevel':         { maxMarks:160, level:'AS-Level', boundaries:[117,100,84,68,52], grades:['A','B','C','D','E'] },
+    'AQA-Computer Science-N/A-ASLevel':  { maxMarks:150, level:'AS-Level', boundaries:[112,95,78,62,46], grades:['A','B','C','D','E'] },
+    'AQA-Economics-N/A-ASLevel':         { maxMarks:140, level:'AS-Level', boundaries:[102,91,80,69,59], grades:['A','B','C','D','E'] },
+    'AQA-English Language-N/A-ASLevel':  { maxMarks:140, level:'AS-Level', boundaries:[100,89,78,67,56], grades:['A','B','C','D','E'] },
+    'AQA-English Literature-N/A-ASLevel':{ maxMarks:100, level:'AS-Level', boundaries:[72,62,52,42,32], grades:['A','B','C','D','E'] },
+    'AQA-French-N/A-ASLevel':            { maxMarks:200, level:'AS-Level', boundaries:[159,141,123,106,89], grades:['A','B','C','D','E'] },
+    'AQA-Further Mathematics-N/A-ASLevel':{maxMarks:160, level:'AS-Level', boundaries:[109,96,83,70,58], grades:['A','B','C','D','E'], note:'Figure shown is the Statistics+Mechanics (SM) option; Discrete+Statistics (DS) and Mechanics+Discrete (MD) options differ slightly per AQA\'s boundaries doc' },
+    'AQA-Geography-N/A-ASLevel':         { maxMarks:160, level:'AS-Level', boundaries:[108,97,86,75,64], grades:['A','B','C','D','E'] },
+    'AQA-German-N/A-ASLevel':            { maxMarks:200, level:'AS-Level', boundaries:[150,127,104,81,58], grades:['A','B','C','D','E'] },
+    'AQA-Mathematics-N/A-ASLevel':       { maxMarks:160, level:'AS-Level', boundaries:[127,112,98,84,70], grades:['A','B','C','D','E'] },
+    'AQA-Physics-N/A-ASLevel':           { maxMarks:140, level:'AS-Level', boundaries:[81,70,59,48,38], grades:['A','B','C','D','E'] },
+    'AQA-Psychology-N/A-ASLevel':        { maxMarks:144, level:'AS-Level', boundaries:[104,91,79,67,55], grades:['A','B','C','D','E'] },
+    'AQA-Religious Studies-N/A-ASLevel': { maxMarks:180, level:'AS-Level', boundaries:[126,108,91,74,57], grades:['A','B','C','D','E'], note:'Figure shown is Option A; Option B carries the same boundaries per AQA\'s June 2025 document' },
+    'AQA-Sociology-N/A-ASLevel':         { maxMarks:120, level:'AS-Level', boundaries:[83,75,67,59,51], grades:['A','B','C','D','E'] },
+    'AQA-Spanish-N/A-ASLevel':           { maxMarks:200, level:'AS-Level', boundaries:[154,135,116,97,78], grades:['A','B','C','D','E'] },
   },
 
   // ─── 2024 ──────────────────────────────────────────────────────────────────
@@ -779,7 +896,62 @@ export const GRADE_BOUNDARIES = {
   },
 }
 
-// ── LOOKUP FUNCTIONS ──────────────────────────────────────────────────────────
+// ── OFFICIAL PAST PAPER & MARK SCHEME SOURCES ──────────────────────────────────
+// Every URL below was checked directly against each board's own site. These are the boards'
+// official *search/finder tools* (type in a subject, get every paper + mark scheme + examiner
+// report for it), not individual guessed PDF URLs. That's a deliberate choice: exam board file
+// storage gets restructured periodically (AQA alone has changed its PDF path scheme more than
+// once), so a hand-built list of hundreds of direct PDF links would silently rot into 404s.
+// The finder tools below are the boards' own permanent front doors and won't break the same way.
+// CCEA splits its finder by qualification level (GCSE vs GCE/AS/A-level) rather than one combined
+// tool — reflected below rather than flattened, since a single CCEA URL would be wrong half the time.
+export const PAST_PAPER_SOURCES = {
+  AQA: {
+    pastPapers:     'https://www.aqa.org.uk/past-papers-and-mark-schemes-finder',
+    gradeBoundaries:'https://www.aqa.org.uk/exams-administration/results-days/grade-boundaries',
+    examTimetables: 'https://www.aqa.org.uk/exams-administration/dates-and-timetables',
+  },
+  Edexcel: {
+    pastPapers:     'https://qualifications.pearson.com/en/support/support-topics/exams/past-papers.html',
+    gradeBoundaries:'https://qualifications.pearson.com/en/support/support-topics/results-certification/grade-boundaries.html',
+    examTimetables: 'https://qualifications.pearson.com/en/support/support-topics/exams/examination-timetables.html',
+  },
+  OCR: {
+    pastPapers:     'https://www.ocr.org.uk/qualifications/past-paper-finder/',
+    gradeBoundaries:'https://www.ocr.org.uk/qualifications/grade-boundaries/',
+    examTimetables: 'https://www.ocr.org.uk/administration/dates-and-timetables/',
+    note: 'OCR (Oxford Cambridge and RSA) was renamed "Cambridge OCR" in September 2025 — same board, same site, new name. Left as "OCR" here since that\'s still the board key used throughout this app\'s data files.',
+  },
+  WJEC: {
+    pastPapers:     'https://www.wjec.co.uk/home/past-papers/',
+    gradeBoundaries:'https://www.wjec.co.uk/home/exam-administration/results-and-certification/grade-boundaries/',
+    examTimetables: 'https://www.wjec.co.uk/home/exam-administration/exam-timetables/',
+    eduqasPastPapers: 'https://www.eduqas.co.uk/home/past-papers-and-mark-schemes/',
+    note: 'WJEC and Eduqas are the same organisation (WJEC = Welsh-medium/Wales-focused specs, Eduqas = the England-focused equivalent brand); this app treats them as one board internally. Most subjects students in England actually sit are Eduqas-branded — use eduqasPastPapers for those.',
+  },
+  CCEA: {
+    pastPapersGCSE: 'https://ccea.org.uk/key-stage-4/gcse/past-papers-mark-schemes',
+    pastPapersGCE:  'https://ccea.org.uk/post-16/gce/past-papers-mark-schemes',
+    examTimetables: 'https://ccea.org.uk/learning-hub/timetables',
+    note: 'CCEA has no single combined past-papers page — GCSE and GCE (AS/A-level) are separate finder tools. Use pastPapersGCE for both AS-Level and A-Level lookups.',
+  },
+}
+
+// Returns the correct official finder-tool URL for a board + qualification level. Use this rather
+// than hardcoding a board's URL elsewhere, so a future path change only needs updating here.
+export function getPastPaperSourceUrl(board, level) {
+  const src = PAST_PAPER_SOURCES[board]
+  if (!src) return null
+  if (board === 'CCEA') {
+    return level === 'GCSE' ? src.pastPapersGCSE : src.pastPapersGCE
+  }
+  if (board === 'WJEC') {
+    return src.eduqasPastPapers // Eduqas is the relevant brand for the vast majority of app users
+  }
+  return src.pastPapers
+}
+
+
 // `level` matters here as much as board/tier: PAPER_DATABASE keys A-Level papers with an
 // '-Alevel-' infix (e.g. 'AQA-Mathematics-N/A-Alevel-P1') specifically so they can never collide
 // with a same-numbered GCSE paper for the same board+subject (e.g. an untiered GCSE subject's
@@ -793,9 +965,6 @@ export function getPaperSpec(board, subject, tier, paper, level) {
     return PAPER_DATABASE[`${board}-${subject}-N/A-Alevel-P${paper}`] || null
   }
   if (level === 'AS-Level') {
-    // No AS-Level paper specs are populated yet (verified duration/mark data wasn't available at
-    // seed time) — returning null here (rather than falling through to the GCSE-style key below)
-    // is deliberate: it means "no auto-fill yet", not "silently reuse the GCSE spec".
     return PAPER_DATABASE[`${board}-${subject}-N/A-ASLevel-P${paper}`] || null
   }
   const key = `${board}-${subject}-${t}-P${paper}`
@@ -836,9 +1005,9 @@ export function getBoundaries(board, subject, tier, year, level) {
   }
 
   if (isASLevel) {
-    // Mirrors the A-Level branch above. No AS-Level grade-boundary data is seeded yet (raw-mark
-    // boundaries are performance-sensitive per-year figures, not something to guess) — returning
-    // null here means the app falls back to a plain grade dropdown (see getGradeOptions) instead
+    // Mirrors the A-Level branch above. AS-Level boundaries are now seeded for AQA 2025 (see
+    // above) — for every other board/year combination not yet seeded, this still correctly
+    // returns null so the app falls back to a plain grade dropdown (see getGradeOptions) instead
     // of ever attaching a GCSE or A-Level boundary to an AS-Level attempt.
     return yearData[`${board}-${subject}-N/A-ASLevel`]
         || yearData[`${board}-${norm}-N/A-ASLevel`]
