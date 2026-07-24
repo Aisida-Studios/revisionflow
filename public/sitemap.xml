@@ -1,25 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://revision-flow.netlify.app/</loc>
+    <loc>https://www.revisionflow.co.uk/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <lastmod>2026-04-14</lastmod>
+    <lastmod>2026-07-24</lastmod>
   </url>
   <url>
-    <loc>https://revision-flow.netlify.app/landing.html</loc>
+    <loc>https://www.revisionflow.co.uk/landing.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <lastmod>2026-04-14</lastmod>
+    <lastmod>2026-07-24</lastmod>
   </url>
   <url>
-    <loc>https://revision-flow.netlify.app/signup</loc>
+    <loc>https://www.revisionflow.co.uk/signup</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <lastmod>2026-07-24</lastmod>
   </url>
   <url>
-    <loc>https://revision-flow.netlify.app/login</loc>
+    <loc>https://www.revisionflow.co.uk/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+  <url>
+    <loc>https://www.revisionflow.co.uk/pro</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+  <url>
+    <loc>https://www.revisionflow.co.uk/help</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+  <url>
+    <loc>https://www.revisionflow.co.uk/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <lastmod>2026-07-20</lastmod>
   </url>
 </urlset>
