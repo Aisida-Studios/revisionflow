@@ -1,24 +1,18 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
-  const { user, login, loginWithGoogle } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resetMode, setResetMode] = useState(false)
-
-  // Safety net: if `user` is ever already set while this page is showing
-  // (e.g. session restored on load), get out of the login form automatically.
-  useEffect(() => {
-    if (user) navigate('/dashboard', { replace: true })
-  }, [user])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -36,12 +30,8 @@ export default function Login() {
     try {
       await loginWithGoogle()
       navigate('/dashboard')
-    } catch (err) {
-      // Don't show an error toast if the user just closed the popup themselves
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        toast.error(err.message)
-      }
-    } finally { setLoading(false) }
+    } catch (err) { toast.error(err.message) }
+    finally { setLoading(false) }
   }
 
   return (
