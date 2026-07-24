@@ -4,7 +4,7 @@
 
 RevisionFlow gives you a personalised revision system — not just content. It knows your subjects, your weak topics, your exam dates, and your past paper scores. Then it tells you exactly what to do next.
 
-🔗 **[revision-flow.netlify.app](https://revision-flow.netlify.app)**
+🔗 **[www.revisionflow.co.uk](https://www.revisionflow.co.uk)**
 
 ---
 
@@ -54,7 +54,7 @@ Grading systems supported: 9–1, A*–E, Combined Science double grade (9-9 to 
 
 ## Using RevisionFlow
 
-RevisionFlow is a web app — no download or installation needed. Just go to **[revision-flow.netlify.app](https://revision-flow.netlify.app)**, create a free account, and you're done.
+RevisionFlow is a web app — no download or installation needed. Just go to **[www.revisionflow.co.uk](https://www.revisionflow.co.uk)**, create a free account, and you're done.
 
 It's also installable as a PWA on Android and iOS — open the site in your browser and tap "Add to Home Screen" for an app-like experience.
 
@@ -79,13 +79,13 @@ A 7-step wizard that builds a personalised calendar around your exam dates, avai
 
 RevisionFlow is currently in open beta. If you find a bug or have a feature suggestion, open an issue.
 
-If you're a student and want to help test — sign up at [revision-flow.netlify.app](https://revision-flow.netlify.app) and share your feedback.
+If you're a student and want to help test — sign up at [www.revisionflow.co.uk](https://www.revisionflow.co.uk) and share your feedback.
 
 ---
 
 ## Privacy
 
-RevisionFlow stores revision data securely via Google Firebase. No data is sold or used for advertising. See the full [Privacy Policy](https://revision-flow.netlify.app/privacy).
+RevisionFlow stores revision data securely via Google Firebase. No data is sold or used for advertising. See the full [Privacy Policy](https://www.revisionflow.co.uk/privacy).
 
 ---
 
