@@ -2,13 +2,13 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
 import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import LoadingScreen from '../components/LoadingScreen'
 import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
   resetPassword as _resetPassword,
   ensureUser, updateStreakOnLogin, runBadgeAudit,
 } from '../utils/firestore'
+import LoadingScreen from '../components/LoadingScreen'
 
 const AuthContext = createContext(null)
 
