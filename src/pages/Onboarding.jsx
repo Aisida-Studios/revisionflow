@@ -242,7 +242,7 @@ export default function Onboarding() {
                 <input className="input" placeholder="e.g. femi_revision" value={username}
                   onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} />
                 <span style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginTop:4, display:'block' }}>
-                  Your public profile: revision-flow.netlify.app/u/{username || 'yourname'}
+                  Your public profile: www.revisionflow.co.uk/u/{username || 'yourname'}
                 </span>
               </div>
             </div>
@@ -545,7 +545,7 @@ export default function Onboarding() {
                 ))}
               </div>
               <div style={{ padding:'10px 14px', background:'rgba(124,58,237,0.06)', borderRadius:10, border:'1px solid rgba(124,58,237,0.2)', fontSize:'0.8rem', color:'var(--text-muted)' }}>
-                Your profile link: <strong style={{ color:'var(--accent-light)' }}>revision-flow.netlify.app/u/{username || user?.uid?.slice(0,8)}</strong>
+                Your profile link: <strong style={{ color:'var(--accent-light)' }}>www.revisionflow.co.uk/u/{username || user?.uid?.slice(0,8)}</strong>
               </div>
               <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginTop:10 }}>Add friends from the Friends page after setup.</p>
             </div>
