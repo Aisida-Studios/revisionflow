@@ -148,7 +148,7 @@ const GCSE_2026 = [
   {
     "board": "AQA",
     "level": "GCSE",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Listening (F/H)",
@@ -157,7 +157,7 @@ const GCSE_2026 = [
   {
     "board": "AQA",
     "level": "GCSE",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Reading (F/H)",
@@ -166,7 +166,7 @@ const GCSE_2026 = [
   {
     "board": "AQA",
     "level": "GCSE",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Writing (F/H)",
@@ -319,7 +319,7 @@ const GCSE_2026 = [
   {
     "board": "AQA",
     "level": "GCSE",
-    "subject": "Design and Technology",
+    "subject": "Design & Technology",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Written Paper",
@@ -400,7 +400,7 @@ const GCSE_2026 = [
   {
     "board": "AQA",
     "level": "GCSE",
-    "subject": "Food Preparation and Nutrition",
+    "subject": "Food Preparation & Nutrition",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
@@ -746,7 +746,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Crime, Deviance & Social Stratification",
-    "date": "TBC"
+    "date": "2026-05-18"
   },
   {
     "board": "AQA",
@@ -755,7 +755,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Listening (F/H)",
-    "date": "TBC"
+    "date": "2026-06-09"
   },
   {
     "board": "AQA",
@@ -764,7 +764,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Reading (F/H)",
-    "date": "TBC"
+    "date": "2026-06-09"
   },
   {
     "board": "AQA",
@@ -773,7 +773,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Writing (F/H)",
-    "date": "TBC"
+    "date": "2026-06-16"
   },
   {
     "board": "AQA",
@@ -782,7 +782,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
-    "date": "TBC"
+    "date": "2026-06-07"
   },
   {
     "board": "AQA",
@@ -791,7 +791,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2",
-    "date": "TBC"
+    "date": "2026-06-16"
   },
   {
     "board": "Edexcel",
@@ -913,7 +913,7 @@ const GCSE_2026 = [
   {
     "board": "Edexcel",
     "level": "GCSE",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Listening (F/H)",
@@ -922,7 +922,7 @@ const GCSE_2026 = [
   {
     "board": "Edexcel",
     "level": "GCSE",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Reading (F/H)",
@@ -931,7 +931,7 @@ const GCSE_2026 = [
   {
     "board": "Edexcel",
     "level": "GCSE",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 4,
     "paperName": "Paper 4: Writing (F/H)",
@@ -1627,7 +1627,7 @@ const GCSE_2026 = [
   { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Higher", "paper": 8, "paperName": "Combined Science (Higher)", "date": "2026-06-08" },
   { "board": "OCR", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Computer Systems (J277/01)", "date": "2026-05-13" },
   { "board": "OCR", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Computational Thinking, Algorithms and Programming (J277/02)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "GCSE", "subject": "Design and Technology", "tier": "N/A", "paper": 1, "paperName": "Principles of Design and Technology", "date": "2026-06-10" },
+  { "board": "OCR", "level": "GCSE", "subject": "Design & Technology", "tier": "N/A", "paper": 1, "paperName": "Principles of Design and Technology", "date": "2026-06-10" },
   { "board": "OCR", "level": "GCSE", "subject": "Drama", "tier": "N/A", "paper": 1, "paperName": "Drama: Performance and Response", "date": "2026-05-08" },
   { "board": "OCR", "level": "GCSE", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Introduction to Economics", "date": "2026-05-08" },
   { "board": "OCR", "level": "GCSE", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "National and International Economics", "date": "2026-05-22" },
@@ -1635,7 +1635,7 @@ const GCSE_2026 = [
   { "board": "OCR", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Exploring Effects and Impact (J351/02)", "date": "2026-06-05" },
   { "board": "OCR", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Exploring Modern and Literary Heritage Texts (J352/01)", "date": "2026-05-11" },
   { "board": "OCR", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Exploring Poetry and Shakespeare (J352/02)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "GCSE", "subject": "Food Preparation and Nutrition", "tier": "N/A", "paper": 1, "paperName": "Food Preparation and Nutrition (J309/01)", "date": "2026-06-11" },
+  { "board": "OCR", "level": "GCSE", "subject": "Food Preparation & Nutrition", "tier": "N/A", "paper": 1, "paperName": "Food Preparation & Nutrition (J309/01)", "date": "2026-06-11" },
   { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 1, "paperName": "Living in the UK Today (J383/01)", "date": "2026-05-13" },
   { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 2, "paperName": "The World Around Us (J383/02)", "date": "2026-06-03" },
   { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 3, "paperName": "Geographical Skills (J383/03)", "date": "2026-06-11" },
@@ -1683,14 +1683,14 @@ const GCSE_2026 = [
   { "board": "Eduqas", "level": "GCSE", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-06-12" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Component 1: Written (C500U10-1)", "date": "2026-05-13" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Component 2: On Screen (C500U20-1)", "date": "2026-05-19" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Design and Technology", "tier": "N/A", "paper": 1, "paperName": "Component 1 (C600U10-1)", "date": "2026-06-10" },
+  { "board": "Eduqas", "level": "GCSE", "subject": "Design & Technology", "tier": "N/A", "paper": 1, "paperName": "Component 1 (C600U10-1)", "date": "2026-06-10" },
   { "board": "Eduqas", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Component 1: 21st Century Literature Reading and Creative Prose Writing", "date": "2026-05-21" },
   { "board": "Eduqas", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Component 2: 19th and 21st Century Non-Fiction Reading and Transactional Writing", "date": "2026-06-05" },
   { "board": "Eduqas", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Component 1: Shakespeare and Poetry (C720U10-1)", "date": "2026-05-11" },
   { "board": "Eduqas", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Component 2: Drama, Prose and Unseen Poetry (C720U20-1)", "date": "2026-05-19" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Film Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Varieties of Film and Filmmaking (C670U10-1)", "date": "2026-05-07" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Film Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: Global Filmmaking Perspectives (C670U20-1)", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Food Preparation and Nutrition", "tier": "N/A", "paper": 1, "paperName": "Component 1: Written Examination (C560UA0-1)", "date": "2026-06-11" },
+  { "board": "Eduqas", "level": "GCSE", "subject": "Food Preparation & Nutrition", "tier": "N/A", "paper": 1, "paperName": "Component 1: Written Examination (C560UA0-1)", "date": "2026-06-11" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 1, "paperName": "Component 1: Changing Places — Changing World (C111U10-1)", "date": "2026-05-12" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 2, "paperName": "Component 2: Sustaining the Planet (C111U20-1)", "date": "2026-06-03" },
   { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 3, "paperName": "Component 3: Distinctive Landscapes (C111U30-1)", "date": "2026-06-11" },
@@ -1772,7 +1772,7 @@ const ALEVEL_2026 = [
   {
     "board": "AQA",
     "level": "A-Level",
-    "subject": "Art & Design (Art,Craft & Design)",
+    "subject": "Art & Design (Art, Craft & Design)",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Externally Set Assignment",
@@ -2006,7 +2006,7 @@ const ALEVEL_2026 = [
   {
     "board": "AQA",
     "level": "A-Level",
-    "subject": "Design & Technology: Product Design",
+    "subject": "Design and Technology: Product Design",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
@@ -2015,7 +2015,7 @@ const ALEVEL_2026 = [
   {
     "board": "AQA",
     "level": "A-Level",
-    "subject": "Design & Technology: Product Design",
+    "subject": "Design and Technology: Product Design",
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2",
@@ -2307,7 +2307,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
-    "date": "TBC"
+    "date": "2026-05-14"
   },
   {
     "board": "AQA",
@@ -2316,7 +2316,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2",
-    "date": "TBC"
+    "date": "2026-06-04"
   },
   {
     "board": "AQA",
@@ -2325,7 +2325,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Reading & Writing",
-    "date": "TBC"
+    "date": "2026-05-20"
   },
   {
     "board": "AQA",
@@ -2334,7 +2334,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Listening paper + Composition NEA + Performance NEA",
-    "date": "TBC"
+    "date": "2026-06-08"
   },
   {
     "board": "AQA",
@@ -2343,7 +2343,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Reading & Writing",
-    "date": "TBC"
+    "date": "2026-05-20"
   },
   {
     "board": "AQA",
@@ -2352,7 +2352,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Epistemology & Moral Philosophy",
-    "date": "TBC"
+    "date": "2026-05-12"
   },
   {
     "board": "AQA",
@@ -2361,7 +2361,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Metaphysics & Philosophy of Mind/Religion",
-    "date": "TBC"
+    "date": "2026-05-19"
   },
   {
     "board": "AQA",
@@ -2370,7 +2370,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Factors Affecting Participation",
-    "date": "TBC"
+    "date": "2026-05-21"
   },
   {
     "board": "AQA",
@@ -2379,7 +2379,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Factors Affecting Optimal Performance",
-    "date": "TBC"
+    "date": "2026-06-01"
   },
   {
     "board": "AQA",
@@ -2388,7 +2388,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
-    "date": "TBC"
+    "date": "2026-05-20"
   },
   {
     "board": "AQA",
@@ -2397,7 +2397,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2",
-    "date": "TBC"
+    "date": "2026-06-01"
   },
   {
     "board": "AQA",
@@ -2406,7 +2406,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3 (Practical Skills + Options)",
-    "date": "TBC"
+    "date": "2026-06-08"
   },
   {
     "board": "AQA",
@@ -2415,7 +2415,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Reading & Writing",
-    "date": "TBC"
+    "date": "2026-05-21"
   },
   {
     "board": "AQA",
@@ -2424,7 +2424,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: UK Politics & Core Political Ideas",
-    "date": "TBC"
+    "date": "2026-05-21"
   },
   {
     "board": "AQA",
@@ -2432,8 +2432,8 @@ const ALEVEL_2026 = [
     "subject": "Politics",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Paper 2: UK Government & Political Ideas",
-    "date": "TBC"
+    "paperName": "Paper 2: Comparative Politics — Government and Politics of the USA",
+    "date": "2026-06-08"
   },
   {
     "board": "AQA",
@@ -2441,8 +2441,8 @@ const ALEVEL_2026 = [
     "subject": "Politics",
     "tier": "N/A",
     "paper": 3,
-    "paperName": "Paper 3: Comparative Politics (option)",
-    "date": "TBC"
+    "paperName": "Paper 3: Political Ideas",
+    "date": "2026-06-16"
   },
   {
     "board": "AQA",
@@ -2451,7 +2451,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Introductory Topics",
-    "date": "TBC"
+    "date": "2026-05-15"
   },
   {
     "board": "AQA",
@@ -2460,7 +2460,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Psychology in Context",
-    "date": "TBC"
+    "date": "2026-05-20"
   },
   {
     "board": "AQA",
@@ -2469,7 +2469,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Issues & Options",
-    "date": "TBC"
+    "date": "2026-06-05"
   },
   {
     "board": "AQA",
@@ -2477,8 +2477,8 @@ const ALEVEL_2026 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Paper 1: Philosophy of Religion",
-    "date": "TBC"
+    "paperName": "Paper 1: Philosophy of Religion and Ethics (7062/1 — single combined component; see note below)",
+    "date": "2026-06-04"
   },
   {
     "board": "AQA",
@@ -2486,8 +2486,8 @@ const ALEVEL_2026 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Paper 2: Religion & Ethics",
-    "date": "TBC"
+    "paperName": "Paper 2: Philosophy of Religion and Ethics (7062/1 — same real exam date/paper as Paper 1 above; AQA's actual spec has ONE combined philosophy+ethics component, not two — kept as separate app-internal slots for now, both correctly dated)",
+    "date": "2026-06-04"
   },
   {
     "board": "AQA",
@@ -2495,8 +2495,8 @@ const ALEVEL_2026 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 3,
-    "paperName": "Paper 3: Study of Religion/Dialogues (opt)",
-    "date": "TBC"
+    "paperName": "Paper 3: Study of Religion and Dialogues — choice of Buddhism/Christianity/Hinduism/Islam/Judaism (7062/2)",
+    "date": "2026-06-09"
   },
   {
     "board": "AQA",
@@ -2505,7 +2505,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Education + Theory & Methods",
-    "date": "TBC"
+    "date": "2026-05-18"
   },
   {
     "board": "AQA",
@@ -2514,7 +2514,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Topics in Sociology",
-    "date": "TBC"
+    "date": "2026-06-03"
   },
   {
     "board": "AQA",
@@ -2523,7 +2523,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Crime & Deviance + Theory & Methods",
-    "date": "TBC"
+    "date": "2026-06-12"
   },
   {
     "board": "AQA",
@@ -2532,7 +2532,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Listening, Reading & Writing",
-    "date": "TBC"
+    "date": "2026-06-04"
   },
   {
     "board": "AQA",
@@ -2541,7 +2541,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2: Writing",
-    "date": "TBC"
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
@@ -2753,7 +2753,7 @@ const ALEVEL_2026 = [
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "A-level",
@@ -2762,7 +2762,7 @@ const ALEVEL_2026 = [
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
     "paperName": "A-level",
@@ -2780,7 +2780,7 @@ const ALEVEL_2026 = [
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Drama & Theatre",
+    "subject": "Drama and Theatre",
     "tier": "N/A",
     "paper": 1,
     "paperName": "A-level",
@@ -3596,35 +3596,87 @@ const ALEVEL_2026 = [
   { "board": "Eduqas", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Component 2: Understanding Social Processes (A200U20-1)", "date": "2026-06-03" },
   { "board": "Eduqas", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 3, "paperName": "Component 3: Social Change (A200U30-1)", "date": "2026-06-12" },
 
-  // ── CCEA A-Level 2026 ──
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Molecules and Cells", "date": "2026-05-12" },
+  // ── CCEA A-Level 2026 — replaces earlier "estimated" placeholders with dates verified
+  // directly against CCEA's own "Final GCE Timetable, Summer 2026" (ccea.org.uk/document/23625,
+  // Version 2, updated 02/12/2025). Several of the previous estimates were wrong (e.g. Biology AS
+  // Unit 1 was listed as 12 May; CCEA's own timetable has it on 8 May) — corrected below. History,
+  // Geography, Business Studies and Technology and Design are newly added; they had no A-Level
+  // date entries at all before despite topics.js having full A-Level content for all four.
+  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Molecules and Cells", "date": "2026-05-08" },
   { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Organisms and Biodiversity", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Physiology, Coordination and Control", "date": "2026-06-04" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Physiology, Coordination and Control", "date": "2026-06-01" },
   { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Biochemistry, Genetics and Evolutionary Trends", "date": "2026-06-12" },
   { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Basic Concepts in Physical and Inorganic Chemistry", "date": "2026-05-12" },
   { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Further Physical and Organic Chemistry", "date": "2026-05-19" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Further Physical and Inorganic Chemistry", "date": "2026-06-02" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Analytical, Transition Metals, Electrochemistry and Organic Nitrogen", "date": "2026-06-09" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Further Physical and Inorganic Chemistry", "date": "2026-05-25" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Analytical, Transition Metals, Electrochemistry and Organic Nitrogen", "date": "2026-06-10" },
   { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Pure Mathematics with Mechanics", "date": "2026-05-14" },
   { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Pure Mathematics with Statistics", "date": "2026-05-22" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Pure Mathematics", "date": "2026-06-03" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Pure Mathematics with Mechanics", "date": "2026-06-11" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 5, "paperName": "A2 Unit 3: Pure Mathematics with Statistics", "date": "2026-06-18" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Forces, Energy and Electricity", "date": "2026-05-20" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Waves, Photons and Medical Physics", "date": "2026-06-01" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Momentum, Thermal Physics, Circular Motion, Oscillations and Atomic Physics", "date": "2026-06-08" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Fields, Capacitors and Particle Physics", "date": "2026-06-15" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Pure Mathematics", "date": "2026-05-28" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Pure Mathematics with Mechanics or Statistics", "date": "2026-06-03" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 5, "paperName": "A2 Unit 3 (if applicable to your specification route)", "date": "TBC", "note": "CCEA's own Final GCE Timetable (Summer 2026) only shows 2 AS units + 2 A2 units for Mathematics — this 5th paper slot could not be verified against it and is left TBC rather than guessed. Worth checking whether this paper still exists in the current CCEA Mathematics spec." },
+  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Forces, Energy and Electricity", "date": "2026-05-13" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Waves, Photons and Medical Physics", "date": "2026-05-20" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Momentum, Thermal Physics, Circular Motion, Oscillations and Atomic Physics", "date": "2026-05-18" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Fields, Capacitors and Particle Physics", "date": "2026-06-08" },
+  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Change Over Time", "date": "2026-05-13" },
+  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Dictatorship and Democracy", "date": "2026-05-18" },
+  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Breadth Study", "date": "2026-05-19" },
+  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Historical Investigation", "date": "2026-06-02" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Physical Geography I", "date": "2026-05-12" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Human Geography I", "date": "2026-05-20" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 3, "paperName": "AS Unit 3: Fieldwork Report", "date": "2026-05-26" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 1: Physical Geography II", "date": "2026-05-21" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 5, "paperName": "A2 Unit 2: Human Geography II", "date": "2026-05-29" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 6, "paperName": "A2 Unit 3: Decision-Making Exercise", "date": "2026-06-04" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1", "date": "2026-05-15" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2", "date": "2026-05-21" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1", "date": "2026-05-27" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2", "date": "2026-06-09" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Technology and Design", "tier": "N/A", "paper": 1, "paperName": "AS 1: Systems and Control (Core)", "date": "2026-05-11" },
+  { "board": "CCEA", "level": "A-Level", "subject": "Technology and Design", "tier": "N/A", "paper": 2, "paperName": "A2 Unit 1", "date": "2026-05-22" },
+]
+
+// ── CCEA AS-Level 2026 — genuinely separate entries, not merged into the A-Level list above.
+// CCEA's AS content is architecturally the first half of its linear 4-unit A-Level (same units,
+// same dates as "AS Unit 1/2" above), which is why an earlier version of this file deliberately
+// left CCEA out of AS-Level entirely rather than duplicate data. In practice that meant a student
+// with "CCEA AS-Level Biology" selected (a fully real, separately-trackable qualification that
+// topics.js and subjects.js both already support) got zero results from getExamDates() — the
+// dates existed, just tagged level:"A-Level" only. Duplicating the AS-unit dates here under
+// level:"AS-Level" fixes that lookup without changing the A-Level entries above. All dates match
+// the corresponding "AS Unit" rows above exactly, sourced from the same CCEA document.
+const CCEA_ASLEVEL_2026 = [
+  { "board": "CCEA", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Molecules and Cells", "date": "2026-05-08" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Organisms and Biodiversity", "date": "2026-05-21" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Basic Concepts in Physical and Inorganic Chemistry", "date": "2026-05-12" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Further Physical and Organic Chemistry", "date": "2026-05-19" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Pure Mathematics with Mechanics", "date": "2026-05-14" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Mathematics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Pure Mathematics with Statistics", "date": "2026-05-22" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Forces, Energy and Electricity", "date": "2026-05-13" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Waves, Photons and Medical Physics", "date": "2026-05-20" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Change Over Time", "date": "2026-05-13" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Dictatorship and Democracy", "date": "2026-05-18" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Physical Geography I", "date": "2026-05-12" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Human Geography I", "date": "2026-05-20" },
+  { "board": "CCEA", "level": "AS-Level", "subject": "Geography", "tier": "N/A", "paper": 3, "paperName": "AS Unit 3: Fieldwork Report", "date": "2026-05-26" },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AS-LEVEL 2026 — added so AS-Level is fully separate from A-Level everywhere.
 // AS-Level is a standalone, decoupled qualification for AQA/Edexcel/OCR/Eduqas
 // (does not contribute to a later A-Level grade — confirmed against JCQ/Ofqual
-// and each board's own "About AS and A levels" pages). WJEC (Wales) and CCEA
-// keep AS content embedded inside their A-Level unit structure instead (see the
-// existing CCEA A-Level entries above, which already include AS Unit 1/2 papers),
-// so no separate WJEC/CCEA AS-Level entries are added here — selecting AS-Level
-// for those boards is intentionally left empty rather than guessed.
+// and each board's own "About AS and A levels" pages). WJEC (Wales) keeps AS
+// content embedded inside its A-Level unit structure, so no separate WJEC
+// AS-Level entries are added here — selecting AS-Level for WJEC is intentionally
+// left empty rather than guessed. CCEA ALSO keeps AS content embedded inside its
+// A-Level unit structure (its AS units are the first half of a linear 4-unit
+// A-Level) — but unlike WJEC, CCEA's AS is a real, separately-certificated,
+// separately-selectable qualification in this app (see subjects.js/topics.js),
+// so its AS Unit 1/2 dates are duplicated below under level:"AS-Level" (see
+// CCEA_ASLEVEL_2026, sourced from the same CCEA document as the A-Level entries
+// above) rather than left empty — leaving them empty would mean CCEA AS-Level
+// students get zero exam dates even though the underlying dates are known.
 // All dates below are sourced from each board's own official Summer 2026 exam
 // timetable (see per-board source comments). As with the GCSE/A-Level dates above,
 // always confirm the final personalised timetable with your school/college.
@@ -3784,14 +3836,14 @@ const ASLEVEL_2026 = [
 // Cambridge Nationals and other L2 vocational quals
 // These have unit exams rather than traditional papers
 const L2_2026 = [
-  { board:'OCR', level:'Level 2', subject:'Cambridge National Business', tier:'N/A', paper:1, paperName:'Exam Unit (R069)', date:'2026-05-15' },
-  { board:'OCR', level:'Level 2', subject:'Cambridge National IT', tier:'N/A', paper:1, paperName:'Exam Unit (R070)', date:'2026-05-22' },
-  { board:'OCR', level:'Level 2', subject:'Cambridge National Sport Science', tier:'N/A', paper:1, paperName:'Exam Unit (R041)', date:'2026-05-19' },
-  { board:'OCR', level:'Level 2', subject:'Cambridge National Health & Social Care', tier:'N/A', paper:1, paperName:'Exam Unit (R032)', date:'2026-05-20' },
+  { board:'OCR', level:'Level 2', subject:'Cambridge National: Business', tier:'N/A', paper:1, paperName:'Exam Unit (R069)', date:'2026-05-15' },
+  { board:'OCR', level:'Level 2', subject:'Cambridge National: IT', tier:'N/A', paper:1, paperName:'Exam Unit (R070)', date:'2026-05-22' },
+  { board:'OCR', level:'Level 2', subject:'Cambridge National: Sport Science', tier:'N/A', paper:1, paperName:'Exam Unit (R041)', date:'2026-05-19' },
+  { board:'OCR', level:'Level 2', subject:'Cambridge National: Health and Social Care', tier:'N/A', paper:1, paperName:'Exam Unit (R032)', date:'2026-05-20' },
   { board:'OCR', level:'Level 2', subject:'Cambridge National Creative Media', tier:'N/A', paper:1, paperName:'Exam Unit', date:'2026-06-03' },
 ]
 
-export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...ALEVEL_2026, ...L2_2026]
+export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...CCEA_ASLEVEL_2026, ...ALEVEL_2026, ...L2_2026]
 
 // ── 2027 EXAM DATES ──────────────────────────────────────────────────────────
 // Source: AQA's official "Exam timetable May/June 2027 – GCSE, AQA Certificates, ELC and
@@ -3884,7 +3936,7 @@ const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Urdu', tier:'N/A', paper:3, paperName:'Reading', date:'2027-05-11' },
   { board:'AQA', level:'GCSE', subject:'Urdu', tier:'N/A', paper:4, paperName:'Writing', date:'2027-05-25' },
   { board:'AQA', level:'GCSE', subject:'Design and Technology', tier:'N/A', paper:1, paperName:'Written', date:'2027-06-15' },
-  { board:'AQA', level:'GCSE', subject:'Food Preparation and Nutrition', tier:'N/A', paper:1, paperName:'Paper 1', date:'2027-05-24' },
+  { board:'AQA', level:'GCSE', subject:'Food Preparation & Nutrition', tier:'N/A', paper:1, paperName:'Paper 1', date:'2027-05-24' },
   { board:'AQA', level:'GCSE', subject:'Drama', tier:'N/A', paper:1, paperName:'Understanding Drama', date:'2027-05-14' },
   { board:'AQA', level:'GCSE', subject:'Music', tier:'N/A', paper:1, paperName:'Understanding Music', date:'2027-05-27' },
   { board:'AQA', level:'GCSE', subject:'Dance', tier:'N/A', paper:1, paperName:'Dance Appreciation', date:'2027-06-14' },
