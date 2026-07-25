@@ -2644,14 +2644,17 @@ const GCSE = {
     // ── English Literature (CCEA) ─────────────────────────────────────────────
     'English Literature': { papers: {
       1: [
-        'Poetry – Unit 1: Prescribed Poems — Close Analysis and Comparison',
+        'Poetry – Unit 1: Prescribed Poems — Close Analysis of Language, Form and Structure',
+        'Poetry – Unit 1: Comparing Prescribed Poems by Theme and Technique',
         'Poetry – Unseen Poetry: Response to an Unfamiliar Poem',
-        'Poetry – Themes, Language, Form and Structure',
+        'Poetry – Contextual Understanding: Poet\'s Background and Influences',
       ],
       2: [
-        'Prose – Unit 2: Novel Study — Character, Theme, Narrative Voice',
-        'Drama – Unit 2: Play Study — Character, Theme, Language, Stage Directions',
-        'Prose and Drama – Contextual Understanding and Critical Response',
+        'Prose – Unit 2: Novel Study — Character, Theme and Narrative Voice',
+        'Prose – Unit 2: Novel Study — Setting and Social/Historical Context',
+        'Drama – Unit 2: Play Study — Character, Theme and Dramatic Method',
+        'Drama – Unit 2: Play Study — Use of Stage Directions and Dramatic Irony',
+        'Prose and Drama – Critical Response: Structuring an Analytical Essay',
       ],
     }},
 
@@ -2707,19 +2710,24 @@ const GCSE = {
     // ── Geography (CCEA) ───────────────────────────────────────────────────────
     'Geography': { papers: {
       1: [
-        'Unit 1 – Physical Environments: River Processes and Landforms (Erosion, Transportation, Deposition)',
-        'Unit 1 – Physical Environments: Coastal Processes and Landforms',
-        'Unit 1 – Physical Environments: Tectonic Hazards (Earthquakes and Volcanoes)',
-        'Unit 1 – Weather and Climate: UK Weather, Global Climate Zones',
+        'Unit 1 – River Environments: Fluvial Processes — Erosion, Transportation, Deposition',
+        'Unit 1 – River Environments: Landforms — Waterfalls, Meanders, Ox-Bow Lakes, Flood Plains',
+        'Unit 1 – River Environments: Flooding and Flood Management Strategies',
+        'Unit 1 – Coastal Environments: Processes and Landforms of Erosion and Deposition',
+        'Unit 1 – Coastal Environments: Coastal Management — Hard and Soft Engineering',
+        'Unit 1 – Tectonic Environments: Plate Boundaries, Earthquakes and Volcanic Hazards',
+        'Unit 1 – Weather and Climate: UK Weather Systems, Global Climate Zones and Change',
       ],
       2: [
-        'Unit 2 – Human Environments: Population (Growth, Migration, Ageing)',
-        'Unit 2 – Human Environments: Settlement (Urbanisation, Land Use, Regeneration)',
-        'Unit 2 – Human Environments: Development (Indicators, Trade, Aid, Tourism)',
-        'Unit 2 – Managing the Environment: Sustainability, Resource Management',
+        'Unit 2 – Population: Growth, Structure, Migration and an Ageing Population',
+        'Unit 2 – Settlement: Urbanisation, Land Use Zones, Urban Regeneration',
+        'Unit 2 – Development: Measuring Development, Trade, Aid and Debt Relief',
+        'Unit 2 – Managing the Environment: Resource Management and Sustainability',
+        'Unit 2 – Managing the Environment: Ecosystems Under Threat, Conservation',
       ],
       3: [
-        'Unit 3 – Fieldwork: Planning, Data Collection and Presentation',
+        'Unit 3 – Fieldwork: Planning, Data Collection Methods and Presentation Techniques',
+        'Unit 3 – Fieldwork: Analysis, Conclusions and Evaluation of a Geographical Enquiry',
         'Unit 3 – Decision-Making Exercise (DME): Applying Geographical Skills to an Unfamiliar Context',
       ],
     }},
@@ -2727,16 +2735,25 @@ const GCSE = {
     // ── History (CCEA) ─────────────────────────────────────────────────────────
     'History': { papers: {
       1: [
-        'Unit 1 – Life Under Nazi Rule 1933–45: Rise of Hitler, Propaganda, Racial Policies, Opposition',
-        'Unit 1 – Source Analysis: Reliability, Utility, Cross-Referencing',
+        'Unit 1 – Life Under Nazi Rule 1933–45: The Rise of Hitler and the Nazi Party',
+        'Unit 1 – Nazi Germany: Methods of Control — Propaganda, the SS and Gestapo, Censorship',
+        'Unit 1 – Nazi Germany: Racial Policy and Persecution, the Road to the Holocaust',
+        'Unit 1 – Nazi Germany: Opposition and Resistance to Nazi Rule',
+        'Unit 1 – Nazi Germany: Impact on Women, Young People and the Economy',
+        'Unit 1 – Source Analysis: Reliability, Utility, Cross-Referencing Sources',
       ],
       2: [
-        'Unit 2 – A Divided Union? Northern Ireland 1921–72: Partition, Stormont, Civil Rights Movement, Outbreak of Troubles',
+        'Unit 2 – A Divided Union? Northern Ireland: Partition and the Foundation of Stormont 1921',
+        'Unit 2 – Northern Ireland 1921–68: Unionist Government, Discrimination, Community Relations',
+        'Unit 2 – Northern Ireland: Civil Rights Movement — Causes, Key Events, Reactions',
+        'Unit 2 – Northern Ireland: Outbreak of the Troubles 1968–72',
         'Unit 2 – Source and Interpretation Skills in the Context of Irish History',
       ],
       3: [
-        'Unit 3 – Thematic Study (chosen option): e.g. Changing Nature of Warfare 1845–1991, or Cold War 1945–91',
-        'Unit 3 – Extended Writing: Essay and Source Questions',
+        'Unit 3 – Thematic Study (chosen option): Changing Nature of Warfare 1845–1991',
+        'Unit 3 – Thematic Study (chosen option): International Relations 1945–2003',
+        'Unit 3 – Thematic Study: Analysing Change and Continuity Across the Chosen Period',
+        'Unit 3 – Extended Writing: Essay and Source-Based Questions',
       ],
     }},
 
@@ -2752,6 +2769,61 @@ const GCSE = {
         'Applied Ethics – Relationships: Marriage, Family, Gender, Sexuality',
         'Applied Ethics – Environment: Stewardship, Conservation, Climate Change',
         'Applied Ethics – The Sanctity of Life: Abortion, Euthanasia, War and Peace',
+      ],
+    }},
+
+    // ── Technology and Design (CCEA GCSE — verified against CCEA's 2017 specification; this
+    // is CCEA's own, genuinely distinct title for its Design & Technology-equivalent GCSE, not
+    // the same subject as AQA/Edexcel/OCR/Eduqas's "Design & Technology" under a different name) ─
+    'Technology and Design': { papers: {
+      1: [ // Unit 1: Designing and Making (compulsory core)
+        'Designing: the Design Process — Investigating, Design Specification, Generating Ideas',
+        'Designing: Communication Techniques — Sketching, Orthographic and CAD Drawing',
+        'Making: Materials — Properties of Woods, Metals, Plastics and Composites',
+        'Making: Tools, Equipment and Manufacturing Processes (Introductory)',
+        'Electronic and Microelectronic Control Systems (Option A — Core Coverage)',
+        'Mechanical and Pneumatic Control Systems (Option B — Core Coverage)',
+        'Systems and Control: Input, Process, Output Model',
+      ],
+      2: [ // Unit 2: Systems and Control (synoptic, builds on Unit 1)
+        'Systems and Control: Electronic Systems — Sensors, Logic Gates, Output Devices',
+        'Systems and Control: Mechanical Systems — Levers, Linkages, Cams, Gears',
+        'Systems and Control: Pneumatic Systems — Valves, Actuators, Circuit Diagrams',
+        'Systems and Control: Programmable Control and Microcontrollers (Introductory)',
+        'Product Analysis: Evaluating Existing Products Against Design Criteria',
+      ],
+      3: [ // Unit 3: Product Design (coursework — design portfolio + manufactured outcome)
+        'Design Portfolio: Design Brief, Specification and Research (NEA)',
+        'Design Portfolio: Development of Design Ideas and Modelling (NEA)',
+        'Manufacture: Planning for Production, Quality Control (NEA)',
+        'Manufacture: Realisation of a Final Prototype/Product (NEA)',
+        'Evaluation: Testing the Outcome Against the Original Specification (NEA)',
+      ],
+    }},
+
+    // ── Business Studies (CCEA GCSE — verified against CCEA's 2017 specification; CCEA's own
+    // genuinely distinct title for its Business-equivalent GCSE, separate from CCEA's own GCSE
+    // Business and Communication Systems, and from AQA/Edexcel's "Business" under a different name) ─
+    'Business Studies': { papers: {
+      1: [ // Unit 1: The Business Environment
+        'Business Start-Up: Types of Business Organisation — Sole Trader, Partnership, Limited Company',
+        'Business Start-Up: Enterprise, Business Planning and Sources of Finance',
+        'Business Objectives and Stakeholders: Owners, Employees, Customers, the Community',
+        'Marketing: Market Research, Market Segmentation, the Marketing Mix',
+        'Resources: Human Resources — Recruitment, Selection, Training and Motivation',
+        'Business Location and the External Environment (Introductory)',
+      ],
+      2: [ // Unit 2: Business Growth and Development
+        'Business Growth: Methods of Growth — Organic Growth, Mergers and Takeovers',
+        'Business Growth: Economies and Diseconomies of Scale',
+        'Finance: Sources of Finance for Growth, Cash Flow Forecasting',
+        'Finance: Break-Even Analysis and Interpreting Final Accounts (Introductory)',
+        'E-Business and M-Business: Opportunities and Risks of Digital Trading',
+        'Stakeholders in a Growing Business: Changing Roles and Interests',
+      ],
+      3: [ // Unit 3: Planning a Business (controlled assessment)
+        'Planning a Business: Applying Unit 1 & 2 Knowledge to a Given Business Scenario (NEA)',
+        'Planning a Business: Decision-Making, Proposing Strategies and Justifying Choices (NEA)',
       ],
     }},
 
