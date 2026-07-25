@@ -83,6 +83,7 @@ export default function PastPapers() {
       const dir = sortDir === 'asc' ? 1 : -1
       const map = {
         subject: [a.subject, b.subject],
+        qualification: [a.qualification||'GCSE', b.qualification||'GCSE'],
         paper:   [a.paper, b.paper],
         board:   [a.board, b.board],
         year:    [a.year, b.year],
@@ -155,6 +156,7 @@ export default function PastPapers() {
                   <th><input type="checkbox" checked={selected.length===filtered.length&&filtered.length>0} onChange={e=>setSelected(e.target.checked?filtered.map(x=>x.id):[])} style={{accentColor:'var(--accent)'}}/></th>
                   {[
                     {col:'subject',label:'Subject'},
+                    {col:'qualification',label:'Level'},
                     {col:'paper',label:'Paper'},
                     {col:'board',label:'Board'},
                     {col:'year',label:'Year'},
@@ -175,6 +177,7 @@ export default function PastPapers() {
                     <tr key={a.id} style={{background:selected.includes(a.id)?'rgba(124,58,237,0.08)':undefined}}>
                       <td><input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggleSelect(a.id)} style={{accentColor:'var(--accent)'}}/></td>
                       <td><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[a.subject]||'var(--accent)',flexShrink:0}}/>{a.subject}</div></td>
+                      <td><span className="badge badge-purple" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
                       <td>P{a.paper}</td>
                       <td>{a.board}</td>
                       <td>{a.year}</td>
@@ -275,23 +278,29 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
   const [useCustom, setUseCustom] = useState(false)
 
   const selSubjMeta = subjects.find(s=>s.name===form.subject)
-  const formQual = getSubjectQualification(selSubjMeta, profile)
+  const defaultQual = getSubjectQualification(selSubjMeta, profile)
+  // Same reasoning as BoundaryEditorModal: previously formQual was only ever silently derived —
+  // if a student had e.g. both an AS-Level and an A-Level entry sharing a subject name, whichever
+  // one `.find()` happened to return first decided which paper spec and boundaries got auto-filled,
+  // with no way to see or correct it. Now it's shown and overridable, defaulting to the derived value.
+  const [levelOverride, setLevelOverride] = useState(null)
+  const formQual = levelOverride || defaultQual
+  useEffect(() => { setLevelOverride(null) }, [form.subject]) // reset override when subject changes
 
   useEffect(() => {
     if (!form.subject || !form.board || !form.paper) return
     const subj = subjects.find(s=>s.name===form.subject)
     const tier = subj?.tier||'N/A'
-    const subjQual = getSubjectQualification(subj, profile)
     setForm(f=>({...f,tier}))
-    const spec = getPaperSpec(form.board, form.subject, tier, form.paper, subjQual)
+    const spec = getPaperSpec(form.board, form.subject, tier, form.paper, formQual)
     setAutoSpec(spec)
     if (spec) {
       setForm(f=>({...f, maxMarks: spec.maxMarks || f.maxMarks}))
       if (spec.questions) { setQMarks(spec.questions.map(q=>({...q,scored:0}))); setUseQ(true) }
     }
-    const bounds = getBoundaries(form.board, form.subject, tier, form.year, subjQual)
+    const bounds = getBoundaries(form.board, form.subject, tier, form.year, formQual)
     setAutoBoundary(bounds)
-  }, [form.subject, form.board, form.paper, form.year])
+  }, [form.subject, form.board, form.paper, form.year, formQual])
 
   const totalScored = questionMarks.reduce((s,q)=>s+parseInt(q.scored||0),0)
 
@@ -320,6 +329,10 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
             <div><label className="label">Board</label>
               <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
                 {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
+              </select></div>
+            <div><label className="label">Level</label>
+              <select className="select" value={formQual} onChange={e=>setLevelOverride(e.target.value)}>
+                {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
               </select></div>
             {form.subject && isTiered(form.subject) && formQual === 'GCSE' && (
               <div><label className="label">Tier</label>
@@ -490,9 +503,16 @@ function BoundaryEditorModal({ profile, onClose }) {
   const [selYear, setSelYear] = useState(2024)
 
   const selSubjMeta = subjects.find(s=>s.name===selSubj)
-  const selQual = getSubjectQualification(selSubjMeta, profile)
-  const selTier = selQual === 'GCSE' ? (selSubjMeta?.tier || 'Higher') : 'N/A'
-  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear, selQual)
+  const defaultQual = getSubjectQualification(selSubjMeta, profile)
+  // Level defaults from the subject's own stored qualification but is separately overridable —
+  // a student can have e.g. "Chemistry" saved as A-Level while wanting to sanity-check what the
+  // AS-Level boundary looked like, and previously there was no way to see or change this at all;
+  // it was silently baked into selSubjMeta with no UI control, same underlying issue as selBoard.
+  const [selLevel, setSelLevel] = useState(defaultQual)
+  useEffect(() => { setSelLevel(defaultQual) }, [selSubj]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selTier = selLevel === 'GCSE' ? (selSubjMeta?.tier || 'Higher') : 'N/A'
+  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear, selLevel)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -506,6 +526,14 @@ function BoundaryEditorModal({ profile, onClose }) {
             <select className="select" value={selSubj} onChange={e=>setSelSubj(e.target.value)}>
               {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
             </select></div>
+          <div><label className="label">Board</label>
+            <select className="select" value={selBoard} onChange={e=>setSelBoard(e.target.value)}>
+              {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
+            </select></div>
+          <div><label className="label">Level</label>
+            <select className="select" value={selLevel} onChange={e=>setSelLevel(e.target.value)}>
+              {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
+            </select></div>
           <div><label className="label">Year</label>
             <select className="select" value={selYear} onChange={e=>setSelYear(parseInt(e.target.value))}>
               {AVAILABLE_YEARS.map(y=><option key={y} value={y}>{y}</option>)}
@@ -513,7 +541,10 @@ function BoundaryEditorModal({ profile, onClose }) {
         </div>
         {bounds ? (
           <div>
-            <div style={{fontSize:'0.82rem',color:'var(--text-muted)',marginBottom:10}}>Total marks: {bounds.maxMarks}</div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
+              <span className="badge badge-purple">{selLevel}</span>
+              <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Total marks: {bounds.maxMarks}</span>
+            </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:6,textAlign:'center'}}>
               {(bounds.grades || ['9','8','7','6','5','4','3','2','1']).map((g,i)=>(
                 <div key={g} style={{padding:8,background:'rgba(124,58,237,0.08)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
@@ -522,10 +553,12 @@ function BoundaryEditorModal({ profile, onClose }) {
                 </div>
               ))}
             </div>
-            <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:12}}>Historical boundaries from real AQA results. 2026 boundaries will be published after results day in August.</p>
+            <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:12}}>
+              Historical boundaries from real exam board results{bounds.note?` (${bounds.note.replace('~','approx. ')})`:''}. 2026 boundaries will be published after results day in August.
+            </p>
           </div>
         ) : (
-          <div className="empty-state" style={{padding:'24px 0'}}><p>No boundary data found for this combination.</p></div>
+          <div className="empty-state" style={{padding:'24px 0'}}><p>No boundary data found for {selBoard} {selSubj} at {selLevel}{selTier!=='N/A'?` (${selTier})`:''}.</p></div>
         )}
         <div style={{display:'flex',justifyContent:'flex-end',marginTop:16}}>
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
@@ -558,7 +591,7 @@ function EditEntryModal({ attempt, onClose, onSave }) {
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">
-            Edit entry — {attempt.subject} P{attempt.paper} {attempt.year}
+            Edit entry — {attempt.subject} ({attempt.qualification||'GCSE'}) P{attempt.paper} {attempt.year}
           </span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
         </div>
