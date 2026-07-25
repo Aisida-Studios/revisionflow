@@ -77,7 +77,7 @@ export const BOARD_SUBJECTS = {
       'English Language','English Literature','English Language & Literature',
       'History','Geography',
       'Computer Science',
-      'Art & Design','Music','Dance','Drama & Theatre Studies',
+      'Art & Design','Music','Dance','Drama and Theatre Studies',
       'Physical Education',
       'French','German','Spanish','Mandarin Chinese','Arabic',
       'Religious Studies','Philosophy','Sociology','Psychology',
@@ -112,7 +112,7 @@ export const BOARD_SUBJECTS = {
       'English Language','English Literature','English Language & Literature',
       'History','Geography',
       'Computer Science',
-      'Art & Design','Music','Drama & Theatre',
+      'Art & Design','Music','Drama and Theatre',
       'Physical Education',
       'French','German','Spanish','Italian','Chinese',
       'Religious Studies','Philosophy','Sociology','Psychology',
@@ -146,7 +146,7 @@ export const BOARD_SUBJECTS = {
       'English Language','English Literature',
       'History','Geography',
       'Computer Science',
-      'Art & Design','Music','Drama & Theatre Studies',
+      'Art & Design','Music','Drama and Theatre Studies',
       'Physical Education',
       'French','German','Spanish','Latin','Classical Greek',
       'Religious Studies','Philosophy','Sociology','Psychology',
@@ -431,7 +431,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -606,7 +606,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design and Technology",
+    "subject": "Design & Technology",
     "qualification": "GCSE",
     "papers": [
       {
@@ -711,7 +711,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Food Preparation and Nutrition",
+    "subject": "Food Preparation & Nutrition",
     "qualification": "GCSE",
     "papers": [
       {
@@ -1180,7 +1180,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Art & Design (Art,Craft & Design)",
+    "subject": "Art & Design (Art, Craft & Design)",
     "qualification": "A-Level",
     "papers": [
       {
@@ -1460,7 +1460,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design & Technology: Product Design",
+    "subject": "Design and Technology: Product Design",
     "qualification": "A-Level",
     "papers": [
       {
@@ -2209,7 +2209,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -3154,7 +3154,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "qualification": "A-Level",
     "papers": [
       {
@@ -3189,7 +3189,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Drama & Theatre",
+    "subject": "Drama and Theatre",
     "qualification": "A-Level",
     "papers": [
       {
@@ -4087,7 +4087,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -4262,7 +4262,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design and Technology",
+    "subject": "Design & Technology",
     "qualification": "GCSE",
     "papers": [
       {
@@ -4367,7 +4367,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Food Preparation and Nutrition",
+    "subject": "Food Preparation & Nutrition",
     "qualification": "GCSE",
     "papers": [
       {
@@ -4836,7 +4836,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Art & Design (Art,Craft & Design)",
+    "subject": "Art & Design (Art, Craft & Design)",
     "qualification": "A-Level",
     "papers": [
       {
@@ -5116,7 +5116,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design & Technology: Product Design",
+    "subject": "Design and Technology: Product Design",
     "qualification": "A-Level",
     "papers": [
       {
@@ -5797,7 +5797,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -5965,7 +5965,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design and Technology",
+    "subject": "Design & Technology",
     "qualification": "GCSE",
     "papers": [
       {
@@ -6070,7 +6070,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Food Preparation and Nutrition",
+    "subject": "Food Preparation & Nutrition",
     "qualification": "GCSE",
     "papers": [
       {
@@ -6679,7 +6679,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design & Technology: Product Design",
+    "subject": "Design and Technology: Product Design",
     "qualification": "A-Level",
     "papers": [
       {
@@ -7148,7 +7148,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -8093,7 +8093,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "qualification": "A-Level",
     "papers": [
       {
@@ -8128,7 +8128,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Drama & Theatre",
+    "subject": "Drama and Theatre",
     "qualification": "A-Level",
     "papers": [
       {
@@ -8928,7 +8928,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Chinese (Mandarin)",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -9096,7 +9096,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Design and Technology",
+    "subject": "Design & Technology",
     "qualification": "GCSE",
     "papers": [
       {
@@ -9201,7 +9201,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "AQA",
-    "subject": "Food Preparation and Nutrition",
+    "subject": "Food Preparation & Nutrition",
     "qualification": "GCSE",
     "papers": [
       {
@@ -9726,7 +9726,7 @@ export const EXAM_DATES_2026 = [
   },
   {
     "board": "Edexcel",
-    "subject": "Chinese",
+    "subject": "Mandarin Chinese",
     "qualification": "GCSE",
     "papers": [
       {
@@ -10828,8 +10828,8 @@ export const EXAM_DATES_2026 = [
     { name:'Exploring Modern and Literary Heritage Texts', date:'2026-05-11', session:'AM', duration:120, code:'J352/01' },
     { name:'Exploring Poetry and Shakespeare', date:'2026-05-19', session:'AM', duration:120, code:'J352/02' },
   ]},
-  { board:'OCR', subject:'Food Preparation and Nutrition', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
-    { name:'Food Preparation and Nutrition', date:'2026-06-11', session:'PM', duration:90, code:'J309/01' },
+  { board:'OCR', subject:'Food Preparation & Nutrition', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
+    { name:'Food Preparation & Nutrition', date:'2026-06-11', session:'PM', duration:90, code:'J309/01' },
   ]},
   { board:'OCR', subject:'Geography A', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
     { name:'Living in the UK Today', date:'2026-05-13', session:'AM', duration:60, code:'J383/01' },
@@ -11090,7 +11090,7 @@ export const EXAM_DATES_2026 = [
     { name:'Component 1: Varieties of Film and Filmmaking', date:'2026-05-07', session:'PM', duration:90, code:'C670U10-1' },
     { name:'Component 2: Global Filmmaking Perspectives', date:'2026-05-21', session:'PM', duration:90, code:'C670U20-1' },
   ]},
-  { board:'Eduqas', subject:'Food Preparation and Nutrition', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
+  { board:'Eduqas', subject:'Food Preparation & Nutrition', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
     { name:'Component 1: Written Examination', date:'2026-06-11', session:'PM', duration:105, code:'C560UA0-1' },
   ]},
   { board:'Eduqas', subject:'Geography A', qualification:'GCSE', gradingSystem:'GCSE_STANDARD', papers:[
@@ -11806,7 +11806,7 @@ export const PAPER_STRUCTURES = {
       "E": "150"
     }
   },
-  "AQA-Drama & Theatre-A-Level-200": {
+  "AQA-Drama and Theatre-A-Level-200": {
     "maxMarks": "\u2013",
     "gradingSystem": "ALEVEL",
     "boundaries2024": {
@@ -12500,7 +12500,7 @@ export const PAPER_STRUCTURES = {
       "E": "150"
     }
   },
-  "AQA-Drama & Theatre-A-Level-200": {
+  "AQA-Drama and Theatre-A-Level-200": {
     "maxMarks": "\u2013",
     "gradingSystem": "ALEVEL",
     "boundaries2024": {
