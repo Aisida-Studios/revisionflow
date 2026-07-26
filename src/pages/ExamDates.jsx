@@ -5,7 +5,7 @@ import { updateUserProfile } from '../utils/firestore'
 import { countdownLabel, countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone } from '../utils/examUtils'
 import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
-import { isTiered, getExamDates, EXAM_DATES_2026 } from '../data/examDates2026'
+import { isTiered, getExamDates } from '../data/examDates2026'
 import toast from 'react-hot-toast'
 import { Plus, X, Clock, Trash2, Check, Zap, Edit2 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
@@ -15,7 +15,7 @@ export default function ExamDates() {
   const [showAdd,       setShowAdd]       = useState(false)
   const [showFillAll,   setShowFillAll]   = useState(false)
   const [selected,      setSelected]      = useState([])
-  const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', paper:'1', paperName:'', examDate:'' })
+  const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', qualification:'GCSE', paper:'1', paperName:'', examDate:'' })
 
   // Single subject auto-fill state
   const [autoSubj,    setAutoSubj]    = useState({ name:'', board:'AQA', tier:'N/A', qualification:'' })
@@ -24,13 +24,13 @@ export default function ExamDates() {
   const subjects  = profile?.subjects || []
   const examDates = (profile?.examDates || []).sort((a,b) => new Date(a.examDate) - new Date(b.examDate))
 
-  // Auto-lookup when subject/board/tier changes in single-subject panel
+  // Auto-lookup when subject/board/tier/level changes in single-subject panel
   useEffect(() => {
     if (!autoSubj.name) { setAutoMatches([]); return }
     const qualMap = { 'BTEC-L2': 'Level 2', 'BTEC-L3': 'Level 3', 'Both': null }
     const qual = autoSubj.qualification || profile?.qualification
     const levelMatch = qualMap[qual] !== undefined ? qualMap[qual] : qual
-    setAutoMatches(getExamDates(autoSubj.name, autoSubj.board, autoSubj.tier, levelMatch))
+    setAutoMatches(getExamDates(autoSubj.name, autoSubj.board, autoSubj.tier, levelMatch, 2027))
   }, [autoSubj.name, autoSubj.board, autoSubj.tier, autoSubj.qualification, profile?.qualification])
 
   async function handleAutoFillAdd() {
@@ -51,10 +51,14 @@ export default function ExamDates() {
   async function handleAdd(e) {
     e.preventDefault()
     const subjMeta = subjects.find(s => s.name === form.subject)
-    const updated = [...(profile?.examDates || []), { ...form, qualification: getSubjectQualification(subjMeta, profile), id: Date.now().toString() }]
+    // form.qualification is now an explicit field the user can see and change (defaults to the
+    // subject's own stored qualification via the Subject select's onChange below) rather than only
+    // ever being silently re-derived here — matters if the same subject name exists at two levels.
+    const qualification = form.qualification || getSubjectQualification(subjMeta, profile)
+    const updated = [...(profile?.examDates || []), { ...form, qualification, id: Date.now().toString() }]
     await updateUserProfile(user.uid, { examDates: updated })
     await refreshProfile()
-    setForm({ subject:'', board:'AQA', tier:'N/A', paper:'1', paperName:'', examDate:'' })
+    setForm({ subject:'', board:'AQA', tier:'N/A', qualification:'GCSE', paper:'1', paperName:'', examDate:'' })
     setShowAdd(false)
     toast.success('Exam date added')
   }
@@ -103,7 +107,7 @@ export default function ExamDates() {
 
       {/* Single subject auto-fill panel */}
       <div className="card" style={{marginBottom:20}}>
-        <h4 style={{marginBottom:4}}>Auto-fill from 2026 timetable</h4>
+        <h4 style={{marginBottom:4}}>Auto-fill from 2027 timetable</h4>
         <p style={{fontSize:'0.82rem',marginBottom:14}}>
           Select a subject and board — matching dates appear instantly. Use <strong>Fill all subjects</strong> above to add everything at once.
         </p>
@@ -128,6 +132,16 @@ export default function ExamDates() {
               {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
+          <div>
+            <label className="label">Level</label>
+            <select className="select" value={autoSubj.qualification || 'GCSE'}
+              onChange={e => {
+                const qualification = e.target.value
+                setAutoSubj(s => ({...s, qualification, tier: (isTiered(s.name) && qualification === 'GCSE') ? (s.tier==='N/A'?'Higher':s.tier) : 'N/A'}))
+              }}>
+              {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
           {autoSubj.name && isTiered(autoSubj.name) && (autoSubj.qualification || profile?.qualification) === 'GCSE' && (
             <div>
               <label className="label">Tier</label>
@@ -142,7 +156,7 @@ export default function ExamDates() {
 
         {autoSubj.name && autoMatches.length === 0 && (
           <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>
-            No 2026 dates found for {autoSubj.name} ({autoSubj.board}). Try a different board or add manually.
+            No 2027 dates found for {autoSubj.name} ({autoSubj.board}, {autoSubj.qualification||'GCSE'}). Try a different board or add manually.
           </p>
         )}
 
@@ -167,7 +181,7 @@ export default function ExamDates() {
       {examDates.length === 0 ? (
         <div className="empty-state">
           <Clock size={48} style={{opacity:0.3}}/><h4>No exam dates yet</h4>
-          <p>Use auto-fill above or click Fill all subjects to add all your 2026 dates at once</p>
+          <p>Use auto-fill above or click Fill all subjects to add all your 2027 dates at once</p>
         </div>
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -183,6 +197,7 @@ export default function ExamDates() {
                 <div style={{flex:1}}>
                   <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3,flexWrap:'wrap'}}>
                     <span style={{fontWeight:700}}>{e.subject}</span>
+                    <span className="badge badge-purple">{e.qualification||'GCSE'}</span>
                     <span className="badge badge-grey">{e.board}</span>
                     {e.tier && e.tier !== 'N/A' && <span className="badge badge-purple">{e.tier}</span>}
                     <span className="badge badge-grey">Paper {e.paper}</span>
@@ -238,13 +253,22 @@ export default function ExamDates() {
             <form onSubmit={handleAdd} style={{display:'flex',flexDirection:'column',gap:12}}>
               <div className="grid-2" style={{gap:10}}>
                 <div><label className="label">Subject</label>
-                  <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
+                  <select className="select" value={form.subject}
+                    onChange={e=>{
+                      const name = e.target.value
+                      const subjMeta = subjects.find(s => s.name === name)
+                      setForm(f=>({...f, subject:name, qualification: getSubjectQualification(subjMeta, profile)}))
+                    }} required>
                     <option value="">Select…</option>
                     {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
                   </select></div>
                 <div><label className="label">Board</label>
                   <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
                     {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select></div>
+                <div><label className="label">Level</label>
+                  <select className="select" value={form.qualification} onChange={e=>setForm(f=>({...f,qualification:e.target.value}))}>
+                    {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
                   </select></div>
                 <div><label className="label">Paper</label>
                   <select className="select" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}>
@@ -278,7 +302,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
     return qualMap[subjQual] !== undefined ? qualMap[subjQual] : subjQual
   }
   const initialRows = subjects.flatMap(s => {
-    const matches = getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s))
+    const matches = getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s), 2027)
     return matches.map(m => ({
       id:        `fill-${s.name}-P${m.paper}-${Math.random().toString(36).slice(2)}`,
       subject:   m.subject,
@@ -295,7 +319,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
   const [rows, setRows] = useState(initialRows)
 
   const notFound = subjects.filter(s =>
-    !getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s)).length
+    !getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s), 2027).length
   )
 
   function toggleRow(id) {
@@ -319,18 +343,18 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
         </div>
 
         <p style={{fontSize:'0.875rem',marginBottom:12}}>
-          All 2026 exam dates for your subjects are shown below. Edit any date, untick rows to exclude, then confirm.
+          All 2027 exam dates for your subjects are shown below. Edit any date, untick rows to exclude, then confirm.
         </p>
 
         {notFound.length > 0 && (
           <div style={{padding:'8px 12px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',borderRadius:'var(--radius-md)',fontSize:'0.8rem',marginBottom:12}}>
-            No 2026 dates found for: <strong>{notFound.map(s=>s.name).join(', ')}</strong>. Add these manually after confirming.
+            No 2027 dates found for: <strong>{notFound.map(s=>s.name).join(', ')}</strong>. Add these manually after confirming.
           </div>
         )}
 
         {rows.length === 0 ? (
           <div className="empty-state" style={{padding:'24px 0'}}>
-            <p>No 2026 dates found for any of your subjects. Try adding manually.</p>
+            <p>No 2027 dates found for any of your subjects. Try adding manually.</p>
           </div>
         ) : (
           <>
@@ -352,7 +376,10 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
                       {r.subject} Paper {r.paper}
                       {r.paperName ? <span style={{fontWeight:400,color:'var(--text-muted)',fontSize:'0.78rem'}}> — {r.paperName}</span> : null}
                     </div>
-                    <div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>{r.board}{r.tier&&r.tier!=='N/A'?` · ${r.tier}`:''}</div>
+                    <div style={{fontSize:'0.72rem',color:'var(--text-muted)',display:'flex',alignItems:'center',gap:5}}>
+                      <span className="badge badge-purple" style={{fontSize:'0.64rem',padding:'1px 6px'}}>{r.qualification||'GCSE'}</span>
+                      {r.board}{r.tier&&r.tier!=='N/A'?` · ${r.tier}`:''}
+                    </div>
                   </div>
                   <input
                     type="date"
