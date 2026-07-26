@@ -1,5 +1,23 @@
 // src/data/subjects.js
 // ─────────────────────────────────────────────────────────────────────────────
+// AUDIT NOTES (v4 — naming-consistency pass across topics.js/paperDatabase.js/examDates2026.js/
+// examDatabase.js, triggered by a systematic cross-file scan for subject-name mismatches)
+//
+// - Found and fixed real naming bugs (applied in the other files, not here): "Food Preparation
+//   and Nutrition" vs "& Nutrition", "Chinese (Mandarin)"/bare "Chinese" vs "Mandarin Chinese",
+//   an internal inconsistency where examDates2026.js used BOTH "Drama and Theatre" and "Drama &
+//   Theatre" for the same AQA qualification, and inconsistent Cambridge National naming.
+// - Two cases that LOOKED like the same bug turned out not to be, on verification against CCEA's
+//   own specification pages: CCEA's GCSE Design & Technology equivalent is genuinely, officially
+//   titled "Technology and Design" (ccea.org.uk/key-stage-4/gcse/subjects/gcse-technology-and-
+//   design-2017), and CCEA's GCSE Business equivalent is genuinely, officially titled "Business
+//   Studies" (ccea.org.uk/key-stage-4/gcse/subjects/gcse-business-studies-2017) — both distinct
+//   from AQA/Edexcel's "Design & Technology" and "Business" specs, not misspellings of them. Both
+//   already existed correctly in examDates2026.js's and paperDatabase.js's CCEA entries, but were
+//   missing from this file's subject lists entirely — meaning a CCEA student had no way to select
+//   either by its correct name. Added both here (GCSE and, since CCEA also offers a GCE version of
+//   each, AS-Level/A-Level too) and added matching topics.js content under the correct CCEA names.
+// ─────────────────────────────────────────────────────────────────────────────
 // AUDIT NOTES (v3 — checked against topics.js/paperDatabase.js/examDates2026.js's July 2026
 // AS-Level depth pass and 2027 dates addition; no data below needed changing)
 //
@@ -89,12 +107,12 @@ export const GCSE_SUBJECTS = [
   'Mathematics', 'Further Mathematics', 'Statistics',
   'English Language', 'English Literature',
   'History', 'Geography',
-  'Computer Science', 'Engineering', 'Design & Technology',
+  'Computer Science', 'Engineering', 'Design & Technology', 'Technology and Design',
   'Art & Design', 'Music', 'Drama',
   'Physical Education',
   'French', 'German', 'Spanish', 'Mandarin Chinese', 'Arabic', 'Polish', 'Urdu', 'Latin',
   'Religious Studies', 'Sociology', 'Psychology',
-  'Business', 'Economics',
+  'Business', 'Business Studies', 'Economics',
   'Media Studies', 'Film Studies',
   'Food Preparation & Nutrition',
 ]
@@ -109,10 +127,10 @@ export const ALEVEL_SUBJECTS = [
   'Physical Education',
   'French', 'German', 'Spanish', 'Mandarin Chinese', 'Arabic', 'Latin', 'Classical Greek',
   'Religious Studies', 'Philosophy', 'Sociology', 'Psychology',
-  'Business', 'Economics', 'Accounting',
+  'Business', 'Business Studies', 'Economics', 'Accounting',
   'Law', 'Politics',
   'Media Studies', 'Film Studies',
-  'Design and Technology: Product Design',
+  'Design and Technology: Product Design', 'Technology and Design',
   'Environmental Science',
 ]
 
@@ -130,10 +148,10 @@ export const AS_LEVEL_SUBJECTS = [
   'Physical Education',
   'French', 'German', 'Spanish', 'Mandarin Chinese', 'Arabic', 'Latin', 'Classical Greek',
   'Religious Studies', 'Philosophy', 'Sociology', 'Psychology',
-  'Business', 'Economics', 'Accounting',
+  'Business', 'Business Studies', 'Economics', 'Accounting',
   'Law', 'Politics',
   'Media Studies',
-  'Design and Technology: Product Design',
+  'Design and Technology: Product Design', 'Technology and Design',
   'Environmental Science',
 ]
 
@@ -245,14 +263,14 @@ export const SUBJECT_COLOURS = {
   'English Language':'#f39c12','English Literature':'#d35400','English Language & Literature':'#ef6c00',
   'History':'#795548','Geography':'#4caf50',
   'Computer Science':'#3498db','Engineering':'#607d8b',
-  'Design & Technology':'#9c27b0','Design and Technology: Product Design':'#7b1fa2',
+  'Design & Technology':'#9c27b0','Design and Technology: Product Design':'#7b1fa2','Technology and Design':'#8e24aa',
   'Art & Design':'#e91e63','Photography':'#6a1b9a','Music':'#673ab7','Drama':'#ff5722','Drama and Theatre':'#ff5722',
   'Physical Education':'#ff9800',
   'French':'#1565c0','German':'#b71c1c','Spanish':'#e65100',
   'Mandarin Chinese':'#c62828','Arabic':'#1b5e20','Polish':'#283593','Urdu':'#4a148c',
   'Latin':'#5d4037','Classical Greek':'#4e342e',
   'Religious Studies':'#8d6e63','Philosophy':'#6d4c41','Sociology':'#546e7a','Psychology':'#5e35b1',
-  'Business':'#00897b','Economics':'#00acc1','Accounting':'#0097a7',
+  'Business':'#00897b','Business Studies':'#00897b','Economics':'#00acc1','Accounting':'#0097a7',
   'Law':'#37474f','Politics':'#1a237e',
   'Media Studies':'#ad1457','Film Studies':'#880e4f',
   'Food Preparation & Nutrition':'#558b2f',
