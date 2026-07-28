@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { ensureReferralCode, applyReferralCode, lookupReferrer, getPendingReferral, clearPendingReferral } from '../utils/referrals'
 import toast from 'react-hot-toast'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
+import ReferralRewardPopup from '../components/ReferralRewardPopup'
 
 export default function Signup() {
   const { signup, loginWithGoogle } = useAuth()
@@ -21,6 +22,7 @@ export default function Signup() {
   const [consent,     setConsent]      = useState(false)
   const [referrerName,setReferrerName] = useState('')
   const [codeChecking,setCodeChecking] = useState(false)
+  const [showReferredReward, setShowReferredReward] = useState(false)
 
   // If ?ref= in URL, store it
   useEffect(() => {
@@ -64,12 +66,14 @@ export default function Signup() {
   async function handleSignupComplete(uid) {
     await ensureReferralCode(uid)
     const code = form.referralCode.trim() || getPendingReferral()
+    let applied = false
     if (code) {
       const ok = await applyReferralCode(uid, code)
-      if (ok) toast.success('🚀 Referral code applied! You earned 100 XP and unlocked the Rocket icon.')
+      if (ok) applied = true
       else if (form.referralCode.trim()) toast.error('Referral code not found — continuing without it.')
       clearPendingReferral()
     }
+    return applied
   }
 
   async function handleSubmit(evt) {
@@ -80,8 +84,10 @@ export default function Signup() {
     try {
       const cred = await signup(form.email, form.password, form.name)
       const uid  = cred?.user?.uid
-      if (uid) await handleSignupComplete(uid)
-      navigate('/onboarding')
+      let applied = false
+      if (uid) applied = await handleSignupComplete(uid)
+      if (applied) setShowReferredReward(true)
+      else navigate('/onboarding')
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') toast.error('Email already in use')
       else toast.error(err.message)
@@ -93,8 +99,10 @@ export default function Signup() {
     try {
       const cred = await loginWithGoogle()
       const uid  = cred?.user?.uid
-      if (uid) await handleSignupComplete(uid)
-      navigate('/onboarding')
+      let applied = false
+      if (uid) applied = await handleSignupComplete(uid)
+      if (applied) setShowReferredReward(true)
+      else navigate('/onboarding')
     } catch (err) {
       toast.error(err.message)
     } finally { setLoading(false) }
@@ -110,6 +118,9 @@ export default function Signup() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg-base)' }}>
+      {showReferredReward && (
+        <ReferralRewardPopup variant="referred" onClose={() => { setShowReferredReward(false); navigate('/onboarding') }} />
+      )}
       <div style={{ width: '100%', maxWidth: 420 }}>
 
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
