@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx — UI v3
 import React, { useEffect, useState, useRef } from 'react'
 import AIOutput from '../components/AIOutput'
-import TooltipTour from '../components/TooltipTour'
+import ReferralRewardPopup from '../components/ReferralRewardPopup'
 import EmergencyBanner from '../components/EmergencyBanner'
 import DailyQuests from '../components/DailyQuests'
 import { Link } from 'react-router-dom'
@@ -176,18 +176,13 @@ export default function Dashboard() {
   const [aiAdvice,            setAiAdvice]             = useState('')
   const [aiLoading,           setAiLoading]            = useState(false)
   const [dataLoading,         setDataLoading]          = useState(true)
-  const [showTour,            setShowTour]             = useState(false)
   const [setupSkipped,        setSetupSkipped]         = useState(() => localStorage.getItem('setup-skipped') === '1')
   const [welcomeDismissed,    setWelcomeDismissed]     = useState(() => localStorage.getItem('welcome-dismissed') === '1')
   const [betaBannerDismissed, setBetaBannerDismissed] = useState(() => localStorage.getItem('beta-banner-dismissed') === '1')
   const [refCode,             setRefCode]             = useState('')
   const [refLoading,          setRefLoading]          = useState(false)
   const [showRefInput,        setShowRefInput]        = useState(false)
-
-  useEffect(() => {
-    if (!profile) return
-    if (!localStorage.getItem('tour_complete') && !profile.tourComplete) setShowTour(true)
-  }, [profile?.uid])
+  const [showReferredReward,  setShowReferredReward]  = useState(false)
 
   const isNewUser = (() => {
     if (welcomeDismissed) return false
@@ -239,7 +234,7 @@ export default function Dashboard() {
     setRefLoading(true)
     try {
       const ok = await applyReferralCodeForExistingUser(user.uid, refCode.trim())
-      if (ok) { toast.success('🚀 Code applied! +100 XP unlocked.'); setShowRefInput(false); setRefCode('') }
+      if (ok) { setShowReferredReward(true); setShowRefInput(false); setRefCode('') }
       else toast.error("Code not found or already used.")
     } catch(e) { toast.error('Something went wrong.') }
     setRefLoading(false)
@@ -287,13 +282,9 @@ export default function Dashboard() {
 
   return (
     <div className="fade-in">
-      {showTour && <TooltipTour profile={profile} onComplete={async () => {
-        setShowTour(false)
-        localStorage.setItem('tour_complete','1')
-        if (user) {
-          try { const {updateDoc,doc:d}=await import('firebase/firestore'); const {db:db2}=await import('../firebase'); await updateDoc(d(db2,'users',user.uid),{tourComplete:true}) } catch(e){}
-        }
-      }} />}
+      {showReferredReward && (
+        <ReferralRewardPopup variant="referred" onClose={() => setShowReferredReward(false)} />
+      )}
 
       {!gdprConsent && (
         <div style={{
