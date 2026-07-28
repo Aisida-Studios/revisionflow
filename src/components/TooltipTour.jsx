@@ -1,5 +1,6 @@
 // src/components/TooltipTour.jsx
 import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 function buildSteps(profile) {
   const firstName  = (profile?.displayName || '').split(' ')[0] || 'there'
@@ -12,42 +13,54 @@ function buildSteps(profile) {
   const examCount  = (profile?.examDates || []).length
   const target     = subjects[0]?.targetGrade
 
+  // Every step now carries the route it's actually describing. When the tour advances to a step
+  // whose route differs from wherever the user currently is, it navigates there — previously the
+  // tour was mounted only inside Dashboard.jsx and just displayed text ABOUT Calendar/Topics/AI
+  // Advisor/Timer while the user stayed put on the dashboard the whole time, never actually seeing
+  // the pages being described.
   const steps = [
     {
+      route: '/dashboard',
       title: '👋 Hey ' + firstName + '!',
       body: subjList
         ? "You're set up for " + qual + ' in ' + subjList + (subjects.length > 3 ? ' and ' + (subjects.length - 3) + ' more' : '') + '. Quick 30-second tour of where everything lives.'
         : "Quick 30-second tour of where everything lives, then you're free to dive in.",
     },
     {
+      route: '/dashboard',
       title: '📅 Your Dashboard',
       body: examCount > 0
         ? "This is home base — today's sessions, your next exam countdown, streak, and a fresh AI tip every day."
         : "This is home base. Once you add exam dates, you'll see a live countdown here alongside today's sessions and streak.",
     },
     {
+      route: '/calendar',
       title: '📆 Calendar',
       body: subjList
         ? 'Generate a full revision schedule for ' + subjList + ' with one click — built around your exam dates and the availability you set during signup.'
         : 'Generate a full revision schedule with AI, built around your exam dates and availability.',
     },
     {
+      route: '/topics',
       title: '🧠 Topics',
       body: subjects.length
         ? 'Every topic for ' + (subjNames[0] || 'your subjects') + ' is already pre-loaded. Rate your confidence 1–5 on each one, and the AI will know exactly what to prioritise.'
         : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and the AI prioritises accordingly.',
     },
     {
+      route: '/ai',
       title: '✨ AI Advisor',
       body: target
         ? "Ask anything, get grade predictions toward your target grade " + target + ", mark your answers like a real examiner, and generate flashcards — all personalised to your data."
         : 'Ask anything, get grade predictions, mark your answers like a real examiner, and generate flashcards — all personalised to your data.',
     },
     {
+      route: '/timer',
       title: '⏱ Timer',
       body: 'Built-in Pomodoro timer or stopwatch for focused sessions. Keeps running even when you switch pages, and earns you XP per minute.',
     },
     {
+      route: '/dashboard',
       title: "🎯 You're all set, " + firstName + '!',
       body: examCount === 0
         ? 'First step: add your exam dates so the countdown and AI scheduling can kick in. Good luck! 🚀'
@@ -62,6 +75,19 @@ export default function TooltipTour({ onComplete, profile }) {
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(true)
   const TOUR_STEPS = buildSteps(profile)
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Navigate to whatever page the current step is describing. Runs on mount too (not just on step
+  // change) so starting the tour from somewhere other than the dashboard still lands on the first
+  // step's actual page rather than leaving the tour talking about a page that isn't showing.
+  useEffect(() => {
+    const targetRoute = TOUR_STEPS[step]?.route
+    if (targetRoute && targetRoute !== location.pathname) {
+      navigate(targetRoute)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   function skip() {
     localStorage.setItem('tour_complete', 'true')
@@ -86,11 +112,23 @@ export default function TooltipTour({ onComplete, profile }) {
       position: 'fixed', inset: 0, zIndex: 99999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+      padding: 16, boxSizing: 'border-box',
     }}>
       <div style={{
-        background: 'var(--surface)', borderRadius: 16, padding: '2rem',
+        // Fixed to var(--bg-card) — the modal previously referenced var(--surface), which is not
+        // defined anywhere in globals.css, so the tour card had no actual background colour at all.
+        background: 'var(--bg-card)', borderRadius: 16, padding: '2rem',
         maxWidth: 420, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
         border: '1px solid var(--border)',
+        // The fix for popups rendering below the viewport: this box previously had no maxHeight or
+        // overflow handling at all, so on a short viewport (landscape mobile, a browser window with
+        // dev tools open, a phone with the on-screen keyboard up) a tour step with a longer body could
+        // push its own Next/Skip buttons and step counter below y=0 or off the bottom — with the
+        // outer overlay itself not scrollable, there was no way to reach them. Capping the card's own
+        // height and letting IT scroll internally guarantees the whole card, controls included, always
+        // stays reachable regardless of viewport size or content length — matching how every other
+        // modal in the app already behaves via the shared .modal class (see globals.css).
+        maxHeight: '90dvh', overflowY: 'auto',
       }}>
         {/* Progress dots */}
         <div style={{ display: 'flex', gap: 6, marginBottom: '1.25rem', justifyContent: 'center' }}>
