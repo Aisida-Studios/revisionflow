@@ -12,6 +12,9 @@ import LoadingScreen from './components/LoadingScreen'
 import { Toaster } from 'react-hot-toast'
 import XPToast from './components/XPToast'
 import StreakCelebration from './components/StreakCelebration'
+import TooltipTour from './components/TooltipTour'
+import ReferralRewardPopup from './components/ReferralRewardPopup'
+import FriendRequestPopup from './components/FriendRequestPopup'
 
 // Global streak celebration — reads from AuthContext, renders anywhere in app
 function GlobalStreakCelebration() {
@@ -19,6 +22,54 @@ function GlobalStreakCelebration() {
   if (!streakCelebration) return null
   return <StreakCelebration streak={streakCelebration.streak} onClose={clearStreakCelebration} />
 }
+
+// Global onboarding tour. Previously mounted only inside Dashboard.jsx, which meant it could
+// never navigate away from the dashboard without unmounting itself (Dashboard.jsx is the tour's
+// parent — leaving the route it's rendered on removes it from the tree). Moved here, alongside
+// XPToast/GlobalStreakCelebration, specifically so it survives route changes and can actually
+// show the Calendar/Topics/AI Advisor/Timer pages it talks about (see TooltipTour.jsx).
+// Must render INSIDE <BrowserRouter> (for useNavigate/useLocation to work) but OUTSIDE <Routes>
+// (so no individual <Route> unmounting takes it down when the tour navigates between pages).
+function GlobalTooltipTour() {
+  const { user, profile } = useAuth()
+  const showTour = !!profile
+    && profile.onboardingComplete
+    && !profile.tourComplete
+    && !localStorage.getItem('tour_complete')
+  if (!showTour) return null
+  return (
+    <TooltipTour profile={profile} onComplete={async () => {
+      localStorage.setItem('tour_complete', '1')
+      if (user) {
+        try {
+          const { updateDoc, doc } = await import('firebase/firestore')
+          const { db } = await import('./firebase')
+          await updateDoc(doc(db, 'users', user.uid), { tourComplete: true })
+        } catch (e) {}
+      }
+    }} />
+  )
+}
+
+// Global referral reward popup — covers BOTH sides of a referral. The referred user gets an
+// immediate, locally-triggered version at the point they enter a code (see Dashboard.jsx); the
+// referrer usually isn't looking at the app at that exact moment, so their side is detected via
+// AuthContext's profile listener (badges array gaining 'referral' since the last snapshot) and
+// shown next time they're active, wherever that is in the app.
+function GlobalReferralReward() {
+  const { referralReward, clearReferralReward } = useAuth()
+  if (!referralReward) return null
+  return <ReferralRewardPopup variant={referralReward.variant} onClose={clearReferralReward} />
+}
+
+// Global "new friend request" popup. Checked Friends.jsx first — it only shows a passive badge
+// count on the Requests tab, nothing fires when a request actually arrives, so this is new.
+function GlobalFriendRequest() {
+  const { newFriendRequest, clearNewFriendRequest } = useAuth()
+  if (!newFriendRequest) return null
+  return <FriendRequestPopup request={newFriendRequest} onClose={clearNewFriendRequest} />
+}
+
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const Landing       = lazy(() => import('./pages/Landing'))
@@ -149,6 +200,9 @@ export default function App() {
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
                 </Suspense>
+                <GlobalTooltipTour />
+                <GlobalReferralReward />
+                <GlobalFriendRequest />
               </BrowserRouter>
             <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' } }} />
             <XPToast />
