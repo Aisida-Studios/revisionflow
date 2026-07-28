@@ -1,14 +1,21 @@
 // src/pages/Tasks.jsx
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { addTask, getTasks, completeTask, deleteTask } from '../utils/firestore'
+import {
+  addTask, getTasks, completeTask, deleteTask,
+  getSessions, completeSession, getMistakes, resolveMistake,
+} from '../utils/firestore'
 import toast from 'react-hot-toast'
-import { Plus, X, CheckSquare, Square, Trash2 } from 'lucide-react'
+import { Plus, X, CheckSquare, Square, Trash2, Calendar, AlertTriangle, ExternalLink } from 'lucide-react'
 import { format, isPast, isToday } from 'date-fns'
 
 export default function Tasks() {
   const { user, profile } = useAuth()
-  const [tasks, setTasks] = useState([])
+  const navigate = useNavigate()
+  const [tasks,    setTasks]    = useState([])
+  const [sessions, setSessions] = useState([])
+  const [mistakes, setMistakes] = useState([])
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ title:'', subject:'', startDate:'', dueDate:'', priority:'medium', notes:'' })
   const [filter, setFilter] = useState('pending')
@@ -16,7 +23,57 @@ export default function Tasks() {
 
   const subjects = profile?.subjects?.map(s=>s.name)||[]
 
-  useEffect(() => { if(user) getTasks(user.uid).then(setTasks) }, [user])
+  function loadAll() {
+    if (!user) return
+    getTasks(user.uid).then(setTasks)
+    getSessions(user.uid).then(setSessions)
+    getMistakes(user.uid).then(setMistakes)
+  }
+  useEffect(loadAll, [user])
+
+  // Auto-populated tasks, built fresh from calendar sessions and unresolved past-paper mistakes
+  // every render rather than persisted as their own task docs — that keeps them always in sync
+  // with the real session/mistake and avoids a second, driftable copy of the same data. Completing
+  // one calls straight through to completeSession/resolveMistake (the same functions Calendar.jsx
+  // and Mistakes.jsx themselves use), so it updates the real record — reflected consistently on
+  // those pages too, not just here — and XP is awarded exactly the way it already is everywhere
+  // else in the app (both functions call awardXP internally, which is what triggers the existing
+  // XP toast — nothing new needed for that part).
+  const sessionTasks = sessions
+    .filter(s => !s.completed)
+    .map(s => ({
+      id:       'session-' + s.id,
+      title:    s.title || (s.subject + (s.paper ? ' — Paper ' + s.paper : '') + ' revision'),
+      subject:  s.subject,
+      dueDate:  s.date || null,
+      priority: s.isEmergency ? 'high' : 'medium',
+      notes:    '',
+      completed: false,
+      auto:     true,
+      source:   'session',
+      sourceId: s.id,
+      link:     '/calendar',
+      linkLabel: 'View in Calendar',
+    }))
+
+  const mistakeTasks = mistakes
+    .filter(m => !m.resolved)
+    .map(m => ({
+      id:       'mistake-' + m.id,
+      title:    'Fix mistake: ' + (m.topic || m.subject || 'Untitled'),
+      subject:  m.subject,
+      dueDate:  null, // mistakes aren't date-bound the way sessions are — left unclassified rather than given a fake due date
+      priority: m.priority || 'medium',
+      notes:    m.description || '',
+      completed: false,
+      auto:     true,
+      source:   'mistake',
+      sourceId: m.id,
+      link:     '/mistakes',
+      linkLabel: 'View in Mistakes',
+    }))
+
+  const allTasks = [...tasks, ...sessionTasks, ...mistakeTasks]
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -28,6 +85,18 @@ export default function Tasks() {
   }
 
   async function handleToggle(task) {
+    if (task.auto && task.source === 'session') {
+      await completeSession(user.uid, task.sourceId)
+      setSessions(ss => ss.map(s => s.id === task.sourceId ? { ...s, completed: true } : s))
+      toast.success('Session done! ✓')
+      return
+    }
+    if (task.auto && task.source === 'mistake') {
+      await resolveMistake(user.uid, task.sourceId)
+      setMistakes(ms => ms.map(m => m.id === task.sourceId ? { ...m, resolved: true } : m))
+      toast.success('Mistake resolved! ✓')
+      return
+    }
     await completeTask(user.uid, task.id, !task.completed)
     setTasks(ts=>ts.map(t=>t.id===task.id?{...t,completed:!t.completed}:t))
     if (!task.completed) toast.success('Task done! ✓')
@@ -39,38 +108,59 @@ export default function Tasks() {
   }
 
   async function handleBulkDelete() {
-    await Promise.all(selected.map(id=>deleteTask(user.uid, id)))
-    setTasks(ts=>ts.filter(t=>!selected.includes(t.id)))
+    // Auto tasks can't be bulk-deleted (nothing to delete — they're a view of a session/mistake
+    // that lives on its own page), so only real task ids that were actually selected go through.
+    const realIds = selected.filter(id => tasks.some(t => t.id === id))
+    await Promise.all(realIds.map(id=>deleteTask(user.uid, id)))
+    setTasks(ts=>ts.filter(t=>!realIds.includes(t.id)))
     setSelected([])
-    toast.success(`Deleted ${selected.length} task${selected.length!==1?'s':''}`)
+    toast.success(`Deleted ${realIds.length} task${realIds.length!==1?'s':''}`)
   }
 
   function toggleSelect(id) { setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]) }
 
-  const visible = tasks.filter(t=>filter==='all'?true:filter==='pending'?!t.completed:t.completed)
+  const visible = allTasks.filter(t=>filter==='all'?true:filter==='pending'?!t.completed:t.completed)
   const overdue = visible.filter(t=>t.dueDate&&isPast(new Date(t.dueDate))&&!isToday(new Date(t.dueDate))&&!t.completed)
   const dueSoon = visible.filter(t=>t.dueDate&&isToday(new Date(t.dueDate))&&!t.completed)
   const rest    = visible.filter(t=>!overdue.includes(t)&&!dueSoon.includes(t))
 
   const TaskItem = ({task}) => (
     <div style={{display:'flex',alignItems:'flex-start',gap:10,padding:'11px 14px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:`1px solid ${task.completed?'var(--border)':isPast(new Date(task.dueDate||'9999'))&&!isToday(new Date(task.dueDate||'9999'))&&!task.completed?'rgba(239,68,68,0.3)':'var(--border)'}`,opacity:task.completed?0.6:1}}>
-      <input type="checkbox" checked={selected.includes(task.id)} onChange={()=>toggleSelect(task.id)}
-        style={{width:15,height:15,accentColor:'var(--accent)',marginTop:2,flexShrink:0}}/>
+      {!task.auto && (
+        <input type="checkbox" checked={selected.includes(task.id)} onChange={()=>toggleSelect(task.id)}
+          style={{width:15,height:15,accentColor:'var(--accent)',marginTop:2,flexShrink:0}}/>
+      )}
       <button className="btn btn-ghost btn-icon" style={{flexShrink:0,padding:2}} onClick={()=>handleToggle(task)}>
         {task.completed?<CheckSquare size={17} color="var(--success)"/>:<Square size={17}/>}
       </button>
       <div style={{flex:1,overflow:'hidden'}}>
         <div style={{fontWeight:600,fontSize:'0.875rem',textDecoration:task.completed?'line-through':'none'}}>{task.title}</div>
-        <div style={{display:'flex',gap:5,marginTop:3,flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:5,marginTop:3,flexWrap:'wrap',alignItems:'center'}}>
+          {task.auto && task.source==='session' && (
+            <span className="badge badge-blue" style={{fontSize:'0.68rem'}}><Calendar size={10}/> Calendar</span>
+          )}
+          {task.auto && task.source==='mistake' && (
+            <span className="badge badge-red" style={{fontSize:'0.68rem'}}><AlertTriangle size={10}/> Mistake</span>
+          )}
           {task.subject&&<span className="badge badge-purple" style={{fontSize:'0.68rem'}}>{task.subject}</span>}
           {task.dueDate&&<span className={`badge badge-${isToday(new Date(task.dueDate))?'amber':isPast(new Date(task.dueDate))&&!task.completed?'red':'grey'}`} style={{fontSize:'0.68rem'}}>
             {isToday(new Date(task.dueDate))?'Today':format(new Date(task.dueDate),'d MMM')}
           </span>}
           <span className={`badge badge-${task.priority==='high'?'red':task.priority==='medium'?'amber':'blue'}`} style={{fontSize:'0.68rem'}}>{task.priority}</span>
+          {task.auto && (
+            <button
+              onClick={() => navigate(task.link)}
+              style={{ background:'none', border:'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:2, fontSize:'0.68rem', color:'var(--accent-light)', fontWeight:600 }}
+            >
+              {task.linkLabel} <ExternalLink size={10}/>
+            </button>
+          )}
         </div>
         {task.notes&&<p style={{fontSize:'0.75rem',marginTop:3}}>{task.notes}</p>}
       </div>
-      <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>handleDelete(task.id)} style={{color:'var(--danger)',flexShrink:0}}><Trash2 size={14}/></button>
+      {!task.auto && (
+        <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>handleDelete(task.id)} style={{color:'var(--danger)',flexShrink:0}}><Trash2 size={14}/></button>
+      )}
     </div>
   )
 
@@ -83,6 +173,14 @@ export default function Tasks() {
           <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}><Plus size={14}/> Add task</button>
         </div>
       </div>
+      {(sessionTasks.length > 0 || mistakeTasks.length > 0) && (
+        <p style={{ fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:16 }}>
+          {sessionTasks.length > 0 && `${sessionTasks.length} pending session${sessionTasks.length!==1?'s':''}`}
+          {sessionTasks.length > 0 && mistakeTasks.length > 0 && ' and '}
+          {mistakeTasks.length > 0 && `${mistakeTasks.length} unresolved mistake${mistakeTasks.length!==1?'s':''}`}
+          {' '}pulled in automatically below.
+        </p>
+      )}
       <div className="tabs" style={{marginBottom:16}}>
         {['pending','completed','all'].map(f=><button key={f} className={`tab${filter===f?' active':''}`} onClick={()=>setFilter(f)}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>)}
       </div>
