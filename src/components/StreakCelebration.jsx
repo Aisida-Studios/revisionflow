@@ -114,6 +114,11 @@ export default function StreakCelebration({ streak, onClose }) {
             animation: 'cardBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards',
             position: 'relative',
             border: '3px solid #f3e8ff',
+            // Same fix as TooltipTour.jsx: no maxHeight/overflow meant a short viewport (landscape
+            // mobile, a browser window with dev tools open) could push the close button and streak
+            // count below the reachable area, with the fixed overlay itself not scrollable.
+            maxHeight: '90dvh',
+            overflowY: 'auto',
           }}>
 
           {/* Fire emoji with wobble */}
