@@ -362,7 +362,12 @@ export default function Layout() {
         <main style={{
           flex:1,
           padding: isMobile ? '16px 14px 96px' : '28px 32px',
-          maxWidth:1280, width:'100%',
+          // Previously a hard maxWidth:1280 with no margin:auto — on a collapsed sidebar or a
+          // wide monitor, the extra width freed up simply went unused as blank space bolted onto
+          // the right edge only (no auto margins to centre it). Raised the cap so collapsing the
+          // sidebar or having a wide screen actually gets used up to a still-readable width, and
+          // centred it so anything beyond that cap is symmetric empty space, not a lopsided gutter.
+          maxWidth:1600, width:'100%', margin:'0 auto', boxSizing:'border-box',
         }}>
           <Outlet/>
         </main>
