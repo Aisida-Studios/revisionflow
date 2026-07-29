@@ -6,7 +6,8 @@ import { collection } from 'firebase/firestore'
 import { db } from '../firebase'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
-import { getPaperSpec, getBoundaries, calculateGradeFromBoundaries, AVAILABLE_YEARS, GRADE_BOUNDARIES } from '../data/paperDatabase'
+import { calculateGradeFromBoundaries, AVAILABLE_YEARS, GRADE_BOUNDARIES } from '../data/paperDatabase'
+import { getMergedPaperSpec, getMergedBoundaries } from '../data/overrides'
 import { isTiered } from '../data/examDates2026'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
 import toast from 'react-hot-toast'
@@ -292,14 +293,19 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
     const subj = subjects.find(s=>s.name===form.subject)
     const tier = subj?.tier||'N/A'
     setForm(f=>({...f,tier}))
-    const spec = getPaperSpec(form.board, form.subject, tier, form.paper, formQual)
-    setAutoSpec(spec)
-    if (spec) {
-      setForm(f=>({...f, maxMarks: spec.maxMarks || f.maxMarks}))
-      if (spec.questions) { setQMarks(spec.questions.map(q=>({...q,scored:0}))); setUseQ(true) }
-    }
-    const bounds = getBoundaries(form.board, form.subject, tier, form.year, formQual)
-    setAutoBoundary(bounds)
+    let cancelled = false
+    ;(async () => {
+      const spec = await getMergedPaperSpec(form.board, form.subject, tier, form.paper, formQual)
+      if (cancelled) return
+      setAutoSpec(spec)
+      if (spec) {
+        setForm(f=>({...f, maxMarks: spec.maxMarks || f.maxMarks}))
+        if (spec.questions) { setQMarks(spec.questions.map(q=>({...q,scored:0}))); setUseQ(true) }
+      }
+      const bounds = await getMergedBoundaries(form.board, form.subject, tier, form.year, formQual)
+      if (!cancelled) setAutoBoundary(bounds)
+    })()
+    return () => { cancelled = true }
   }, [form.subject, form.board, form.paper, form.year, formQual])
 
   const totalScored = questionMarks.reduce((s,q)=>s+parseInt(q.scored||0),0)
@@ -512,7 +518,12 @@ function BoundaryEditorModal({ profile, onClose }) {
   useEffect(() => { setSelLevel(defaultQual) }, [selSubj]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selTier = selLevel === 'GCSE' ? (selSubjMeta?.tier || 'Higher') : 'N/A'
-  const bounds = getBoundaries(selBoard, selSubj, selTier, selYear, selLevel)
+  const [bounds, setBounds] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    getMergedBoundaries(selBoard, selSubj, selTier, selYear, selLevel).then(b => { if (!cancelled) setBounds(b) })
+    return () => { cancelled = true }
+  }, [selBoard, selSubj, selTier, selYear, selLevel])
 
   return (
     <div className="modal-overlay" onClick={onClose}>
