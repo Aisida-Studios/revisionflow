@@ -88,8 +88,11 @@ export async function deleteExamDateOverride(id) {
 
 // Merged exam dates for one subject/board — static entries, with any matching override applied
 // (replaced or removed), plus any net-new override entries for this subject/board/level.
-export async function getMergedExamDates(subject, board, tier, level) {
-  const staticDates = getStaticExamDates(subject, board, tier, level) || []
+// `year` is passed straight through to the static lookup (examDates2026.js now supports both
+// 2026 and 2027 real data) — admin overrides aren't currently year-scoped themselves, so the
+// same override applies regardless of which year's static list it's merged with.
+export async function getMergedExamDates(subject, board, tier, level, year = 2026) {
+  const staticDates = getStaticExamDates(subject, board, tier, level, year) || []
   let overrides = []
   try { overrides = await listExamDateOverrides(level) } catch (e) { overrides = [] }
   const relevant = overrides.filter(o => o.board === board && o.subject === subject)
