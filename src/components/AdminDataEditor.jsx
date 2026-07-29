@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit } from 'firebase/firestore'
 import { db } from '../firebase'
-import { Section } from '../pages/Admin'
+import { Section } from './Section'
 import { EXAM_BOARDS, getSubjectList } from '../data/subjects'
 import {
   getTopicOverride, saveTopicOverride,
