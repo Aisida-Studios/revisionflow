@@ -12,6 +12,7 @@ import {
 } from '../data/subjects'
 import { isTiered, EXAM_DATES_2026 } from '../data/examDates2026'
 import { getAllTopicsFlat } from '../data/topics'
+import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
 import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Users, Brain, Sparkles, Star } from 'lucide-react'
@@ -77,7 +78,6 @@ export default function Onboarding() {
   const [step,    setStep]    = useState(0)
   const [dir,     setDir]     = useState(1)   // 1 = forward, -1 = back
   const [saving,  setSaving]  = useState(false)
-  const [showRecap, setShowRecap] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiPlan,    setAiPlan]    = useState('')
   const [planDone,  setPlanDone]  = useState(false)
@@ -145,7 +145,7 @@ export default function Onboarding() {
   async function seedTopics(uid) {
     for (const s of subjects) {
       const subjQual = s.qualification || qual
-      const topics = getAllTopicsFlat(s.board, s.name, subjQual)
+      const topics = await getMergedTopicsFlat(s.board, s.name, subjQual)
       for (const t of topics) {
         const id = buildTopicId(s.board, subjQual, s.name, t.name)
         await setDoc(doc(db,'users',uid,'topics',id), {
@@ -172,15 +172,10 @@ export default function Onboarding() {
       await seedTopics(user.uid)
       await awardXP(user.uid, xpPreview, 'Onboarding complete')
       await refreshProfile()
-      setShowRecap(true)
+      navigate('/dashboard')
+      toast.success('Welcome to RevisionFlow! 🎉')
     } catch(err) { toast.error(err.message) }
     finally { setSaving(false) }
-  }
-
-  function finishRecap() {
-    setShowRecap(false)
-    navigate('/dashboard')
-    toast.success('Welcome to RevisionFlow! 🎉')
   }
 
   const canContinue = !(step === 2 && subjects.length === 0)
@@ -190,36 +185,6 @@ export default function Onboarding() {
       minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
       padding:24, background:'var(--bg-base)',
     }}>
-      {showRecap && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth:400, textAlign:'center', position:'relative', overflow:'hidden' }}>
-            <div style={{ fontSize:'3rem', marginBottom:8 }}>🎉</div>
-            <h3 style={{ marginBottom:4 }}>You're in, {username || 'friend'}!</h3>
-            <p style={{ color:'var(--text-secondary)', fontSize:'0.9rem', marginBottom:20 }}>
-              Here's the XP you've already earned before doing a single revision session:
-            </p>
-            <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:20, textAlign:'left' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--r-md)', fontSize:'0.85rem' }}>
-                <span>Setting up your account</span><strong>+25 XP</strong>
-              </div>
-              <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--r-md)', fontSize:'0.85rem' }}>
-                <span>{subjects.length} subject{subjects.length!==1?'s':''} added</span><strong>+{subjects.length*100} XP</strong>
-              </div>
-              {planDone && (
-                <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-surface)', borderRadius:'var(--r-md)', fontSize:'0.85rem' }}>
-                  <span>AI revision plan generated</span><strong>+50 XP</strong>
-                </div>
-              )}
-              <div style={{ display:'flex', justifyContent:'space-between', padding:'10px 12px', background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.25)', borderRadius:'var(--r-md)', fontSize:'0.95rem', fontWeight:800, color:'var(--accent-light)' }}>
-                <span>Total</span><span>+{xpPreview} XP</span>
-              </div>
-            </div>
-            <button className="btn btn-primary" style={{ width:'100%' }} onClick={finishRecap}>
-              <Zap size={15}/> Take me to my dashboard
-            </button>
-          </div>
-        </div>
-      )}
       <div style={{ width:'100%', maxWidth:580 }}>
 
         {/* Logo */}
