@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getSubjectList } from '../data/subjects'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
+import AdminDataEditor from '../components/AdminDataEditor'
+import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
   Shield, Users, Star, Search, CheckCircle, XCircle,
@@ -38,25 +40,6 @@ async function adminCall(action, callerEmail, params = {}) {
 }
 
 /* ── Section wrapper ───────────────────────────────────────────── */
-export function Section({ title, icon, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="card" style={{ marginBottom: 16, padding: 0, overflow: 'hidden' }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
-        borderBottom: open ? '1px solid var(--border)' : 'none',
-      }}>
-        <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
-          {icon} {title}
-        </h4>
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
-      {open && <div style={{ padding: '16px 18px' }}>{children}</div>}
-    </div>
-  )
-}
-
 /* ── Main page ─────────────────────────────────────────────────── */
 /* ── Content tab — bulk AI generation ─────────────────────────────────────── */
 function ContentTab({ email }) {
@@ -405,7 +388,7 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['users', 'beta', 'stats', 'content', 'resources'].map(t => (
+        {['users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
@@ -415,6 +398,7 @@ export default function Admin() {
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
       {tab === 'content' && <ContentTab email={user.email} />}
+      {tab === 'data' && <AdminDataEditor />}
       {tab === 'resources' && <ResourcesTab email={user.email} />}
     </div>
   )
