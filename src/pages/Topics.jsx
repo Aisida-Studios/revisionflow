@@ -9,6 +9,7 @@ import { awardXP } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
 import { getAllTopicsFlat } from '../data/topics'
+import { getMergedTopicsFlat } from '../data/overrides'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { buildTopicId } from '../utils/topicId'
@@ -219,7 +220,7 @@ export default function Topics() {
     setLoading(true)
     const subj = profile?.subjects?.find(s=>s.name===selSubj)
     const subjQual = getSubjectQualification(subj, profile)
-    const topicList = getAllTopicsFlat(subj?.board||'AQA', selSubj, subjQual)
+    const topicList = await getMergedTopicsFlat(subj?.board||'AQA', selSubj, subjQual)
     if (!topicList.length) { toast.error('No topics found for this subject/board'); setLoading(false); return }
     for (const t of topicList) {
       const id = buildTopicId(subj?.board||'AQA', subjQual, selSubj, t.name)
