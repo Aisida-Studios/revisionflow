@@ -5,7 +5,8 @@ import { updateUserProfile } from '../utils/firestore'
 import { countdownLabel, countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone } from '../utils/examUtils'
 import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
-import { isTiered, getExamDates } from '../data/examDates2026'
+import { isTiered } from '../data/examDates2026'
+import { getMergedExamDates } from '../data/overrides'
 import toast from 'react-hot-toast'
 import { Plus, X, Clock, Trash2, Check, Zap, Edit2 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
@@ -30,7 +31,11 @@ export default function ExamDates() {
     const qualMap = { 'BTEC-L2': 'Level 2', 'BTEC-L3': 'Level 3', 'Both': null }
     const qual = autoSubj.qualification || profile?.qualification
     const levelMatch = qualMap[qual] !== undefined ? qualMap[qual] : qual
-    setAutoMatches(getExamDates(autoSubj.name, autoSubj.board, autoSubj.tier, levelMatch, 2027))
+    let cancelled = false
+    getMergedExamDates(autoSubj.name, autoSubj.board, autoSubj.tier, levelMatch, 2027).then(matches => {
+      if (!cancelled) setAutoMatches(matches)
+    })
+    return () => { cancelled = true }
   }, [autoSubj.name, autoSubj.board, autoSubj.tier, autoSubj.qualification, profile?.qualification])
 
   async function handleAutoFillAdd() {
@@ -301,26 +306,36 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
     const subjQual = s.qualification || qual
     return qualMap[subjQual] !== undefined ? qualMap[subjQual] : subjQual
   }
-  const initialRows = subjects.flatMap(s => {
-    const matches = getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s), 2027)
-    return matches.map(m => ({
-      id:        `fill-${s.name}-P${m.paper}-${Math.random().toString(36).slice(2)}`,
-      subject:   m.subject,
-      board:     m.board,
-      tier:      m.tier,
-      qualification: m.level,
-      paper:     String(m.paper),
-      paperName: m.paperName,
-      examDate:  m.date,
-      include:   true,
-    }))
-  })
 
-  const [rows, setRows] = useState(initialRows)
+  const [rows, setRows] = useState([])
+  const [notFound, setNotFound] = useState([])
+  const [loadingRows, setLoadingRows] = useState(true)
 
-  const notFound = subjects.filter(s =>
-    !getExamDates(s.name, s.board, s.tier||'N/A', levelFor(s), 2027).length
-  )
+  useEffect(() => {
+    let cancelled = false
+    setLoadingRows(true)
+    Promise.all(subjects.map(async s => {
+      const matches = await getMergedExamDates(s.name, s.board, s.tier||'N/A', levelFor(s), 2027)
+      return { subject: s, matches }
+    })).then(results => {
+      if (cancelled) return
+      const allRows = results.flatMap(({ subject: s, matches }) => matches.map(m => ({
+        id:        `fill-${s.name}-P${m.paper}-${Math.random().toString(36).slice(2)}`,
+        subject:   m.subject,
+        board:     m.board,
+        tier:      m.tier,
+        qualification: m.level,
+        paper:     String(m.paper),
+        paperName: m.paperName,
+        examDate:  m.date,
+        include:   true,
+      })))
+      setRows(allRows)
+      setNotFound(results.filter(r => !r.matches.length).map(r => r.subject))
+      setLoadingRows(false)
+    })
+    return () => { cancelled = true }
+  }, [subjects])
 
   function toggleRow(id) {
     setRows(r => r.map(x => x.id === id ? {...x, include: !x.include} : x))
@@ -352,7 +367,11 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
           </div>
         )}
 
-        {rows.length === 0 ? (
+        {loadingRows ? (
+          <div className="empty-state" style={{padding:'24px 0'}}>
+            <p>Loading exam dates…</p>
+          </div>
+        ) : rows.length === 0 ? (
           <div className="empty-state" style={{padding:'24px 0'}}>
             <p>No 2027 dates found for any of your subjects. Try adding manually.</p>
           </div>
@@ -401,6 +420,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
             subject:   r.subject,
             board:     r.board,
             tier:      r.tier,
+            qualification: r.qualification,
             paper:     r.paper,
             paperName: r.paperName,
             examDate:  r.examDate,
