@@ -18,7 +18,8 @@ import toast from 'react-hot-toast'
 const LEVELS = ['GCSE', 'AS-Level', 'A-Level']
 const BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA']
 const MAX_ATTEMPTS = 3
-const DELAY_MS = 1600 // matches the existing per-item rate-limit pacing
+const BATCH_SIZE = 5
+const DELAY_MS = 1600 // rate-limit pacing — applied once per batch, and only when that batch actually hit the API (all-cached batches don't pace)
 
 function validateNote(text) {
   if (!text || text.trim().length < 150) return 'Note too short (likely a failed/empty generation)'
@@ -170,30 +171,49 @@ export default function AdminAutoGenerate() {
     let done = 0, cachedCount = 0, generated = 0, failed = 0
     const startTime = Date.now()
 
-    for (const item of queue) {
+    for (let i = 0; i < queue.length; i += BATCH_SIZE) {
       if (stopRef.current) { addLog('Stopped — click Start again any time to resume (already-done items are skipped for free)', 'error'); break }
 
-      const label = `${item.kind === 'note' ? '📝' : '🃏'} ${item.board} ${item.level} ${item.subject} — ${item.topic}`
-      setProgress(p => ({ ...p, current: label }))
+      const batch = queue.slice(i, i + BATCH_SIZE)
+      const labels = batch.map(item => `${item.kind === 'note' ? '📝' : '🃏'} ${item.board} ${item.level} ${item.subject} — ${item.topic}`)
+      setProgress(p => ({ ...p, current: labels.join('  ·  ') }))
 
-      try {
-        const result = await processItem(item, ai, fs)
-        if (result.status === 'cached') { cachedCount++; addLog(`Already done, skipped: ${label}`, 'cached') }
-        else if (result.status === 'generated') { generated++; addLog(`Generated: ${label}`, 'success') }
-        else { failed++; addLog(`Gave up after ${MAX_ATTEMPTS} attempts: ${label}`, 'error') }
-      } catch (e) {
-        failed++
-        addLog(`Unexpected error on ${label}: ${e.message}`, 'error')
+      // Batch runs concurrently — up to BATCH_SIZE items in flight at once, instead of one
+      // network round-trip at a time. Each item still gets its own cache check + retries.
+      const statuses = await Promise.all(batch.map(async (item, idx) => {
+        const label = labels[idx]
+        try {
+          const result = await processItem(item, ai, fs)
+          if (result.status === 'cached') addLog(`Already done, skipped: ${label}`, 'cached')
+          else if (result.status === 'generated') addLog(`Generated: ${label}`, 'success')
+          else addLog(`Gave up after ${MAX_ATTEMPTS} attempts: ${label}`, 'error')
+          return result.status
+        } catch (e) {
+          addLog(`Unexpected error on ${label}: ${e.message}`, 'error')
+          return 'failed'
+        }
+      }))
+
+      for (const status of statuses) {
+        done++
+        if (status === 'cached') cachedCount++
+        else if (status === 'generated') generated++
+        else failed++
       }
 
-      done++
       const elapsed = Date.now() - startTime
-      const perItem = elapsed / done
+      const perItem = done > 0 ? elapsed / done : 0
       const remaining = Math.round((queue.length - done) * perItem / 60000)
       setProgress({ done, total: queue.length, cached: cachedCount, generated, failed, current: '', etaMinutes: remaining })
 
-      // Only actually delay when something was generated — skipping a cached item should be fast
-      if (!stopRef.current) await new Promise(r => setTimeout(r, DELAY_MS))
+      // Only pace when this batch actually made API calls — a batch that was 100% cache
+      // hits (the normal case on a re-run/resume) moves straight on to the next batch.
+      // Skipped on the last batch too, since there's nothing left to be polite to the API for.
+      const batchHitApi = statuses.some(s => s !== 'cached')
+      const isLastBatch = i + BATCH_SIZE >= queue.length
+      if (batchHitApi && !isLastBatch && !stopRef.current) {
+        await new Promise(r => setTimeout(r, DELAY_MS))
+      }
     }
 
     addLog(`Run finished: ${generated} generated, ${cachedCount} already done, ${failed} gave up after retries`, failed > 0 ? 'error' : 'success')
