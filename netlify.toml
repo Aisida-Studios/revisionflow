@@ -42,6 +42,19 @@
     #                   *.firebaseapp.com) plus the Stripe Checkout embed
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self';"
 
+# ── Domain migration — old Netlify subdomain → custom domain ──────────────────
+# MUST stay first. This matches on hostname, not just path, so it needs to run before any
+# rule below that has no domain restriction (bot detection, /api/*, the SPA catch-all) — those
+# would otherwise keep matching requests to the old subdomain and quietly serve content there
+# forever instead of sending visitors to the real domain. force = true is required because
+# every page genuinely exists on this domain too (same deploy) — without it, Netlify serves
+# the file instead of redirecting.
+[[redirects]]
+  from   = "https://revision-flow.netlify.app/*"
+  to     = "https://www.revisionflow.co.uk/:splat"
+  status = 301
+  force  = true
+
 # ── Bot detection — serve static landing page to crawlers ─────────────────────
 [[redirects]]
   from   = "/"
