@@ -88,6 +88,11 @@
   to     = "/.netlify/functions/referral"
   status = 200
 
+[[redirects]]
+  from   = "/api/friends"
+  to     = "/.netlify/functions/friends"
+  status = 200
+
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
   from   = "/*"
