@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { addDoc, collection, serverTimestamp, getDocs, query, where, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { generateSchedule, buildSubjectsFromProfile } from '../utils/scheduler'
 import { downloadICS } from '../utils/calendar'
@@ -141,17 +141,30 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
   async function saveToCalendar() {
     setLoading(true)
     try {
+      const BATCH_SIZE = 400 // Firestore caps a single batch at 500 ops — chunk well under that
+
       if (replaceChoice === 'replace') {
         const snap = await getDocs(
           query(collection(db,'users',user.uid,'sessions'), where('source','==','generated'))
         )
-        await Promise.all(snap.docs.map(d => deleteDoc(doc(db,'users',user.uid,'sessions',d.id))))
+        const toDelete = snap.docs
+        for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+          const delBatch = writeBatch(db)
+          toDelete.slice(i, i + BATCH_SIZE).forEach(d => delBatch.delete(doc(db,'users',user.uid,'sessions',d.id)))
+          await delBatch.commit()
+        }
       }
-      const batch = preview.slice(0, 500)
-      for (const s of batch) {
-        await addDoc(collection(db,'users',user.uid,'sessions'), {
-          ...s, createdAt: serverTimestamp(),
+
+      // Was `preview.slice(0, 500)` — silently dropped anything past the first 500 generated
+      // sessions with no error and no warning (a full term's worth, multiple sessions a day,
+      // easily clears that). Chunking through writeBatch instead saves everything and is fewer
+      // network round-trips than the old one-addDoc-at-a-time loop besides.
+      for (let i = 0; i < preview.length; i += BATCH_SIZE) {
+        const addBatch = writeBatch(db)
+        preview.slice(i, i + BATCH_SIZE).forEach(s => {
+          addBatch.set(doc(collection(db,'users',user.uid,'sessions')), { ...s, createdAt: serverTimestamp() })
         })
+        await addBatch.commit()
       }
 
       try {
@@ -161,7 +174,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
 
-      toast.success(`Added ${batch.length} sessions to your calendar!`)
+      toast.success(`Added ${preview.length} session${preview.length !== 1 ? 's' : ''} to your calendar!`)
       onGenerated?.()
       onClose()
     } catch(err) { toast.error('Failed to save: ' + err.message) }
