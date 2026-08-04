@@ -6,11 +6,21 @@ import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
   resetPassword as _resetPassword,
-  ensureUser, updateStreakOnLogin, runBadgeAudit,
+  ensureUser, updateStreakOnLogin, runBadgeAudit, levelFromXP,
 } from '../utils/firestore'
 import LoadingScreen from '../components/LoadingScreen'
 
 const AuthContext = createContext(null)
+
+// `level` has never actually been stored on the user document — nothing writes it — so every
+// screen reading profile.level was silently falling back to its `|| 1` default forever. Rather
+// than add yet another place that has to remember to keep a stored level field in sync with xp
+// (that's exactly how it got missed in the first place), compute it fresh right here, once,
+// wherever profile data enters the app — every consumer of useAuth().profile gets it correct
+// automatically, with nothing else to remember.
+function withLevel(data) {
+  return data ? { ...data, level: levelFromXP(data.xp || 0) } : data
+}
 
 export function AuthProvider({ children }) {
   const [user,               setUser]               = useState(null)
@@ -66,7 +76,7 @@ export function AuthProvider({ children }) {
         }
 
         profileUnsub = onSnapshot(doc(db, 'users', u.uid), snap => {
-          const data = snap.exists() ? { uid: u.uid, ...snap.data() } : null
+          const data = snap.exists() ? withLevel({ uid: u.uid, ...snap.data() }) : null
           // Detect streak increase — fire celebration if streak went up
           if (data && prevStreakRef.current !== null) {
             const prev = prevStreakRef.current
@@ -127,7 +137,7 @@ export function AuthProvider({ children }) {
     if (!user) return
     const { getDoc, doc: fsDoc } = await import('firebase/firestore')
     const snap = await getDoc(fsDoc(db, 'users', user.uid))
-    if (snap.exists()) setProfile({ uid: user.uid, ...snap.data() })
+    if (snap.exists()) setProfile(withLevel({ uid: user.uid, ...snap.data() }))
   }, [user])
 
   const login = (email, pw) => loginWithEmail(email, pw)
