@@ -42,6 +42,7 @@ export default function AdminAutoGenerate() {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(null) // { done, total, cached, generated, failed, current }
   const [log, setLog] = useState([])
+  const [failures, setFailures] = useState([]) // [{ label, reason }] — every item that gave up after MAX_ATTEMPTS
   const stopRef = useRef(false)
 
   function toggle(arr, setArr, val) {
@@ -50,6 +51,13 @@ export default function AdminAutoGenerate() {
 
   function addLog(msg, type = 'info') {
     setLog(l => [...l.slice(-300), { msg, type, ts: new Date().toLocaleTimeString() }])
+  }
+
+  function copyFailureReport() {
+    const text = failures.map(f => `${f.label} — ${f.reason}`).join('\n')
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success(`Copied ${failures.length} failure(s) to clipboard`))
+      .catch(() => toast.error('Could not copy — clipboard access blocked'))
   }
 
   const [migrating, setMigrating] = useState(false)
@@ -93,21 +101,24 @@ export default function AdminAutoGenerate() {
       const cached = await ai.getTopicNoteFromCache(item.board, item.level, item.subject, item.topic)
       if (cached) return { status: 'cached' }
 
+      let lastReason = 'Unknown error'
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const res = await ai.generateTopicNote({ subject: item.subject, board: item.board, level: item.level, topic: item.topic, uid: null })
         if (res.error) {
+          lastReason = res.error
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
           continue
         }
         const problem = validateNote(res.text)
         if (problem) {
+          lastReason = problem
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} invalid (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${problem}`, 'error')
           continue
         }
         await ai.saveTopicNoteToCache(item.board, item.level, item.subject, item.topic, res.text)
         return { status: 'generated' }
       }
-      return { status: 'failed' }
+      return { status: 'failed', reason: lastReason }
     }
 
     if (item.kind === 'flashcard') {
@@ -119,15 +130,18 @@ export default function AdminAutoGenerate() {
         return { status: 'cached' }
       }
 
+      let lastReason = 'Unknown error'
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const res = await ai.generateFlashcards(item.subject, item.topic, 50, null)
         if (res.error) {
+          lastReason = res.error
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
           continue
         }
         const cards = ai.parseFlashcards(res.text || '')
         const problem = validateFlashcards(cards)
         if (problem) {
+          lastReason = problem
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} invalid (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${problem}`, 'error')
           continue
         }
@@ -135,7 +149,7 @@ export default function AdminAutoGenerate() {
         ai.saveFlashcardSetToCache(item.board, item.level, item.subject, item.topic, 50, cards).catch(() => {})
         return { status: 'generated' }
       }
-      return { status: 'failed' }
+      return { status: 'failed', reason: lastReason }
     }
   }
 
@@ -147,6 +161,7 @@ export default function AdminAutoGenerate() {
     stopRef.current = false
     setRunning(true)
     setLog([])
+    setFailures([])
     addLog('Building queue…')
 
     const ai = await import('../utils/ai')
@@ -180,24 +195,27 @@ export default function AdminAutoGenerate() {
 
       // Batch runs concurrently — up to BATCH_SIZE items in flight at once, instead of one
       // network round-trip at a time. Each item still gets its own cache check + retries.
-      const statuses = await Promise.all(batch.map(async (item, idx) => {
+      const results = await Promise.all(batch.map(async (item, idx) => {
         const label = labels[idx]
         try {
           const result = await processItem(item, ai, fs)
           if (result.status === 'cached') addLog(`Already done, skipped: ${label}`, 'cached')
           else if (result.status === 'generated') addLog(`Generated: ${label}`, 'success')
-          else addLog(`Gave up after ${MAX_ATTEMPTS} attempts: ${label}`, 'error')
-          return result.status
+          else addLog(`Gave up after ${MAX_ATTEMPTS} attempts: ${label} — ${result.reason}`, 'error')
+          return { status: result.status, label, reason: result.reason }
         } catch (e) {
           addLog(`Unexpected error on ${label}: ${e.message}`, 'error')
-          return 'failed'
+          return { status: 'failed', label, reason: e.message || 'Unexpected error' }
         }
       }))
 
-      for (const status of statuses) {
+      const newFailures = results.filter(r => r.status === 'failed').map(r => ({ label: r.label, reason: r.reason }))
+      if (newFailures.length) setFailures(f => [...f, ...newFailures])
+
+      for (const r of results) {
         done++
-        if (status === 'cached') cachedCount++
-        else if (status === 'generated') generated++
+        if (r.status === 'cached') cachedCount++
+        else if (r.status === 'generated') generated++
         else failed++
       }
 
@@ -209,7 +227,7 @@ export default function AdminAutoGenerate() {
       // Only pace when this batch actually made API calls — a batch that was 100% cache
       // hits (the normal case on a re-run/resume) moves straight on to the next batch.
       // Skipped on the last batch too, since there's nothing left to be polite to the API for.
-      const batchHitApi = statuses.some(s => s !== 'cached')
+      const batchHitApi = results.some(r => r.status !== 'cached')
       const isLastBatch = i + BATCH_SIZE >= queue.length
       if (batchHitApi && !isLastBatch && !stopRef.current) {
         await new Promise(r => setTimeout(r, DELAY_MS))
@@ -317,6 +335,20 @@ export default function AdminAutoGenerate() {
           </button>
         )}
       </div>
+
+      {failures.length > 0 && (
+        <div style={{ marginTop: 16, border: '1px solid var(--danger)', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Failures ({failures.length})</span>
+            <button className="btn btn-ghost btn-sm" onClick={copyFailureReport}>Copy report</button>
+          </div>
+          <div style={{ maxHeight: 260, overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '0.73rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {failures.map((f, i) => (
+              <div key={i} style={{ color: 'var(--danger)' }}>{f.label} — {f.reason}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {log.length > 0 && (
         <div style={{ marginTop: 16, border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
