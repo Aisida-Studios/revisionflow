@@ -51,7 +51,7 @@ export default function Landing() {
       {/* Hero */}
       <section style={{textAlign:'center',padding:'80px 24px 60px',maxWidth:820,margin:'0 auto'}}>
         <div className="badge badge-amber" style={{marginBottom:12,display:'inline-flex',gap:6}}>
-          <Calendar size={12}/> Beta closes 31 July 2026 · Launching GCSE Results Day, 20 August 2026
+          <Calendar size={12}/> Now in beta · Launching GCSE Results Day, 20 August 2026
         </div>
         <br/>
         <div className="badge badge-purple" style={{marginBottom:20,display:'inline-flex',gap:6}}>
