@@ -25,10 +25,13 @@ Always reference specific free resources where relevant:
 // ── Core call function ─────────────────────────────────────────────────────────
 // uid is passed for server-side rate limiting — never used for anything else.
 export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, uid = null) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 55000) // safety net against a hung request
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal:  controller.signal,
       body: JSON.stringify({
         messages:     [{ role: 'user', content: prompt }],
         systemPrompt: systemPrompt || SYSTEM,
@@ -36,6 +39,18 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
         uid,
       }),
     })
+    clearTimeout(timeoutId)
+
+    // tutor.js always returns application/json, on every path, including its own error
+    // handling — so a non-JSON body here means the platform intervened before that code
+    // ever ran. In practice this is almost always the function being cut off mid-request
+    // on a big completion, and calling res.json() on it throws an opaque "Unexpected
+    // token '<'" (it's Netlify's own HTML error page). Catch it here with a message that
+    // actually says what happened.
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return { error: `Server returned a non-JSON response (HTTP ${res.status}) — most likely the request ran too long and the function was cut off before finishing.` }
+    }
 
     const data = await res.json()
 
@@ -52,6 +67,11 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
     if (uid) recordActivityStreak(uid).catch(() => {})
     return { text: data.text, provider: 'mistral', remaining: data.remaining }
   } catch (e) {
+    clearTimeout(timeoutId)
+    if (e.name === 'AbortError') {
+      console.error('[AI] Request timed out')
+      return { error: 'AI request timed out after 55s.' }
+    }
     console.error('[AI] Network error:', e)
     return { error: 'Could not reach the AI service. Check your internet connection.' }
   }
@@ -59,18 +79,29 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
 
 // Multi-turn chat variant — sends full message history
 export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal:  controller.signal,
       body: JSON.stringify({ messages, systemPrompt, uid }),
     })
+    clearTimeout(timeoutId)
+
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return { error: `Server returned a non-JSON response (HTTP ${res.status}) — most likely the request ran too long and the function was cut off before finishing.` }
+    }
 
     const data = await res.json()
     if (!res.ok) return { error: data.error || `AI request failed (${res.status}).` }
     if (!data.text) return { error: 'AI returned an empty response.' }
     return { text: data.text, provider: 'mistral', remaining: data.remaining }
   } catch (e) {
+    clearTimeout(timeoutId)
+    if (e.name === 'AbortError') return { error: 'AI request timed out after 55s.' }
     return { error: 'Could not reach the AI service.' }
   }
 }
