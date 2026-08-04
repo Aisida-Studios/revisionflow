@@ -249,6 +249,7 @@ export const getLeaderboard = async (friendUids, currentUid) => {
           uid,
           displayName:             d.displayName || d.profile?.displayName || d.profile?.name || 'Anonymous',
           xp:                      d.xp || 0,
+          level:                   levelFromXP(d.xp || 0),
           streak:                  d.streak || 0,
           profileIcon:             d.profileIcon || null,
           hideNameFromLeaderboard: d.hideNameFromLeaderboard || d.profile?.hideNameFromLeaderboard || false,
@@ -523,25 +524,39 @@ export const getReceivedRequests = async (uid) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+// accept and remove both need to write to a SECOND user's document (their friends array, and
+// for accept, their XP/badges too) — Firestore rules only allow a user to write their own doc,
+// plus a narrow exception letting someone else's friends array grow (never shrink). That
+// exception covered exactly half of each operation and silently swallowed the other half — see
+// netlify/functions/friends.js for the full breakdown. Both go through that Admin SDK endpoint
+// now instead of writing directly from here.
+async function callFriendsApi(action, params = {}) {
+  let idToken = ''
+  try { if (auth.currentUser) idToken = await auth.currentUser.getIdToken() } catch (e) { console.warn('[friends] could not get ID token:', e.message) }
+  const res = await fetch('/api/friends', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+    body: JSON.stringify({ action, ...params }),
+  })
+  return { ok: res.ok, data: await res.json() }
+}
+
 export const acceptFriendRequest = async (requestId, fromUid, toUid) => {
-  const { arrayUnion } = await import('firebase/firestore')
-  // Store friends as arrays of UIDs — never use increment() which produces a number
-  await updateDoc(doc(db, 'users', fromUid), { friends: arrayUnion(toUid) })
-  await updateDoc(doc(db, 'users', toUid),   { friends: arrayUnion(fromUid) })
-  await deleteDoc(doc(db, 'friendRequests', requestId))
-  await awardXP(fromUid, 25, 'New friend')
-  await awardXP(toUid,   25, 'New friend')
-  await checkAndAwardBadge(fromUid, 'first_friend')
-  await checkAndAwardBadge(toUid,   'first_friend')
+  const { ok, data } = await callFriendsApi('accept', { requestId, fromUid })
+  if (!ok || !data.accepted) throw new Error(data.error || 'Could not accept the request')
+  // The XP award happens server-side now, so there's no local awardXP() call to fire the usual
+  // toast — dispatch the same event it would have, for the person who just clicked accept.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount: 25, reason: 'New friend' } }))
+  }
 }
 
 export const declineFriendRequest = (requestId) =>
   deleteDoc(doc(db, 'friendRequests', requestId))
 
 export const removeFriend = async (uid, friendUid) => {
-  const { arrayRemove } = await import('firebase/firestore')
-  await updateDoc(doc(db, 'users', uid),       { friends: arrayRemove(friendUid) })
-  await updateDoc(doc(db, 'users', friendUid), { friends: arrayRemove(uid) })
+  const { ok, data } = await callFriendsApi('remove', { friendUid })
+  if (!ok || !data.removed) throw new Error(data.error || 'Could not remove this friend')
 }
 
 export const getFriendProfiles = async (friendUids) => {
@@ -556,6 +571,7 @@ export const getFriendProfiles = async (friendUids) => {
           uid,
           displayName: d.displayName || d.profile?.displayName || 'Anonymous',
           xp:          d.xp || 0,
+          level:       levelFromXP(d.xp || 0),
           streak:      d.streak || 0,
           profileIcon: d.profileIcon || null,
         }
