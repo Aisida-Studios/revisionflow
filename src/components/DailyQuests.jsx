@@ -1,17 +1,26 @@
 // src/components/DailyQuests.jsx
 // Shows 3 daily quests on the dashboard.
 // Progress is tracked in Firestore at users/{uid}/quests/{today's date}
+//
+// This used to also have its own "Done" button that let a user self-report any quest as complete
+// with zero verification that they'd actually done it — running in parallel with, and completely
+// independent from, the real detection in autoCompleteQuest() (firestore.js), which fires from the
+// actual action functions (completeSession, addNote, resolveMistake, etc.) when something genuinely
+// happens. That meant quests could be "completed" without doing the thing at all, and (separately)
+// it awarded its own 50 XP "all quests" bonus under a different reason string than the real one —
+// two competing, drifting copies of the same bonus logic. Removed the button entirely: this
+// component is now a pure read-only view of what autoCompleteQuest has actually detected, via the
+// same onSnapshot listener it already had.
 
 import { useState, useEffect } from 'react'
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getDailyQuests } from '../data/badges'
-import { awardXP } from '../utils/firestore'
 import { CheckCircle, Circle } from 'lucide-react'
 
 export default function DailyQuests() {
-  const { user, refreshProfile } = useAuth()
+  const { user } = useAuth()
   const [quests, setQuests] = useState([])
   const [progress, setProgress] = useState({})
   const [loading, setLoading] = useState(true)
@@ -22,7 +31,8 @@ export default function DailyQuests() {
     // Set up quests for today
     const dailyQuests = getDailyQuests(user.uid)
     setQuests(dailyQuests)
-    // Real-time listener so quests auto-tick when completed from other pages
+    // Real-time listener — ticks automatically the moment autoCompleteQuest writes to this doc
+    // from wherever the underlying real action happened (Calendar, Topics, Study, Mistakes, etc.)
     const ref = doc(db, 'users', user.uid, 'quests', today)
     const unsub = onSnapshot(ref, (snap) => {
       setProgress(snap.exists() ? snap.data() : {})
@@ -30,28 +40,6 @@ export default function DailyQuests() {
     })
     return () => unsub()
   }, [user])
-
-  async function completeQuest(questId, xp) {
-    if (progress[questId]) return // already done
-
-    const newProgress = { ...progress, [questId]: true }
-    setProgress(newProgress)
-
-    // Save to Firestore
-    const ref = doc(db, 'users', user.uid, 'quests', today)
-    await setDoc(ref, { ...newProgress, updatedAt: serverTimestamp() }, { merge: true })
-
-    // Award XP
-    await awardXP(user.uid, xp, 'daily_quest')
-    await refreshProfile()
-
-    // Check if all 3 quests done — bonus XP
-    const allDone = quests.every(q => newProgress[q.id])
-    if (allDone) {
-      await awardXP(user.uid, 50, 'all_quests_complete')
-      await refreshProfile()
-    }
-  }
 
   const completedCount = quests.filter(q => progress[q.id]).length
 
@@ -64,12 +52,12 @@ export default function DailyQuests() {
         <span style={{
           fontSize: '0.75rem',
           fontWeight: 600,
-          color: completedCount === 3 ? 'var(--success)' : 'var(--text-muted)',
-          background: completedCount === 3 ? 'rgba(34,197,94,0.1)' : 'var(--bg-hover)',
+          color: completedCount === quests.length && quests.length > 0 ? 'var(--success)' : 'var(--text-muted)',
+          background: completedCount === quests.length && quests.length > 0 ? 'rgba(34,197,94,0.1)' : 'var(--bg-hover)',
           padding: '2px 8px',
           borderRadius: 20,
         }}>
-          {completedCount}/3 done {completedCount === 3 ? '🎉 +50 bonus XP' : ''}
+          {completedCount}/{quests.length} done {completedCount === quests.length && quests.length > 0 ? '🎉 +50 bonus XP' : ''}
         </span>
       </div>
 
@@ -105,15 +93,7 @@ export default function DailyQuests() {
               </span>
               {done
                 ? <CheckCircle size={16} color="var(--success)" style={{ flexShrink: 0 }} />
-                : (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ padding: '2px 8px', fontSize: '0.72rem', flexShrink: 0 }}
-                    onClick={() => completeQuest(quest.id, quest.xp)}
-                  >
-                    Done
-                  </button>
-                )
+                : <Circle size={16} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.5 }} />
               }
             </div>
           )
@@ -121,7 +101,7 @@ export default function DailyQuests() {
       </div>
 
       <p style={{ margin: '10px 0 0', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-        Quests reset at midnight. Complete all 3 for a +50 XP bonus.
+        Quests complete automatically as you use the app, and reset at midnight. Complete all {quests.length||3} for a +50 XP bonus.
       </p>
     </div>
   )
