@@ -16,7 +16,7 @@ export default function FriendRequestPopup({ request, onClose }) {
   async function handleAccept() {
     setBusy(true)
     try {
-      await acceptFriendRequest(request.id, request.from, user.uid)
+      await acceptFriendRequest(request.id)
       await refreshProfile()
       toast.success('Friend added!')
       onClose()
