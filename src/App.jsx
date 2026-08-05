@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { BadgeProvider } from './context/BadgeContext'
 import { usePushNotifications } from './hooks/usePushNotifications'
 import { AppProvider } from './context/AppContext'
 import { TimerProvider } from './context/TimerContext'
@@ -15,6 +16,8 @@ import StreakCelebration from './components/StreakCelebration'
 import TooltipTour from './components/TooltipTour'
 import ReferralRewardPopup from './components/ReferralRewardPopup'
 import FriendRequestPopup from './components/FriendRequestPopup'
+import LevelUpPopup from './components/LevelUpPopup'
+import OnboardingRecapPopup from './components/OnboardingRecapPopup'
 
 // Global streak celebration — reads from AuthContext, renders anywhere in app
 function GlobalStreakCelebration() {
@@ -68,6 +71,22 @@ function GlobalFriendRequest() {
   const { newFriendRequest, clearNewFriendRequest } = useAuth()
   if (!newFriendRequest) return null
   return <FriendRequestPopup request={newFriendRequest} onClose={clearNewFriendRequest} />
+}
+
+// Global level-up popup. Detection lives in AuthContext (profile.level actually gets written by
+// awardXP now — previously nothing did, which is why Profile.jsx always showed "Level 1").
+function GlobalLevelUp() {
+  const { levelUp, clearLevelUp } = useAuth()
+  if (!levelUp) return null
+  return <LevelUpPopup level={levelUp.level} title={levelUp.title} onClose={clearLevelUp} />
+}
+
+// Global post-onboarding XP recap. Deliberately decoupled from Onboarding.jsx itself — see
+// AuthContext.jsx for why (shown once the tour completes, not the moment onboarding saves).
+function GlobalOnboardingRecap() {
+  const { profile, onboardingRecap, clearOnboardingRecap } = useAuth()
+  if (!onboardingRecap) return null
+  return <OnboardingRecapPopup breakdown={onboardingRecap} displayName={profile?.displayName} onClose={clearOnboardingRecap} />
 }
 
 
@@ -145,6 +164,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <BadgeProvider>
         <AppProvider>
           <TimerProvider>
             <PriorityProvider>
@@ -203,6 +223,8 @@ export default function App() {
                 <GlobalTooltipTour />
                 <GlobalReferralReward />
                 <GlobalFriendRequest />
+                <GlobalLevelUp />
+                <GlobalOnboardingRecap />
               </BrowserRouter>
             <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' } }} />
             <XPToast />
@@ -210,6 +232,7 @@ export default function App() {
             </PriorityProvider>
           </TimerProvider>
         </AppProvider>
+        </BadgeProvider>
       </AuthProvider>
     </ThemeProvider>
   )
