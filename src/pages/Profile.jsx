@@ -60,7 +60,13 @@ export default function Profile() {
 
   const lvl     = LEVELS[Math.min((profile?.level || 1) - 1, LEVELS.length - 1)]
   const nextLvl = LEVELS[Math.min((profile?.level || 1),     LEVELS.length - 1)]
-  const xpPct   = profile ? Math.min(100, ((profile.xp || 0) / (nextLvl?.xpRequired || 100)) * 100) : 0
+  // Was (profile.xp / nextLvl.xpRequired) — comparing raw cumulative XP directly against the
+  // NEXT level's cumulative threshold, rather than measuring progress within the current level
+  // (i.e. subtracting out the XP that already went toward reaching the current level). Same class
+  // of bug as the one just fixed in Layout.jsx/Dashboard.jsx's XP bars — this is the third copy.
+  const xpPct   = profile
+    ? Math.min(100, (((profile.xp || 0) - (lvl?.xpRequired || 0)) / Math.max(1, (nextLvl?.xpRequired || 100) - (lvl?.xpRequired || 0))) * 100)
+    : 0
 
   const earnedIds      = profile?.badges || []
   const unlockedBadges = BADGE_LIST.filter(b => earnedIds.includes(b.id))
