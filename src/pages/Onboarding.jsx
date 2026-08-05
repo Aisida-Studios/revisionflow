@@ -11,7 +11,6 @@ import {
   EXAM_BOARDS, getGradeOptions, SUBJECT_COLOURS,
 } from '../data/subjects'
 import { isTiered, EXAM_DATES_2026 } from '../data/examDates2026'
-import { getAllTopicsFlat } from '../data/topics'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
 import toast from 'react-hot-toast'
@@ -105,8 +104,15 @@ export default function Onboarding() {
   const gradeOptions       = getGradeOptions(newSubj.name, qual, newSubj.tier)
   const globalGradeOptions = getGradeOptions('', qual, 'N/A')
 
-  // XP preview: 100 per subject + 50 for AI plan + 25 base
-  const xpPreview = 25 + subjects.length * 100 + (planDone ? 50 : 0)
+  // XP preview — capped. Was 25 + subjects.length*100 + 50 (uncapped per-subject), which could
+  // hand out 875 XP to a student with 8 subjects — enough on its own to blow past several levels
+  // under the new, harder cumulative curve (see subjects.js) before a single revision session.
+  // Per-subject contribution is now small AND capped, so onboarding stays a nice welcome bonus
+  // rather than a shortcut around the levelling curve.
+  const xpBase     = 15
+  const xpSubjects = Math.min(subjects.length, 5) * 8
+  const xpPlan     = planDone ? 20 : 0
+  const xpPreview  = xpBase + xpSubjects + xpPlan
 
   function onSubjName(name) {
     setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && qual === 'GCSE') ? 'Higher' : 'N/A' }))
@@ -167,6 +173,10 @@ export default function Onboarding() {
         availability,
         username: username || user.uid.slice(0,8),
         onboardingComplete: true,
+        // Stashed here rather than shown locally — see AuthContext.jsx/App.jsx's
+        // GlobalOnboardingRecap, which shows this once the tour (which starts right after this
+        // navigate() call) actually finishes, not the instant this save completes.
+        onboardingXpBreakdown: { base: xpBase, subjects: xpSubjects, subjectCount: subjects.length, plan: xpPlan, total: xpPreview },
         updatedAt: serverTimestamp(),
       })
       await seedTopics(user.uid)
