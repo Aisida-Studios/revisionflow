@@ -6,14 +6,18 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { onSnapshot, doc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
-import { BADGES } from '../data/subjects'
+import { BADGE_MAP } from '../data/badges'
 import toast from 'react-hot-toast'
-import { UserPlus } from 'lucide-react'
 
-// Rare badges get the full-screen treatment
+// Rare badges get the full-screen treatment. Previously referenced session_100, paper_50,
+// perfect_paper, grade_9, all_subjects and monthly_master — none of which exist as ids in
+// BADGE_LIST (see data/badges.js) at all, only in a separate, older 14-badge list in
+// data/subjects.js that this component used to import badge details from instead. That mismatch
+// meant BADGES.find(b => b.id === id) returned undefined for roughly 25 of the real 30 badges,
+// so `if (!badge) return` silently skipped the popup entirely for most actual badge awards.
 const RARE_BADGE_IDS = [
-  'streak_30', 'session_100', 'paper_50', 'perfect_paper',
-  'grade_9', 'all_subjects', 'monthly_master',
+  'streak_30', 'streak_100', 'mastery_gold', 'fifty_papers',
+  'full_marks', 'marathon_session', 'quests_complete',
 ]
 
 const BadgeContext = createContext(null)
@@ -22,7 +26,6 @@ export function BadgeProvider({ children }) {
   const { user } = useAuth()
   const [celebration, setCelebration] = useState(null)  // badge object for full-screen
   const knownBadgesRef = useRef(null)  // tracks what we already know about
-  const previousRequestsRef = useRef(null)
 
   useEffect(() => {
     if (!user) return
@@ -30,17 +33,6 @@ export function BadgeProvider({ children }) {
     const unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
       if (!snap.exists()) return
       const current = snap.data().badges || []
-      const currentReqs = snap.data().friendRequests || []
-
-      // --- Friend Requests Notification ---
-      if (previousRequestsRef.current !== null) {
-        if (currentReqs.length > previousRequestsRef.current.length) {
-          toast.success('New friend request received!', {
-            icon: <UserPlus size={18} color="var(--accent)"/>,
-          })
-        }
-      }
-      previousRequestsRef.current = currentReqs
 
       // On first load, mark all current badges as seen in localStorage
       if (knownBadgesRef.current === null) {
@@ -62,7 +54,7 @@ export function BadgeProvider({ children }) {
         const updatedSet = new Set(knownBadgesRef.current)
         newBadges.forEach(id => {
           updatedSet.add(id)
-          const badge = BADGES.find(b => b.id === id)
+          const badge = BADGE_MAP[id]
           if (!badge) return
 
           if (RARE_BADGE_IDS.includes(id)) {
@@ -166,6 +158,7 @@ function BadgeCelebration({ badge, onClose }) {
         transform: phase === 'enter' ? 'scale(0.5) translateY(40px)' : phase === 'exit' ? 'scale(0.95) translateY(-20px)' : 'scale(1) translateY(0)',
         transition: 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)',
         maxWidth: 360, padding: 16,
+        maxHeight: '90dvh', overflowY: 'auto',
       }}>
         {/* Glow ring */}
         <div style={{
