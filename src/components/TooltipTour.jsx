@@ -48,11 +48,16 @@ function buildSteps(profile) {
         : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and the AI prioritises accordingly.',
     },
     {
+      route: '/study',
+      title: '📚 Study Tools',
+      body: 'Generate AI flashcards for any topic, run a timed quiz, tackle board-accurate exam questions, and get your written answers marked leniently — like a real examiner would, not just exact-match.',
+    },
+    {
       route: '/ai',
       title: '✨ AI Advisor',
       body: target
-        ? "Ask anything, get grade predictions toward your target grade " + target + ", mark your answers like a real examiner, and generate flashcards — all personalised to your data."
-        : 'Ask anything, get grade predictions, mark your answers like a real examiner, and generate flashcards — all personalised to your data.',
+        ? "Ask anything about your subjects and get grade predictions toward your target grade " + target + " — all personalised to your actual data, not generic advice."
+        : 'Ask anything about your subjects and get grade predictions — all personalised to your actual data, not generic advice.',
     },
     {
       route: '/timer',
