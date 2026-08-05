@@ -205,9 +205,18 @@ export default function Calendar() {
     try {
       if (mode === 'replace') {
         const snap = await getDocs(collection(db, 'users', user.uid, 'sessions'))
-        const batch = writeBatch(db)
-        snap.docs.forEach(d => batch.delete(doc(db, 'users', user.uid, 'sessions', d.id)))
-        await batch.commit()
+        // Was a single writeBatch with no chunking — unlike CalendarGenerator.jsx's session-save
+        // loop (plain addDoc calls, no real 500 limit), this IS a genuine Firestore writeBatch,
+        // which does hard-cap at 500 operations. A user with more than 500 existing sessions
+        // choosing "replace" on import would have hit that limit and the whole operation would
+        // throw. Chunked the same way clearCalendar() above already does.
+        const BATCH_SIZE = 400
+        for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+          const batch = writeBatch(db)
+          const chunk = snap.docs.slice(i, i + BATCH_SIZE)
+          chunk.forEach(d => batch.delete(doc(db, 'users', user.uid, 'sessions', d.id)))
+          await batch.commit()
+        }
       }
 
       for (const ev of approved) {
