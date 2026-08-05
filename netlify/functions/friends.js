@@ -1,29 +1,17 @@
 // netlify/functions/friends.js
-// Handles friend-request accept and friend removal server-side with the Admin SDK.
+// Handles friend request accept/remove server-side, with the Admin SDK.
 //
-// WHY THIS EXISTS: both actions need to write to a SECOND user's document (their friends
-// array, and — for accept — their XP/badges too). Firestore rules only let a user write their
-// own document, plus one narrow exception: a friends-array update on someone else's doc that
-// only ADDS uids, never removes them. That exception covered exactly half of each operation,
-// which is why both bugs looked like partial successes rather than clean failures:
-//
-//   - accept: both friends-array adds succeeded (the exception covers additions) and the
-//     request doc delete succeeded (sender or recipient may always delete it) — but awarding
-//     XP to the OTHER user writes an `xp` field on their doc, which isn't covered by the
-//     friends-only exception, so it threw "Missing or insufficient permissions" right after
-//     the friend link had already been made.
-//   - remove: the caller's own friends-array update succeeded (self-writes are always
-//     allowed), but removing yourself from the OTHER person's friends array fails silently
-//     against hasAll() — that check only ever allows the array to grow — so they still showed
-//     up as a friend on the other side.
-//
-// Both actions now run atomically here instead. Once nothing client-side needs to touch
-// another user's `friends` field, the add-only exception in firestore.rules for /users/{userId}
-// can be dropped too — it existed purely to make the old client-side half-fix work.
+// WHY THIS EXISTS: acceptFriendRequest and removeFriend in src/utils/firestore.js both need to
+// write to TWO users' documents — the caller's own, and the other party's. Firestore rules only
+// allow `request.auth.uid == userId` (plus a narrow friends-array exception that doesn't cover
+// both directions of this), so the half of each operation touching the OTHER user's document was
+// being rejected with "Missing or insufficient permissions" — while the caller's own half (which
+// IS allowed) could still go through, which is why a removed friend disappeared from the remover's
+// own list but not the other person's, and why accepting produced an error yet still appeared to
+// partially work. This mirrors referral.js's existing fix for the exact same class of problem
+// (that file's own header comment documents it) — same getAdmin/verifyUserToken/respond pattern.
 //
 // CommonJS — netlify/functions/package.json sets "type":"commonjs"
-
-const BADGE_MAP = { first_friend: { xp: 50 } } // mirrors BADGE_MAP.first_friend in src/data/badges.js
 
 let _admin = null
 async function getAdmin() {
@@ -37,8 +25,6 @@ async function getAdmin() {
   return admin
 }
 
-// Verifies the bearer token is a real, currently-valid Firebase user (any user — this is not
-// an admin-only check) and returns their decoded token (with .uid).
 async function verifyUserToken(event) {
   const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -59,22 +45,44 @@ function respond(statusCode, body) {
   }
 }
 
-async function awardXP(db, admin, uid, amount) {
-  if (!amount || amount <= 0) return
+async function addFriendPair(db, uidA, uidB) {
+  const admin = await getAdmin()
+  const refA = db.collection('users').doc(uidA)
+  const refB = db.collection('users').doc(uidB)
+  await refA.update({ friends: admin.firestore.FieldValue.arrayUnion(uidB) })
+  await refB.update({ friends: admin.firestore.FieldValue.arrayUnion(uidA) })
+}
+
+async function removeFriendPair(db, uidA, uidB) {
+  const admin = await getAdmin()
+  const refA = db.collection('users').doc(uidA)
+  const refB = db.collection('users').doc(uidB)
+  await refA.update({ friends: admin.firestore.FieldValue.arrayRemove(uidB) })
+  await refB.update({ friends: admin.firestore.FieldValue.arrayRemove(uidA) })
+}
+
+async function awardXP(db, uid, amount, reason) {
+  const admin = await getAdmin()
   await db.collection('users').doc(uid).update({ xp: admin.firestore.FieldValue.increment(amount) })
 }
 
-async function awardBadge(db, admin, uid, badgeId) {
-  const badge = BADGE_MAP[badgeId]
-  if (!badge) return
-  const ref = db.collection('users').doc(uid)
+// Mirrors checkAndAwardBadge's 'first_friend' case in src/utils/firestore.js — duplicated
+// narrowly here (just this one badge, not the whole badge system) since this function runs with
+// Admin credentials in a different runtime and can't import client-side firestore.js.
+// BADGE_XP mirrors BADGE_MAP.first_friend.xp in src/data/badges.js — checkAndAwardBadge always
+// grants a badge's XP alongside the badge itself; this duplicate needs to as well, or a badge
+// earned through this path (as opposed to the client-side badge audit) pays out less than it
+// should.
+const BADGE_XP = { first_friend: 50 }
+async function awardFirstFriendBadge(db, admin, uid) {
+  const ref  = db.collection('users').doc(uid)
   const snap = await ref.get()
   if (!snap.exists) return
   const earned = snap.data().badges || []
-  if (earned.includes(badgeId)) return
+  if (earned.includes('first_friend')) return
   await ref.update({
-    badges: [...earned, badgeId],
-    xp: admin.firestore.FieldValue.increment(badge.xp || 0),
+    badges: [...earned, 'first_friend'],
+    xp:     admin.firestore.FieldValue.increment(BADGE_XP.first_friend),
   })
 }
 
@@ -92,6 +100,9 @@ module.exports.handler = async function (event) {
   }
   if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
 
+  let body
+  try { body = JSON.parse(event.body || '{}') } catch (e) { return respond(400, { error: 'Invalid JSON' }) }
+
   let decoded
   try {
     decoded = await verifyUserToken(event)
@@ -99,61 +110,61 @@ module.exports.handler = async function (event) {
     return respond(403, { error: 'Forbidden' })
   }
   const callerUid = decoded.uid
-
-  let body
-  try { body = JSON.parse(event.body || '{}') } catch (e) { return respond(400, { error: 'Invalid JSON' }) }
-
   const action = body.action
-  const admin  = await getAdmin()
-  const db     = admin.firestore()
 
-  // ── Accept a friend request ──────────────────────────────────────────────────
-  if (action === 'accept') {
-    const requestId = String(body.requestId || '')
-    const fromUid    = String(body.fromUid || '')
-    if (!requestId || !fromUid) return respond(400, { error: 'requestId and fromUid are required' })
+  try {
+    const admin = await getAdmin()
+    const db = admin.firestore()
 
-    try {
+    // ── Accept — caller must be the request's actual recipient ──────────────────
+    if (action === 'accept') {
+      const requestId = String(body.requestId || '')
+      if (!requestId) return respond(400, { error: 'Missing requestId' })
+
       const reqRef  = db.collection('friendRequests').doc(requestId)
       const reqSnap = await reqRef.get()
-      if (!reqSnap.exists) return respond(404, { error: 'Request no longer exists' })
-      const reqData = reqSnap.data()
-      // Using the Admin SDK bypasses the Firestore rules entirely, so this check is doing the
-      // job the rules would normally do: only the actual recipient can accept, and the
-      // fromUid the client sent has to match what's really on the request.
-      if (reqData.to !== callerUid || reqData.from !== fromUid) return respond(403, { error: 'Forbidden' })
+      if (!reqSnap.exists) return respond(200, { accepted: false, reason: 'not_found' })
 
-      const toUid = callerUid
-      await db.collection('users').doc(fromUid).update({ friends: admin.firestore.FieldValue.arrayUnion(toUid) })
-      await db.collection('users').doc(toUid).update({ friends: admin.firestore.FieldValue.arrayUnion(fromUid) })
+      const { from, to } = reqSnap.data()
+      // The request's own `to` field decides who's allowed to accept it — never trust a
+      // client-supplied fromUid/toUid pair, since that would let anyone accept anyone's request.
+      if (to !== callerUid) return respond(403, { error: 'Forbidden' })
+
+      await addFriendPair(db, from, to)
       await reqRef.delete()
-
-      await awardXP(db, admin, fromUid, 25)
-      await awardXP(db, admin, toUid,   25)
-      await awardBadge(db, admin, fromUid, 'first_friend')
-      await awardBadge(db, admin, toUid,   'first_friend')
+      await awardXP(db, from, 25, 'New friend')
+      await awardXP(db, to,   25, 'New friend')
+      await awardFirstFriendBadge(db, admin, from)
+      await awardFirstFriendBadge(db, admin, to)
 
       return respond(200, { accepted: true })
-    } catch (e) {
-      console.error('[friends accept]', e.message)
-      return respond(500, { error: 'Could not accept the request. Try again.' })
     }
-  }
 
-  // ── Remove a friend, symmetrically on both sides ─────────────────────────────
-  if (action === 'remove') {
-    const friendUid = String(body.friendUid || '')
-    if (!friendUid) return respond(400, { error: 'friendUid is required' })
+    // ── Decline — same ownership check, no friend-array writes needed ───────────
+    if (action === 'decline') {
+      const requestId = String(body.requestId || '')
+      if (!requestId) return respond(400, { error: 'Missing requestId' })
 
-    try {
-      await db.collection('users').doc(callerUid).update({ friends: admin.firestore.FieldValue.arrayRemove(friendUid) })
-      await db.collection('users').doc(friendUid).update({ friends: admin.firestore.FieldValue.arrayRemove(callerUid) })
+      const reqRef  = db.collection('friendRequests').doc(requestId)
+      const reqSnap = await reqRef.get()
+      if (!reqSnap.exists) return respond(200, { declined: true }) // already gone — fine
+
+      if (reqSnap.data().to !== callerUid) return respond(403, { error: 'Forbidden' })
+      await reqRef.delete()
+      return respond(200, { declined: true })
+    }
+
+    // ── Remove — caller removes an existing friend; only valid for the caller's own list ──
+    if (action === 'remove') {
+      const friendUid = String(body.friendUid || '')
+      if (!friendUid) return respond(400, { error: 'Missing friendUid' })
+      await removeFriendPair(db, callerUid, friendUid)
       return respond(200, { removed: true })
-    } catch (e) {
-      console.error('[friends remove]', e.message)
-      return respond(500, { error: 'Could not remove this friend. Try again.' })
     }
-  }
 
-  return respond(400, { error: 'Unknown action' })
+    return respond(400, { error: 'Unknown action' })
+  } catch (e) {
+    console.error('[friends]', action, e.message)
+    return respond(500, { error: 'Server error' })
+  }
 }
