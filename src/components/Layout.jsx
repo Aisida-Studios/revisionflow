@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
 import { useTheme } from '../context/ThemeContext'
 import { PROFILE_ICONS } from '../data/themes'
+import { LEVELS, levelFromXP } from '../data/subjects'
 import {
   LayoutDashboard, Calendar, FileText, Brain, CheckSquare,
   Users, Trophy, User, MessageSquare, Clock, Settings, LogOut,
@@ -38,13 +39,6 @@ const MOBILE_NAV = [
   { to:'/profile',     label:'Me',     icon:User },
 ]
 
-function xpForLevel(n) { return Math.floor(100 * Math.pow(1.15, n-1)) }
-function computeLevel(xp) {
-  let lv=1,cum=0
-  while(true){const n=xpForLevel(lv);if(cum+n>xp)break;cum+=n;lv++}
-  return lv
-}
-
 export default function Layout() {
   const { profile, logout } = useAuth()
   const { isPro }           = useIsPro()
@@ -73,13 +67,16 @@ export default function Layout() {
 
   async function handleLogout() { await logout(); navigate('/login') }
 
-  // XP
-  const totalXP     = profile?.xp || 0
-  const level       = computeLevel(totalXP)
-  let cum = 0; for (let i=1;i<level;i++) cum+=xpForLevel(i)
-  const xpThisLevel = totalXP - cum
-  const xpNeeded    = xpForLevel(level)
-  const xpPct       = Math.min(100, Math.round(xpThisLevel/xpNeeded*100))
+  // XP — uses the canonical LEVELS/levelFromXP from data/subjects.js (previously a local
+  // duplicate of the same logic, using an older/easier curve — see subjects.js for why that
+  // mattered beyond just tidiness: it's also what caused Profile.jsx to disagree with this bar).
+  const totalXP      = profile?.xp || 0
+  const level        = levelFromXP(totalXP)
+  const currentLvlXp = LEVELS[level - 1]?.xpRequired || 0
+  const nextLvlXp     = LEVELS[level]?.xpRequired ?? (currentLvlXp + 1000000) // top of table — no further requirement to show
+  const xpThisLevel  = totalXP - currentLvlXp
+  const xpNeeded     = nextLvlXp - currentLvlXp
+  const xpPct        = Math.min(100, Math.round((xpThisLevel / xpNeeded) * 100))
 
   const iconEmoji = PROFILE_ICONS?.[profile?.profileIcon||'lightning']?.emoji ?? null
   const initial   = (profile?.displayName||'U')[0].toUpperCase()
