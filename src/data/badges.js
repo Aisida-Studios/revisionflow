@@ -91,13 +91,13 @@ export function calculateXPWithMultipliers(baseXP, profile) {
 // ── Daily quests ─────────────────────────────────────────────────────────────
 export const DAILY_QUEST_POOL = [
   { id: 'log_session',     desc: 'Log a revision session',          xp: 30, icon: '📖' },
-  { id: 'rate_topics',     desc: 'Rate 3 topic confidences',        xp: 20, icon: '⭐' },
+  { id: 'rate_topics',     desc: 'Rate a topic confidence',         xp: 20, icon: '⭐' },
   { id: 'log_paper',       desc: 'Log a past paper result',         xp: 40, icon: '📄' },
   { id: 'use_ai',          desc: 'Ask the AI Advisor a question',   xp: 15, icon: '🤖' },
   { id: 'timer_25',        desc: 'Complete a 25-minute timer',      xp: 25, icon: '⏱️' },
   { id: 'resolve_mistake', desc: 'Resolve a logged mistake',        xp: 20, icon: '✅' },
   { id: 'add_note',        desc: 'Write a revision note',           xp: 15, icon: '📝' },
-  { id: 'check_topics',    desc: 'Review your topic heatmap',       xp: 10, icon: '🗺️' },
+  { id: 'add_friend',      desc: 'Add a friend',                    xp: 20, icon: '🤝' },
 ]
 
 export function getDailyQuests(uid) {
