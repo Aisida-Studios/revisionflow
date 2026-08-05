@@ -26,6 +26,8 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
+import { getDailyQuests } from '../data/badges'
+import { levelFromXP } from '../data/subjects'
 import { buildTopicId, isLegacyTopicId } from './topicId'
 
 export { auth, db }
@@ -143,24 +145,27 @@ export async function recordActivityStreak(uid) {
 }
 
 
-export function xpForLevel(n) {
-  return Math.floor(100 * Math.pow(1.15, n - 1))
-}
-
-export function levelFromXP(totalXP) {
-  let level = 1, cumulative = 0
-  while (true) {
-    const needed = xpForLevel(level)
-    if (cumulative + needed > totalXP) break
-    cumulative += needed
-    level++
-  }
-  return level
-}
+// xpForLevel/levelFromXP used to be defined here too (and, separately, duplicated again in
+// Layout.jsx and Dashboard.jsx for their own XP-bar displays) — three different copies of the
+// same idea, all using the old, easier 1.15 curve, none of them actually wired into awardXP. This
+// copy was dead code (never called). Consolidated into one canonical version — LEVELS/levelFromXP
+// in subjects.js, imported above — and Layout.jsx/Dashboard.jsx now import it too instead of
+// keeping their own copies, so the sidebar, dashboard, and Profile page can never disagree about
+// what level a given XP total actually is.
 
 export const awardXP = async (uid, amount, reason = '') => {
   if (!uid || !amount || amount <= 0) return
-  await updateDoc(doc(db, 'users', uid), { xp: increment(amount) })
+  // Nothing previously ever wrote profile.level — not even an initial value in ensureUser — so
+  // Profile.jsx's `profile?.level || 1` fallback meant every account showed "Level 1" forever
+  // regardless of XP earned. Reading current XP here (rather than reading back AFTER the
+  // increment) avoids an extra round-trip and a staleness window: we know exactly what the new
+  // total will be, so we can compute and write the correct level in the same update.
+  const ref     = doc(db, 'users', uid)
+  const snap    = await getDoc(ref)
+  const prevXp  = snap.exists() ? (snap.data().xp || 0) : 0
+  const newXp   = prevXp + amount
+  const newLevel = levelFromXP(newXp)
+  await updateDoc(ref, { xp: increment(amount), level: newLevel })
   // Fire browser event so XPToast component can show the popup
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount, reason } }))
@@ -170,6 +175,10 @@ export const awardXP = async (uid, amount, reason = '') => {
 export const awardTimerXP = async (uid, seconds) => {
   const xp = Math.min(Math.floor(seconds / 60), 100)
   if (xp > 0) await awardXP(uid, xp, 'Timer session')
+  // timer_25 was defined in DAILY_QUEST_POOL with an XP value but nothing ever called
+  // autoCompleteQuest for it — meaning it was literally impossible to complete on any day it
+  // happened to be selected, short of the removed manual "Done" button in DailyQuests.jsx.
+  if (seconds >= 25 * 60) await autoCompleteQuest(uid, 'timer_25')
 }
 
 export const checkAndAwardBadge = async (uid, badgeId) => {
@@ -202,11 +211,19 @@ const QUEST_XP = {
   timer_25:        25,
   resolve_mistake: 20,
   add_note:        15,
-  check_topics:    10,
+  add_friend:      20,
 }
 
+// Previously accepted ANY of the 8 possible quest ids unconditionally — completing a session
+// always paid out the log_session "Daily quest" bonus even on a day where log_session wasn't one
+// of today's 3 selected quests (see DAILY_QUEST_POOL/getDailyQuests in data/badges.js), because
+// nothing here ever checked against that selection. Same bug affected the "all 3 done" bonus below,
+// which counted completions against the full 8-item pool rather than today's actual 3.
 export const autoCompleteQuest = async (uid, questId) => {
   if (!uid || !questId) return
+
+  const todaysQuestIds = getDailyQuests(uid).map(q => q.id)
+  if (!todaysQuestIds.includes(questId)) return // not one of today's quests — no bonus for it today
 
   // Use same date key format as DailyQuests.jsx component
   const today = new Date().toDateString().replace(/ /g, '_')
@@ -221,10 +238,12 @@ export const autoCompleteQuest = async (uid, questId) => {
   await setDoc(ref, { [questId]: true, updatedAt: serverTimestamp() }, { merge: true })
   await awardXP(uid, xp, 'Daily quest')
 
-  // Count how many quests are now done to check for all-3 bonus
+  // Bonus for completing all of TODAY's quests — was checking against the full 8-quest pool
+  // (Object.keys(QUEST_XP)), so three unrelated real actions on a normal day could trigger it
+  // even if none of them were actually today's selected quests.
   const updatedData = { ...data, [questId]: true }
-  const doneCount   = Object.keys(QUEST_XP).filter(id => updatedData[id]).length
-  if (doneCount >= 3 && !data.bonusAwarded) {
+  const doneCount   = todaysQuestIds.filter(id => updatedData[id]).length
+  if (doneCount >= todaysQuestIds.length && !data.bonusAwarded) {
     await setDoc(ref, { bonusAwarded: true }, { merge: true })
     await awardXP(uid, 50, 'All quests complete!')
     await checkAndAwardBadge(uid, 'quests_complete')
@@ -524,39 +543,39 @@ export const getReceivedRequests = async (uid) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-// accept and remove both need to write to a SECOND user's document (their friends array, and
-// for accept, their XP/badges too) — Firestore rules only allow a user to write their own doc,
-// plus a narrow exception letting someone else's friends array grow (never shrink). That
-// exception covered exactly half of each operation and silently swallowed the other half — see
-// netlify/functions/friends.js for the full breakdown. Both go through that Admin SDK endpoint
-// now instead of writing directly from here.
 async function callFriendsApi(action, params = {}) {
   let idToken = ''
-  try { if (auth.currentUser) idToken = await auth.currentUser.getIdToken() } catch (e) { console.warn('[friends] could not get ID token:', e.message) }
+  try {
+    if (auth.currentUser) idToken = await auth.currentUser.getIdToken()
+  } catch (e) { console.warn('[friends] could not get ID token:', e.message) }
+
   const res = await fetch('/api/friends', {
-    method:  'POST',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
     body: JSON.stringify({ action, ...params }),
   })
-  return { ok: res.ok, data: await res.json() }
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Request failed')
+  return data
 }
 
-export const acceptFriendRequest = async (requestId, fromUid, toUid) => {
-  const { ok, data } = await callFriendsApi('accept', { requestId, fromUid })
-  if (!ok || !data.accepted) throw new Error(data.error || 'Could not accept the request')
-  // The XP award happens server-side now, so there's no local awardXP() call to fire the usual
-  // toast — dispatch the same event it would have, for the person who just clicked accept.
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount: 25, reason: 'New friend' } }))
-  }
+// Previously did two client-side updateDoc calls — one to the caller's own /users/{uid} doc
+// (allowed) and one to the OTHER party's /users/{uid} doc (not allowed under rules that only
+// permit request.auth.uid == userId), which is exactly what "Missing or insufficient permissions"
+// on accept, and a friend disappearing from only one side on remove, both came from. Moved
+// server-side — see netlify/functions/friends.js for the full explanation and the Admin SDK writes
+// that now handle both sides of each operation correctly.
+export const acceptFriendRequest = async (requestId) => {
+  await callFriendsApi('accept', { requestId })
+  if (auth.currentUser) await autoCompleteQuest(auth.currentUser.uid, 'add_friend')
 }
 
-export const declineFriendRequest = (requestId) =>
-  deleteDoc(doc(db, 'friendRequests', requestId))
+export const declineFriendRequest = async (requestId) => {
+  await callFriendsApi('decline', { requestId })
+}
 
-export const removeFriend = async (uid, friendUid) => {
-  const { ok, data } = await callFriendsApi('remove', { friendUid })
-  if (!ok || !data.removed) throw new Error(data.error || 'Could not remove this friend')
+export const removeFriend = async (friendUid) => {
+  await callFriendsApi('remove', { friendUid })
 }
 
 export const getFriendProfiles = async (friendUids) => {
