@@ -80,7 +80,7 @@ export default function Friends() {
   // req is a full request object: { id: docId, from: senderUid, to: currentUid }
   async function handleAccept(req) {
     try {
-      await acceptFriendRequest(req.id, req.from, user.uid)
+      await acceptFriendRequest(req.id)
       await refreshProfile()
       setRequests(r => r.filter(r2 => r2.id !== req.id))
       toast.success('Friend added!')
@@ -101,7 +101,7 @@ export default function Friends() {
   async function handleRemove(friendUid) {
     if (!confirm('Remove this friend?')) return
     try {
-      await removeFriend(user.uid, friendUid)
+      await removeFriend(friendUid)
       setFriends(f => f.filter(u => u.uid !== friendUid))
       await refreshProfile()
     } catch (err) {
