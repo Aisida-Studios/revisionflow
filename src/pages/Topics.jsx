@@ -5,10 +5,9 @@ import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
-import { awardXP } from '../utils/firestore'
+import { awardXP, autoCompleteQuest } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
-import { getAllTopicsFlat } from '../data/topics'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
@@ -251,6 +250,9 @@ export default function Topics() {
     await updateDoc(doc(db,'users',user.uid,'topics',topicId), { confidence:conf, updatedAt:serverTimestamp() })
     setTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
     setAllTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
+    // rate_topics was defined in DAILY_QUEST_POOL with an XP value but nothing ever called
+    // autoCompleteQuest for it, same underlying issue as timer_25 (see firestore.js).
+    await autoCompleteQuest(user.uid, 'rate_topics')
   }
 
   async function handleDelete(id) {
