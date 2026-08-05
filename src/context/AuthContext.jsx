@@ -6,18 +6,22 @@ import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
   resetPassword as _resetPassword,
-  ensureUser, updateStreakOnLogin, runBadgeAudit, levelFromXP,
+  ensureUser, updateStreakOnLogin, runBadgeAudit,
 } from '../utils/firestore'
+import { LEVELS, levelFromXP } from '../data/subjects'
 import LoadingScreen from '../components/LoadingScreen'
 
 const AuthContext = createContext(null)
 
-// `level` has never actually been stored on the user document — nothing writes it — so every
-// screen reading profile.level was silently falling back to its `|| 1` default forever. Rather
-// than add yet another place that has to remember to keep a stored level field in sync with xp
-// (that's exactly how it got missed in the first place), compute it fresh right here, once,
-// wherever profile data enters the app — every consumer of useAuth().profile gets it correct
-// automatically, with nothing else to remember.
+// awardXP now writes a `level` field alongside xp (see firestore.js) so most reads get a correct
+// value straight from Firestore — but that's a best-effort convenience field, not something to
+// actually depend on: any write path that changes xp without also going through awardXP (there's
+// one server-side, in netlify/functions/friends.js, deliberately not duplicating the level math
+// for a single non-critical field) would leave it stale, which is exactly the class of bug that
+// caused profile.level to be permanently wrong in the first place. Recomputing it fresh here,
+// every time profile data enters the app, means the level-up detection below (and everything
+// else that reads profile.level) is correct regardless of whether the persisted value happens to
+// be current.
 function withLevel(data) {
   return data ? { ...data, level: levelFromXP(data.xp || 0) } : data
 }
@@ -42,6 +46,17 @@ export function AuthProvider({ children }) {
   // the user doc, so it can't piggyback on the profile snapshot above).
   const [newFriendRequest,   setNewFriendRequest]   = useState(null) // { id, from, fromName } when one just arrives
   const seenRequestIdsRef = useRef(null) // null until first snapshot resolves, then a Set
+  // Level-up popup. Same shape of detection as streak — profile.level now actually gets written
+  // by awardXP (see firestore.js), so this can fire the same way "streak just went up" does.
+  const [levelUp,            setLevelUp]            = useState(null) // { level, title } when level just went up
+  const prevLevelRef = useRef(null)
+  // Post-onboarding XP recap. Deliberately NOT shown the instant onboarding's save completes —
+  // Onboarding.jsx stashes the breakdown on the profile and navigates straight to the dashboard,
+  // where the tour then runs. This fires once the tour's own onComplete has actually flipped
+  // profile.tourComplete to true, exactly mirroring how the badge/streak checks below detect a
+  // one-shot transition rather than a static value.
+  const [onboardingRecap,    setOnboardingRecap]    = useState(null)
+  const prevTourCompleteRef = useRef(null)
 
   useEffect(() => {
     let profileUnsub = () => {}
@@ -77,11 +92,17 @@ export function AuthProvider({ children }) {
 
         profileUnsub = onSnapshot(doc(db, 'users', u.uid), snap => {
           const data = snap.exists() ? withLevel({ uid: u.uid, ...snap.data() }) : null
-          // Detect streak increase — fire celebration if streak went up
+          const readyForCelebrations = !!(data && data.onboardingComplete && data.tourComplete)
+          // Detect streak increase — fire celebration if streak went up. Gated behind onboarding
+          // AND tour being complete: updateStreakOnLogin runs on every login including the very
+          // first one before onboarding even starts, and streak going 0→1 there was popping the
+          // celebration mid-onboarding-wizard. Gating at render time (rather than skipping
+          // detection here) means if it fires while gated, the state just waits — once the gate
+          // opens the already-set value shows, nothing is lost or needs re-triggering.
           if (data && prevStreakRef.current !== null) {
             const prev = prevStreakRef.current
             const curr = data.streak || 0
-            if (curr > prev && curr > 0) {
+            if (curr > prev && curr > 0 && readyForCelebrations) {
               setStreakCelebration({ streak: curr })
             }
           }
@@ -99,6 +120,25 @@ export function AuthProvider({ children }) {
             }
           }
           if (data) prevBadgesRef.current = data.badges || []
+          // Detect level increase — same shape as streak, same gating rationale (onboarding alone
+          // can be enough XP to cross a level threshold; that shouldn't interrupt the wizard either).
+          if (data && prevLevelRef.current !== null) {
+            const prev = prevLevelRef.current
+            const curr = data.level || 1
+            if (curr > prev && readyForCelebrations) {
+              setLevelUp({ level: curr, title: LEVELS[curr - 1]?.title || 'Newcomer' })
+            }
+          }
+          if (data) prevLevelRef.current = data.level || 1
+          // Detect tourComplete flipping to true — the actual trigger for the onboarding XP
+          // recap. onboardingXpBreakdown is written once, during Onboarding.jsx's finish(); once
+          // shown, onboardingRecapShown is set so this can never fire a second time for this user.
+          if (data && prevTourCompleteRef.current === false && data.tourComplete === true) {
+            if (data.onboardingXpBreakdown && !data.onboardingRecapShown) {
+              setOnboardingRecap(data.onboardingXpBreakdown)
+            }
+          }
+          if (data) prevTourCompleteRef.current = !!data.tourComplete
           setProfile(data)
           setLoading(false)
         }, e => {
@@ -166,7 +206,20 @@ export function AuthProvider({ children }) {
   const logout          = () => signOut(auth)
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile, streakCelebration, clearStreakCelebration: () => setStreakCelebration(null), referralReward, clearReferralReward: () => setReferralReward(null), newFriendRequest, clearNewFriendRequest: () => setNewFriendRequest(null) }}>
+    <AuthContext.Provider value={{
+      user, profile, loading, login, signup, loginWithGoogle, resetPassword, logout, refreshProfile,
+      streakCelebration, clearStreakCelebration: () => setStreakCelebration(null),
+      referralReward, clearReferralReward: () => setReferralReward(null),
+      newFriendRequest, clearNewFriendRequest: () => setNewFriendRequest(null),
+      levelUp, clearLevelUp: () => setLevelUp(null),
+      onboardingRecap,
+      clearOnboardingRecap: async () => {
+        setOnboardingRecap(null)
+        if (user) {
+          try { await updateDoc(doc(db, 'users', user.uid), { onboardingRecapShown: true }) } catch (e) {}
+        }
+      },
+    }}>
       {loading ? <LoadingScreen /> : children}
     </AuthContext.Provider>
   )
