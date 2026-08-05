@@ -13,7 +13,7 @@ import { db } from '../firebase'
 import { getDailyAdvice } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
 import { BADGE_LIST } from '../data/badges'
-import { SUBJECT_COLOURS, subjectColour } from '../data/subjects'
+import { SUBJECT_COLOURS, subjectColour, LEVELS, levelFromXP } from '../data/subjects'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { format } from 'date-fns'
 import {
@@ -25,14 +25,6 @@ import {
 import toast from 'react-hot-toast'
 import { isExamDone, daysUntilExam as _daysTil } from '../utils/examUtils'
 
-function xpForLevel(n) { return Math.floor(100 * Math.pow(1.15, n - 1)) }
-function computeLevel(totalXP) {
-  let lv = 1, cum = 0
-  while (true) { const n = xpForLevel(lv); if (cum + n > totalXP) break; cum += n; lv++ }
-  return lv
-}
-
-const LEVEL_TITLES = ['Newcomer','Studier','Consistent','Rising Star','Focused','Dedicated','Diligent','Scholar','High Achiever','Master','Legend']
 
 // ── Beta thanks banner ────────────────────────────────────────────────────────
 function BetaThanksBanner({ onDismiss }) {
@@ -241,14 +233,14 @@ export default function Dashboard() {
   }
 
   // Computed values
-  const totalXP      = profile?.xp || 0
-  const level        = computeLevel(totalXP)
-  let xpSoFar = 0
-  for (let i = 1; i < level; i++) xpSoFar += xpForLevel(i)
-  const xpThisLevel  = totalXP - xpSoFar
-  const xpNeeded     = xpForLevel(level)
-  const xpProgress   = Math.min(100, (xpThisLevel / xpNeeded) * 100)
-  const levelTitle   = LEVEL_TITLES[Math.min(Math.floor((level-1)/5), LEVEL_TITLES.length-1)]
+  const totalXP       = profile?.xp || 0
+  const level         = levelFromXP(totalXP)
+  const currentLvlXp  = LEVELS[level - 1]?.xpRequired || 0
+  const nextLvlXp      = LEVELS[level]?.xpRequired ?? (currentLvlXp + 1000000)
+  const xpThisLevel   = totalXP - currentLvlXp
+  const xpNeeded      = nextLvlXp - currentLvlXp
+  const xpProgress    = Math.min(100, (xpThisLevel / xpNeeded) * 100)
+  const levelTitle    = LEVELS[level - 1]?.title || 'Newcomer'
 
   const badges = (profile?.badges||[]).map(id => BADGE_LIST.find(b=>b.id===id)).filter(Boolean)
 
