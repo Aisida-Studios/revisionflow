@@ -307,20 +307,56 @@ export const XP_REWARDS = {
   streakWeek: 100,
   streakMonth: 500,
   friendAdded: 20,
-  onboardingComplete: 200,
+  onboardingComplete: 100, // was 200 and, separately, never actually used anywhere — Onboarding.jsx
+                            // computes its own xpPreview instead. Aligned to match that value now
+                            // that xpPreview is capped (see Onboarding.jsx) rather than left stale.
   topicConfidenceUpdated: 10,
   mistakeLogged: 15,
   noteAdded: 10,
 }
 
-export const LEVELS = Array.from({ length: 50 }, (_, i) => ({
-  level: i + 1,
-  xpRequired: Math.floor(100 * Math.pow(1.15, i)),
-  title: [
-    'Newcomer','Studier','Consistent','Rising','Focused',
-    'Dedicated','Diligent','Scholar','High Achiever','Master',
-  ][Math.floor(i / 5)] || 'Legend',
-}))
+// LEVELS — rebuilt as a genuinely CUMULATIVE curve (harder + fixes a real bug, not just a balance
+// tweak). The previous formula, xpRequired: Math.floor(100 * Math.pow(1.15, i)), produced a
+// standalone growing number per level (100, 115, 132, 152…) that was never actually a running
+// total — but profile.xp only ever grows (awardXP does xp: increment(amount), it never resets),
+// and Profile.jsx compares profile.xp directly against nextLvl.xpRequired. Once a user had done
+// almost anything, their raw XP total would blow straight past these small per-level numbers,
+// so the XP bar had no real ceiling to climb toward. xpRequired below is now the actual cumulative
+// XP needed to REACH that level (level 1 = 0, needing 150 more to hit level 2, then a compounding
+// 12% more XP per level after that), so profile.xp vs nextLvl.xpRequired is a meaningful comparison
+// again. See levelFromXP() below and awardXP() in firestore.js, which now actually calls it —
+// previously nothing ever wrote profile.level at all (not even an initial value in ensureUser),
+// which is the direct cause of Profile.jsx always showing "Level 1" regardless of XP earned.
+export const LEVELS = (() => {
+  const levels = []
+  let cumulative = 0
+  let increment  = 150
+  for (let i = 0; i < 50; i++) {
+    levels.push({
+      level: i + 1,
+      xpRequired: cumulative,
+      title: [
+        'Newcomer','Studier','Consistent','Rising','Focused',
+        'Dedicated','Diligent','Scholar','High Achiever','Master',
+      ][Math.floor(i / 5)] || 'Legend',
+    })
+    cumulative += increment
+    increment = Math.floor(increment * 1.12)
+  }
+  return levels
+})()
+
+// Given a cumulative XP total, returns the level it corresponds to (1–50, clamped at the top).
+// LEVELS is sorted ascending by xpRequired, so this is "the highest level whose threshold has
+// been met" — plain linear scan since the list is only 50 entries long, not worth a binary search.
+export function levelFromXP(xp) {
+  let lvl = 1
+  for (const l of LEVELS) {
+    if ((xp || 0) >= l.xpRequired) lvl = l.level
+    else break
+  }
+  return lvl
+}
 
 export const BADGES = [
   { id: 'first_session',    name: 'First Step',      desc: 'Complete your first revision session',     icon: '🎯', xp: 50 },
