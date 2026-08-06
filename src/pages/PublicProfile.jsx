@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getUserByUsername } from '../utils/firestore'
 import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
-import { PROFILE_ICONS } from '../data/themes'
+import { resolveProfileIcon } from '../data/themes'
 import { Zap, Flame, Trophy, Star } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -69,8 +69,7 @@ export default function PublicProfile() {
   const p = profileData
   const lvl = LEVELS[Math.min((p.level||1)-1, LEVELS.length-1)]
   const unlockedBadges = (p.badges||[]).map(id => BADGE_LIST.find(b => b.id===id)).filter(Boolean)
-  const iconId    = p.profileIcon || 'lightning'
-  const iconEmoji = PROFILE_ICONS?.[iconId]?.emoji || null
+  const iconEmoji = resolveProfileIcon(p.profileIcon).emoji
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', padding:24 }}>
