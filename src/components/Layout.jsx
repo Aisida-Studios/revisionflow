@@ -4,7 +4,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
 import { useTheme } from '../context/ThemeContext'
-import { PROFILE_ICONS } from '../data/themes'
+import { resolveProfileIcon } from '../data/themes'
 import { LEVELS, levelFromXP } from '../data/subjects'
 import {
   LayoutDashboard, Calendar, FileText, Brain, CheckSquare,
@@ -40,6 +40,26 @@ const MOBILE_NAV = [
 ]
 
 export default function Layout() {
+  // Defensive fallback for modal positioning: .modal-overlay is meant to be position:fixed
+  // and cover the true viewport regardless of scroll (see the transform:none fix in
+  // globals.css for the actual root cause of why it wasn't). This doesn't fix positioning
+  // itself — a correctly-fixed overlay doesn't need it — but scrolling to top the instant one
+  // appears means even a still-hijacked overlay lands where the user is currently looking,
+  // rather than wherever "middle of the full document" happens to fall. Cheap, global, and
+  // needs no changes on any individual page's modal.
+  useEffect(() => {
+    const observer = new MutationObserver(mutations => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType !== 1) continue
+          const isModal = node.classList?.contains('modal-overlay') || node.querySelector?.('.modal-overlay')
+          if (isModal) { window.scrollTo({ top: 0, behavior: 'instant' }); return }
+        }
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
   const { profile, logout } = useAuth()
   const { isPro }           = useIsPro()
   const { theme, toggle }   = useTheme()
@@ -78,7 +98,7 @@ export default function Layout() {
   const xpNeeded     = nextLvlXp - currentLvlXp
   const xpPct        = Math.min(100, Math.round((xpThisLevel / xpNeeded) * 100))
 
-  const iconEmoji = PROFILE_ICONS?.[profile?.profileIcon||'lightning']?.emoji ?? null
+  const iconEmoji = resolveProfileIcon(profile?.profileIcon).emoji ?? null
   const initial   = (profile?.displayName||'U')[0].toUpperCase()
 
   const FULL_W = 252, COLL_W = 64
