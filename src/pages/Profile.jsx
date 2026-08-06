@@ -8,7 +8,7 @@ import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
 import { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { BADGE_LIST, BADGE_CATEGORIES } from '../data/badges'
-import { PROFILE_ICONS } from '../data/themes'
+import { resolveProfileIcon } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
 import { Zap, Flame, Trophy, Copy, Check, Download, Loader, Share2, X, Crown, Settings } from 'lucide-react'
@@ -70,8 +70,7 @@ export default function Profile() {
 
   const earnedIds      = profile?.badges || []
   const unlockedBadges = BADGE_LIST.filter(b => earnedIds.includes(b.id))
-  const iconId         = profile?.profileIcon || 'lightning'
-  const iconEmoji      = PROFILE_ICONS?.[iconId]?.emoji || null
+  const iconEmoji      = resolveProfileIcon(profile?.profileIcon).emoji
 
   // Detect streak milestones and prompt to share
   useEffect(() => {
