@@ -5,12 +5,12 @@ import {
   getLeaderboard, getGlobalLeaderboard,
   updateUserProfile, checkAndAwardBadge,
 } from '../utils/firestore'
-import { PROFILE_ICONS } from '../data/themes'
+import { resolveProfileIcon } from '../data/themes'
 import toast from 'react-hot-toast'
 import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 
 function Avatar({ icon, name, size = 32 }) {
-  const emoji = PROFILE_ICONS?.[icon]?.emoji
+  const emoji = icon ? resolveProfileIcon(icon).emoji : null
   const letter = (name || 'A')[0].toUpperCase()
   return (
     <div style={{
