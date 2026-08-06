@@ -1,6 +1,8 @@
 // src/data/themes.js
 // Theme and profile icon definitions for RevisionFlow cosmetics system
 
+import { BADGE_LIST } from './badges'
+
 export const THEMES = {
   default: {
     name: 'Default',
@@ -116,6 +118,29 @@ export const PROFILE_ICONS = {
   brain:      { emoji: '🧠', unlock: 'badge_mastery_gold',  name: 'Brain',        unlockLabel: 'Subject Master badge' },
   robot:      { emoji: '🤖', unlock: 'premium',             name: 'Robot',        unlockLabel: 'RevisionFlow Pro' },
   gem:        { emoji: '💠', unlock: 'premium',             name: 'Gem',          unlockLabel: 'RevisionFlow Pro' },
+}
+
+// profile.profileIcon holds either a plain PROFILE_ICONS key ("lightning") or, for a badge
+// used as an icon, "badge:<badgeId>" ("badge:first_friend"). Every screen that shows a profile
+// icon should resolve through here rather than indexing PROFILE_ICONS directly — Layout,
+// Profile, PublicProfile, Leaderboard, and this file's own ThemeSelector all do.
+export function resolveProfileIcon(iconId) {
+  if (iconId && iconId.startsWith('badge:')) {
+    const badge = BADGE_LIST.find(b => b.id === iconId.slice(6))
+    if (badge) return { emoji: badge.icon, name: badge.name }
+  }
+  const preset = PROFILE_ICONS[iconId] || PROFILE_ICONS.lightning
+  return { emoji: preset.emoji, name: preset.name }
+}
+
+// Badges whose emoji doesn't already exist as a PROFILE_ICONS option. Several PROFILE_ICONS
+// entries are already reachable via a badge (🔥 fire via the 7-day-streak badge, 💎 diamond via
+// 30-day-streak, etc.) — offering that same badge again in a separate "badge icon" picker would
+// just be a second way to select an icon a user can already select, with no new visual. Only the
+// badges left after excluding those actually give someone a new option.
+const PROFILE_ICON_EMOJIS = new Set(Object.values(PROFILE_ICONS).map(p => p.emoji))
+export function eligibleBadgeIcons() {
+  return BADGE_LIST.filter(b => !PROFILE_ICON_EMOJIS.has(b.icon))
 }
 
 // Check if a theme/icon is unlocked for a given user profile
