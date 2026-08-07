@@ -96,17 +96,30 @@ export default function AdminAutoGenerate() {
     return queue
   }
 
+  // A 504/non-JSON failure specifically means the function was cut off mid-generation — the
+  // one case where asking for less content next attempt actually improves the odds of finishing
+  // in time. Any other failure (a genuine API error, a validation problem) isn't helped by fewer
+  // tokens, so only this specific shape of error triggers the step-down.
+  function looksLikeTimeout(msg) {
+    return typeof msg === 'string' && (msg.includes('ran too long') || msg.includes('timed out'))
+  }
+
   async function processItem(item, ai, fs) {
     if (item.kind === 'note') {
       const cached = await ai.getTopicNoteFromCache(item.board, item.level, item.subject, item.topic)
       if (cached) return { status: 'cached' }
 
       let lastReason = 'Unknown error'
+      let maxTokens = 8192
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const res = await ai.generateTopicNote({ subject: item.subject, board: item.board, level: item.level, topic: item.topic, uid: null })
+        const res = await ai.generateTopicNote({ subject: item.subject, board: item.board, level: item.level, topic: item.topic, uid: null, maxTokens })
         if (res.error) {
           lastReason = res.error
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
+          if (looksLikeTimeout(res.error)) {
+            maxTokens = Math.max(4096, maxTokens - 1800)
+            addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
+          }
           continue
         }
         const problem = validateNote(res.text)
@@ -131,11 +144,16 @@ export default function AdminAutoGenerate() {
       }
 
       let lastReason = 'Unknown error'
+      let maxTokens = 8192
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const res = await ai.generateFlashcards(item.subject, item.topic, 50, null)
+        const res = await ai.generateFlashcards(item.subject, item.topic, 50, null, maxTokens)
         if (res.error) {
           lastReason = res.error
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
+          if (looksLikeTimeout(res.error)) {
+            maxTokens = Math.max(4096, maxTokens - 1800)
+            addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
+          }
           continue
         }
         const cards = ai.parseFlashcards(res.text || '')
