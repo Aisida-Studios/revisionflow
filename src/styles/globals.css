@@ -470,8 +470,9 @@ code {
   z-index: 9999 !important;
   background: rgba(0,0,0,0.55) !important;
   backdrop-filter: blur(8px);
-  display: flex !important; align-items: center !important; justify-content: center !important;
+  display: flex !important; align-items: flex-start !important; justify-content: center !important;
   padding: 16px !important;
+  padding-top: min(8vh, 64px) !important;
 }
 .modal {
   background: var(--bg-card);
