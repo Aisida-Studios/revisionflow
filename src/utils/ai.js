@@ -344,7 +344,7 @@ EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written o
 }
 
 
-export async function generateFlashcards(subject, topic, count, uid) {
+export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192) {
   count = count || 8
   var topicPart = topic ? ', topic: ' + topic : ''
   var prompt = [
@@ -369,7 +369,7 @@ export async function generateFlashcards(subject, topic, count, uid) {
     '',
     'Now generate exactly ' + count + ' flashcards for ' + subject + (topic ? ' (' + topic + ')' : '') + ':',
   ].join('\n')
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, maxTokens, uid)
 }
 
 export async function generatePredictedQuestions(subject, board, level, topic, totalMarks, numQuestions, uid) {
@@ -490,7 +490,7 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
 }
 
 
-export async function generateTopicNote({ subject, board, level, topic, uid }) {
+export async function generateTopicNote({ subject, board, level, topic, uid, maxTokens = 8192 }) {
   const isALevel = level === 'A-Level' || level === 'AS-Level'
 
   const sys = 'You are a senior ' + board + ' examiner and ' + level + ' ' + subject + ' teacher with 15 years of experience. ' +
@@ -528,7 +528,7 @@ export async function generateTopicNote({ subject, board, level, topic, uid }) {
     '12 facts or definitions a student must state instantly in an exam. Numbered, one sentence each. Spec-required content only.\n\n' +
     'Use markdown. **Bold** all key terms. Be thorough and specification-accurate throughout.'
 
-  return callAI(prompt, sys, 8192, uid)
+  return callAI(prompt, sys, maxTokens, uid)
 }
 
 
