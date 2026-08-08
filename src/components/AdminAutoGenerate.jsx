@@ -110,14 +110,14 @@ export default function AdminAutoGenerate() {
       if (cached) return { status: 'cached' }
 
       let lastReason = 'Unknown error'
-      let maxTokens = 8192
+      let maxTokens = 4096 // per-call budget now that generateTopicNote splits internally — see ai.js
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const res = await ai.generateTopicNote({ subject: item.subject, board: item.board, level: item.level, topic: item.topic, uid: null, maxTokens })
         if (res.error) {
           lastReason = res.error
           addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
           if (looksLikeTimeout(res.error)) {
-            maxTokens = Math.max(4096, maxTokens - 1800)
+            maxTokens = Math.max(2200, maxTokens - 900)
             addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
           }
           continue
@@ -144,19 +144,42 @@ export default function AdminAutoGenerate() {
       }
 
       let lastReason = 'Unknown error'
-      let maxTokens = 8192
+      let maxTokens = 4096 // per-call budget — two 25-card calls instead of one 50-card call
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const res = await ai.generateFlashcards(item.subject, item.topic, 50, null, maxTokens)
-        if (res.error) {
-          lastReason = res.error
-          addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
-          if (looksLikeTimeout(res.error)) {
-            maxTokens = Math.max(4096, maxTokens - 1800)
+        const res1 = await ai.generateFlashcards(item.subject, item.topic, 25, null, maxTokens,
+          'Focus ONLY on core definitions, key terms, and direct factual recall.')
+        if (res1.error) {
+          lastReason = res1.error
+          addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res1.error}`, 'error')
+          if (looksLikeTimeout(res1.error)) {
+            maxTokens = Math.max(2200, maxTokens - 900)
             addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
           }
           continue
         }
-        const cards = ai.parseFlashcards(res.text || '')
+        const res2 = await ai.generateFlashcards(item.subject, item.topic, 25, null, maxTokens,
+          'Focus ONLY on application, worked scenarios, and common misconceptions — do NOT write simple definition-recall cards, those are covered separately.')
+        if (res2.error) {
+          lastReason = res2.error
+          addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res2.error}`, 'error')
+          if (looksLikeTimeout(res2.error)) {
+            maxTokens = Math.max(2200, maxTokens - 900)
+            addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
+          }
+          continue
+        }
+        const cards1 = ai.parseFlashcards(res1.text || '')
+        const cards2raw = ai.parseFlashcards(res2.text || '')
+        // Two independent calls for the same topic can still land on the same question despite
+        // the different focus hints — cheap safety net, drop exact (case-insensitive) repeats.
+        const seen = new Set(cards1.map(c => (c.q || '').trim().toLowerCase()))
+        const cards2 = cards2raw.filter(c => {
+          const key = (c.q || '').trim().toLowerCase()
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        const cards = [...cards1, ...cards2]
         const problem = validateFlashcards(cards)
         if (problem) {
           lastReason = problem
