@@ -10,6 +10,7 @@ import {
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
 import { detectCommandWord } from '../utils/commandWords'
+import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
 import AIOutput from '../components/AIOutput'
 import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
@@ -19,7 +20,7 @@ import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
   RotateCcw, Copy, Check, Download, Shuffle, X, Plus,
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
-  Users, ChevronDown,
+  Users, ChevronDown, Repeat,
 } from 'lucide-react'
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -603,31 +604,42 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   const [masteryFilter,setMasteryFilter] = useState('all')  // 'all' | 'unmastered' | 'mastered'
   // cardMastery: { [cardQ]: 1|2|3 } — persisted to Firestore via set metadata
   const [cardMastery,setCardMastery] = useState({})
+  // cardSchedule: { [cardQ]: { box: 1-5, dueDate: 'YYYY-MM-DD' } } — Leitner spaced-repetition data, same document
+  const [cardSchedule,setCardSchedule] = useState({})
 
-  // Load mastery data from Firestore when studying a saved set
+  // Load mastery + schedule data from Firestore when studying a saved set
   useEffect(() => {
     if (!uid || !setId) return
-    import('../utils/firestore').then(({ getDoc, doc }) => {
-      import('../firebase').then(({ db }) => {
-        getDoc(doc(db, 'users', uid, 'flashcardSets', setId)).then(snap => {
-          if (snap.exists() && snap.data().cardMastery) {
-            setCardMastery(snap.data().cardMastery)
-          }
-        }).catch(() => {})
-      })
+    Promise.all([import('firebase/firestore'), import('../firebase')]).then(([{ getDoc, doc }, { db }]) => {
+      getDoc(doc(db, 'users', uid, 'flashcardSets', setId)).then(snap => {
+        if (snap.exists()) {
+          const data = snap.data()
+          if (data.cardMastery) setCardMastery(data.cardMastery)
+          if (data.cardSchedule) setCardSchedule(data.cardSchedule)
+        }
+      }).catch(() => {})
     })
   }, [uid, setId])
 
-  // Save mastery after flash mode completes
+  // Save mastery + schedule after flash mode completes. Merges into the existing maps
+  // (rather than rebuilding from scratch) and iterates filteredCards (what was actually
+  // shown/scored) rather than the full cards array, so studying a filtered subset no
+  // longer wipes out saved progress on the cards that weren't in that subset.
   async function saveMastery(newScores) {
     if (!uid || !setId) return
-    const mastery = {}
-    cards.forEach((c, i) => { if (newScores[i]) mastery[c.q] = newScores[i] })
+    const mastery = { ...cardMastery }
+    const schedule = { ...cardSchedule }
+    filteredCards.forEach((c, i) => {
+      if (!newScores[i]) return
+      mastery[c.q] = newScores[i]
+      schedule[c.q] = nextSchedule(schedule[c.q], newScores[i])
+    })
     try {
       const { updateDoc, doc } = await import('firebase/firestore')
       const { db } = await import('../firebase')
-      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery })
+      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery, cardSchedule: schedule })
       setCardMastery(mastery)
+      setCardSchedule(schedule)
     } catch(e) {}
   }
 
@@ -1335,6 +1347,173 @@ function QuizTab({ mySets, uid, profile }) {
   )
 }
 
+/* ── Practice — cross-set spaced repetition queue ──────────────────────────── */
+// Reuses FlipCard for the actual review (same flip + rate interaction as Flash mode).
+// What's new here is card *selection*: due cards are pulled from every saved set,
+// ranked by buildDueQueue (lowest box / most overdue first), and each rating updates
+// that specific card's cardMastery + cardSchedule on its own set — same Firestore shape
+// StudySession already reads and writes, so nothing else in the app needs to change to
+// pick this data up (the mastery filter dropdown, the "struggling" memory-aid nudge).
+function PracticeTab({ mySets, uid }) {
+  const [queue, setQueue] = useState(() => buildDueQueue(mySets))
+  const [idx, setIdx] = useState(0)
+  const [started, setStarted] = useState(false)
+  const [finished, setFinished] = useState(false)
+  const [sessionResults, setSessionResults] = useState([])
+  const progressRef = useRef({})
+
+  useEffect(() => {
+    setQueue(buildDueQueue(mySets))
+    setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
+    progressRef.current = {}
+  }, [mySets])
+
+  function getProgress(setId) {
+    if (!progressRef.current[setId]) {
+      const set = mySets.find(s => s.id === setId)
+      progressRef.current[setId] = { mastery: { ...(set?.cardMastery || {}) }, schedule: { ...(set?.cardSchedule || {}) } }
+    }
+    return progressRef.current[setId]
+  }
+
+  async function handleRate(rating) {
+    const item = queue[idx]
+    if (!item) return
+    const prog = getProgress(item.setId)
+    const newSchedule = nextSchedule(prog.schedule[item.card.q], rating)
+    prog.mastery[item.card.q] = rating
+    prog.schedule[item.card.q] = newSchedule
+
+    setSessionResults(r => [...r, { setId: item.setId, setTitle: item.setTitle, subject: item.subject, card: item.card, rating }])
+
+    try {
+      if (uid) {
+        const { updateDoc, doc } = await import('firebase/firestore')
+        const { db } = await import('../firebase')
+        await updateDoc(doc(db, 'users', uid, 'flashcardSets', item.setId), { cardMastery: prog.mastery, cardSchedule: prog.schedule })
+      }
+    } catch (e) {}
+
+    if (idx < queue.length - 1) setIdx(i => i + 1)
+    else setFinished(true)
+  }
+
+  function restart() {
+    setQueue(buildDueQueue(mySets)); setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
+  }
+
+  if (!mySets || !mySets.length) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+        <Repeat size={28} style={{ color: 'var(--text-muted)', marginBottom: 10 }} />
+        <p style={{ fontWeight: 600, marginBottom: 4 }}>No flashcard sets yet</p>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Generate or save a set from the Flashcards tab, and practice will pick up cards that need review.</p>
+      </div>
+    )
+  }
+
+  if (finished) {
+    const gotIt = sessionResults.filter(r => r.rating === 3).length
+    const partial = sessionResults.filter(r => r.rating === 2).length
+    const missed = sessionResults.filter(r => r.rating === 1).length
+    return (
+      <div style={{ maxWidth: 520, margin: '0 auto' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 10 }}>{missed === 0 ? '🏆' : '💪'}</div>
+          <h3 style={{ marginBottom: 4 }}>Practice complete!</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.85rem' }}>{sessionResults.length} cards reviewed</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+            {[{label:'Got it',count:gotIt,c:'var(--success)'},{label:'Partial',count:partial,c:'var(--warning)'},{label:'Missed',count:missed,c:'var(--danger)'}].map(s=>(
+              <div key={s.label} style={{ textAlign: 'center', padding: '8px 16px', background: 'var(--bg-card)', borderRadius: 10, border: '2px solid var(--border)' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.c }}>{s.count}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+            Cards you got right are spaced further out — the ones you missed will come straight back tomorrow.
+          </p>
+          <button className="btn btn-primary" onClick={restart}><RotateCcw size={14} /> Check for more</button>
+        </div>
+        {missed > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <h4 style={{ marginBottom: 10, fontSize: '0.9rem' }}>Cards to reinforce ({missed})</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {sessionResults.filter(r => r.rating === 1).map((r, i) => (
+                <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{r.card.q}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{r.card.a}</div>
+                  <MemoryAidButton front={r.card.q} back={r.card.a} subject={r.subject} uid={uid} compact />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (started) {
+    const item = queue[idx]
+    const struggling = (getProgress(item.setId).mastery[item.card.q] || 0) === 1
+    return (
+      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}><ChevronLeft size={15} /> Back</button>
+          <span className="badge badge-grey" style={{ fontSize: '0.72rem' }}>{item.setTitle}</span>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+            <span>{idx + 1}/{queue.length}</span><span>{Math.round(idx / queue.length * 100)}%</span>
+          </div>
+          <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: (idx / queue.length * 100) + '%', background: 'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius: 3, transition: 'width 0.3s' }} />
+          </div>
+        </div>
+        <FlipCard card={item.card} index={idx} total={queue.length} showRate onRate={handleRate}
+          uid={uid} subject={item.subject} struggling={struggling} />
+      </div>
+    )
+  }
+
+  // ── Summary / start screen ──
+  const subjectCounts = {}
+  queue.forEach(q => { const s = q.subject || 'Other'; subjectCounts[s] = (subjectCounts[s] || 0) + 1 })
+  const overdueCount = queue.filter(q => daysOverdue(q.schedule) > 0).length
+
+  return (
+    <div style={{ maxWidth: 520, margin: '0 auto' }}>
+      <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
+        {queue.length === 0 ? (
+          <>
+            <div style={{ fontSize: '2.6rem', marginBottom: 10 }}>✨</div>
+            <h3 style={{ marginBottom: 6 }}>All caught up!</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Nothing is due for review right now. Cards come back here once their spacing interval is up.</p>
+          </>
+        ) : (
+          <>
+            <Repeat size={26} style={{ color: 'var(--accent-light)', marginBottom: 10 }} />
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--accent)', marginBottom: 4 }}>{queue.length}</div>
+            <p style={{ fontWeight: 600, marginBottom: 4 }}>card{queue.length === 1 ? '' : 's'} due for practice</p>
+            {overdueCount > 0 && <p style={{ fontSize: '0.78rem', color: 'var(--warning)', marginBottom: 14 }}>{overdueCount} overdue — these get priority</p>}
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
+              {Object.entries(subjectCounts).map(([s, n]) => (
+                <span key={s} className="badge badge-grey" style={{ fontSize: '0.72rem' }}>{s} ({n})</span>
+              ))}
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%', padding: 12 }} onClick={() => setStarted(true)}>
+              Start practice
+            </button>
+          </>
+        )}
+      </div>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 12, textAlign: 'center', lineHeight: 1.6 }}>
+        Cards you rate "Got it!" get spaced further apart. Cards you miss come back tomorrow — so the ones you keep getting wrong show up here far more often than the ones you know well.
+      </p>
+    </div>
+  )
+}
+
 /* ── Mark scheme reveal (controlled state, no <details>) ────────── */
 function MarkSchemeReveal({ text }) {
   const [shown, setShown] = useState(false)
@@ -1982,6 +2161,7 @@ export default function Study() {
   const [setsLoad, setSetsLoad] = useState(false)
   const [searchQ,   setSearchQ]   = useState('')
   const [mySearch,  setMySearch]   = useState('')
+  const practiceDueCount = buildDueQueue(mySets).length
 
   // Exam questions
   const [eqSubject, setEqSubject] = useState('')
@@ -2187,6 +2367,10 @@ export default function Study() {
       <div className="tabs" style={{ marginBottom: 24, padding: 4, flexWrap: 'wrap' }}>
         <button className={'tab' + (tab === 'notes' ? ' active' : '')} onClick={() => setTab('notes')}><BookOpen size={15} /> Topic Notes</button>
         <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><BookOpen size={15} /> Flashcards</button>
+        <button className={'tab' + (tab === 'practice' ? ' active' : '')} onClick={() => setTab('practice')}>
+          <Repeat size={15} /> Practice
+          {practiceDueCount > 0 && <span className="badge badge-purple" style={{ marginLeft: 6, fontSize: '0.65rem', padding: '1px 6px' }}>{practiceDueCount}</span>}
+        </button>
         <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ClipboardList size={15} /> Quiz</button>
         <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
         <button className={'tab' + (tab === 'marker' ? ' active' : '')} onClick={() => setTab('marker')}><Brain size={15} /> Answer Marker</button>
@@ -2333,6 +2517,11 @@ export default function Study() {
       {/* ── TOPIC NOTES ── */}
       {tab === 'notes' && (
         <TopicNotesTab profile={profile} uid={user?.uid} />
+      )}
+
+      {/* ── PRACTICE (spaced repetition) ── */}
+      {tab === 'practice' && (
+        <PracticeTab mySets={mySets} uid={user?.uid} />
       )}
 
       {/* ── QUIZ ── */}
