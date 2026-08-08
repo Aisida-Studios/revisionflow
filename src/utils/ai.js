@@ -344,11 +344,12 @@ EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written o
 }
 
 
-export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192) {
+export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192, focusHint = '') {
   count = count || 8
   var topicPart = topic ? ', topic: ' + topic : ''
   var prompt = [
     'Generate exactly ' + count + ' revision flashcards for: ' + subject + topicPart + '.',
+    focusHint ? focusHint : '',
     '',
     'STRICT FORMAT RULES:',
     '- Begin your response immediately with Q: (no introduction)',
@@ -490,7 +491,7 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
 }
 
 
-export async function generateTopicNote({ subject, board, level, topic, uid, maxTokens = 8192 }) {
+export async function generateTopicNote({ subject, board, level, topic, uid, maxTokens = 4096 }) {
   const isALevel = level === 'A-Level' || level === 'AS-Level'
 
   const sys = 'You are a senior ' + board + ' examiner and ' + level + ' ' + subject + ' teacher with 15 years of experience. ' +
@@ -500,7 +501,14 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
 
   const eg = isALevel ? '3' : '2'
 
-  const prompt = 'Create a complete specification-accurate revision guide.\n\n' +
+  // Two smaller sequential calls instead of one ~8K-token request. A lower max_tokens on a
+  // single call doesn't reliably reduce generation TIME — it only cuts the response short at
+  // roughly the same elapsed time, since the model generates at a fixed rate regardless of where
+  // the ceiling sits. Actually asking for less content per call is what shortens it. Sequential
+  // rather than parallel, so a batch of 5 items doesn't turn into 10 concurrent Mistral calls.
+  const promptA = 'Create PART 1 of 2 of a complete specification-accurate revision guide. ' +
+    'Do not include a title or introduction — start directly with the first heading below. Do not ' +
+    'mention that this is part 1 of 2.\n\n' +
     'EXAM BOARD: ' + board + '\nLEVEL: ' + level + '\nSUBJECT: ' + subject + '\nTOPIC: ' + topic + '\n\n' +
     'CRITICAL: Every point must be directly from the ' + board + ' ' + level + ' ' + subject + ' specification only.\n\n' +
     '## Specification Coverage\n' +
@@ -511,6 +519,13 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
     'Complete content for every spec point. Include all required formulae, equations, case studies, events, vocabulary as appropriate to ' + subject + '.\n\n' +
     '## Explanation\n' +
     'Clear explanation of all concepts from first principles. Use numbered steps for processes. At least 300 words.\n\n' +
+    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate.'
+
+  const promptB = 'Create PART 2 of 2 of the SAME revision guide — the exam-preparation half. ' +
+    'Do not include a title, introduction, or repeat anything — start directly with the first heading below. Do not ' +
+    'mention that this is part 2 of 2.\n\n' +
+    'EXAM BOARD: ' + board + '\nLEVEL: ' + level + '\nSUBJECT: ' + subject + '\nTOPIC: ' + topic + '\n\n' +
+    'CRITICAL: Every point must be directly from the ' + board + ' ' + level + ' ' + subject + ' specification only.\n\n' +
     '## Worked Examples\n' +
     eg + ' fully worked ' + board + ' ' + level + '-style examples with full working. Match real ' + board + ' past paper style and difficulty.\n\n' +
     '## Common Exam Mistakes\n' +
@@ -526,9 +541,14 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
     '3-4 other ' + board + ' ' + level + ' ' + subject + ' spec topics that connect to this one, and how.\n\n' +
     '## Quick-Fire Recall\n' +
     '12 facts or definitions a student must state instantly in an exam. Numbered, one sentence each. Spec-required content only.\n\n' +
-    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate throughout.'
+    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate.'
 
-  return callAI(prompt, sys, maxTokens, uid)
+  const resA = await callAI(promptA, sys, maxTokens, uid)
+  if (resA.error) return resA
+  const resB = await callAI(promptB, sys, maxTokens, uid)
+  if (resB.error) return resB
+
+  return { text: resA.text.trim() + '\n\n' + resB.text.trim(), provider: resB.provider, remaining: resB.remaining }
 }
 
 
@@ -615,8 +635,8 @@ export function parseFlashcards(text) {
   return cards.filter(c => c.q && c.a)
 }
 
-// ── Skill-focused flashcards — used by SkillFlashcardSuggestion on the Answer Marker ─────
-// Same Q:/A: contract as generateFlashcards above, so the existing parseFlashcards and
+// ── Skill-focused flashcards — triggered by SkillFlashcardSuggestion when marking history
+// shows a consistently weak command word. Reuses parseFlashcards' Q:/A: format so
 // saveFlashcardSet handle the result with no changes. exampleQuestion is optional context
 // (the marker has no separate topic field, just a pasted question) so the cards stay in
 // roughly the same content area as what the student was just marked on.
