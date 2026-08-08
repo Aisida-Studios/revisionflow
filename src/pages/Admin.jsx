@@ -10,7 +10,7 @@ import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
   Shield, Users, Star, Search, CheckCircle, XCircle,
-  BarChart2, Zap, RefreshCw, AlertTriangle, ChevronDown, ChevronUp,
+  BarChart2, Zap, RefreshCw, AlertTriangle, ChevronDown, ChevronUp, TrendingUp,
 } from 'lucide-react'
 
 const ADMIN_EMAIL = 'femiaisida1@gmail.com'
@@ -936,6 +936,18 @@ function BetaTab({ email }) {
 }
 
 /* ── Stats tab ─────────────────────────────────────────────────── */
+// Firestore Admin SDK Timestamps serialise over JSON as {_seconds, _nanoseconds} (or plain
+// {seconds,...} depending on SDK version) — never a Date or ISO string, so this always needs
+// unwrapping before use.
+function toDate(ts) {
+  if (!ts) return null
+  if (typeof ts === 'string') { const d = new Date(ts); return isNaN(d) ? null : d }
+  if (typeof ts._seconds === 'number') return new Date(ts._seconds * 1000)
+  if (typeof ts.seconds  === 'number') return new Date(ts.seconds * 1000)
+  return null
+}
+function dayKey(d) { return d.toISOString().slice(0, 10) }
+
 function StatsTab({ email }) {
   const [stats,   setStats]   = useState(null)
   const [loading, setLoading] = useState(true)
@@ -955,7 +967,36 @@ function StatsTab({ email }) {
         const avgXP  = total ? Math.round(users.reduce((s, u) => s + (u.xp || 0), 0) / total) : 0
         const avgStr = total ? Math.round(users.reduce((s, u) => s + (u.streak || 0), 0) / total) : 0
         const topUsers = [...users].sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 10)
-        setStats({ total, beta, pro, active7, avgXP, avgStr, topUsers })
+
+        // Signups per day, last 30 days. listUsers caps at 500 (server-side hard cap too) —
+        // fine for now, but once total nears that this will start under-counting older days.
+        const dayCounts = {}
+        for (let i = 29; i >= 0; i--) dayCounts[dayKey(new Date(Date.now() - i * 86400000))] = 0
+        let undated = 0
+        users.forEach(u => {
+          const d = toDate(u.createdAt)
+          if (!d) { undated++; return }
+          const key = dayKey(d)
+          if (key in dayCounts) dayCounts[key]++
+        })
+        const signupsByDay = Object.entries(dayCounts).map(([date, count]) => ({ date, count }))
+        const last7  = signupsByDay.slice(-7).reduce((s, d) => s + d.count, 0)
+        const prior7 = signupsByDay.slice(-14, -7).reduce((s, d) => s + d.count, 0)
+
+        // Referral breakdown — referredBy is set server-side in referral.js on signup.
+        const usersById = Object.fromEntries(users.map(u => [u.id, u]))
+        const referredCount = users.filter(u => u.referredBy).length
+        const referrerCounts = {}
+        users.forEach(u => { if (u.referredBy) referrerCounts[u.referredBy] = (referrerCounts[u.referredBy] || 0) + 1 })
+        const topReferrers = Object.entries(referrerCounts)
+          .sort((a, b) => b[1] - a[1]).slice(0, 8)
+          .map(([uid, count]) => ({ uid, count, name: usersById[uid]?.displayName || (uid.slice(0, 8) + '…') }))
+
+        setStats({
+          total, beta, pro, active7, avgXP, avgStr, topUsers,
+          signupsByDay, last7, prior7, undated,
+          referredCount, topReferrers,
+        })
       } catch(e) { toast.error(e.message) }
       finally { setLoading(false) }
     }
@@ -964,6 +1005,9 @@ function StatsTab({ email }) {
 
   if (loading) return <div style={{ color: 'var(--text-muted)' }}>Loading stats…</div>
   if (!stats)  return null
+
+  const maxDay = Math.max(1, ...stats.signupsByDay.map(d => d.count))
+  const trendPct = stats.prior7 > 0 ? Math.round((stats.last7 - stats.prior7) / stats.prior7 * 100) : null
 
   return (
     <div>
@@ -983,6 +1027,63 @@ function StatsTab({ email }) {
           </div>
         ))}
       </div>
+
+      <Section title="Signups — last 30 days" icon={<TrendingUp size={15} />}>
+        {stats.undated > 0 && (
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+            {stats.undated} user{stats.undated !== 1 ? 's' : ''} with no createdAt (pre-dates this field) excluded from the chart below.
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <span style={{ fontSize: '0.85rem' }}>
+            <strong>{stats.last7}</strong> <span style={{ color: 'var(--text-muted)' }}>signups, last 7 days</span>
+          </span>
+          {trendPct !== null && (
+            <span className={'badge ' + (trendPct >= 0 ? 'badge-green' : 'badge-grey')} style={{ fontSize: '0.68rem' }}>
+              {trendPct >= 0 ? '+' : ''}{trendPct}% vs prior 7
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 80 }}>
+          {stats.signupsByDay.map(d => (
+            <div key={d.date} title={d.date + ': ' + d.count} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+              <div style={{
+                width: '100%', minHeight: d.count > 0 ? 3 : 1,
+                height: (d.count / maxDay * 100) + '%',
+                background: d.count > 0 ? 'linear-gradient(180deg,var(--purple-400),var(--purple-700))' : 'var(--border)',
+                borderRadius: '3px 3px 0 0',
+              }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4 }}>
+          <span>{stats.signupsByDay[0]?.date}</span>
+          <span>{stats.signupsByDay[stats.signupsByDay.length - 1]?.date}</span>
+        </div>
+      </Section>
+
+      <Section title="Referrals" icon={<Users size={15} />}>
+        <div style={{ fontSize: '0.85rem', marginBottom: 12 }}>
+          <strong>{stats.referredCount}</strong> of <strong>{stats.total}</strong> users
+          {' '}({stats.total ? Math.round(stats.referredCount / stats.total * 100) : 0}%) came in via a referral code.
+        </div>
+        {stats.topReferrers.length === 0 ? (
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No referrals recorded yet.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {stats.topReferrers.map((r, i) => (
+              <div key={r.uid} style={{ display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 14px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: 24 }}>#{i+1}</span>
+                <span style={{ fontWeight: 600, flex: 1, fontSize: '0.88rem' }}>{r.name}</span>
+                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-light)' }}>
+                  {r.count} referral{r.count !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
 
       <Section title="Top 10 by XP" icon={<BarChart2 size={15} />}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1005,13 +1106,13 @@ function StatsTab({ email }) {
       <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 10,
         background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--warning)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <AlertTriangle size={15} /> Pre-Stripe checklist
+          <AlertTriangle size={15} /> Pre-launch checklist
         </div>
         <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.9 }}>
           <li>{stats.beta > 0 ? '✓' : '✗'} {stats.beta} beta user{stats.beta !== 1 ? 's' : ''} flagged</li>
-          <li>✗ isPro() hook — must return true if betaUser OR isPro (not built yet)</li>
-          <li>✗ Stripe webhook — must set isPro: true on payment, false on cancel (not built yet)</li>
-          <li>✗ Paywall gates on Pro features (not built yet)</li>
+          <li>✓ isPro() hook — returns true if betaUser OR isPro</li>
+          <li>✓ Stripe webhook — sets isPro true/false on payment/cancellation</li>
+          <li>✓ Paywall gates on Pro features (ProGate in use across the app)</li>
         </ul>
       </div>
     </div>
