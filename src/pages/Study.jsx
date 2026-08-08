@@ -9,7 +9,11 @@ import {
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
+import { detectCommandWord } from '../utils/commandWords'
 import AIOutput from '../components/AIOutput'
+import CommandWordHint from '../components/CommandWordHint'
+import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
+import MemoryAidButton from '../components/MemoryAidButton'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
@@ -21,7 +25,7 @@ import {
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
 /* ── Flip card ─────────────────────────────────────────────────────────────── */
-function FlipCard({ card, index, total, onRate, showRate }) {
+function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggling }) {
   const [flipped, setFlipped] = useState(false)
   useEffect(() => setFlipped(false), [index])
   return (
@@ -39,6 +43,11 @@ function FlipCard({ card, index, total, onRate, showRate }) {
           </div>
         </div>
       </div>
+      {flipped && uid && (
+        <div style={{ textAlign: 'center', marginBottom: 12 }}>
+          <MemoryAidButton key={card.q} front={card.q} back={card.a} subject={subject} uid={uid} struggling={struggling} />
+        </div>
+      )}
       {showRate && flipped && onRate && (
         <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
           {[{label:"Didn't know",c:'var(--danger)',v:1},{label:'Partially',c:'var(--warning)',v:2},{label:'Got it!',c:'var(--success)',v:3}].map(b => (
@@ -233,7 +242,11 @@ function WriteMode({ cards, onDone, uid }) {
   }
 
   function next() {
-    if (idx >= deck.length-1) { onDone(scores.filter(Boolean).length, deck.length); return }
+    if (idx >= deck.length-1) {
+      const missed = deck.filter((c, i) => !scores[i])
+      onDone(scores.filter(Boolean).length, deck.length, missed)
+      return
+    }
     setIdx(i=>i+1)
   }
 
@@ -483,7 +496,8 @@ ${questions}`
   function next() {
     if (idx >= qs.length - 1) {
       const sc = qs.filter(q => q.checked === 'correct').length
-      setFin(true); onDone(sc, qs.length); return
+      const missed = qs.filter(q => q.checked !== 'correct').map(q => q.card)
+      setFin(true); onDone(sc, qs.length, missed); return
     }
     setIdx(i => i + 1)
   }
@@ -665,7 +679,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       clearProgress()
     }
   }
-  function handleSubDone(correct,total) { setResults({got:correct,total,mode}); setMode('results') }
+  function handleSubDone(correct,total,missed) { setResults({got:correct,total,mode,missed:missed||[]}); setMode('results') }
   function restart(m) { setIdx(0); setScores([]); setResults(null); setMode(m||'select'); clearProgress() }
   function shuffle() { setCards(c=>[...c].sort(()=>Math.random()-.5)); setIdx(0); setScores([]) }
   function quizletCopy() { navigator.clipboard.writeText(cards.map(c=>c.q+'\t'+c.a).join('\n')); setCopied(true); toast.success('Copied!'); setTimeout(()=>setCopied(false),3000) }
@@ -759,6 +773,20 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <button className="btn btn-ghost" onClick={onClose}><X size={14}/> Exit</button>
           </div>
         </div>
+        {results.missed && results.missed.length > 0 && (
+          <div style={{ marginTop:14 }}>
+            <h4 style={{ marginBottom:10, fontSize:'0.9rem' }}>Cards to reinforce ({results.missed.length})</h4>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {results.missed.map((c,i)=>(
+                <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-card)', border:'1px solid rgba(239,68,68,0.3)' }}>
+                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
+                  <MemoryAidButton front={c.q} back={c.a} subject={subject} uid={uid} compact />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {results.mode==='flash'&&results.scores&&(
           <div style={{ marginTop:14 }}>
             <h4 style={{ marginBottom:10, fontSize:'0.9rem' }}>All cards</h4>
@@ -788,7 +816,8 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
           <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius:3, transition:'width 0.3s' }} />
         </div>
       </div>
-      <FlipCard card={filteredCards[idx]} index={idx} total={filteredCards.length} showRate onRate={handleFlashRate} />
+      <FlipCard card={filteredCards[idx]} index={idx} total={filteredCards.length} showRate onRate={handleFlashRate}
+        uid={uid} subject={subject} struggling={(cardMastery[filteredCards[idx]?.q] || 0) === 1} />
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
         <button className="btn btn-ghost btn-sm" onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0}><ChevronLeft size={15}/> Prev</button>
         <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<filteredCards.length-1)setIdx(i=>i+1);else{const s=scores;setResults({got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s});setMode('results');saveMastery(s)}}}>
@@ -1163,6 +1192,20 @@ function QuizTab({ mySets, uid, profile }) {
           )
         })()}
       </div>
+      {results.missed && results.missed.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <h4 style={{ marginBottom: 10, fontSize: '0.9rem' }}>Cards to reinforce ({results.missed.length})</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {results.missed.map((c, i) => (
+              <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{c.q}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{c.a}</div>
+                <MemoryAidButton front={c.q} back={c.a} subject={selectedSet?.subject} uid={uid} compact />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -1179,11 +1222,11 @@ function QuizTab({ mySets, uid, profile }) {
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
           <TestMode cards={quizCards} uid={uid}
-            onDone={(got, total) => setResults({ got, total })} />
+            onDone={(got, total, missed) => setResults({ got, total, missed: missed || [] })} />
         )}
         {quizMode === 'write' && (
           <WriteMode cards={quizCards} uid={uid}
-            onDone={(got, total) => setResults({ got, total })} />
+            onDone={(got, total, missed) => setResults({ got, total, missed: missed || [] })} />
         )}
       </div>
     )
@@ -1629,6 +1672,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
       setMkResult(parsed)
       setMkHistory(h => [{ subject: mkSubject, board: mkBoard, level: mkLevel,
         question: mkQ.slice(0, 60) + (mkQ.length > 60 ? '...' : ''),
+        commandWord: detectCommandWord(mkQ)?.word || null,
         marks: mkMarks, result: parsed, raw: res.text,
         time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
       }, ...h].slice(0, 8))
@@ -1821,6 +1865,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 <label className="label">The question</label>
                 <textarea className="textarea" rows={3} placeholder="Paste or type the exam question here..."
                   value={mkQ} onChange={e => setMkQ(e.target.value)} />
+                <CommandWordHint questionText={mkQ} />
               </div>
               <div>
                 <label className="label">Your answer</label>
@@ -1884,7 +1929,15 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               </p>
             </div>
           )}
-          {!mkLoading && mkResult && <ResultCard r={mkResult} />}
+          {!mkLoading && mkResult && (
+            <>
+              <ResultCard r={mkResult} />
+              <SkillFlashcardSuggestion
+                attempts={mkHistory.map(h => ({ commandWord: h.commandWord, pct: h.result?.pct }))}
+                subject={mkSubject} board={mkBoard} level={mkLevel} uid={uid}
+                exampleQuestion={mkQ} />
+            </>
+          )}
           {!mkLoading && !mkResult && (
             <div className="card empty-state" style={{ padding: '48px 24px' }}>
               <div style={{ fontSize: '3rem', marginBottom: 12 }}>✍️</div>
