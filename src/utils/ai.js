@@ -344,12 +344,11 @@ EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written o
 }
 
 
-export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192, focusHint = '') {
+export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192) {
   count = count || 8
   var topicPart = topic ? ', topic: ' + topic : ''
   var prompt = [
     'Generate exactly ' + count + ' revision flashcards for: ' + subject + topicPart + '.',
-    focusHint ? focusHint : '',
     '',
     'STRICT FORMAT RULES:',
     '- Begin your response immediately with Q: (no introduction)',
@@ -491,7 +490,7 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
 }
 
 
-export async function generateTopicNote({ subject, board, level, topic, uid, maxTokens = 4096 }) {
+export async function generateTopicNote({ subject, board, level, topic, uid, maxTokens = 8192 }) {
   const isALevel = level === 'A-Level' || level === 'AS-Level'
 
   const sys = 'You are a senior ' + board + ' examiner and ' + level + ' ' + subject + ' teacher with 15 years of experience. ' +
@@ -501,14 +500,7 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
 
   const eg = isALevel ? '3' : '2'
 
-  // Two smaller sequential calls instead of one ~8K-token request. A lower max_tokens on a
-  // single call doesn't reliably reduce generation TIME — it only cuts the response short at
-  // roughly the same elapsed time, since the model generates at a fixed rate regardless of where
-  // the ceiling sits. Actually asking for less content per call is what shortens it. Sequential
-  // rather than parallel, so a batch of 5 items doesn't turn into 10 concurrent Mistral calls.
-  const promptA = 'Create PART 1 of 2 of a complete specification-accurate revision guide. ' +
-    'Do not include a title or introduction — start directly with the first heading below. Do not ' +
-    'mention that this is part 1 of 2.\n\n' +
+  const prompt = 'Create a complete specification-accurate revision guide.\n\n' +
     'EXAM BOARD: ' + board + '\nLEVEL: ' + level + '\nSUBJECT: ' + subject + '\nTOPIC: ' + topic + '\n\n' +
     'CRITICAL: Every point must be directly from the ' + board + ' ' + level + ' ' + subject + ' specification only.\n\n' +
     '## Specification Coverage\n' +
@@ -519,13 +511,6 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
     'Complete content for every spec point. Include all required formulae, equations, case studies, events, vocabulary as appropriate to ' + subject + '.\n\n' +
     '## Explanation\n' +
     'Clear explanation of all concepts from first principles. Use numbered steps for processes. At least 300 words.\n\n' +
-    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate.'
-
-  const promptB = 'Create PART 2 of 2 of the SAME revision guide — the exam-preparation half. ' +
-    'Do not include a title, introduction, or repeat anything — start directly with the first heading below. Do not ' +
-    'mention that this is part 2 of 2.\n\n' +
-    'EXAM BOARD: ' + board + '\nLEVEL: ' + level + '\nSUBJECT: ' + subject + '\nTOPIC: ' + topic + '\n\n' +
-    'CRITICAL: Every point must be directly from the ' + board + ' ' + level + ' ' + subject + ' specification only.\n\n' +
     '## Worked Examples\n' +
     eg + ' fully worked ' + board + ' ' + level + '-style examples with full working. Match real ' + board + ' past paper style and difficulty.\n\n' +
     '## Common Exam Mistakes\n' +
@@ -541,14 +526,9 @@ export async function generateTopicNote({ subject, board, level, topic, uid, max
     '3-4 other ' + board + ' ' + level + ' ' + subject + ' spec topics that connect to this one, and how.\n\n' +
     '## Quick-Fire Recall\n' +
     '12 facts or definitions a student must state instantly in an exam. Numbered, one sentence each. Spec-required content only.\n\n' +
-    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate.'
+    'Use markdown. **Bold** all key terms. Be thorough and specification-accurate throughout.'
 
-  const resA = await callAI(promptA, sys, maxTokens, uid)
-  if (resA.error) return resA
-  const resB = await callAI(promptB, sys, maxTokens, uid)
-  if (resB.error) return resB
-
-  return { text: resA.text.trim() + '\n\n' + resB.text.trim(), provider: resB.provider, remaining: resB.remaining }
+  return callAI(prompt, sys, maxTokens, uid)
 }
 
 
@@ -633,4 +613,36 @@ export function parseFlashcards(text) {
   }
   if (current?.q && current?.a) cards.push(current)
   return cards.filter(c => c.q && c.a)
+}
+
+// ── Skill-focused flashcards — used by SkillFlashcardSuggestion on the Answer Marker ─────
+// Same Q:/A: contract as generateFlashcards above, so the existing parseFlashcards and
+// saveFlashcardSet handle the result with no changes. exampleQuestion is optional context
+// (the marker has no separate topic field, just a pasted question) so the cards stay in
+// roughly the same content area as what the student was just marked on.
+export async function generateSkillFlashcards(subject, board, level, commandWord, exampleQuestion, count, uid) {
+  count = count || 3
+  const sys = `You are an expert ${board || 'UK'} ${level || 'GCSE'} ${subject} tutor. You write short, targeted flashcards that build the specific skill of answering "${commandWord}"-style exam questions — not just fact recall.`
+  const prompt = [
+    'Generate exactly ' + count + ' flashcards that build the skill of answering "' + commandWord + '" questions in ' + subject + '.',
+    exampleQuestion ? 'The student was just marked on this question, so stay in a similar content area:\n"' + exampleQuestion.slice(0, 300) + '"' : '',
+    '',
+    'STRICT FORMAT RULES:',
+    '- Begin your response immediately with Q: (no introduction)',
+    '- Use this exact format for every card:',
+    'Q: [a short prompt that specifically requires the ' + commandWord + ' skill]',
+    'A: [a model answer, or the structure needed to score full marks]',
+    '- Separate cards with one blank line',
+    '- No numbering, no bullet points, no markdown, no bold, no asterisks',
+    '',
+    'Now generate exactly ' + count + ' flashcards:',
+  ].filter(Boolean).join('\n')
+  return callAI(prompt, sys, 1200, uid)
+}
+
+// ── On-demand memory aid — used by MemoryAidButton (Flash mode + post-quiz review) ───────
+export async function generateMemoryAid(front, back, subject, uid) {
+  const sys = `You help ${subject || 'GCSE/A-Level'} students remember a flashcard they keep getting wrong. Give ONE short, memorable mnemonic, acronym, or vivid analogy — never more than two sentences. No preamble, no "Here's a mnemonic:" framing, just the memory aid itself.`
+  const prompt = `Question: ${front}\nAnswer: ${back}\n\nGive a memory aid that links the question to the answer.`
+  return callAI(prompt, sys, 200, uid)
 }
