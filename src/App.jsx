@@ -176,6 +176,7 @@ export default function App() {
                     <Route path="/privacy"     element={<PrivacyPolicy />} />
                     <Route path="/pro"         element={<Pro />} />
                     <Route path="/pro/success"  element={<Pro />} />
+                    <Route path="/help"        element={<Help />} />
                     <Route path="/u/:username" element={<PublicProfile />} />
 
                     {/* Auth — no sidebar */}
@@ -204,12 +205,10 @@ export default function App() {
                       <Route path="/settings"    element={<Settings />} />
                       <Route path="/emergency"   element={<EmergencyMode />} />
                       <Route path="/admin"       element={<Admin />} />
-                      <Route path="/help"        element={<Help />} />
                     </Route>
 
                     {/* Legacy URL redirects */}
                     <Route path="/notes"    element={<Navigate to="/topics" replace />} />
-                    <Route path="/mistakes" element={<Navigate to="/papers" replace />} />
                     <Route path="/mastery"  element={<Navigate to="/topics" replace />} />
                     <Route path="/past-papers"   element={<Navigate to="/papers" replace />} />
                     <Route path="/exam-dates"    element={<Navigate to="/exams" replace />} />
