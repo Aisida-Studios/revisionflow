@@ -451,17 +451,25 @@ ${questions}`
       const text = res.text.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(text)
       if (!Array.isArray(parsed)) return
-      const updated = [...deck]
-      mcIndices.forEach((deckIdx, arrayIdx) => {
-        const wrongs = parsed[arrayIdx]
-        if (!Array.isArray(wrongs) || wrongs.length < 3) return
-        const opts = [
-          ...wrongs.slice(0, 3).map(a => ({ ...deck[deckIdx].card, a })),
-          deck[deckIdx].card,
-        ].sort(() => Math.random() - 0.5)
-        updated[deckIdx] = { ...updated[deckIdx], opts, aiOpts: true }
+      // Functional update: read live state (not the pre-AI-call deck snapshot), since the
+      // user may already have answered one of these questions while the AI call was in
+      // flight. Skip upgrading any question that's already checked — swapping the option
+      // text out from under an answer that's already showing as right/wrong is confusing
+      // and would leave the user's selected option matching nothing in the new list.
+      setQs(current => {
+        const updated = [...current]
+        mcIndices.forEach((deckIdx, arrayIdx) => {
+          if (!updated[deckIdx] || updated[deckIdx].checked !== null) return
+          const wrongs = parsed[arrayIdx]
+          if (!Array.isArray(wrongs) || wrongs.length < 3) return
+          const opts = [
+            ...wrongs.slice(0, 3).map(a => ({ ...updated[deckIdx].card, a })),
+            updated[deckIdx].card,
+          ].sort(() => Math.random() - 0.5)
+          updated[deckIdx] = { ...updated[deckIdx], opts, aiOpts: true }
+        })
+        return updated
       })
-      setQs(updated)
     } catch(e) { /* silently use fallback distractors */ }
   }
 
