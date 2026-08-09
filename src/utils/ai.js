@@ -666,3 +666,95 @@ export async function generateMemoryAid(front, back, subject, uid) {
   const prompt = `Question: ${front}\nAnswer: ${back}\n\nGive a memory aid that links the question to the answer.`
   return callAI(prompt, sys, 200, uid)
 }
+
+/* =========================
+   SUBJECT TUTORS (Pro) — src/pages/Tutor.jsx
+========================= */
+
+// Deliberately teaches the method rather than just handing over an answer — the response
+// is structured into STEP N: blocks so the page can reveal them one at a time instead of
+// dumping the full solution immediately. Plain text notation, same convention as the rest
+// of the app (see the mathsExtra block in generatePredictedQuestions above) — no LaTeX.
+export async function solveMathsProblem(problem, level, uid) {
+  const sys = `You are an outstanding UK Maths tutor helping a ${level || 'GCSE'} student understand HOW to solve a problem, not just get the answer. Use plain text notation only — write x^2, sqrt(x), fractions as a/b — never LaTeX, never dollar signs, never markdown formatting like ** or #. Every step should teach the reasoning, not just show the calculation.`
+
+  const prompt = `Solve this step by step so the student can follow and learn the method:
+
+${problem}
+
+Format your response EXACTLY like this:
+
+STEP 1: [short title for what this step does]
+[the working, and a plain-English explanation of why this step is taken]
+
+STEP 2: [short title]
+[working + explanation]
+
+(continue with as many steps as the problem genuinely needs — do not pad with unnecessary steps, and do not skip any either)
+
+FINAL ANSWER: [the final answer, clearly stated]
+
+Rules:
+- Plain text maths notation only (x^2, not LaTeX, no dollar signs)
+- Explain the reasoning at each step, not just the calculation
+- If there's a common mistake students make on this type of problem, mention it briefly in the relevant step`
+
+  return callAI(prompt, sys, 1800, uid)
+}
+
+// Splits a solveMathsProblem response into individual steps for progressive reveal, plus
+// the final answer. Tolerant of a missing FINAL ANSWER block (still returns whatever steps
+// parsed) since a malformed response shouldn't lose the working the student can still read.
+export function parseMathsSteps(text) {
+  if (!text) return { steps: [], finalAnswer: '' }
+  const finalMatch = text.match(/FINAL ANSWER:\s*([\s\S]*)$/i)
+  const finalAnswer = finalMatch ? finalMatch[1].trim() : ''
+  const body = finalMatch ? text.slice(0, finalMatch.index) : text
+
+  const steps = []
+  const stepRegex = /STEP\s*(\d+):\s*([^\n]*)\n?([\s\S]*?)(?=STEP\s*\d+:|$)/gi
+  let match
+  while ((match = stepRegex.exec(body)) !== null) {
+    const title = match[2].trim()
+    const content = match[3].trim()
+    if (!title && !content) continue
+    steps.push({ number: parseInt(match[1], 10) || steps.length + 1, title, content })
+  }
+  return { steps, finalAnswer }
+}
+
+// Holistic essay feedback — quote-and-comment style (same spirit as markAnswer's
+// ANNOTATION section) rather than a single numeric mark, since a full essay isn't being
+// checked against one specific mark scheme. ROUGH BAND is explicitly framed as
+// approximate — this is feedback, not an official grade.
+export async function getEssayFeedback(essayText, essayType, level, uid) {
+  const sys = `You are an experienced UK English ${level || 'GCSE'} teacher and examiner giving feedback on a student's ${essayType || 'essay'}. Be specific and honest — quote directly from their own writing when praising or critiquing a point, don't give vague generic feedback. Be encouraging but do not inflate the quality of weak work.`
+
+  const prompt = `ESSAY TYPE: ${essayType || 'General essay'}
+LEVEL: ${level || 'GCSE'}
+
+STUDENT'S ESSAY:
+${essayText}
+
+Give feedback in this exact format:
+
+STRENGTHS:
+[2-3 specific things done well — quote a short phrase from the essay for each]
+
+AREAS TO IMPROVE:
+[2-3 specific, actionable improvements — quote a short phrase from the essay for each where relevant]
+
+STRUCTURE & ARGUMENT:
+[1-2 sentences on paragraphing, flow, and how clearly the argument or thesis comes through]
+
+TECHNICAL ACCURACY:
+[1-2 sentences on the general pattern of spelling, grammar, or punctuation issues — not an exhaustive line-edit]
+
+ROUGH BAND:
+[a rough, clearly-approximate indicative band, e.g. "reads like a mid-to-upper band response" — with one sentence on what's holding it back from the band above]
+
+NEXT STEP:
+[the single most impactful thing to work on next]`
+
+  return callAI(prompt, sys, 2400, uid)
+}
