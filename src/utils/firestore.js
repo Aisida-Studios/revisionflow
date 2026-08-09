@@ -114,7 +114,19 @@ export async function updateStreakOnLogin(uid) {
   }
 }
 
-// Call whenever user logs real revision activity (session, paper, task, note, mistake).
+// Streak freeze allowance — free users get 1/week, Pro (or beta) gets 3/week. A freeze
+// covers exactly one missed day; missing two or more days in a row still breaks the streak.
+const STREAK_FREEZE_ALLOWANCE = { free: 1, pro: 3 }
+
+// data.freezeWeekStart and the day strings below are all .toDateString() output, which
+// (unlike a bare 'YYYY-MM-DD' string) parses back through `new Date()` as local time, not
+// UTC — so this never drifts a day near a timezone boundary the way new Date('2026-08-10')
+// would. Keep using this format for any new date fields on the profile doc.
+function daysBetweenDateStrings(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000)
+}
+
+// Call whenever user logs real revision activity (session, paper, task, note, mistake, quiz).
 export async function recordActivityStreak(uid) {
   const ref  = doc(db, 'users', uid)
   const snap = await getDoc(ref)
@@ -127,16 +139,50 @@ export async function recordActivityStreak(uid) {
 
   if (lastActivityStr === todayStr) return // already counted today
 
-  const yesterday    = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = yesterday.toDateString()
+  const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+  const twoDaysAgoStr = twoDaysAgo.toDateString()
 
   const currentStreak = data.streak || 0
-  const newStreak     = lastActivityStr === yesterdayStr ? currentStreak + 1 : 1
+  const updates = { lastActivityDate: todayStr }
+  let newStreak
+  let freezeUsed = false
+
+  if (!lastActivityStr || lastActivityStr === yesterdayStr) {
+    // First-ever activity, or a normal consecutive day
+    newStreak = lastActivityStr ? currentStreak + 1 : 1
+  } else if (lastActivityStr === twoDaysAgoStr && currentStreak > 0) {
+    // Exactly one day was missed — a streak freeze can cover this
+    const isPro     = data.isPro === true || data.betaUser === true
+    const allowance = isPro ? STREAK_FREEZE_ALLOWANCE.pro : STREAK_FREEZE_ALLOWANCE.free
+    const weekStart = data.freezeWeekStart || null
+    const freshWeek  = !weekStart || daysBetweenDateStrings(weekStart, todayStr) >= 7
+    const usedThisWeek = freshWeek ? 0 : (data.freezesUsedThisWeek || 0)
+
+    if (usedThisWeek < allowance) {
+      freezeUsed = true
+      newStreak = currentStreak + 1 // the missed day is "filled in" — streak continues
+      updates.freezesUsedThisWeek = usedThisWeek + 1
+      updates.freezeWeekStart = freshWeek ? todayStr : weekStart
+      updates.lastFreezeUsedDate = todayStr
+    } else {
+      newStreak = 1 // no freeze left this week — streak breaks as normal
+    }
+  } else {
+    newStreak = 1 // missed two or more days — a single freeze doesn't cover that
+  }
 
   const bestStreak = Math.max(newStreak, data.bestStreak || 0)
-  await updateDoc(ref, { streak: newStreak, bestStreak, lastActivityDate: todayStr })
+  updates.streak = newStreak
+  updates.bestStreak = bestStreak
+  await updateDoc(ref, updates)
   await awardXP(uid, 10, 'Daily streak')
+
+  // Same pattern as awardXP's 'xp-awarded' event below — XPToast.jsx listens for both.
+  if (freezeUsed && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('streak-freeze-used', { detail: { streak: newStreak } }))
+  }
   if (newStreak === 3)   await checkAndAwardBadge(uid, 'streak_3')
   if (newStreak === 7)   await checkAndAwardBadge(uid, 'streak_7')
   if (newStreak === 14)  await checkAndAwardBadge(uid, 'streak_14')
@@ -444,6 +490,27 @@ export const deletePaperAttempt = (uid, id) =>
   deleteDoc(doc(db, 'users', uid, 'paperAttempts', id))
 
 /* =========================
+   QUIZ RESULTS
+   Feeds the dashboard's predicted-grade widget alongside paper attempts and topic
+   confidence — see utils/gradeInsights.js. Mirrors the paperAttempts pattern above.
+========================= */
+
+export const saveQuizResult = async (uid, data) => {
+  const ref = await addDoc(collection(db, 'users', uid, 'quizResults'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  })
+  await awardXP(uid, 20, 'Quiz completed')
+  await recordActivityStreak(uid)
+  return ref.id
+}
+
+export const getQuizResults = async (uid) => {
+  const snap = await getDocs(collection(db, 'users', uid, 'quizResults'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+/* =========================
    PAPER STRUCTURES
 ========================= */
 
@@ -455,6 +522,18 @@ export const getPaperStructures = async (uid) => {
 export const submitPaperStructure = async (uid, data) => {
   const ref = await addDoc(collection(db, 'users', uid, 'paperStructures'), data)
   return ref.id
+}
+
+/* =========================
+   TOPICS (read)
+   Topics.jsx does its own CRUD directly against users/{uid}/topics for editing. This is
+   just a read-only helper for pages — currently the dashboard's weak-topics and
+   predicted-grade widgets — that only need the confidence data, not the full edit flow.
+========================= */
+
+export const getTopicsWithConfidence = async (uid) => {
+  const snap = await getDocs(collection(db, 'users', uid, 'topics'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 /* =========================
