@@ -115,6 +115,7 @@ const Admin         = lazy(() => import('./pages/Admin'))
 const Help          = lazy(() => import('./pages/Help'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Study        = lazy(() => import('./pages/Study'))
+const Tutor        = lazy(() => import('./pages/Tutor'))
 const Pro          = lazy(() => import('./pages/Pro'))
 
 // ── Guards ────────────────────────────────────────────────────────────────────
@@ -194,6 +195,7 @@ export default function App() {
                       <Route path="/papers"      element={<PastPapers />} />
                       <Route path="/topics"      element={<Topics />} />
                       <Route path="/study"       element={<Study />} />
+                      <Route path="/tutor"       element={<Tutor />} />
                       <Route path="/mistakes"    element={<Mistakes />} />
                       <Route path="/tasks"       element={<Tasks />} />
                       <Route path="/timer"       element={<Timer />} />
