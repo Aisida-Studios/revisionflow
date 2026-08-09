@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useIsPro } from '../components/ProGate'
+import { useIsPro, ProBadge } from '../components/ProGate'
 import { useTheme } from '../context/ThemeContext'
 import { resolveProfileIcon } from '../data/themes'
 import { LEVELS, levelFromXP } from '../data/subjects'
@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Calendar, FileText, Brain, CheckSquare,
   Users, Trophy, User, MessageSquare, Clock, Settings, LogOut,
   Menu, Sun, Moon, Zap, Timer, BarChart2, HelpCircle, X,
-  ChevronLeft, ChevronRight, Crown,
+  ChevronLeft, ChevronRight, Crown, GraduationCap,
 } from 'lucide-react'
 
 const NAV = [
@@ -24,6 +24,7 @@ const NAV = [
   { to:'/timer',       label:'Timer',        icon:Timer,           emoji:'⏱'  },
   { to:'/analytics',   label:'Analytics',    icon:BarChart2,       emoji:'📊' },
   { to:'/ai',          label:'AI Advisor',   icon:MessageSquare,   emoji:'🤖' },
+  { to:'/tutor',       label:'Tutor',        icon:GraduationCap,   emoji:'🎓', pro:true },
   { to:'/friends',     label:'Friends',      icon:Users,           emoji:'👥' },
   { to:'/leaderboard', label:'Leaderboard',  icon:Trophy,          emoji:'🏆' },
   { to:'/profile',     label:'Profile',      icon:User,            emoji:'👤' },
@@ -236,7 +237,7 @@ export default function Layout() {
 
         {/* Nav */}
         <nav style={{ flex:1, display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden' }}>
-          {NAV.map(({ to, label, icon:Icon, emoji }) => (
+          {NAV.map(({ to, label, icon:Icon, emoji, pro }) => (
             <NavLink key={to} to={to} title={collapsed ? label : undefined}
               style={({ isActive }) => ({
                 display:'flex', alignItems:'center',
@@ -262,7 +263,8 @@ export default function Layout() {
               {({ isActive }) => (
                 <>
                   <span style={{ fontSize:'1rem', flexShrink:0 }}>{emoji}</span>
-                  {!collapsed && <span>{label}</span>}
+                  {!collapsed && <span style={{ flex:1 }}>{label}</span>}
+                  {!collapsed && pro && !isPro && <ProBadge style={{ fontSize:'0.55rem', padding:'0 5px', flexShrink:0 }} />}
                 </>
               )}
             </NavLink>
