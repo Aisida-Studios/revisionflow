@@ -183,6 +183,7 @@ export async function recordActivityStreak(uid) {
   if (freezeUsed && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('streak-freeze-used', { detail: { streak: newStreak } }))
   }
+
   if (newStreak === 3)   await checkAndAwardBadge(uid, 'streak_3')
   if (newStreak === 7)   await checkAndAwardBadge(uid, 'streak_7')
   if (newStreak === 14)  await checkAndAwardBadge(uid, 'streak_14')
@@ -511,6 +512,18 @@ export const getQuizResults = async (uid) => {
 }
 
 /* =========================
+   TOPICS (read)
+   Topics.jsx does its own CRUD directly against users/{uid}/topics for editing. This is
+   just a read-only helper for pages — currently the dashboard's weak-topics and
+   predicted-grade widgets — that only need the confidence data, not the full edit flow.
+========================= */
+
+export const getTopicsWithConfidence = async (uid) => {
+  const snap = await getDocs(collection(db, 'users', uid, 'topics'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+/* =========================
    PAPER STRUCTURES
 ========================= */
 
@@ -522,18 +535,6 @@ export const getPaperStructures = async (uid) => {
 export const submitPaperStructure = async (uid, data) => {
   const ref = await addDoc(collection(db, 'users', uid, 'paperStructures'), data)
   return ref.id
-}
-
-/* =========================
-   TOPICS (read)
-   Topics.jsx does its own CRUD directly against users/{uid}/topics for editing. This is
-   just a read-only helper for pages — currently the dashboard's weak-topics and
-   predicted-grade widgets — that only need the confidence data, not the full edit flow.
-========================= */
-
-export const getTopicsWithConfidence = async (uid) => {
-  const snap = await getDocs(collection(db, 'users', uid, 'topics'))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 /* =========================
