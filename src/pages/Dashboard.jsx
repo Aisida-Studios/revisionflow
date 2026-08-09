@@ -7,11 +7,12 @@ import DailyQuests from '../components/DailyQuests'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { getSessions, getPaperAttempts } from '../utils/firestore'
+import { getSessions, getPaperAttempts, getTopicsWithConfidence, getQuizResults } from '../utils/firestore'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getDailyAdvice } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
+import { computeWeakTopics, computeSubjectPredictions } from '../utils/gradeInsights'
 import { BADGE_LIST } from '../data/badges'
 import { SUBJECT_COLOURS, subjectColour, LEVELS, levelFromXP } from '../data/subjects'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
@@ -20,7 +21,7 @@ import {
   Flame, Zap, Calendar, FileText, Brain,
   CheckSquare, MessageSquare, ArrowRight, Clock, TrendingUp, Trophy,
   CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, Gift, Crown,
-  Star, Sparkles, BookOpen, Target,
+  Star, Sparkles, BookOpen, Target, Snowflake,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { isExamDone, daysUntilExam as _daysTil } from '../utils/examUtils'
@@ -165,6 +166,9 @@ export default function Dashboard() {
   const [gdprConsent,         setGdprConsent]         = useState(localStorage.getItem('gdpr_consent') === 'true')
   const [todaySessions,       setTodaySessions]        = useState([])
   const [recentPapers,        setRecentPapers]         = useState([])
+  const [allPapers,           setAllPapers]            = useState([])
+  const [topics,              setTopics]               = useState([])
+  const [quizResults,         setQuizResults]          = useState([])
   const [aiAdvice,            setAiAdvice]             = useState('')
   const [aiLoading,           setAiLoading]            = useState(false)
   const [dataLoading,         setDataLoading]          = useState(true)
@@ -189,7 +193,9 @@ export default function Dashboard() {
     Promise.all([
       getSessions(user.uid),
       getPaperAttempts(user.uid),
-    ]).then(([sessions, papers]) => {
+      getTopicsWithConfidence(user.uid),
+      getQuizResults(user.uid),
+    ]).then(([sessions, papers, topicDocs, quizzes]) => {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const getDate = s => s.date || (s.startTime?.toDate ? format(s.startTime.toDate(), 'yyyy-MM-dd') : (typeof s.startTime === 'string' ? s.startTime.slice(0,10) : null))
       setTodaySessions(sessions.filter(s => getDate(s) === todayStr))
@@ -199,6 +205,9 @@ export default function Dashboard() {
         return db2 - da
       })
       setRecentPapers(sorted.slice(0,6))
+      setAllPapers(papers)
+      setTopics(topicDocs)
+      setQuizResults(quizzes)
       setDataLoading(false)
     }).catch(() => setDataLoading(false))
     loadDailyBriefing()
@@ -243,6 +252,19 @@ export default function Dashboard() {
   const levelTitle    = LEVELS[level - 1]?.title || 'Newcomer'
 
   const badges = (profile?.badges||[]).map(id => BADGE_LIST.find(b=>b.id===id)).filter(Boolean)
+
+  const weakTopics = computeWeakTopics(topics)
+  const predictions = computeSubjectPredictions(topics, allPapers, quizResults, profile)
+
+  // Streak freeze status — mirrors the rolling 7-day window logic in
+  // firestore.js:recordActivityStreak, purely for display here (that function is the only
+  // place that actually consumes/writes a freeze).
+  const freezeIsPro = isPro || isBeta
+  const freezeAllowance = freezeIsPro ? 3 : 1
+  const freezeWeekFresh = !profile?.freezeWeekStart ||
+    Math.round((new Date() - new Date(profile.freezeWeekStart)) / 86400000) >= 7
+  const freezesUsed = freezeWeekFresh ? 0 : (profile?.freezesUsedThisWeek || 0)
+  const freezesRemaining = Math.max(0, freezeAllowance - freezesUsed)
 
   const nextExam = (profile?.examDates||[])
     .filter(e => e.examDate && !isExamDone(e.examDate))
@@ -392,7 +414,7 @@ export default function Dashboard() {
 
       {/* ── Stats row ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
-        <StatCard emoji="🔥" label="Streak"    value={`${profile?.streak||0}d`}  sub="Keep it going!" colour="var(--warning)"      link="/analytics" loading={dataLoading} />
+        <StatCard emoji="🔥" label="Streak"    value={`${profile?.streak||0}d`}  sub={freezesRemaining>0?`🧊 ${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left`:'No freezes left this week'} colour="var(--warning)"      link="/analytics" loading={dataLoading} />
         <StatCard emoji="📅" label="Sessions today"     value={todaySessions.length}        sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
         <StatCard emoji="🏅" label="Badges"    value={badges.length}               sub="earned"         colour="var(--gold)"         link="/profile"   loading={dataLoading} />
         <StatCard emoji="📅" label="Next exam" value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
@@ -402,6 +424,88 @@ export default function Dashboard() {
       <div style={{ marginBottom:20 }}>
         <DailyQuests />
       </div>
+
+      {/* ── Predicted grades ── */}
+      {(profile?.subjects||[]).length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>🎯</span> Predicted grades</h3>
+            {predictions.length > 0 && <span style={{ fontSize:'0.68rem', color:'var(--text-muted)' }}>Rough estimate, not official</span>}
+          </div>
+          {dataLoading ? (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:104, borderRadius:16 }} />)}
+            </div>
+          ) : predictions.length === 0 ? (
+            <div className="card empty-state" style={{ padding:'20px 16px' }}>
+              <span style={{ fontSize:'2rem' }}>📊</span>
+              <p style={{ fontSize:'0.82rem', margin:0 }}>Log a past paper or take a quiz to see a predicted grade here</p>
+            </div>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+              {predictions.map(p => (
+                <div key={p.subject} className="card" style={{ padding:'14px' }}>
+                  <div style={{ fontWeight:700, fontSize:'0.82rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:6 }}>
+                    {p.subject}
+                  </div>
+                  <div style={{ fontWeight:900, fontSize:'1.8rem', color:gradeColour(p.grade), lineHeight:1 }}>{p.grade}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:4 }}>{p.percentage}% blended</div>
+                  <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:6, lineHeight:1.4 }}>
+                    {[
+                      p.sources.papers ? `${p.sources.papers} paper${p.sources.papers===1?'':'s'}` : null,
+                      p.sources.quizzes ? `${p.sources.quizzes} quiz${p.sources.quizzes===1?'':'zes'}` : null,
+                      p.sources.topicsRated ? `${p.sources.topicsRated} rated topic${p.sources.topicsRated===1?'':'s'}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Weak topics this week ── */}
+      {(profile?.subjects||[]).length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>🧠</span> Weak topics this week</h3>
+            <Link to="/topics" className="btn btn-ghost btn-sm">Rate topics</Link>
+          </div>
+          {dataLoading ? (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:52, borderRadius:12 }} />)}
+            </div>
+          ) : weakTopics.length === 0 ? (
+            <div className="card empty-state" style={{ padding:'20px 16px' }}>
+              <span style={{ fontSize:'2rem' }}>✅</span>
+              <p style={{ fontSize:'0.82rem', margin:0 }}>Nothing rated below 2/5 right now — nice work</p>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {weakTopics.map(t => (
+                <Link key={t.id} to="/topics" style={{ textDecoration:'none', color:'inherit' }}>
+                  <div className="card card-interactive" style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px' }}>
+                    <div style={{ width:4, height:32, borderRadius:99, background: subjectColour?.(t.subject)||'var(--accent)', flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:'0.85rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {t.name}
+                      </div>
+                      <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>
+                        {t.subject}{t.board ? ` · ${t.board}` : ''}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', gap:3, flexShrink:0 }}>
+                      {[1,2,3,4,5].map(n => (
+                        <span key={n} style={{ width:7, height:7, borderRadius:'50%', background: n<=t.confidence?'var(--danger)':'var(--border)' }} />
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Today + AI Briefing ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
