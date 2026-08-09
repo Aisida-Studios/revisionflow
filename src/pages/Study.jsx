@@ -1183,6 +1183,26 @@ function QuizTab({ mySets, uid, profile }) {
 
   const subjects = profile?.subjects?.map(s => s.name) || []
 
+  // Persists the result (subject + percentage) before showing the results screen, so the
+  // dashboard's predicted-grade widget has real quiz history to blend from. Best-effort —
+  // a failed save shouldn't block the student from seeing their score.
+  async function handleQuizDone(got, total, missed) {
+    setResults({ got, total, missed: missed || [] })
+    if (uid && selectedSet && total > 0) {
+      try {
+        const { saveQuizResult } = await import('../utils/firestore')
+        await saveQuizResult(uid, {
+          subject: selectedSet.subject,
+          setId: selectedSet.id,
+          setTitle: selectedSet.title,
+          score: got,
+          total,
+          percentage: Math.round((got / total) * 100),
+        })
+      } catch (e) {}
+    }
+  }
+
   if (results) return (
     <div style={{ maxWidth: 520, margin: '0 auto' }}>
       <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
@@ -1242,11 +1262,11 @@ function QuizTab({ mySets, uid, profile }) {
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
           <TestMode cards={quizCards} uid={uid}
-            onDone={(got, total, missed) => setResults({ got, total, missed: missed || [] })} />
+            onDone={handleQuizDone} />
         )}
         {quizMode === 'write' && (
           <WriteMode cards={quizCards} uid={uid}
-            onDone={(got, total, missed) => setResults({ got, total, missed: missed || [] })} />
+            onDone={handleQuizDone} />
         )}
       </div>
     )
