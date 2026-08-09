@@ -107,7 +107,7 @@ function MathsSolver({ uid, profile }) {
                 <span className="badge badge-purple">Step {s.number}</span>
                 <span style={{ fontWeight:700, fontSize:'0.88rem' }}>{s.title}</span>
               </div>
-              <AIOutput content={s.content} />
+              <AIOutput text={s.content} compact />
             </div>
           ))}
 
@@ -122,7 +122,7 @@ function MathsSolver({ uid, profile }) {
               <div style={{ fontWeight:800, fontSize:'0.72rem', color:'var(--success)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
                 Final answer
               </div>
-              <AIOutput content={finalAnswer} />
+              <AIOutput text={finalAnswer} compact />
             </div>
           )}
         </div>
@@ -198,7 +198,7 @@ function EssayFeedback({ uid, profile }) {
 
       {feedback && (
         <div className="card" style={{ padding:'18px 20px' }}>
-          <AIOutput content={feedback} />
+          <AIOutput text={feedback} />
         </div>
       )}
     </div>
