@@ -288,6 +288,7 @@ export default function Dashboard() {
     { emoji:'🧠', label:'Topics',      to:'/topics',      colour:'#8b5cf6' },
     { emoji:'⏱',  label:'Timer',       to:'/timer',       colour:'#06b6d4' },
     { emoji:'🤖', label:'AI Advisor',  to:'/ai',          colour:'#a855f7' },
+    { emoji:'🎓', label:'Tutor',       to:'/tutor',       colour:'#14b8a6' },
     { emoji:'📄', label:'Past Papers', to:'/papers',      colour:'#f59e0b' },
     { emoji:'📅', label:'Calendar',    to:'/calendar',    colour:'#10b981' },
     { emoji:'📊', label:'Analytics',   to:'/analytics',   colour:'#3b82f6' },
