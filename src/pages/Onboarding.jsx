@@ -242,7 +242,7 @@ export default function Onboarding() {
                 and generate a personalised AI revision plan.
               </p>
               <div style={{ display:'flex', justifyContent:'center', gap:16, margin:'20px 0', flexWrap:'wrap' }}>
-                {[['📚','Topics pre-loaded'],['📅','Exam dates auto-filled'],['🤖','AI study plan'],['🏆','Start earning XP']].map(([e,t]) => (
+                {[['📚','Topics pre-loaded'],['⏰','Exam dates auto-filled'],['🤖','AI study plan'],['🏆','Start earning XP']].map(([e,t]) => (
                   <div key={t} style={{ display:'flex', alignItems:'center', gap:6, fontSize:'0.82rem', fontWeight:600, color:'var(--text-secondary)' }}>
                     <span>{e}</span> {t}
                   </div>
