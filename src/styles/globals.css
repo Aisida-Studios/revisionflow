@@ -490,6 +490,18 @@ code {
 }
 
 /* ── Spinner ─────────────────────────────────────────────────────────────── */
+/* Keeps a fixed-bottom element clear of the mobile bottom nav, while preserving whatever
+   desktop offset the component actually wants (set --fixed-bottom-offset inline if it's not
+   0 — XPToast floats 80px up even on desktop, for example). The nav's own height varies by
+   device via env(safe-area-inset-bottom) — the home-indicator/gesture-bar area on notched
+   phones — so the clearance needs the same calc, not a guessed fixed pixel value, or it ends
+   up under the nav on some devices and fine on others. No bottom nav above 768px, so only the
+   base offset applies there. */
+.above-mobile-nav { bottom: var(--fixed-bottom-offset, 0px); }
+@media (max-width: 768px) {
+  .above-mobile-nav { bottom: calc(var(--fixed-bottom-offset, 0px) + 76px + env(safe-area-inset-bottom)); }
+}
+
 .spinner {
   width: 38px; height: 38px;
   border: 4px solid var(--border);
@@ -669,6 +681,8 @@ tr:hover td { background:var(--bg-hover); }
   .card { padding:14px; }
   .progress-bar { height:12px; }
   .modal { border-radius:var(--r-xl) var(--r-xl) 0 0 !important; }
+  .hero-section { padding:36px 20px 40px !important; }
+  .hero-stats   { margin-top:32px !important; }
 }
 @media (max-width:360px) {
   h1 { font-size:1.4rem; }
