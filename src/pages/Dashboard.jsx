@@ -90,8 +90,8 @@ function WelcomeCard({ profile, onDismiss }) {
 
   const steps = [
     !hasSubs   && { emoji:'📚', text:'Add your subjects', link:'/settings?tab=subjects' },
-    !hasExams  && { emoji:'📅', text:'Add exam dates', link:'/exams' },
-    hasSubs    && { emoji:'📆', text:'Generate revision schedule', link:'/calendar' },
+    !hasExams  && { emoji:'⏰', text:'Add exam dates', link:'/exams' },
+    hasSubs    && { emoji:'📅', text:'Generate revision schedule', link:'/calendar' },
     hasSubs    && { emoji:'🧠', text:'Rate topic confidence', link:'/topics' },
   ].filter(Boolean).slice(0, 3)
 
@@ -418,7 +418,7 @@ export default function Dashboard() {
         <StatCard emoji="🔥" label="Streak"    value={`${profile?.streak||0}d`}  sub={freezesRemaining>0?`🧊 ${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left`:'No freezes left this week'} colour="var(--warning)"      link="/analytics" loading={dataLoading} />
         <StatCard emoji="📅" label="Sessions today"     value={todaySessions.length}        sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
         <StatCard emoji="🏅" label="Badges"    value={badges.length}               sub="earned"         colour="var(--gold)"         link="/profile"   loading={dataLoading} />
-        <StatCard emoji="📅" label="Next exam" value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
+        <StatCard emoji="⏰" label="Next exam" value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
       </div>
 
       {/* ── Daily quests ── */}
@@ -596,7 +596,7 @@ export default function Dashboard() {
       {(profile?.examDates||[]).filter(e=>e.examDate&&!isExamDone(e.examDate)).length > 0 && (
         <div style={{ marginBottom:20 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>📆</span> Upcoming exams</h3>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>⏰</span> Upcoming exams</h3>
             <Link to="/exams" className="btn btn-ghost btn-sm">Manage</Link>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10 }}>
