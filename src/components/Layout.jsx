@@ -16,7 +16,7 @@ import {
 const NAV = [
   { to:'/dashboard',   label:'Dashboard',    icon:LayoutDashboard, emoji:'🏠' },
   { to:'/calendar',    label:'Calendar',     icon:Calendar,        emoji:'📅' },
-  { to:'/exams',       label:'Exam Dates',   icon:Clock,           emoji:'📆' },
+  { to:'/exams',       label:'Exam Dates',   icon:Clock,           emoji:'⏰' },
   { to:'/papers',      label:'Past Papers',  icon:FileText,        emoji:'📄' },
   { to:'/topics',      label:'Topics',       icon:Brain,           emoji:'🧠' },
   { to:'/study',       label:'Study Tools',  icon:Zap,             emoji:'✨' },
