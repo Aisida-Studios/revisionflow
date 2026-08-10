@@ -49,13 +49,14 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section style={{textAlign:'center',padding:'80px 24px 60px',maxWidth:820,margin:'0 auto'}}>
-        <div className="badge badge-amber" style={{marginBottom:12,display:'inline-flex',gap:6}}>
-          <Calendar size={12}/> Now in beta · Launching GCSE Results Day, 20 August 2026
-        </div>
-        <br/>
-        <div className="badge badge-purple" style={{marginBottom:20,display:'inline-flex',gap:6}}>
-          <Flame size={12}/> Built for GCSE, AS-Level & A-Level students in the UK
+      <section className="hero-section" style={{textAlign:'center',padding:'80px 24px 60px',maxWidth:820,margin:'0 auto'}}>
+        <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:8,marginBottom:20}}>
+          <div className="badge badge-amber" style={{display:'inline-flex',gap:6}}>
+            <Calendar size={12}/> Now in beta · Launching GCSE Results Day, 20 August 2026
+          </div>
+          <div className="badge badge-purple" style={{display:'inline-flex',gap:6}}>
+            <Flame size={12}/> Built for GCSE, AS-Level & A-Level students in the UK
+          </div>
         </div>
         <h1 style={{marginBottom:20,lineHeight:1.1}}>
           Your AI-powered<br/>
@@ -71,7 +72,7 @@ export default function Landing() {
         </div>
 
         {/* Stats */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginTop:52,padding:'20px',borderRadius:'var(--radius-xl)',background:'var(--bg-card)',border:'1px solid var(--border)',maxWidth:560,margin:'52px auto 0'}}>
+        <div className="hero-stats" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginTop:52,padding:'20px',borderRadius:'var(--radius-xl)',background:'var(--bg-card)',border:'1px solid var(--border)',maxWidth:560,margin:'52px auto 0'}}>
           {STATS.map(s=>(
             <div key={s.label} style={{textAlign:'center'}}>
               <div style={{fontSize:'1.6rem',fontWeight:800,color:'var(--accent-light)'}}>{s.value}</div>
