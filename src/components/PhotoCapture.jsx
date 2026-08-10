@@ -17,22 +17,28 @@ const MAX_SOURCE_BYTES = 20 * 1024 * 1024 // sanity ceiling on the ORIGINAL file
 
 function compressImage(file) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        if (width > height) { height = Math.round(height * MAX_DIMENSION / width); width = MAX_DIMENSION }
-        else { width = Math.round(width * MAX_DIMENSION / height); height = MAX_DIMENSION }
+    // FileReader -> data: URI, not URL.createObjectURL() -> blob: URI. This app's CSP
+    // (netlify.toml) is `img-src 'self' data: https:` — data: is allowed, blob: isn't,
+    // so loading a blob: URL into an <img>/Image() is silently blocked by the browser.
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width > height) { height = Math.round(height * MAX_DIMENSION / width); width = MAX_DIMENSION }
+          else { width = Math.round(width * MAX_DIMENSION / height); height = MAX_DIMENSION }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width; canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY))
       }
-      const canvas = document.createElement('canvas')
-      canvas.width = width; canvas.height = height
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-      resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY))
+      img.onerror = () => reject(new Error('Could not load that image'))
+      img.src = reader.result
     }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load that image')) }
-    img.src = url
+    reader.onerror = () => reject(new Error('Could not read that file'))
+    reader.readAsDataURL(file)
   })
 }
 
@@ -101,7 +107,7 @@ export default function PhotoCapture({ uid, kind, onExtracted, label }) {
           <img src={preview} alt="" style={{ width:56, height:56, objectFit:'cover', borderRadius:10, border:'1px solid var(--border)', flexShrink:0 }} />
           {loading ? (
             <span style={{ fontSize:'0.8rem', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}>
-              <Loader2 size={14} style={{ animation:'spin 0.7s linear infinite' }} /> Reading the photo\u2026
+              <Loader2 size={14} style={{ animation:'spin 0.7s linear infinite' }} /> Reading the photo…
             </span>
           ) : (
             <button type="button" className="btn btn-ghost btn-sm" onClick={clear}>
