@@ -62,8 +62,8 @@ export default function PWAInstallBanner() {
 
   return (
     <>
-      <div style={{
-        position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+      <div className="above-mobile-nav" style={{
+        position: 'fixed', '--fixed-bottom-offset': '16px', left: '50%', transform: 'translateX(-50%)',
         zIndex: 1000, width: 'calc(100% - 32px)', maxWidth: 420,
         background: 'var(--bg-card)',
         border: '1px solid var(--accent)',
