@@ -5,6 +5,7 @@ import ProGate from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import { solveMathsProblem, parseMathsSteps, getEssayFeedback } from '../utils/ai'
 import { autoCompleteQuest } from '../utils/firestore'
+import PhotoCapture from '../components/PhotoCapture'
 import { Calculator, PenTool } from 'lucide-react'
 
 const MATHS_LEVELS = ['GCSE', 'A-Level', 'Further Maths']
@@ -92,6 +93,9 @@ function MathsSolver({ uid, profile }) {
         <label className="label">The problem</label>
         <textarea className="textarea" rows={3} placeholder="e.g. Solve 2x^2 - 5x - 3 = 0"
           value={problem} onChange={e => setProblem(e.target.value)} />
+        <div style={{ marginTop:8 }}>
+          <PhotoCapture uid={uid} kind="question" onExtracted={setProblem} label="scans straight into the box above — check it before solving" />
+        </div>
 
         <button className="btn btn-primary" style={{ marginTop:10 }} onClick={handleSolve} disabled={loading || !problem.trim()}>
           {loading ? 'Working it out…' : 'Solve step by step'}
@@ -183,6 +187,9 @@ function EssayFeedback({ uid, profile }) {
         <label className="label">Paste your essay</label>
         <textarea className="textarea" rows={12} placeholder="Paste your essay here…"
           value={essay} onChange={e => setEssay(e.target.value)} />
+        <div style={{ marginTop:8 }}>
+          <PhotoCapture uid={uid} kind="essay" onExtracted={setEssay} label="handwriting welcome — check the transcription before submitting" />
+        </div>
         <div style={{ marginTop:6 }}>
           <span style={{ fontSize:'0.72rem', color: overLimit ? 'var(--danger)' : 'var(--text-muted)' }}>
             {essay.length.toLocaleString()} / {MAX_ESSAY_CHARS.toLocaleString()} characters
