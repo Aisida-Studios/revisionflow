@@ -77,7 +77,70 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
   }
 }
 
-// Multi-turn chat variant — sends full message history
+// ── Vision variant — same contract, error handling, and timeout as callAI above,
+// just also sends imageBase64 through to tutor.js. Kept as a separate function rather
+// than adding an optional param to callAI so none of its ~15 existing text-only callers
+// need to change, and so it's obvious at a glance which calls actually send an image. ──
+export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM, maxTokens = 2000, uid = null) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 55000)
+  try {
+    const res = await fetch(AI_ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal:  controller.signal,
+      body: JSON.stringify({
+        messages:     [{ role: 'user', content: prompt }],
+        systemPrompt: systemPrompt || SYSTEM,
+        maxTokens,
+        uid,
+        imageBase64,
+      }),
+    })
+    clearTimeout(timeoutId)
+
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return { error: `Server returned a non-JSON response (HTTP ${res.status}) — most likely the request ran too long and the function was cut off before finishing.` }
+    }
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        return { error: data.error || 'Daily AI limit reached. Try again tomorrow.' }
+      }
+      return { error: data.error || `AI request failed (${res.status}). Please try again.` }
+    }
+
+    if (!data.text) return { error: 'AI returned an empty response. Please try again.' }
+    if (uid) recordActivityStreak(uid).catch(() => {})
+    return { text: data.text, provider: 'mistral', remaining: data.remaining }
+  } catch (e) {
+    clearTimeout(timeoutId)
+    if (e.name === 'AbortError') {
+      console.error('[AI] Image request timed out')
+      return { error: 'AI request timed out after 55s.' }
+    }
+    console.error('[AI] Network error:', e)
+    return { error: 'Could not reach the AI service. Check your internet connection.' }
+  }
+}
+
+// Turns a photo into text — either a printed/handwritten question (transcribed exactly,
+// for feeding into the maths solver or answer marker) or a handwritten essay (transcribed
+// with an explicit best-effort guess at unclear handwriting, per the brief — messy essays
+// still get a full transcription with [unclear] markers rather than gaps).
+export async function extractTextFromImage(imageBase64, kind, uid) {
+  const isEssay = kind === 'essay'
+  const sys = isEssay
+    ? `You transcribe handwritten student essays from photos. Handwriting is often messy — make your best educated guess at unclear words from context rather than leaving them out. If a word is genuinely illegible, write [unclear] in its place rather than guessing wildly. Return ONLY the transcribed text, no commentary, no "Here's the transcription:" preamble.`
+    : `You transcribe exam questions or maths problems from photos, printed or handwritten. Transcribe exactly what is written, preserving numbers, symbols, and structure precisely. Use plain text for any maths notation (x^2, not LaTeX, no dollar signs). Return ONLY the transcribed text, no commentary.`
+  const prompt = isEssay
+    ? 'Transcribe the handwritten essay in this image as accurately as possible.'
+    : 'Transcribe the question or problem shown in this image exactly.'
+  return callAIWithImage(prompt, imageBase64, sys, 1500, uid)
+}
 export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
