@@ -35,7 +35,7 @@ function buildSteps(profile) {
     },
     {
       route: '/calendar',
-      title: '📆 Calendar',
+      title: '📅 Calendar',
       body: subjList
         ? 'Generate a full revision schedule for ' + subjList + ' with one click — built around your exam dates and the availability you set during signup.'
         : 'Generate a full revision schedule with AI, built around your exam dates and availability.',
