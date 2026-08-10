@@ -41,9 +41,9 @@ export default function XPToast() {
   if (toasts.length === 0) return null
 
   return (
-    <div style={{
+    <div className="above-mobile-nav" style={{
       position: 'fixed',
-      bottom: 80,
+      '--fixed-bottom-offset': '80px',
       right: 24,
       zIndex: 9999,
       display: 'flex',
