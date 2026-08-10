@@ -65,6 +65,46 @@ async function checkRateLimit(uid) {
   return result
 }
 
+// ── Image-specific rate limiter ───────────────────────────────────────────────
+// Vision calls cost more per-request than text, and Pro's "unlimited" text policy
+// deliberately does NOT extend to photo scans — Pro gets a higher cap, not no cap.
+// Reads/writes users/{uid}/usage/imageScans, kept separate from usage/aiCalls above
+// so scanning a few photos doesn't eat into the general daily text allowance.
+const IMAGE_FREE_LIMIT = 5
+const IMAGE_PRO_LIMIT  = 25
+
+async function checkImageRateLimit(uid) {
+  if (!uid) return { allowed: false, reason: 'Please sign in to use photo scanning.' }
+
+  const db = await getDb()
+  const userSnap = await db.collection('users').doc(uid).get()
+  const isPro = userSnap.exists && !!(userSnap.data().isPro || userSnap.data().betaUser)
+  const limit = isPro ? IMAGE_PRO_LIMIT : IMAGE_FREE_LIMIT
+
+  const today = new Date().toISOString().slice(0, 10)
+  const ref   = db.collection('users').doc(uid).collection('usage').doc('imageScans')
+
+  // Note: no `isPro` field on the return value here (unlike checkRateLimit above) —
+  // image scans always have a real numeric cap, so the response should always show
+  // the real remaining count, never the "unlimited, hide the number" null path below.
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(ref)
+    const data = snap.exists ? snap.data() : null
+
+    if (!data || data.date !== today) {
+      tx.set(ref, { date: today, count: 1 })
+      return { allowed: true, remaining: limit - 1 }
+    }
+
+    if (data.count >= limit) {
+      return { allowed: false, reason: 'Daily photo-scan limit reached (' + limit + '/day' + (isPro ? ' on Pro' : ' on free plan — upgrade for more') + '). Resets at midnight.' }
+    }
+
+    tx.update(ref, { count: data.count + 1 })
+    return { allowed: true, remaining: limit - (data.count + 1) }
+  })
+}
+
 // ── Response helper ───────────────────────────────────────────────────────────
 function respond(statusCode, body) {
   return {
@@ -103,16 +143,26 @@ module.exports.handler = async function(event) {
     return respond(400, { error: 'Invalid JSON body' })
   }
 
-  const { messages, systemPrompt, maxTokens, uid } = body
+  const { messages, systemPrompt, maxTokens, uid, imageBase64 } = body
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return respond(400, { error: 'messages array is required' })
   }
 
+  // Images arrive pre-compressed by the client (PhotoCapture.jsx resizes to max 1600px
+  // JPEG before encoding) — this is a defence-in-depth cap against a payload big enough
+  // to blow Netlify's ~6MB synchronous function limit, not the primary size control.
+  if (imageBase64 && imageBase64.length > 6_000_000) {
+    return respond(400, { error: 'That image is too large. Try a lower-resolution photo.' })
+  }
+
   // ── Rate limit check (Firestore-backed, survives cold starts) ────────────
+  // Image requests get their own, always-capped limit — see checkImageRateLimit above.
   let rateCheck
   try {
-    rateCheck = await checkRateLimit(uid || null)
+    rateCheck = imageBase64
+      ? await checkImageRateLimit(uid || null)
+      : await checkRateLimit(uid || null)
   } catch(e) {
     // If Firestore is unreachable, fail open (don't block users) but log it
     console.error('[tutor] rate limit check failed:', e.message)
@@ -134,6 +184,27 @@ module.exports.handler = async function(event) {
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => ({ role: m.role, content: String(m.content || '').slice(0, 20000) }))
     .slice(-20)
+
+  // Vision: Mistral's vision-capable models (mistral-small-latest included, as of their
+  // current docs) accept a multi-part content array on the SAME /v1/chat/completions
+  // endpoint — [{type:'text',...}, {type:'image_url', image_url:{url:'data:...'}}] —
+  // rather than a plain string. Only the last user message gets rewritten this way, and
+  // only when an image was actually sent, so every existing text-only caller is
+  // completely unaffected.
+  if (imageBase64) {
+    for (let i = safeMessages.length - 1; i >= 0; i--) {
+      if (safeMessages[i].role === 'user') {
+        safeMessages[i] = {
+          role: 'user',
+          content: [
+            { type: 'text', text: safeMessages[i].content },
+            { type: 'image_url', image_url: { url: imageBase64 } },
+          ],
+        }
+        break
+      }
+    }
+  }
 
   const fullMessages = [{ role: 'system', content: systemPrompt || DEFAULT_SYSTEM }].concat(safeMessages)
 
