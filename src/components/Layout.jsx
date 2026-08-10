@@ -20,11 +20,11 @@ const NAV = [
   { to:'/papers',      label:'Past Papers',  icon:FileText,        emoji:'📄' },
   { to:'/topics',      label:'Topics',       icon:Brain,           emoji:'🧠' },
   { to:'/study',       label:'Study Tools',  icon:Zap,             emoji:'✨' },
+  { to:'/tutor',       label:'Tutor',        icon:GraduationCap,   emoji:'🎓', pro:true },
   { to:'/tasks',       label:'Tasks',        icon:CheckSquare,     emoji:'✅' },
   { to:'/timer',       label:'Timer',        icon:Timer,           emoji:'⏱'  },
   { to:'/analytics',   label:'Analytics',    icon:BarChart2,       emoji:'📊' },
   { to:'/ai',          label:'AI Advisor',   icon:MessageSquare,   emoji:'🤖' },
-  { to:'/tutor',       label:'Tutor',        icon:GraduationCap,   emoji:'🎓', pro:true },
   { to:'/friends',     label:'Friends',      icon:Users,           emoji:'👥' },
   { to:'/leaderboard', label:'Leaderboard',  icon:Trophy,          emoji:'🏆' },
   { to:'/profile',     label:'Profile',      icon:User,            emoji:'👤' },
@@ -378,9 +378,17 @@ export default function Layout() {
         )}
 
         {/* Page */}
-        <main style={{
+        <main className={isMobile ? 'main-content' : undefined} style={{
           flex:1,
-          padding: isMobile ? '16px 14px 96px' : '28px 32px',
+          paddingTop: isMobile ? 16 : 28,
+          paddingLeft: isMobile ? 14 : 32,
+          paddingRight: isMobile ? 14 : 32,
+          // paddingBottom deliberately omitted on mobile: a `padding` shorthand (or even a
+          // longhand paddingBottom: 0) would still out-specificity the .main-content class
+          // below, inline styles beat classes regardless of the value — so the class's
+          // calc(88px + env(safe-area-inset-bottom)) needs this property genuinely unset here,
+          // not just set to something that happens to look similar.
+          paddingBottom: isMobile ? undefined : 28,
           // Previously a hard maxWidth:1280 with no margin:auto — on a collapsed sidebar or a
           // wide monitor, the extra width freed up simply went unused as blank space bolted onto
           // the right edge only (no auto margins to centre it). Raised the cap so collapsing the
