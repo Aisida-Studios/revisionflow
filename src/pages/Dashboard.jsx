@@ -302,8 +302,8 @@ export default function Dashboard() {
       )}
 
       {!gdprConsent && (
-        <div style={{
-          position:'fixed', bottom:0, left:0, right:0, zIndex:9999,
+        <div className="above-mobile-nav" style={{
+          position:'fixed', left:0, right:0, zIndex:9999,
           background:'var(--bg-card)', borderTop:'2px solid var(--border-strong)',
           padding:'14px 20px', display:'flex', alignItems:'center',
           justifyContent:'space-between', flexWrap:'wrap', gap:10,
