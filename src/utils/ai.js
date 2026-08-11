@@ -24,7 +24,7 @@ Always reference specific free resources where relevant:
 
 // ── Core call function ─────────────────────────────────────────────────────────
 // uid is passed for server-side rate limiting — never used for anything else.
-export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, uid = null) {
+export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, uid = null, feature = null) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000) // safety net against a hung request
   try {
@@ -37,6 +37,7 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
         uid,
+        feature,
       }),
     })
     clearTimeout(timeoutId)
@@ -55,9 +56,9 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
     const data = await res.json()
 
     if (!res.ok) {
-      // 429 = rate limit hit
+      // 429 = daily allowance used up for this feature
       if (res.status === 429) {
-        return { error: data.error || 'Daily AI limit reached. Try again tomorrow.' }
+        return { error: data.error || "You've used today's AI help. More opens up tomorrow." }
       }
       return { error: data.error || `AI request failed (${res.status}). Please try again.` }
     }
@@ -108,7 +109,7 @@ export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM
 
     if (!res.ok) {
       if (res.status === 429) {
-        return { error: data.error || 'Daily AI limit reached. Try again tomorrow.' }
+        return { error: data.error || "You've used today's AI help. More opens up tomorrow." }
       }
       return { error: data.error || `AI request failed (${res.status}). Please try again.` }
     }
@@ -141,7 +142,7 @@ export async function extractTextFromImage(imageBase64, kind, uid) {
     : 'Transcribe the question or problem shown in this image exactly.'
   return callAIWithImage(prompt, imageBase64, sys, 1500, uid)
 }
-export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null) {
+export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null, feature = null) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
@@ -149,7 +150,7 @@ export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null) {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       signal:  controller.signal,
-      body: JSON.stringify({ messages, systemPrompt, uid }),
+      body: JSON.stringify({ messages, systemPrompt, uid, feature }),
     })
     clearTimeout(timeoutId)
 
@@ -171,12 +172,32 @@ export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null) {
 
 // ── Exported AI functions ──────────────────────────────────────────────────────
 
-export async function generateStudyPlan(userData, uid) {
+export async function generateStudyPlan(userData, uid, isPro) {
   const { subjects, examDates, weakTopics, availableHours, preferences, weeksUntilFirst, firstExamDate, lastExamDate } = userData
   const weeks = weeksUntilFirst || 12
   const windowDesc = firstExamDate && lastExamDate
     ? `from now until ${lastExamDate} (first exam: ${firstExamDate}, approximately ${weeks} weeks away)`
     : `approximately ${weeks} weeks`
+
+  const detailConstraint = isPro
+    ? `- Give a week-by-week breakdown for the ENTIRE plan, not just the final weeks — one short paragraph per week`
+    : `- Keep each week's entry concise — one paragraph per phase, not per week`
+
+  const formatSection = isPro
+    ? `1. Subject priority order and reasoning (bullet list)
+2. Phase 1 — Foundation (week-by-week breakdown)
+3. Phase 2 — Intensive revision (week-by-week breakdown, more past papers)
+4. Phase 3 — Final push (week-by-week, exam-specific focus)
+5. Resources per subject (concise list)
+6. 3 practical motivation tips`
+    : `1. Subject priority order and reasoning (bullet list)
+2. Phase 1 — Foundation (what to do, which subjects, ratio)
+3. Phase 2 — Intensive revision (shift in focus, more past papers)
+4. Phase 3 — Final push (exam-specific focus, week by week for last 3 weeks only)
+5. Resources per subject (concise list)
+6. 3 practical motivation tips`
+
+  const wordCap = isPro ? 1400 : 600
 
   const prompt = `Generate a personalised GCSE/A-Level revision study plan for a student.
 
@@ -191,18 +212,13 @@ IMPORTANT CONSTRAINTS:
 - The plan must cover EXACTLY ${weeks} weeks — no more
 - Structure into 3 clear phases: Foundation (weeks 1-${Math.floor(weeks*0.4)}), Intensive (weeks ${Math.floor(weeks*0.4)+1}-${Math.floor(weeks*0.8)}), Final push (weeks ${Math.floor(weeks*0.8)+1}-${weeks})
 - In the final 2 weeks before each exam, prioritise that specific subject heavily
-- Keep each week's entry concise — one paragraph per phase, not per week
+${detailConstraint}
 
 FORMAT:
-1. Subject priority order and reasoning (bullet list)
-2. Phase 1 — Foundation (what to do, which subjects, ratio)
-3. Phase 2 — Intensive revision (shift in focus, more past papers)
-4. Phase 3 — Final push (exam-specific focus, week by week for last 3 weeks only)
-5. Resources per subject (concise list)
-6. 3 practical motivation tips
+${formatSection}
 
-Keep the total response under 600 words. Be specific and actionable.`
-  return callAI(prompt, SYSTEM, 8192, uid)
+Keep the total response under ${wordCap} words. Be specific and actionable.`
+  return callAI(prompt, SYSTEM, isPro ? 8192 : 4096, uid)
 }
 
 export async function getTopicAdvice(subject, topic, confidence, mistakes, uid) {
@@ -296,7 +312,7 @@ export async function chatWithAI(messages, userContext, uid) {
     ? `Student context: studying ${userContext.subjects.map(s => s.name).join(', ')}.`
     : ''
   const systemWithContext = contextStr ? `${SYSTEM}\n\n${contextStr}` : SYSTEM
-  return callAIChat(messages.slice(-10), systemWithContext, uid)
+  return callAIChat(messages.slice(-10), systemWithContext, uid, 'advisorChat')
 }
 
 export async function predictGrade(subject, paperAttempts, topicConfidences, qualification, uid) {
@@ -819,5 +835,5 @@ ROUGH BAND:
 NEXT STEP:
 [the single most impactful thing to work on next]`
 
-  return callAI(prompt, sys, 2400, uid)
+  return callAI(prompt, sys, 2400, uid, 'essayFeedback')
 }
