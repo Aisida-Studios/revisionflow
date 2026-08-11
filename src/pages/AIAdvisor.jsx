@@ -15,6 +15,7 @@ import {
   suggestNextTopic,
 } from '../utils/ai'
 import { checkAndAwardBadge } from '../utils/firestore'
+import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, FileText, Check, Lightbulb } from 'lucide-react'
@@ -30,6 +31,7 @@ const QUICK_PROMPTS = [
 
 export default function AIAdvisor() {
   const { profile, user } = useAuth()
+  const { isPro, isBeta } = useIsPro()
   const { priorities, getTopPriorities } = usePriority()
   const [messages,    setMessages]    = useState([])
   const [input,       setInput]       = useState('')
@@ -133,7 +135,7 @@ export default function AIAdvisor() {
     const newMessages = [...messages,{role:'user',content:msg}]
     setMessages(newMessages)
     setLoading(true)
-    const res = await chatWithAI(newMessages, { subjects: profile?.subjects, context: userContext })
+    const res = await chatWithAI(newMessages, { subjects: profile?.subjects, context: userContext }, user?.uid)
     setMessages(ms=>[...ms,{role:'assistant',content:res.text||res.error||'Sorry, I had trouble responding.'}])
     setLoading(false)
     if (res.text) checkAndAwardBadge(user.uid, 'first_ai').catch(()=>{})
@@ -167,7 +169,7 @@ export default function AIAdvisor() {
       weeksUntilFirst,
       firstExamDate:  firstExam?.examDate,
       lastExamDate:   lastExam?.examDate,
-    })
+    }, user?.uid, isPro || isBeta)
     const planText = res.text||res.error||''
     setStudyPlan(planText)
     if (res.text && user) {
