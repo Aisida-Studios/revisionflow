@@ -13,9 +13,9 @@ import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
 import AIOutput from '../components/AIOutput'
 import CommandWordHint from '../components/CommandWordHint'
+import PhotoCapture from '../components/PhotoCapture'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
-import PhotoCapture from '../components/PhotoCapture'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
@@ -149,7 +149,7 @@ VERDICT: CORRECT or INCORRECT
 SCORE: 1 or 0
 FEEDBACK: One sentence explaining your verdict.`
       const res = await callAI(prompt, null, 300, uid)
-      if (res.error) { onResult(false, 'AI error'); return }
+      if (res.error) { onResult(false, 'Could not check this answer — try again'); return }
       const text = res.text || ''
       const correct = /VERDICT:\s*CORRECT/i.test(text)
       const feedback = (text.match(/FEEDBACK:\s*(.+)/i) || [])[1] || (correct ? 'Good answer!' : 'Not quite right.')
@@ -419,18 +419,21 @@ function TestMode({ cards, onDone, uid }) {
       if (i % 3 === 2) return { type: 'write', card, answer: '', checked: null, opts: [] }
       const realWrong = cards.filter(c => c.a !== card.a).sort(() => Math.random() - 0.5).slice(0, 3)
       const opts = [...realWrong, card].sort(() => Math.random() - 0.5)
-      return { type: 'mc', card, opts, selected: null, checked: null, aiOpts: false }
+      return { type: 'mc', card, opts, selected: null, checked: null }
     })
     return deck
   }
 
-  async function loadAIDistractors(deck, setQs) {
-    // For each MC question, generate AI distractors in the background
+  async function loadAIDistractors(deck) {
+    // For each MC question, generate distractors before the quiz ever renders — returns the
+    // updated deck rather than pushing a mid-quiz state update, since this now runs to
+    // completion first. Falls back to the real-card distractors already in `deck` wherever
+    // generation fails, times out, or returns something malformed.
     const mcIndices = deck.map((q, i) => q.type === 'mc' ? i : -1).filter(i => i >= 0)
-    if (!mcIndices.length) return
+    if (!mcIndices.length) return deck
     try {
       const { callAI } = await import('../utils/ai')
-      // Batch all questions into one AI call for efficiency
+      // Batch all questions into one call for efficiency
       const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
       const prompt = `You are generating multiple choice distractors for a flashcard quiz. For each question below, generate exactly 3 wrong answer options.
 
@@ -448,30 +451,22 @@ Return ONLY a valid JSON array of arrays — no markdown, no explanation, no bac
 Questions and correct answers:
 ${questions}`
       const res = await callAI(prompt, null, 600, uid)
-      if (res.error || !res.text) return
+      if (res.error || !res.text) return deck
       const text = res.text.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(text)
-      if (!Array.isArray(parsed)) return
-      // Functional update: read live state (not the pre-AI-call deck snapshot), since the
-      // user may already have answered one of these questions while the AI call was in
-      // flight. Skip upgrading any question that's already checked — swapping the option
-      // text out from under an answer that's already showing as right/wrong is confusing
-      // and would leave the user's selected option matching nothing in the new list.
-      setQs(current => {
-        const updated = [...current]
-        mcIndices.forEach((deckIdx, arrayIdx) => {
-          if (!updated[deckIdx] || updated[deckIdx].checked !== null) return
-          const wrongs = parsed[arrayIdx]
-          if (!Array.isArray(wrongs) || wrongs.length < 3) return
-          const opts = [
-            ...wrongs.slice(0, 3).map(a => ({ ...updated[deckIdx].card, a })),
-            updated[deckIdx].card,
-          ].sort(() => Math.random() - 0.5)
-          updated[deckIdx] = { ...updated[deckIdx], opts, aiOpts: true }
-        })
-        return updated
+      if (!Array.isArray(parsed)) return deck
+      const updated = [...deck]
+      mcIndices.forEach((deckIdx, arrayIdx) => {
+        const wrongs = parsed[arrayIdx]
+        if (!Array.isArray(wrongs) || wrongs.length < 3) return
+        const opts = [
+          ...wrongs.slice(0, 3).map(a => ({ ...updated[deckIdx].card, a })),
+          updated[deckIdx].card,
+        ].sort(() => Math.random() - 0.5)
+        updated[deckIdx] = { ...updated[deckIdx], opts }
       })
-    } catch(e) { /* silently use fallback distractors */ }
+      return updated
+    } catch(e) { return deck }
   }
 
   const [qs, setQs]         = useState([])
@@ -480,11 +475,12 @@ ${questions}`
   const [building, setBuilding] = useState(true)
 
   useEffect(() => {
-    buildWithAI().then(deck => {
-      setQs(deck)
-      setBuilding(false)
-      loadAIDistractors(deck, setQs)
+    let cancelled = false
+    buildWithAI().then(async deck => {
+      const ready = await loadAIDistractors(deck)
+      if (!cancelled) { setQs(ready); setBuilding(false) }
     })
+    return () => { cancelled = true }
   }, [])
 
   function selectMC(opt) {
@@ -513,8 +509,9 @@ ${questions}`
   }
 
   if (building || !qs.length) return (
-    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '0.9rem' }}>Building your test…</div>
+    <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+      <div className="spinner" style={{ margin: '0 auto 16px' }} />
+      <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Preparing your quiz…</div>
     </div>
   )
   if (finished) return null
@@ -536,7 +533,6 @@ ${questions}`
           <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             {q.type === 'mc' ? 'Multiple choice' : 'Written answer'}
           </div>
-          {q.type === 'mc' && q.aiOpts && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>✨ AI options</span>}
         </div>
         <div style={{ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.55, marginBottom: 16 }}>{q.card.q}</div>
         {q.type === 'mc' && (
@@ -2074,7 +2070,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 <textarea className="textarea" rows={3} placeholder="Paste or type the exam question here..."
                   value={mkQ} onChange={e => setMkQ(e.target.value)} />
                 <div style={{ marginTop:8 }}>
-                  <PhotoCapture uid={uid} kind="question" onExtracted={setMkQ} label="or scan the question" />
+                  <PhotoCapture uid={uid} kind="question" onExtracted={setMkQ} label="scans straight into the box above — check it before marking" />
                 </div>
                 <CommandWordHint questionText={mkQ} />
               </div>
@@ -2083,7 +2079,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 <textarea className="textarea" rows={6} placeholder="Type or paste your answer here..."
                   value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} />
                 <div style={{ marginTop:8 }}>
-                  <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="or scan your handwritten answer" />
+                  <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="handwriting welcome — check the transcription before marking" />
                 </div>
               </div>
               <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
