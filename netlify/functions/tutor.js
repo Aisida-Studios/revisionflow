@@ -55,7 +55,7 @@ async function checkRateLimit(uid) {
     }
 
     if (data.count >= FREE_LIMIT) {
-      return { allowed: false, reason: 'Daily AI limit reached (' + FREE_LIMIT + '/day on free plan). Resets at midnight.' }
+      return { allowed: false, reason: "You've used today's AI help (" + FREE_LIMIT + '). More opens up tomorrow — Pro gets unlimited.' }
     }
 
     tx.update(ref, { count: data.count + 1 })
@@ -65,28 +65,25 @@ async function checkRateLimit(uid) {
   return result
 }
 
-// ── Image-specific rate limiter ───────────────────────────────────────────────
-// Vision calls cost more per-request than text, and Pro's "unlimited" text policy
-// deliberately does NOT extend to photo scans — Pro gets a higher cap, not no cap.
-// Reads/writes users/{uid}/usage/imageScans, kept separate from usage/aiCalls above
-// so scanning a few photos doesn't eat into the general daily text allowance.
-const IMAGE_FREE_LIMIT = 5
-const IMAGE_PRO_LIMIT  = 25
-
-async function checkImageRateLimit(uid) {
-  if (!uid) return { allowed: false, reason: 'Please sign in to use photo scanning.' }
+// ── Per-feature daily limiter ─────────────────────────────────────────────────
+// Generic version of the image-scan limiter above, so chat and essay feedback can reuse
+// the same logic instead of three near-identical copies. Each feature gets its own doc
+// at users/{uid}/usage/{featureKey}, kept separate from the general usage/aiCalls
+// counter, so using one feature heavily doesn't eat into another's allowance.
+//
+// Wording is deliberately soft — no "rate limit", "quota", or "throttled" anywhere the
+// student sees it. It reads as a daily amount that tops back up, not a penalty.
+async function checkFeatureLimit(uid, featureKey, freeLimit, proLimit, label) {
+  if (!uid) return { allowed: false, reason: `Please sign in to use ${label}.` }
 
   const db = await getDb()
   const userSnap = await db.collection('users').doc(uid).get()
   const isPro = userSnap.exists && !!(userSnap.data().isPro || userSnap.data().betaUser)
-  const limit = isPro ? IMAGE_PRO_LIMIT : IMAGE_FREE_LIMIT
+  const limit = isPro ? proLimit : freeLimit
 
   const today = new Date().toISOString().slice(0, 10)
-  const ref   = db.collection('users').doc(uid).collection('usage').doc('imageScans')
+  const ref   = db.collection('users').doc(uid).collection('usage').doc(featureKey)
 
-  // Note: no `isPro` field on the return value here (unlike checkRateLimit above) —
-  // image scans always have a real numeric cap, so the response should always show
-  // the real remaining count, never the "unlimited, hide the number" null path below.
   return db.runTransaction(async tx => {
     const snap = await tx.get(ref)
     const data = snap.exists ? snap.data() : null
@@ -97,13 +94,28 @@ async function checkImageRateLimit(uid) {
     }
 
     if (data.count >= limit) {
-      return { allowed: false, reason: 'Daily photo-scan limit reached (' + limit + '/day' + (isPro ? ' on Pro' : ' on free plan — upgrade for more') + '). Resets at midnight.' }
+      return {
+        allowed: false,
+        reason: `You've used today's ${label} (${limit}). More opens up tomorrow` + (isPro ? '.' : ' — Pro gets a higher daily amount.'),
+      }
     }
 
     tx.update(ref, { count: data.count + 1 })
     return { allowed: true, remaining: limit - (data.count + 1) }
   })
 }
+
+const IMAGE_FREE_LIMIT = 5
+const IMAGE_PRO_LIMIT  = 25
+const checkImageRateLimit = (uid) => checkFeatureLimit(uid, 'imageScans', IMAGE_FREE_LIMIT, IMAGE_PRO_LIMIT, 'photo scans')
+
+const CHAT_FREE_LIMIT = 30
+const CHAT_PRO_LIMIT  = 150
+const checkChatLimit = (uid) => checkFeatureLimit(uid, 'advisorChats', CHAT_FREE_LIMIT, CHAT_PRO_LIMIT, 'AI Advisor messages')
+
+const ESSAY_FREE_LIMIT = 3
+const ESSAY_PRO_LIMIT  = 15
+const checkEssayLimit = (uid) => checkFeatureLimit(uid, 'essayFeedback', ESSAY_FREE_LIMIT, ESSAY_PRO_LIMIT, 'essay feedback requests')
 
 // ── Response helper ───────────────────────────────────────────────────────────
 function respond(statusCode, body) {
@@ -143,7 +155,7 @@ module.exports.handler = async function(event) {
     return respond(400, { error: 'Invalid JSON body' })
   }
 
-  const { messages, systemPrompt, maxTokens, uid, imageBase64 } = body
+  const { messages, systemPrompt, maxTokens, uid, imageBase64, feature } = body
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return respond(400, { error: 'messages array is required' })
@@ -156,16 +168,21 @@ module.exports.handler = async function(event) {
     return respond(400, { error: 'That image is too large. Try a lower-resolution photo.' })
   }
 
-  // ── Rate limit check (Firestore-backed, survives cold starts) ────────────
-  // Image requests get their own, always-capped limit — see checkImageRateLimit above.
+  // ── Daily allowance check (Firestore-backed, survives cold starts) ────────
+  // Photo scans, AI Advisor chat, and essay feedback each have their own dedicated
+  // allowance (checkImageRateLimit/checkChatLimit/checkEssayLimit) — those three are the
+  // most expensive or most open-ended call types, so they're kept separate from the
+  // general pool rather than being able to crowd out everything else. Anything else
+  // (flashcards, exam questions, marking, topic notes, ...) shares the general pool.
   let rateCheck
   try {
-    rateCheck = imageBase64
-      ? await checkImageRateLimit(uid || null)
-      : await checkRateLimit(uid || null)
+    if (imageBase64) rateCheck = await checkImageRateLimit(uid || null)
+    else if (feature === 'advisorChat') rateCheck = await checkChatLimit(uid || null)
+    else if (feature === 'essayFeedback') rateCheck = await checkEssayLimit(uid || null)
+    else rateCheck = await checkRateLimit(uid || null)
   } catch(e) {
     // If Firestore is unreachable, fail open (don't block users) but log it
-    console.error('[tutor] rate limit check failed:', e.message)
+    console.error('[tutor] allowance check failed:', e.message)
     rateCheck = { allowed: true, remaining: FREE_LIMIT }
   }
 
