@@ -21,7 +21,7 @@ import {
   Flame, Zap, Calendar, FileText, Brain,
   CheckSquare, MessageSquare, ArrowRight, Clock, TrendingUp, Trophy,
   CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, Gift, Crown,
-  Star, Sparkles, BookOpen, Target, Snowflake,
+  Star, Sparkles, BookOpen, Target, Snowflake, Lock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { isExamDone, daysUntilExam as _daysTil } from '../utils/examUtils'
@@ -255,6 +255,8 @@ export default function Dashboard() {
 
   const weakTopics = computeWeakTopics(topics)
   const predictions = computeSubjectPredictions(topics, allPapers, quizResults, profile)
+  const visiblePredictions = (isPro || isBeta) ? predictions : predictions.slice(0, 1)
+  const hiddenPredictionCount = predictions.length - visiblePredictions.length
 
   // Streak freeze status — mirrors the rolling 7-day window logic in
   // firestore.js:recordActivityStreak, purely for display here (that function is the only
@@ -444,7 +446,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
-              {predictions.map(p => (
+              {visiblePredictions.map(p => (
                 <div key={p.subject} className="card" style={{ padding:'14px' }}>
                   <div style={{ fontWeight:700, fontSize:'0.82rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:6 }}>
                     {p.subject}
@@ -460,6 +462,15 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+              {hiddenPredictionCount > 0 && (
+                <Link to="/pro" style={{ textDecoration:'none' }}>
+                  <div className="card" style={{ padding:'14px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', height:'100%', border:'1px dashed var(--border)', minHeight:104 }}>
+                    <Lock size={16} style={{ color:'var(--text-muted)', marginBottom:6 }} />
+                    <div style={{ fontSize:'0.78rem', fontWeight:700 }}>+{hiddenPredictionCount} more subject{hiddenPredictionCount===1?'':'s'}</div>
+                    <div style={{ fontSize:'0.68rem', color:'var(--accent)', marginTop:2 }}>Unlock with Pro</div>
+                  </div>
+                </Link>
+              )}
             </div>
           )}
         </div>
