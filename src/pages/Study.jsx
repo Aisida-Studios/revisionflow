@@ -21,7 +21,7 @@ import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
   RotateCcw, Copy, Check, Download, Shuffle, X, Plus,
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
-  Users, ChevronDown, Repeat,
+  Users, ChevronDown, Repeat, BarChart2,
 } from 'lucide-react'
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -410,7 +410,7 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone, uid }) {
+function TestMode({ cards, onDone, uid, timePerQuestion }) {
   // AI generates plausible wrong answers for MC questions
   async function buildWithAI() {
     // Build initial deck with real-card distractors as fallback
@@ -478,6 +478,7 @@ ${questions}`
   const [idx, setIdx]       = useState(0)
   const [finished, setFin]  = useState(false)
   const [building, setBuilding] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(timePerQuestion || null)
 
   useEffect(() => {
     buildWithAI().then(deck => {
@@ -486,6 +487,25 @@ ${questions}`
       loadAIDistractors(deck, setQs)
     })
   }, [])
+
+  // Timed Challenge mode only — resets the clock every time the question changes.
+  useEffect(() => {
+    if (!timePerQuestion) return
+    setTimeLeft(timePerQuestion)
+  }, [idx, timePerQuestion])
+
+  useEffect(() => {
+    if (!timePerQuestion || finished || !qs.length) return
+    if (qs[idx]?.checked !== null) return // already answered — no need to keep ticking
+    if (timeLeft <= 0) {
+      const u = [...qs]
+      u[idx] = { ...u[idx], checked: 'timeout' }
+      setQs(u)
+      return
+    }
+    const t = setTimeout(() => setTimeLeft(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [timeLeft, timePerQuestion, finished, qs, idx])
 
   function selectMC(opt) {
     if (qs[idx].checked !== null) return
@@ -525,6 +545,9 @@ ${questions}`
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
           <span>Q{idx+1}/{qs.length}</span>
+          {timePerQuestion && q.checked === null && (
+            <span style={{ fontWeight: 800, color: timeLeft <= 5 ? 'var(--danger)' : 'var(--text-muted)' }}>⏱ {timeLeft}s</span>
+          )}
           <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
         </div>
         <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
@@ -564,7 +587,7 @@ ${questions}`
               value={q.answer}
               onChange={e => { const u = [...qs]; u[idx] = { ...u[idx], answer: e.target.value }; setQs(u) }}
               placeholder="Type your answer…" disabled={q.checked !== null} />
-            {q.checked && q.checked !== 'idk' && (
+            {q.checked && q.checked !== 'idk' && q.checked !== 'timeout' && (
               <div style={{ marginTop: 8 }}>
                 <AIWriteMarker question={q.card.q} correctAnswer={q.card.a} studentAnswer={q.answer} uid={uid}
                   onResult={(correct) => handleWriteAI(correct)} autoMark />
@@ -574,6 +597,13 @@ ${questions}`
               <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 16,
                 background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.82rem' }}>Answer</div>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
+              </div>
+            )}
+            {q.checked === 'timeout' && (
+              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 16,
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 4, fontSize: '0.82rem' }}>⏱ Time's up — the answer was:</div>
                 <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
               </div>
             )}
@@ -1181,8 +1211,39 @@ function QuizTab({ mySets, uid, profile }) {
   const [questionCount, setQCount]    = useState(10)
   const [started,     setStarted]     = useState(false)
   const [results,     setResults]     = useState(null)
+  const [timedChallenge, setTimedChallenge] = useState(false)
+  const [timePerQ,    setTimePerQ]    = useState(20)
+
+  const [setSource,   setSetSource]   = useState('mine')  // 'mine' | 'public'
+  const [publicSets,  setPublicSets]  = useState([])
+  const [publicLoading, setPublicLoading] = useState(false)
+  const [publicSubject, setPublicSubject] = useState('')
+
+  const [showHistory, setShowHistory] = useState(false)
+  const [history,     setHistory]     = useState(null) // null = not loaded yet
 
   const subjects = profile?.subjects?.map(s => s.name) || []
+
+  useEffect(() => {
+    if (setSource !== 'public') return
+    setPublicLoading(true)
+    import('../utils/firestore').then(({ getPublicFlashcardSets }) => {
+      getPublicFlashcardSets(publicSubject || null, 30)
+        .then(setPublicSets)
+        .finally(() => setPublicLoading(false))
+    })
+  }, [setSource, publicSubject])
+
+  function openHistory() {
+    setShowHistory(true)
+    if (history !== null || !uid) return
+    import('../utils/firestore').then(({ getQuizResults }) => {
+      getQuizResults(uid).then(results => {
+        const sorted = [...results].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+        setHistory(sorted)
+      }).catch(() => setHistory([]))
+    })
+  }
 
   // Persists the result (subject + percentage) before showing the results screen, so the
   // dashboard's predicted-grade widget has real quiz history to blend from. Best-effort —
@@ -1262,7 +1323,7 @@ function QuizTab({ mySets, uid, profile }) {
           <span className="badge badge-purple">{quizCards.length} questions</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} uid={uid}
+          <TestMode cards={quizCards} uid={uid} timePerQuestion={timedChallenge ? timePerQ : undefined}
             onDone={handleQuizDone} />
         )}
         {quizMode === 'write' && (
@@ -1278,37 +1339,116 @@ function QuizTab({ mySets, uid, profile }) {
       <div style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 6 }}>Quiz</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          Test yourself on a flashcard set. Premade quizzes coming soon.
+          Test yourself on a flashcard set — yours or a public one.
         </p>
       </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button className="btn btn-ghost btn-sm" onClick={openHistory}>
+          <BarChart2 size={14} /> Past scores
+        </button>
+      </div>
+
+      {showHistory && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <h4 style={{ fontSize: '0.95rem' }}>Your quiz history</h4>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowHistory(false)}><X size={13} /></button>
+          </div>
+          {history === null ? (
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading…</p>
+          ) : history.length === 0 ? (
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No quizzes taken yet — your scores will show up here.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+              {history.slice(0, 20).map((h, i) => (
+                <div key={h.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.setTitle || h.subject}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{h.subject}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent)', flexShrink: 0, marginLeft: 10 }}>
+                    {h.score}/{h.total} <span style={{ fontWeight: 500, fontSize: '0.72rem', color: 'var(--text-muted)' }}>({h.percentage}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Set picker */}
       <div className="card" style={{ marginBottom: 16 }}>
         <h4 style={{ marginBottom: 14, fontSize: '0.95rem' }}>1. Choose a set</h4>
-        {mySets.length === 0 ? (
-          <div className="empty-state" style={{ padding: '16px 0' }}>
-            <BookOpen size={32} style={{ opacity: 0.3 }} />
-            <p>No saved sets yet — generate or create flashcards first</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {mySets.map(set => (
-              <button key={set.id} onClick={() => setSelectedSet(set)}
-                style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
-                  background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
-                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {set.subject} · {set.cards?.length || 0} cards
+
+        <div className="tabs" style={{ marginBottom: 14, padding: 3 }}>
+          <button className={'tab' + (setSource === 'mine' ? ' active' : '')} onClick={() => { setSetSource('mine'); setSelectedSet(null) }}>My Sets</button>
+          <button className={'tab' + (setSource === 'public' ? ' active' : '')} onClick={() => { setSetSource('public'); setSelectedSet(null) }}>
+            <Users size={14} /> Public Sets
+          </button>
+        </div>
+
+        {setSource === 'public' && (
+          <select className="select" style={{ marginBottom: 12 }} value={publicSubject} onChange={e => setPublicSubject(e.target.value)}>
+            <option value="">All subjects</option>
+            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+
+        {setSource === 'mine' ? (
+          mySets.length === 0 ? (
+            <div className="empty-state" style={{ padding: '16px 0' }}>
+              <BookOpen size={32} style={{ opacity: 0.3 }} />
+              <p>No saved sets yet — generate or create flashcards first</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {mySets.map(set => (
+                <button key={set.id} onClick={() => setSelectedSet(set)}
+                  style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+                    background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {set.subject} · {set.cards?.length || 0} cards
+                      </div>
                     </div>
+                    {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
                   </div>
-                  {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : (
+          publicLoading ? (
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading public sets…</p>
+          ) : publicSets.length === 0 ? (
+            <div className="empty-state" style={{ padding: '16px 0' }}>
+              <Users size={32} style={{ opacity: 0.3 }} />
+              <p>No public sets for this subject yet</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {publicSets.map(set => (
+                <button key={set.id} onClick={() => setSelectedSet(set)}
+                  style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
+                    background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {set.subject} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
+                      </div>
+                    </div>
+                    {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -1351,6 +1491,28 @@ function QuizTab({ mySets, uid, profile }) {
                 ))}
               </div>
             </div>
+            {quizMode !== 'write' && (
+              <div>
+                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={timedChallenge} onChange={e => setTimedChallenge(e.target.checked)} />
+                  🏆 Timed challenge — answer before the clock runs out
+                </label>
+                {timedChallenge && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    {[10, 15, 20, 30].map(s => (
+                      <button key={s} onClick={() => setTimePerQ(s)}
+                        style={{ padding: '5px 12px', borderRadius: 20,
+                          border: `1px solid ${timePerQ === s ? 'var(--accent)' : 'var(--border)'}`,
+                          background: timePerQ === s ? 'var(--accent)' : 'var(--bg-card)',
+                          color: timePerQ === s ? 'white' : 'var(--text-primary)',
+                          cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>
+                        {s}s
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1362,16 +1524,6 @@ function QuizTab({ mySets, uid, profile }) {
           Start quiz — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
         </button>
       )}
-
-      {/* Coming soon */}
-      <div className="card" style={{ marginTop: 20, opacity: 0.6 }}>
-        <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Coming soon</h4>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {['📚 Premade quizzes by topic', '🏆 Timed challenge mode', '📊 Quiz history & scores', '🤝 Public quiz sets'].map(f => (
-            <span key={f} className="badge badge-grey" style={{ fontSize: '0.75rem' }}>{f}</span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
