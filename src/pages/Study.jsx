@@ -1,5 +1,6 @@
 // src/pages/Study.jsx
 import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -1206,6 +1207,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
 
 /* ── Quiz tab ───────────────────────────────────────────────────────────────── */
 function QuizTab({ mySets, uid, profile }) {
+  const { isPro, isBeta } = useIsPro()
   const [selectedSet, setSelectedSet] = useState(null)
   const [quizMode,    setQuizMode]    = useState('mc')    // 'mc' | 'write' | 'mixed'
   const [questionCount, setQCount]    = useState(10)
@@ -1323,7 +1325,7 @@ function QuizTab({ mySets, uid, profile }) {
           <span className="badge badge-purple">{quizCards.length} questions</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} uid={uid} timePerQuestion={timedChallenge ? timePerQ : undefined}
+          <TestMode cards={quizCards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
             onDone={handleQuizDone} />
         )}
         {quizMode === 'write' && (
@@ -1493,11 +1495,18 @@ function QuizTab({ mySets, uid, profile }) {
             </div>
             {quizMode !== 'write' && (
               <div>
-                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" checked={timedChallenge} onChange={e => setTimedChallenge(e.target.checked)} />
-                  🏆 Timed challenge — answer before the clock runs out
-                </label>
-                {timedChallenge && (
+                {(isPro || isBeta) ? (
+                  <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={timedChallenge} onChange={e => setTimedChallenge(e.target.checked)} />
+                    🏆 Timed challenge — answer before the clock runs out
+                  </label>
+                ) : (
+                  <Link to="/pro" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    <Lock size={13} />
+                    🏆 Timed challenge <span style={{ color: 'var(--accent)', fontWeight: 700 }}>— Pro</span>
+                  </Link>
+                )}
+                {timedChallenge && (isPro || isBeta) && (
                   <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                     {[10, 15, 20, 30].map(s => (
                       <button key={s} onClick={() => setTimePerQ(s)}
