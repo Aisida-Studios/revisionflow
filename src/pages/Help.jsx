@@ -6,22 +6,27 @@ import {
   HelpCircle, Send, BookOpen, Calendar, FileText, Brain,
   MessageSquare, Timer, BarChart2, Users, Trophy, Settings,
   Zap, ChevronDown, ChevronUp, Layers, ClipboardList, Gift,
-  Star, Globe, Lock, Shield, Bell, Palette, Link2
+  Star, Globe, Lock, Shield, Bell, Palette, Link2, Repeat, GraduationCap
 } from 'lucide-react'
 
 const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level revision web app. AS-Level is a standalone qualification, kept completely separate from A-Level throughout the app (own topics, exam dates, past papers, grade scale) — not treated as "year one of A-Level". Here is the complete up-to-date feature set:
 
 PAGES & FEATURES:
-- Dashboard: Today's sessions, next exam countdown, streak, XP level bar (infinite levels, 1.15x XP formula), daily AI briefing, daily quests, badge showcase, recent papers carousel, referral code entry. New users see a personalised welcome card with their subjects listed and suggested first steps.
+- Dashboard: Today's sessions, next exam countdown, streak (with weekly streak freezes — 1/week free, 3/week Pro, automatically covers a single missed day so the streak doesn't break), XP level bar (infinite levels, 1.15x XP formula), daily AI briefing, daily quests, predicted grade per subject (blended from quiz history, past paper scores and topic confidence — free shows one subject, Pro shows all), weak topics this week (auto-surfaced from topic confidence ratings), badge showcase, recent papers carousel, referral code entry. New users see a personalised welcome card with their subjects listed and suggested first steps.
+- AI Advisor (/ai): Chat with context-aware AI (30 messages/day free, 150/day Pro), grade predictor, next-topic suggestion, resource recommendations, study plan generator (Pro gets longer, week-by-week multi-week plans; free gets a phase-level plan), exam technique tips.
 - Calendar: Monthly/weekly view, AI-powered 7-step schedule generator, ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
 - Exam Dates: Add upcoming exams with subject, board, paper, date. Emergency Mode triggers when exam is within 7 days.
 - Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019–2025, 2026 estimated). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
 - Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 6 boards, GCSE, AS-Level and A-Level, each kept fully separate. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
-- Study Tools (/study): Three tabs:
-  * Flashcards — AI generator (50 cards), saved sets (private/public), create custom sets, flip-card UI, confidence rating, Quizlet copy, CSV download, public sets library with search/filter
-  * Quiz — Multiple choice, written, or mixed mode. Timed challenge mode (countdown bar per question). Quiz history with scores and time taken. Public quiz sets. Filter by subject.
-  * Exam Questions — Realistic board-accurate questions (AQA/Edexcel/OCR/WJEC/Eduqas/CCEA). Correct command words per board per mark value. Mark scheme hidden until revealed. Examiner tips. Copy all button.
-- AI Advisor / Answer Marker: Submit a question + your answer, choose subject/board/level/marks. AI marks it like a real examiner: awarded marks, credited points, not-credited points, AO breakdown, how to improve, examiner annotation. Recent marking history panel.
+- Study Tools (/study): Five tabs:
+  * Topic Notes — AI-generated revision guides per topic, cached so popular topics load instantly for everyone
+  * Flashcards — AI generator (up to 50 cards for Pro, 20 for free), saved sets (private/public), create custom sets, flip-card UI, confidence rating, on-demand AI memory aids for cards you keep missing, Quizlet copy, CSV download, public sets library with search/filter
+  * Practice — spaced repetition. Pulls due cards from every saved set (not just one), ranked so the ones you keep getting wrong come back the most often; cards you know well get spaced further apart automatically
+  * Quiz — Multiple choice (AI generates plausible wrong answers, not random ones), written, or mixed mode. Timed challenge mode (Pro only). Quiz history with scores saved automatically. Browse and quiz on public sets, not just your own. Filter by subject
+  * Exam Questions — Realistic board-accurate questions (AQA/Edexcel/OCR/WJEC/Eduqas/CCEA). Correct command words per board per mark value. Mark scheme hidden until revealed. Examiner tips. Copy all button
+  * Answer Marker — Submit a question + your answer (typed, pasted, or photographed), choose subject/board/level/marks. AI marks it like a real examiner: awarded marks, credited points, not-credited points, AO breakdown, how to improve, examiner annotation. Inline coaching on what the question's command word (e.g. "evaluate") actually requires. If your marks are consistently weak on one command word, it offers 3 targeted flashcards on just that skill. Recent marking history panel
+- Tutor (/tutor, Pro only): Maths step-by-step solver (reveals one step at a time rather than the full answer, so it teaches the method) and English essay feedback (strengths, areas to improve, structure, technical accuracy, a rough indicative band). Both accept a photo instead of typing — see Photo scanning below.
+- Photo scanning: on the Tutor page and the Answer Marker, students can take a photo or upload one instead of typing — a maths problem, an exam question, or a handwritten essay/answer. The photo is transcribed into the text box (handwriting gets an educated-guess transcription, not left blank if messy) so it can be checked and corrected before solving or marking.
 - Timer: Countdown with MM:SS input, Stopwatch with laps, 5 ambient sounds (Web Audio API), looping alert on finish, XP awarded on completion (1 XP/min, max 100).
 - Analytics: Study time charts, subject distribution, grade trajectory, consistency heatmap.
 - Friends: Add friends by username, accept/decline requests, friends leaderboard.
@@ -54,10 +59,12 @@ PUBLIC PROFILES:
 - Private by default if settings.profilePublic is set to false
 
 FLASHCARDS & QUIZ:
-- AI generates up to 50 flashcards per topic
-- Quiz modes: multiple choice (AI generates wrong answers), written (AI-marked), mixed
-- Timed challenge mode: configurable seconds per question, auto-advances on timeout
-- Quiz history saved per user, viewable from Quiz tab
+- AI generates up to 20 flashcards per topic on free, 50 on Pro
+- Multiple choice options are AI-generated distractors — plausible wrong answers, not random other cards — with a real-answer fallback shown instantly while the AI ones load in the background
+- Quiz modes: multiple choice, written (AI-marked), mixed
+- Timed challenge mode (Pro only): configurable seconds per question, auto-advances on timeout
+- Practice tab: spaced repetition across every saved set — cards you keep missing come back sooner, cards you know well get spaced further apart
+- Quiz history saved automatically per user, viewable from the Quiz tab
 - Admin can bulk-generate public flashcard sets for all topics in a subject
 
 EXAM QUESTIONS & MARKING:
@@ -65,7 +72,8 @@ EXAM QUESTIONS & MARKING:
 - Correct command words per board per mark value (e.g. AQA 6-mark = Evaluate/Discuss)
 - Mark scheme formats: point-mark for lower marks, level-based for higher marks
 - Maths questions use plain-text notation (no LaTeX)
-- Answer Marker gives: score, grade estimate, credited/not-credited points, AO breakdown, how to improve, examiner note
+- Answer Marker gives: score, grade estimate, credited/not-credited points, AO breakdown, how to improve, examiner note, inline command-word coaching, and a targeted flashcard suggestion if one command word is consistently weak
+- Question and answer can be typed, pasted, or photographed
 - Recent marking history stored locally in session
 
 RESOURCES (Topics page):
@@ -80,12 +88,13 @@ THEMES & CUSTOMISATION:
 - Dark/light mode toggle in sidebar
 
 AI CONFIG:
-- Model: mistral-small-latest
+- Model: mistral-small-latest, including photo/handwriting transcription
 - All features use full student context (subjects, topics, papers, mistakes, priorities, streaks)
 - Daily briefing cached per day to Firestore
+- Free plan: a fair daily allowance across most AI features, higher on Pro; a couple of the more expensive features (AI Advisor chat, essay feedback) have their own dedicated daily allowance so one heavy user can't affect anyone else's
 
 DATA STORAGE (Firebase Firestore):
-- users/{uid}: main profile, XP, streak, badges, referral code, display name, username
+- users/{uid}: main profile, XP, streak, streak freeze usage, badges, referral code, display name, username
 - users/{uid}/sessions: revision sessions
 - users/{uid}/paperAttempts: past paper results
 - users/{uid}/topics: confidence ratings per topic
@@ -93,8 +102,8 @@ DATA STORAGE (Firebase Firestore):
 - users/{uid}/notes: revision notes
 - users/{uid}/tasks: tasks
 - users/{uid}/quests/{date}: daily quest progress
-- users/{uid}/flashcardSets: saved flashcard sets
-- users/{uid}/quizHistory: quiz results
+- users/{uid}/flashcardSets: saved flashcard sets, including per-card mastery and spaced-repetition schedule
+- users/{uid}/quizResults: quiz history
 - publicFlashcards: public flashcard sets
 - topicNotes: AI-generated revision guide cache
 - topicResourceLinks: admin-curated verified resource links`
@@ -189,6 +198,18 @@ const FAQ = [
     q: 'How do I export my revision calendar?',
     a: 'In Calendar, click the export button to download an .ics file. Import this into Google Calendar, Apple Calendar, or Outlook — all sessions and events will appear in your calendar app.'
   },
+  {
+    q: 'How does the Tutor work, and can I use a photo instead of typing?',
+    a: 'Tutor (Pro only) has two modes: a Maths step-by-step solver that reveals one step at a time so you actually learn the method, and English essay feedback covering strengths, areas to improve, structure and technical accuracy. Both let you take a photo or upload one instead of typing — a printed or handwritten question, or a handwritten essay page. The photo is transcribed into the text box first so you can check and fix anything before solving or submitting. The Answer Marker on Study Tools also accepts photos, for both the question and your own answer.'
+  },
+  {
+    q: 'What is Practice mode / spaced repetition?',
+    a: 'Study Tools → Practice pulls due cards from every flashcard set you have, not just one, and ranks them so the ones you keep getting wrong come back the soonest. Rate a card "Got it!" and it gets spaced further apart next time; rate it "Didn\'t know" and it comes straight back tomorrow. It runs on the same cards and ratings as the regular Flashcards tab, so studying either one keeps the schedule up to date.'
+  },
+  {
+    q: 'What is a streak freeze?',
+    a: 'If you miss exactly one day, a streak freeze automatically fills the gap so your streak continues instead of resetting to zero — you don\'t have to do anything to activate it. Free accounts get 1 a week, Pro gets 3. It only covers a single missed day; missing two or more in a row still breaks the streak. Check the Streak card on your Dashboard to see how many you have left this week.'
+  },
 ]
 
 const FEATURES = [
@@ -196,10 +217,12 @@ const FEATURES = [
   { icon: Calendar,      title: 'Calendar',          desc: 'AI schedule generator, multi-day task blocks, ICS import/export', colour: '#3b82f6' },
   { icon: FileText,      title: 'Past Papers',       desc: 'Grade tracking, boundaries (2019–2025, 2026 estimated), mistakes log', colour: '#f59e0b' },
   { icon: Brain,         title: 'Topics',            desc: 'Confidence ratings, heatmap, priority, notes, mastery tab, per-topic resource links', colour: '#8b5cf6' },
-  { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (50 cards), custom sets, public library, quiz mode, timed challenge', colour: '#a855f7' },
+  { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (20 free / 50 Pro), custom sets, public library, on-demand memory aids', colour: '#a855f7' },
+  { icon: Repeat,        title: 'Practice',          desc: 'Spaced repetition across every set — cards you keep missing come back the most', colour: '#14b8a6' },
   { icon: ClipboardList, title: 'Exam Questions',    desc: 'Board-accurate questions (all 6 boards), real command words, hidden mark schemes, examiner tips', colour: '#7c3aed' },
-  { icon: Star,          title: 'Answer Marker',     desc: 'AI marks like a real examiner — score, AO breakdown, credited/not-credited, how to improve', colour: '#ec4899' },
-  { icon: MessageSquare, title: 'AI Advisor',        desc: 'Chat, grade predictor, next steps, resource recommendations', colour: '#06b6d4' },
+  { icon: Star,          title: 'Answer Marker',     desc: 'AI marks like a real examiner — score, AO breakdown, command-word coaching, photo input', colour: '#ec4899' },
+  { icon: MessageSquare, title: 'AI Advisor',        desc: 'Chat, grade predictor, next steps, study plans (longer on Pro), resource recommendations', colour: '#06b6d4' },
+  { icon: GraduationCap, title: 'Tutor',             desc: 'Pro only — Maths step-by-step solver and English essay feedback, both accept a photo', colour: '#0891b2' },
   { icon: Timer,         title: 'Timer',             desc: 'Countdown/stopwatch, ambient sounds, XP per minute', colour: '#f97316' },
   { icon: BarChart2,     title: 'Analytics',         desc: 'Study charts, subject distribution, grade trajectory, heatmap', colour: '#22c55e' },
   { icon: Users,         title: 'Friends',           desc: 'Add friends, friends leaderboard, referral system with name preview', colour: '#f97316' },
@@ -247,8 +270,8 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
 
   const faqCategories = [
     { id: 'getting-started', label: 'Getting Started',  questions: FAQ.filter((_, i) => [0, 15, 16].includes(i)) },
-    { id: 'xp-badges',       label: 'XP & Badges',      questions: FAQ.filter((_, i) => [1, 9].includes(i)) },
-    { id: 'study-tools',     label: 'Study Tools',       questions: FAQ.filter((_, i) => [2, 3, 4, 5, 6, 7].includes(i)) },
+    { id: 'xp-badges',       label: 'XP & Badges',      questions: FAQ.filter((_, i) => [1, 9, 20].includes(i)) },
+    { id: 'study-tools',     label: 'Study Tools',       questions: FAQ.filter((_, i) => [2, 3, 4, 5, 6, 7, 18, 19].includes(i)) },
     { id: 'features',        label: 'Features',          questions: FAQ.filter((_, i) => [8, 10, 11, 12, 13, 14, 17].includes(i)) },
     { id: 'privacy',         label: 'Privacy & Data',    questions: FAQ.filter((_, i) => [16].includes(i)) },
   ]
@@ -262,7 +285,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           <HelpCircle size={22} color="var(--accent-light)" /> Help Centre
         </h2>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Everything you need to know about RevisionFlow · Last updated July 2026
+          Everything you need to know about RevisionFlow · Last updated August 2026
         </p>
       </div>
 
@@ -306,18 +329,21 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       <div style={{ marginBottom: 24, padding: '14px 18px', background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', borderRadius: 12, border: '1px solid rgba(124,58,237,0.25)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-light)', marginBottom: 8 }}>🆕 Recently added</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
-          <span>✦ <strong>Quiz mode</strong> — Timed challenge, multiple choice, written, history tracking, public quiz sets</span>
+          <span>✦ <strong>Tutor (Pro)</strong> — Maths step-by-step solver and English essay feedback, both accept a photo instead of typing</span>
+          <span>✦ <strong>Photo scanning</strong> — Take or upload a photo of a question, problem or handwritten essay on the Tutor page and Answer Marker; it's transcribed into the text box for you to check before solving</span>
+          <span>✦ <strong>Practice tab</strong> — Spaced repetition across every saved flashcard set, prioritising the cards you keep getting wrong</span>
+          <span>✦ <strong>Predicted grade &amp; weak topics widgets</strong> — On the Dashboard, blended from quiz history, past paper scores and topic confidence</span>
+          <span>✦ <strong>Streak freeze</strong> — Automatically covers one missed day so your streak doesn't break (1/week free, 3/week Pro)</span>
+          <span>✦ <strong>Command-word coaching &amp; skill flashcards</strong> — The Answer Marker now explains what "evaluate", "assess" etc. actually require, and suggests targeted flashcards if one command word keeps costing you marks</span>
+          <span>✦ <strong>On-demand memory aids</strong> — Get an AI mnemonic for any flashcard you keep missing</span>
+          <span>✦ <strong>Timed challenge mode (Pro)</strong> — Per-question countdown in Quiz, plus browsing public/premade quizzes by subject and a quiz history viewer</span>
+          <span>✦ <strong>Smarter multiple choice</strong> — Wrong answers in Quiz mode are AI-generated to actually look plausible, not just random other cards</span>
           <span>✦ <strong>Exam Questions revamp</strong> — Real board-accurate questions with correct command words, hidden mark schemes, examiner tips for all 6 boards</span>
           <span>✦ <strong>Answer Marker revamp</strong> — Full examiner-style marking with AO breakdown, credited/not-credited points, mark band improvement tips</span>
           <span>✦ <strong>Per-topic resources</strong> — Resources button on every topic with verified links + site-search fallbacks</span>
           <span>✦ <strong>Public profiles</strong> — Viewable without login at /u/username</span>
-          <span>✦ <strong>Referral preview</strong> — See the referrer's name in real-time when entering a code on signup</span>
           <span>✦ <strong>Personalised welcome</strong> — New users see a welcome card and personalised tour on first login</span>
-          <span>✦ <strong>Admin: bulk flashcards</strong> — Generate 50-card public sets for every topic in a subject</span>
-          <span>✦ <strong>All themes unlocked</strong> for beta users</span>
-          <span>✦ <strong>A-Level topic fix</strong> — Switching to A-Level now correctly loads A-Level spec topics</span>
-          <span>✦ <strong>AS-Level launch</strong> — AS-Level is now a fully separate qualification from A-Level everywhere: onboarding, topics, exam dates, past papers and settings, with its own 2026 exam dates for AQA, Edexcel, OCR and Eduqas. Mix AS-Level and A-Level subjects on one account.</span>
-          <span>✦ <strong>Board/level separation fix</strong> — Fixed several places where the same subject at a different exam board or qualification (e.g. AQA A-Level Physics vs AQA GCSE Physics) could show the wrong topics, exam dates or grade boundaries. They're now always kept fully separate.</span>
+          <span>✦ <strong>AS-Level launch</strong> — AS-Level is a fully separate qualification from A-Level everywhere in the app, with its own exam dates. Mix AS-Level and A-Level subjects on one account.</span>
         </div>
       </div>
 
