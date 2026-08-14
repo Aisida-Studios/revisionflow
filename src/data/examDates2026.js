@@ -78,7 +78,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Bengali",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-06-03"
   },
@@ -87,7 +87,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Bengali",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-11"
   },
@@ -159,7 +159,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Mandarin Chinese",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-05-11"
   },
@@ -168,7 +168,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Mandarin Chinese",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-05-18"
   },
@@ -420,7 +420,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "French",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-05-20"
   },
@@ -429,7 +429,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "French",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-04"
   },
@@ -474,7 +474,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "German",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-05-07"
   },
@@ -483,7 +483,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "German",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-05-14"
   },
@@ -493,7 +493,7 @@ const GCSE_2026 = [
     "subject": "History",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Paper 1: Understanding the Modern World (2h combined \u2013 options 1A+1B)",
+    "paperName": "Paper 1: Understanding the Modern World (2h combined – options 1A+1B)",
     "date": "2026-05-15"
   },
   {
@@ -502,7 +502,7 @@ const GCSE_2026 = [
     "subject": "History",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Paper 2: Shaping the Nation (2h combined \u2013 options 2A+2B)",
+    "paperName": "Paper 2: Shaping the Nation (2h combined – options 2A+2B)",
     "date": "2026-06-04"
   },
   {
@@ -519,7 +519,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Italian",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-05-22"
   },
@@ -528,7 +528,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Italian",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-01"
   },
@@ -591,7 +591,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Modern Hebrew",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-17"
   },
@@ -618,7 +618,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Panjabi",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-10"
   },
@@ -672,7 +672,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Polish",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-12"
   },
@@ -762,7 +762,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Spanish",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 3,
     "paperName": "Reading (F/H)",
     "date": "2026-06-09"
   },
@@ -771,7 +771,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Spanish",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 4,
     "paperName": "Writing (F/H)",
     "date": "2026-06-16"
   },
@@ -782,7 +782,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1",
-    "date": "2026-06-07"
+    "date": "2026-06-02"
   },
   {
     "board": "AQA",
@@ -791,7 +791,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2",
-    "date": "2026-06-16"
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
@@ -852,7 +852,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Biblical Hebrew",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 2,
     "paperName": "Component 2: Literature",
     "date": "2026-05-19"
   },
@@ -908,7 +908,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2 (F/H)",
-    "date": "2026-06-09"
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
@@ -998,7 +998,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 5,
     "paperName": "Paper 5: Chemistry 2 (F/H)",
-    "date": "11 Jun 2026"
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
@@ -1007,7 +1007,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 6,
     "paperName": "Paper 6: Physics 2 (F/H)",
-    "date": "15 Jun 2026"
+    "date": "2026-06-15"
   },
   {
     "board": "Edexcel",
@@ -1177,7 +1177,7 @@ const GCSE_2026 = [
     "subject": "Geography B",
     "tier": "N/A",
     "paper": 3,
-    "paperName": "Paper 3: People & Environment Issues \u2013 Making Decisions",
+    "paperName": "Paper 3: People & Environment Issues – Making Decisions",
     "date": "2026-06-11"
   },
   {
@@ -1374,7 +1374,7 @@ const GCSE_2026 = [
     "level": "GCSE",
     "subject": "Physical Education",
     "tier": "N/A",
-    "paper": 1,
+    "paper": 2,
     "paperName": "Component 2: Health & Performance",
     "date": "2026-06-01"
   },
@@ -1403,7 +1403,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2 (F/H)",
-    "date": "2026-06-11"
+    "date": "2026-06-15"
   },
   {
     "board": "Edexcel",
@@ -1438,7 +1438,7 @@ const GCSE_2026 = [
     "subject": "Religious Studies A",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Paper 1: Area of Study 1 \u2013 Study of Religion",
+    "paperName": "Paper 1: Area of Study 1 – Study of Religion",
     "date": "2026-05-12"
   },
   {
@@ -1447,7 +1447,7 @@ const GCSE_2026 = [
     "subject": "Religious Studies A",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Paper 2: Area of Study 2 \u2013 Study of Second Religion",
+    "paperName": "Paper 2: Area of Study 2 – Study of Second Religion",
     "date": "2026-05-20"
   },
   {
@@ -1520,7 +1520,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Reading (F/H)",
-    "date": "11 Jun 2026"
+    "date": "2026-06-16"
   },
   {
     "board": "Edexcel",
@@ -1585,166 +1585,1446 @@ const GCSE_2026 = [
     "paperName": "Paper 4: Writing (F/H)",
     "date": "2026-06-02"
   },
-
-  // ── OCR GCSE 2026 — Source: OCR Final Timetable June 2026 (published August 2025) ──
-  { "board": "OCR", "level": "GCSE", "subject": "Biology A", "tier": "Foundation", "paper": 1, "paperName": "Paper 1 (Foundation)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology A", "tier": "Foundation", "paper": 2, "paperName": "Paper 2 (Foundation)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology A", "tier": "Higher", "paper": 3, "paperName": "Paper 3 (Higher)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology A", "tier": "Higher", "paper": 4, "paperName": "Paper 4 (Higher)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology B", "tier": "Foundation", "paper": 1, "paperName": "Breadth in Biology (Foundation)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology B", "tier": "Foundation", "paper": 2, "paperName": "Depth in Biology (Foundation)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology B", "tier": "Higher", "paper": 3, "paperName": "Breadth in Biology (Higher)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Biology B", "tier": "Higher", "paper": 4, "paperName": "Depth in Biology (Higher)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Business 1: Business Activity, Marketing and People", "date": "2026-05-11" },
-  { "board": "OCR", "level": "GCSE", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Business 2: Operations, Finance and Influences on Business", "date": "2026-05-21" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry A", "tier": "Foundation", "paper": 1, "paperName": "Paper 1 (Foundation)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry A", "tier": "Foundation", "paper": 2, "paperName": "Paper 2 (Foundation)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry A", "tier": "Higher", "paper": 3, "paperName": "Paper 3 (Higher)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry A", "tier": "Higher", "paper": 4, "paperName": "Paper 4 (Higher)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry B", "tier": "Foundation", "paper": 1, "paperName": "Breadth in Chemistry (Foundation)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry B", "tier": "Foundation", "paper": 2, "paperName": "Depth in Chemistry (Foundation)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry B", "tier": "Higher", "paper": 3, "paperName": "Breadth in Chemistry (Higher)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Chemistry B", "tier": "Higher", "paper": 4, "paperName": "Depth in Chemistry (Higher)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 1, "paperName": "Paper 1 Biology (Foundation)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 3, "paperName": "Paper 3 Chemistry (Foundation)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 5, "paperName": "Paper 5 Physics (Foundation)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 2, "paperName": "Paper 2 Biology (Foundation)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 4, "paperName": "Paper 4 Chemistry (Foundation)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Foundation", "paper": 6, "paperName": "Paper 6 Physics (Foundation)", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 7, "paperName": "Paper 7 Biology (Higher)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 9, "paperName": "Paper 9 Chemistry (Higher)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 11, "paperName": "Paper 11 Physics (Higher)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 8, "paperName": "Paper 8 Biology (Higher)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 10, "paperName": "Paper 10 Chemistry (Higher)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science A", "tier": "Higher", "paper": 12, "paperName": "Paper 12 Physics (Higher)", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Foundation", "paper": 1, "paperName": "Biology (Foundation)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Foundation", "paper": 2, "paperName": "Chemistry (Foundation)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Foundation", "paper": 3, "paperName": "Physics (Foundation)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Foundation", "paper": 4, "paperName": "Combined Science (Foundation)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Higher", "paper": 5, "paperName": "Biology (Higher)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Higher", "paper": 6, "paperName": "Chemistry (Higher)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Higher", "paper": 7, "paperName": "Physics (Higher)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Combined Science B", "tier": "Higher", "paper": 8, "paperName": "Combined Science (Higher)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Computer Systems (J277/01)", "date": "2026-05-13" },
-  { "board": "OCR", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Computational Thinking, Algorithms and Programming (J277/02)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "GCSE", "subject": "Design & Technology", "tier": "N/A", "paper": 1, "paperName": "Principles of Design and Technology", "date": "2026-06-10" },
-  { "board": "OCR", "level": "GCSE", "subject": "Drama", "tier": "N/A", "paper": 1, "paperName": "Drama: Performance and Response", "date": "2026-05-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Introduction to Economics", "date": "2026-05-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "National and International Economics", "date": "2026-05-22" },
-  { "board": "OCR", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Communicating Information and Ideas (J351/01)", "date": "2026-05-21" },
-  { "board": "OCR", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Exploring Effects and Impact (J351/02)", "date": "2026-06-05" },
-  { "board": "OCR", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Exploring Modern and Literary Heritage Texts (J352/01)", "date": "2026-05-11" },
-  { "board": "OCR", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Exploring Poetry and Shakespeare (J352/02)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "GCSE", "subject": "Food Preparation & Nutrition", "tier": "N/A", "paper": 1, "paperName": "Food Preparation & Nutrition (J309/01)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 1, "paperName": "Living in the UK Today (J383/01)", "date": "2026-05-13" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 2, "paperName": "The World Around Us (J383/02)", "date": "2026-06-03" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 3, "paperName": "Geographical Skills (J383/03)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 1, "paperName": "Our Natural World (J384/01)", "date": "2026-05-13" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 2, "paperName": "People and Society (J384/02)", "date": "2026-06-03" },
-  { "board": "OCR", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 3, "paperName": "Geographical Exploration (J384/03)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "GCSE", "subject": "History A", "tier": "N/A", "paper": 1, "paperName": "Period Study with Non-British Depth Study (J410/01-07)", "date": "2026-05-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "History A", "tier": "N/A", "paper": 2, "paperName": "Thematic Study (J410/08-10)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "GCSE", "subject": "History A", "tier": "N/A", "paper": 3, "paperName": "British Depth Study with Historic Environment (J410/11-13)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "GCSE", "subject": "History B (Schools History Project)", "tier": "N/A", "paper": 1, "paperName": "British History — Thematic Study and Depth Study (J411/11-19)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "GCSE", "subject": "History B (Schools History Project)", "tier": "N/A", "paper": 2, "paperName": "History Around Us (J411/21)", "date": "2026-05-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "History B (Schools History Project)", "tier": "N/A", "paper": 3, "paperName": "World History — Period Study and Depth Study (J411/31-39)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 1, "paperName": "Paper 1 Foundation (Calculator) J560/01", "date": "2026-05-14" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 2, "paperName": "Paper 2 Foundation (Non-Calculator) J560/02", "date": "2026-06-03" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 3, "paperName": "Paper 3 Foundation (Calculator) J560/03", "date": "2026-06-10" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 4, "paperName": "Paper 4 Higher (Calculator) J560/04", "date": "2026-05-14" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 5, "paperName": "Paper 5 Higher (Non-Calculator) J560/05", "date": "2026-06-03" },
-  { "board": "OCR", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 6, "paperName": "Paper 6 Higher (Calculator) J560/06", "date": "2026-06-10" },
-  { "board": "OCR", "level": "GCSE", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Television and Promoting Media (J200/01)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "GCSE", "subject": "Media Studies", "tier": "N/A", "paper": 2, "paperName": "Music and News (J200/02)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Music", "tier": "N/A", "paper": 1, "paperName": "Listening and Appraising (J536/05)", "date": "2026-06-05" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Physical Factors Affecting Performance (J587/01)", "date": "2026-05-22" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physical Education", "tier": "N/A", "paper": 2, "paperName": "Socio-cultural Issues and Sports Psychology (J587/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics A", "tier": "Foundation", "paper": 1, "paperName": "Paper 1 (Foundation) J249/01", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics A", "tier": "Foundation", "paper": 2, "paperName": "Paper 2 (Foundation) J249/02", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics A", "tier": "Higher", "paper": 3, "paperName": "Paper 3 (Higher) J249/03", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics A", "tier": "Higher", "paper": 4, "paperName": "Paper 4 (Higher) J249/04", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics B", "tier": "Foundation", "paper": 1, "paperName": "Breadth in Physics (Foundation) J259/01", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics B", "tier": "Foundation", "paper": 2, "paperName": "Depth in Physics (Foundation) J259/02", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics B", "tier": "Higher", "paper": 3, "paperName": "Breadth in Physics (Higher) J259/03", "date": "2026-06-02" },
-  { "board": "OCR", "level": "GCSE", "subject": "Physics B", "tier": "Higher", "paper": 4, "paperName": "Depth in Physics (Higher) J259/04", "date": "2026-06-15" },
-  { "board": "OCR", "level": "GCSE", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Studies and Applications in Psychology 1 (J203/01)", "date": "2026-05-07" },
-  { "board": "OCR", "level": "GCSE", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Studies and Applications in Psychology 2 (J203/02)", "date": "2026-05-14" },
-  { "board": "OCR", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Beliefs, Teachings and Practices (J625/01-05)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Religion, Philosophy and Ethics in the Modern World (J625/06-10)", "date": "2026-05-20" },
-  { "board": "OCR", "level": "GCSE", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Sociology Paper 1", "date": "2026-05-08" },
-  { "board": "OCR", "level": "GCSE", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Sociology Paper 2", "date": "2026-05-21" },
-
-  // ── WJEC Eduqas GCSE 2026 — Source: WJEC Final Timetable v4, September 2025 ──
-  { "board": "Eduqas", "level": "GCSE", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-06-08" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-11" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-18" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-06-12" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Component 1: Written (C500U10-1)", "date": "2026-05-13" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Component 2: On Screen (C500U20-1)", "date": "2026-05-19" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Design & Technology", "tier": "N/A", "paper": 1, "paperName": "Component 1 (C600U10-1)", "date": "2026-06-10" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Component 1: 21st Century Literature Reading and Creative Prose Writing", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Component 2: 19th and 21st Century Non-Fiction Reading and Transactional Writing", "date": "2026-06-05" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Component 1: Shakespeare and Poetry (C720U10-1)", "date": "2026-05-11" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Component 2: Drama, Prose and Unseen Poetry (C720U20-1)", "date": "2026-05-19" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Film Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Varieties of Film and Filmmaking (C670U10-1)", "date": "2026-05-07" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Film Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: Global Filmmaking Perspectives (C670U20-1)", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Food Preparation & Nutrition", "tier": "N/A", "paper": 1, "paperName": "Component 1: Written Examination (C560UA0-1)", "date": "2026-06-11" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 1, "paperName": "Component 1: Changing Places — Changing World (C111U10-1)", "date": "2026-05-12" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 2, "paperName": "Component 2: Sustaining the Planet (C111U20-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography A", "tier": "N/A", "paper": 3, "paperName": "Component 3: Distinctive Landscapes (C111U30-1)", "date": "2026-06-11" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 1, "paperName": "Component 1: Our Changing World (C112U10-1)", "date": "2026-05-12" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 2, "paperName": "Component 2: Our Dynamic Planet (C112U20-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Geography B", "tier": "N/A", "paper": 3, "paperName": "Component 3: Environmental Challenges (C112U30-1)", "date": "2026-06-11" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "Component 1: Studies in Depth (C100U10-1)", "date": "2026-05-14" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "Component 2: Studies in Breadth (C100U20-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 1, "paperName": "Component 1 Foundation (C300U10-1)", "date": "2026-05-14" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 2, "paperName": "Component 2 Foundation (C300U20-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 1, "paperName": "Component 1 Higher (C300UA0-1)", "date": "2026-05-14" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 2, "paperName": "Component 2 Higher (C300UB0-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Exploring the Media (C680U10-1)", "date": "2026-05-18" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Media Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: Understanding Media Forms and Products (C680U20-1)", "date": "2026-06-02" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Music", "tier": "N/A", "paper": 1, "paperName": "Component 3: Appraising (C660U30-1)", "date": "2026-06-05" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Component 1: Physical Factors Affecting Performance (C550U10-1)", "date": "2026-05-22" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-06-02" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-06-15" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Religious, Philosophical and Ethical Studies (C120U10-1)", "date": "2026-05-12" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: Study of Christianity (C120U20-1)", "date": "2026-05-20" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 3, "paperName": "Component 3: Study of Second Religion (C120U30-70)", "date": "2026-06-01" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Component 1: Understanding Social Structures (C200U10-1)", "date": "2026-05-08" },
-  { "board": "Eduqas", "level": "GCSE", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Component 2: Understanding Social Processes (C200U20-1)", "date": "2026-05-15" },
-
-  // ── CCEA GCSE 2026 — JCQ aligned dates ──
-  { "board": "CCEA", "level": "GCSE", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Cells, Living Processes and Biodiversity", "date": "2026-05-12" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Body Systems, Ecology and the Environment", "date": "2026-06-05" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Basic Concepts in Chemistry", "date": "2026-05-18" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Further Chemical Reactions, Rates and Equilibrium, Calculations and Organic Chemistry", "date": "2026-06-12" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Double Award Science", "tier": "N/A", "paper": 1, "paperName": "Unit 1", "date": "2026-05-12" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Double Award Science", "tier": "N/A", "paper": 2, "paperName": "Unit 2", "date": "2026-05-18" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Double Award Science", "tier": "N/A", "paper": 3, "paperName": "Unit 3", "date": "2026-06-02" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Double Award Science", "tier": "N/A", "paper": 4, "paperName": "Unit 4", "date": "2026-06-12" },
-  { "board": "CCEA", "level": "GCSE", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Writing for Purpose and Audience", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Unit 1: The Study of Prose", "date": "2026-05-11" },
-  { "board": "CCEA", "level": "GCSE", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Unit 2: The Study of Poetry and Drama", "date": "2026-06-05" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Understanding Our Natural World", "date": "2026-05-13" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Living in Our World", "date": "2026-06-11" },
-  { "board": "CCEA", "level": "GCSE", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Changes in Germany 1919-45 and The USA 1918-68", "date": "2026-05-15" },
-  { "board": "CCEA", "level": "GCSE", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Northern Ireland and its Neighbours", "date": "2026-06-04" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 1, "paperName": "Unit T1: Foundation Paper 1 (Non-Calculator)", "date": "2026-05-14" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Mathematics", "tier": "Foundation", "paper": 2, "paperName": "Unit T2: Foundation Paper 2 (Calculator)", "date": "2026-06-03" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 3, "paperName": "Unit T3: Higher Paper 1 (Non-Calculator)", "date": "2026-05-14" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 4, "paperName": "Unit T4: Higher Paper 2 (Calculator)", "date": "2026-06-03" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Mathematics", "tier": "Higher", "paper": 5, "paperName": "Unit T5: Higher Paper 3 (Calculator)", "date": "2026-06-10" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Forces, Energy and Electricity", "date": "2026-06-02" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Waves, Particles and the Universe", "date": "2026-06-15" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Unit 1: The Christian Church", "date": "2026-05-12" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Christianity in the Local and Global Community", "date": "2026-05-20" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Business Studies", "tier": "N/A", "paper": 1, "paperName": "Unit 1: The Business Environment", "date": "2026-05-11" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Business Studies", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Business Growth and Development", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Digital Technology", "date": "2026-05-13" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Unit 2: Practical Problem Solving", "date": "2026-05-19" },
-  { "board": "CCEA", "level": "GCSE", "subject": "Technology and Design", "tier": "N/A", "paper": 1, "paperName": "Unit 1: Designing and Making", "date": "2026-06-10" },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Paper 1 (Foundation)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Paper 2 (Foundation)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Paper 3 (Higher)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Paper 4 (Higher)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Breadth in Biology (Foundation)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Depth in Biology (Foundation)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Breadth in Biology (Higher)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Depth in Biology (Higher)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Business 1: Business Activity, Marketing and People",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Business 2: Operations, Finance and Influences on Business",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Paper 1 (Foundation)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Paper 2 (Foundation)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Paper 3 (Higher)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Paper 4 (Higher)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Breadth in Chemistry (Foundation)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Depth in Chemistry (Foundation)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Breadth in Chemistry (Higher)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Depth in Chemistry (Higher)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Paper 1 Biology (Foundation)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 3,
+    "paperName": "Paper 3 Chemistry (Foundation)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 5,
+    "paperName": "Paper 5 Physics (Foundation)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Paper 2 Biology (Foundation)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 4,
+    "paperName": "Paper 4 Chemistry (Foundation)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Foundation",
+    "paper": 6,
+    "paperName": "Paper 6 Physics (Foundation)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 7,
+    "paperName": "Paper 7 Biology (Higher)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 9,
+    "paperName": "Paper 9 Chemistry (Higher)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 11,
+    "paperName": "Paper 11 Physics (Higher)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 8,
+    "paperName": "Paper 8 Biology (Higher)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 10,
+    "paperName": "Paper 10 Chemistry (Higher)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "Higher",
+    "paper": 12,
+    "paperName": "Paper 12 Physics (Higher)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Biology (Foundation)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Chemistry (Foundation)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Foundation",
+    "paper": 3,
+    "paperName": "Physics (Foundation)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Foundation",
+    "paper": 4,
+    "paperName": "Combined Science (Foundation)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Higher",
+    "paper": 5,
+    "paperName": "Biology (Higher)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Higher",
+    "paper": 6,
+    "paperName": "Chemistry (Higher)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Higher",
+    "paper": 7,
+    "paperName": "Physics (Higher)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "Higher",
+    "paper": 8,
+    "paperName": "Combined Science (Higher)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Computer Systems (J277/01)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Computational Thinking, Algorithms and Programming (J277/02)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Design & Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of Design and Technology",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Drama",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Drama: Performance and Response",
+    "date": "2026-05-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introduction to Economics",
+    "date": "2026-05-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "National and International Economics",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Communicating Information and Ideas (J351/01)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring Effects and Impact (J351/02)",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring Modern and Literary Heritage Texts (J352/01)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring Poetry and Shakespeare (J352/02)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Food Preparation & Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Food Preparation & Nutrition (J309/01)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Living in the UK Today (J383/01)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The World Around Us (J383/02)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical Skills (J383/03)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Our Natural World (J384/01)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "People and Society (J384/02)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical Exploration (J384/03)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Period Study with Non-British Depth Study (J410/01-07)",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Thematic Study (J410/08-10)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "British Depth Study with Historic Environment (J410/11-13)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B (Schools History Project)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "British History — Thematic Study and Depth Study (J411/11-19)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B (Schools History Project)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "History Around Us (J411/21)",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B (Schools History Project)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "World History — Period Study and Depth Study (J411/31-39)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Paper 1 Foundation (Calculator) J560/01",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Paper 2 Foundation (Non-Calculator) J560/02",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 3,
+    "paperName": "Paper 3 Foundation (Calculator) J560/03",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Paper 4 Higher (Calculator) J560/04",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 5,
+    "paperName": "Paper 5 Higher (Non-Calculator) J560/05",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 6,
+    "paperName": "Paper 6 Higher (Calculator) J560/06",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Television and Promoting Media (J200/01)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Music and News (J200/02)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening and Appraising (J536/05)",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical Factors Affecting Performance (J587/01)",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Socio-cultural Issues and Sports Psychology (J587/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Paper 1 (Foundation) J249/01",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Paper 2 (Foundation) J249/02",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Paper 3 (Higher) J249/03",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Paper 4 (Higher) J249/04",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Breadth in Physics (Foundation) J259/01",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Depth in Physics (Foundation) J259/02",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Breadth in Physics (Higher) J259/03",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Depth in Physics (Higher) J259/04",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Studies and Applications in Psychology 1 (J203/01)",
+    "date": "2026-05-07"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Studies and Applications in Psychology 2 (J203/02)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Beliefs, Teachings and Practices (J625/01-05)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Religion, Philosophy and Ethics in the Modern World (J625/06-10)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Sociology Paper 1",
+    "date": "2026-05-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Sociology Paper 2",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Written (C500U10-1)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: On Screen (C500U20-1)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Design & Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (C600U10-1)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: 21st Century Literature Reading and Creative Prose Writing",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: 19th and 21st Century Non-Fiction Reading and Transactional Writing",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Shakespeare and Poetry (C720U10-1)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Drama, Prose and Unseen Poetry (C720U20-1)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Varieties of Film and Filmmaking (C670U10-1)",
+    "date": "2026-05-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Global Filmmaking Perspectives (C670U20-1)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Food Preparation & Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Written Examination (C560UA0-1)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Changing Places — Changing World (C111U10-1)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Sustaining the Planet (C111U20-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Distinctive Landscapes (C111U30-1)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Our Changing World (C112U10-1)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Our Dynamic Planet (C112U20-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Environmental Challenges (C112U30-1)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Studies in Depth (C100U10-1)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Studies in Breadth (C100U20-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Component 1 Foundation (C300U10-1)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Component 2 Foundation (C300U20-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 1,
+    "paperName": "Component 1 Higher (C300UA0-1)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 2,
+    "paperName": "Component 2 Higher (C300UB0-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Exploring the Media (C680U10-1)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Understanding Media Forms and Products (C680U20-1)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Appraising (C660U30-1)",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Physical Factors Affecting Performance (C550U10-1)",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Religious, Philosophical and Ethical Studies (C120U10-1)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Study of Christianity (C120U20-1)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Study of Second Religion (C120U30-70)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Understanding Social Structures (C200U10-1)",
+    "date": "2026-05-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Understanding Social Processes (C200U20-1)",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Cells, Living Processes and Biodiversity",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Body Systems, Ecology and the Environment",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Basic Concepts in Chemistry",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Further Chemical Reactions, Rates and Equilibrium, Calculations and Organic Chemistry",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Double Award Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Double Award Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Double Award Science",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Double Award Science",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Writing for Purpose and Audience",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: The Study of Prose",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: The Study of Poetry and Drama",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Understanding Our Natural World",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Living in Our World",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Changes in Germany 1919-45 and The USA 1918-68",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Northern Ireland and its Neighbours",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 1,
+    "paperName": "Unit T1: Foundation Paper 1 (Non-Calculator)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Foundation",
+    "paper": 2,
+    "paperName": "Unit T2: Foundation Paper 2 (Calculator)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 3,
+    "paperName": "Unit T3: Higher Paper 1 (Non-Calculator)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 4,
+    "paperName": "Unit T4: Higher Paper 2 (Calculator)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "Higher",
+    "paper": 5,
+    "paperName": "Unit T5: Higher Paper 3 (Calculator)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Forces, Energy and Electricity",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Waves, Particles and the Universe",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: The Christian Church",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Christianity in the Local and Global Community",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: The Business Environment",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Business Growth and Development",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Digital Technology",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Practical Problem Solving",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1: Designing and Making",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Reading (F/H)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Reading (F/H)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Reading (F/H)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening (F/H)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Reading (F/H)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Writing (F/H)",
+    "date": "2026-06-02"
+  }
 ]
 
 // ──────────────────────────────────────────────────
@@ -2544,76 +3824,1256 @@ const ALEVEL_2026 = [
     "date": "2026-06-12"
   },
   {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biological Processes (H420/01)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Biological Diversity (H420/02)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified Biology (H420/03)",
+    "date": "2026-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of Biology (H422/01)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific Literacy in Biology (H422/02)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical Skills in Biology (H422/03)",
+    "date": "2026-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Operating in a Local Business Environment (H431/01)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The UK Business Environment (H431/02)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "The Global Business Environment (H431/03)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Periodic Table, Elements and Physical Chemistry (H432/01)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Synthesis and Analytical Techniques (H432/02)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified Chemistry (H432/03)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of Chemistry (H433/01)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific Literacy in Chemistry (H433/02)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical Skills in Chemistry (H433/03)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Computer Systems (H446/01)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Algorithms and Programming (H446/02)",
+    "date": "2026-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Microeconomics (H460/01)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Macroeconomics (H460/02)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Themes in Economics (H460/03)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring Language (H470/01)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Dimensions of Linguistic Variation (H470/02)",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Drama and Poetry Pre-1900 (H472/01)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Comparative and Contextual Study (H472/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Film History (H410/01)",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Critical Approaches to Film (H410/02)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical Systems (H481/01)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Human Interactions (H481/02)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical Debates (H481/03)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Thematic Study and Historical Interpretations (H505/Y301)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "British Period Study and Enquiry (H505/Y101)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Non-British Period Study (H505/Y201)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The Legal System and Criminal Law (H418/01)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Law Making and the Law of Tort (H418/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "The Nature of Law and Human Rights or Contract (H418/03-04)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure Mathematics (H240/01)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure Mathematics and Statistics (H240/02)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Pure Mathematics and Mechanics (H240/03)",
+    "date": "2026-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure Mathematics and Mechanics (H640/01)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure Mathematics and Statistics (H640/02)",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Pure Mathematics and Comprehension (H640/03)",
+    "date": "2026-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Media Messages (H409/01)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Evolving Media (H409/02)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physiological Factors Affecting Performance (H555/01)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological Factors Affecting Performance (H555/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Socio-cultural Issues in Physical Activity and Sport (H555/03)",
+    "date": "2026-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Modelling Physics (H556/01)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring Physics (H556/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified Physics (H556/03)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of Physics (H557/01)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific Literacy in Physics (H557/02)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical Skills in Physics (H557/03)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Research Methods (H567/01)",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological Themes Through Core Studies (H567/02)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Applied Psychology (H567/03)",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Philosophy of Religion (H573/01)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Religion and Ethics (H573/02)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Developments in Christian Thought (H573/03)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Socialisation, Culture and Identity (H580/01)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Researching and Understanding Social Inequalities (H580/02)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Debates in Contemporary Society (H580/03)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Energy, Homeostasis and the Environment (A400U10-1)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Continuity and Change (A400U20-1)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Organisms and Environments (A400U30-1)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Business Opportunities and Functions (A510U10-1)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Business Analysis and Strategy (A510U20-1)",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Business in a Changing World (A510U30-1)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Physical and Inorganic Chemistry (A410U10-1)",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Organic Chemistry and Analysis (A410U20-1)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Physical Chemistry and Practical Skills (A410U30-1)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Computer Architecture, Data, Communication and Applications (A500U10-1)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Algorithms and Programming (A500U20-1)",
+    "date": "2026-06-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Microeconomics (A520U10-1)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Macroeconomics (A520U20-1)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Microeconomics and Macroeconomics (A520U30-1)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Language in Context (A700U10-1)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Language Investigation and Creative Writing (A700U20-1)",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Language, Power and Identity (A700U30-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Poetry (A720U10-1)",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Drama (A720U20-1)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Prose (A720U30-1)",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Changing Landscapes (A110U10-1)",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Changing Places (A110U20-1)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Global Systems and Global Governance (A110U30-1)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: The Nature of Law and the English Legal System (A150U10-1)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: The Law of Obligations (A150U20-1)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Human Rights Law (A150U30-1)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Media Products, Industries and Audiences (A680U10-1)",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Media Forms and Products in Depth (A680U20-1)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Anatomy, Physiology, Biomechanics (A550U10-1)",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Psychology and Socio-cultural Issues (A550U20-1)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Newtonian Physics (A420U10-1)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Electromagnetism and Light (A420U20-1)",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Oscillations and Nuclei (A420U30-1)",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Memories, Thinking, Social Behaviour and Diversity (A290U10-1)",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Behaviour, Alternatives, Research (A290U20-1)",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Applied and Issues (A290U30-1)",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Introduction to the Study of Religion (A120U10-1)",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: The Study of Religion (A120U20-1)",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Applied Study of Religion (A120U30-1)",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Socialisation and Identity (A200U10-1)",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Understanding Social Processes (A200U20-1)",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3: Social Change (A200U30-1)",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Molecules and Cells",
+    "date": "2026-05-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Organisms and Biodiversity",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1: Physiology, Coordination and Control",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2: Biochemistry, Genetics and Evolutionary Trends",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Basic Concepts in Physical and Inorganic Chemistry",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Further Physical and Organic Chemistry",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1: Further Physical and Inorganic Chemistry",
+    "date": "2026-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2: Analytical, Transition Metals, Electrochemistry and Organic Nitrogen",
+    "date": "2026-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Pure Mathematics with Mechanics",
+    "date": "2026-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Pure Mathematics with Statistics",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1: Pure Mathematics",
+    "date": "2026-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2: Pure Mathematics with Mechanics or Statistics",
+    "date": "2026-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "A2 Unit 3 (if applicable to your specification route)",
+    "date": "TBC",
+    "note": "CCEA's own Final GCE Timetable (Summer 2026) only shows 2 AS units + 2 A2 units for Mathematics — this 5th paper slot could not be verified against it and is left TBC rather than guessed. Worth checking whether this paper still exists in the current CCEA Mathematics spec."
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Forces, Energy and Electricity",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Waves, Photons and Medical Physics",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1: Momentum, Thermal Physics, Circular Motion, Oscillations and Atomic Physics",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2: Fields, Capacitors and Particle Physics",
+    "date": "2026-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Change Over Time",
+    "date": "2026-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Dictatorship and Democracy",
+    "date": "2026-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1: Breadth Study",
+    "date": "2026-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2: Historical Investigation",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1: Physical Geography I",
+    "date": "2026-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2: Human Geography I",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3: Fieldwork Report",
+    "date": "2026-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 1: Physical Geography II",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "A2 Unit 2: Human Geography II",
+    "date": "2026-05-29"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "A2 Unit 3: Decision-Making Exercise",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2026-05-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2026-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 1",
+    "date": "2026-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 2",
+    "date": "2026-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS 1: Systems and Control (Core)",
+    "date": "2026-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 1",
+    "date": "2026-05-22"
+  },
+  {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Arabic",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Arabic",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Arabic",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Arabic and written response to works",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Arabic",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Biology B",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Biology B",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Biology B",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Biology B",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Biology B",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "General-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Arabic",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
@@ -2621,62 +5081,53 @@ const ALEVEL_2026 = [
     "subject": "Biology A (Salters Nuffield)",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Lifestyle,-00-Paper"
+    "paperName": "Paper 1: The Natural Environment and Species Survival",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Biology A (Salters Nuffield)",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Development,-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Energy, Exercise and Co-ordination",
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Biology A (Salters Nuffield)",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "The-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Applications in Biology",
+    "date": "2026-06-16"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Biology A (Salters Nuffield)",
+    "subject": "Biology B",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Energy,-00-Paper"
+    "paperName": "Paper 1: Advanced Biochemistry, Microbiology and Genetics",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Biology A (Salters Nuffield)",
+    "subject": "Biology B",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "General-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Physiology, Evolution and Ecology",
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Business",
+    "subject": "Biology B",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Marketing-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Business",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Managing-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Biology",
+    "date": "2026-06-16"
   },
   {
     "board": "Edexcel",
@@ -2684,26 +5135,26 @@ const ALEVEL_2026 = [
     "subject": "Business",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Marketing,-00-Paper"
+    "paperName": "Paper 1: Marketing, people and global businesses",
+    "date": "2026-05-13"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Business",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Business-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Business activities, decisions and strategy",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Business",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Investigating-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Investigating business in a competitive environment",
+    "date": "2026-06-09"
   },
   {
     "board": "Edexcel",
@@ -2711,44 +5162,26 @@ const ALEVEL_2026 = [
     "subject": "Chemistry",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
+    "paperName": "Paper 1: Advanced Inorganic and Physical Chemistry",
+    "date": "2026-06-02"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Chemistry",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Organic and Physical Chemistry",
+    "date": "2026-06-09"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Chemistry",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Chemistry",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Chemistry",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "General-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Chemistry",
+    "date": "2026-06-15"
   },
   {
     "board": "Edexcel",
@@ -2756,17 +5189,17 @@ const ALEVEL_2026 = [
     "subject": "Mandarin Chinese",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, Reading and Translation",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Mandarin Chinese",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
@@ -2774,8 +5207,8 @@ const ALEVEL_2026 = [
     "subject": "Design & Technology",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Design-00-Component"
+    "paperName": "Component 1: Design and Technology (Product Design)",
+    "date": "2026-05-22"
   },
   {
     "board": "Edexcel",
@@ -2783,8 +5216,8 @@ const ALEVEL_2026 = [
     "subject": "Drama and Theatre",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Theatre-00-Component"
+    "paperName": "Component 3: Theatre Makers in Practice",
+    "date": "2026-05-21"
   },
   {
     "board": "Edexcel",
@@ -2792,26 +5225,26 @@ const ALEVEL_2026 = [
     "subject": "Economics A",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Markets-00-Paper"
+    "paperName": "Paper 1: Markets and Business Behaviour",
+    "date": "2026-05-11"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Economics A",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "The-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: The National and Global Economy",
+    "date": "2026-05-18"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Economics A",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Microeconomics-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Microeconomics and Macroeconomics",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
@@ -2819,26 +5252,26 @@ const ALEVEL_2026 = [
     "subject": "Economics B",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Markets-00-Paper"
+    "paperName": "Paper 1: Markets and how they work",
+    "date": "2026-05-11"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Economics B",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Competing-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Competing in the global economy",
+    "date": "2026-05-18"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Economics B",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "The-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: The economic environment and business",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
@@ -2846,44 +5279,26 @@ const ALEVEL_2026 = [
     "subject": "English Language",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Language:-00-Paper"
+    "paperName": "Paper 1: Language Variation",
+    "date": "2026-05-11"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "English Language",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Child-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Child Language",
+    "date": "2026-05-22"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "English Language",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Language-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Language",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Child-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Language",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Investigating-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Investigating Language",
+    "date": "2026-06-03"
   },
   {
     "board": "Edexcel",
@@ -2891,35 +5306,17 @@ const ALEVEL_2026 = [
     "subject": "English Lang & Literature",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Voices-00-Paper"
+    "paperName": "Paper 1: Voices in Speech and Writing",
+    "date": "2026-05-11"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "English Lang & Literature",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Varieties-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Lang & Literature",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Voices-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Lang & Literature",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Varieties-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Varieties in Language and Literature",
+    "date": "2026-05-22"
   },
   {
     "board": "Edexcel",
@@ -2927,44 +5324,26 @@ const ALEVEL_2026 = [
     "subject": "English Literature",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Poetry-00-Paper"
+    "paperName": "Paper 1: Drama",
+    "date": "2026-05-13"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "English Literature",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Paper 2: Prose"
+    "paper": 2,
+    "paperName": "Paper 2: Prose",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "English Literature",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Paper 1: Drama"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Literature",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Paper 2: Prose"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "English Literature",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Paper 3: Poetry"
+    "paper": 3,
+    "paperName": "Paper 3: Poetry",
+    "date": "2026-06-10"
   },
   {
     "board": "Edexcel",
@@ -2972,26 +5351,17 @@ const ALEVEL_2026 = [
     "subject": "Further Mathematics",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Core-00-Paper"
+    "paperName": "Paper 1: Core Pure Mathematics 1",
+    "date": "2026-05-14"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Further Mathematics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Core-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Further Mathematics",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Options-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Core Pure Mathematics 2",
+    "date": "2026-05-21"
   },
   {
     "board": "Edexcel",
@@ -2999,17 +5369,17 @@ const ALEVEL_2026 = [
     "subject": "French",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "French",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-17"
   },
   {
     "board": "Edexcel",
@@ -3017,44 +5387,26 @@ const ALEVEL_2026 = [
     "subject": "Geography",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Physical-00-Paper"
+    "paperName": "Paper 1: Physical Geography",
+    "date": "2026-05-12"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Geography",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Human-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Human Geography",
+    "date": "2026-05-21"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Geography",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Physical-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Geography",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Dynamic-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Geography",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Dynamic-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Geographical Investigation",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
@@ -3062,17 +5414,17 @@ const ALEVEL_2026 = [
     "subject": "German",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "German",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-02"
   },
   {
     "board": "Edexcel",
@@ -3080,17 +5432,53 @@ const ALEVEL_2026 = [
     "subject": "Greek",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Greek",
+    "date": "2026-05-18"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Greek",
     "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Greek and written response to works",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Greek",
+    "date": "2026-06-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Gujarati",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Gujarati and written response to works",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Gujarati",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
@@ -3098,26 +5486,26 @@ const ALEVEL_2026 = [
     "subject": "History",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Breadth-00-Paper"
+    "paperName": "Paper 1: Breadth study with interpretations",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "History",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Depth-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Depth Study",
+    "date": "2026-06-02"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "History",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Themes-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Themes in breadth with aspects in depth",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
@@ -3125,17 +5513,17 @@ const ALEVEL_2026 = [
     "subject": "History of Art",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Visual-00-Paper"
+    "paperName": "Paper 1: Visual analysis and themes",
+    "date": "2026-05-18"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "History of Art",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Paper 2: Periods"
+    "paper": 2,
+    "paperName": "Paper 2: Periods",
+    "date": "2026-06-02"
   },
   {
     "board": "Edexcel",
@@ -3143,17 +5531,17 @@ const ALEVEL_2026 = [
     "subject": "Italian",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Italian",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-19"
   },
   {
     "board": "Edexcel",
@@ -3161,17 +5549,26 @@ const ALEVEL_2026 = [
     "subject": "Japanese",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question)",
+    "date": "2026-05-19"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Japanese",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Translation-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Japanese and written response to works",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
@@ -3179,44 +5576,26 @@ const ALEVEL_2026 = [
     "subject": "Mathematics",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Pure-00-Paper"
+    "paperName": "Paper 1: Pure Mathematics 1",
+    "date": "2026-06-03"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Mathematics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Pure-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Pure Mathematics 2",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Mathematics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Statistics-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Mathematics",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Pure-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Mathematics",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Statistics-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Statistics & Mechanics",
+    "date": "2026-06-18"
   },
   {
     "board": "Edexcel",
@@ -3224,8 +5603,8 @@ const ALEVEL_2026 = [
     "subject": "Music",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Component 3: Appraising"
+    "paperName": "Component 3: Appraising",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
@@ -3233,17 +5612,17 @@ const ALEVEL_2026 = [
     "subject": "Music Technology",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening-00-Component"
+    "paperName": "Component 3: Listening and analysing",
+    "date": "2026-05-22"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Music Technology",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Producing-00-Component"
+    "paper": 2,
+    "paperName": "Component 4: Producing and analysing",
+    "date": "2026-06-03"
   },
   {
     "board": "Edexcel",
@@ -3251,17 +5630,17 @@ const ALEVEL_2026 = [
     "subject": "Physical Education",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Scientific-00-Component"
+    "paperName": "Component 1: Scientific Principles of Physical Education",
+    "date": "2026-05-21"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Physical Education",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Psychological-00-Component"
+    "paper": 2,
+    "paperName": "Component 2: Psychological and Social Principles of Physical Education",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
@@ -3269,44 +5648,53 @@ const ALEVEL_2026 = [
     "subject": "Physics",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
+    "paperName": "Paper 1: Advanced Physics I",
+    "date": "2026-05-20"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Physics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Advanced-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Physics II",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Physics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "General-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Physics",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Physics",
+    "subject": "Persian",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Persian",
+    "date": "2026-05-20"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
-    "subject": "Physics",
+    "subject": "Persian",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Core-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Persian and written response to works",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Persian",
+    "date": "2026-06-15"
   },
   {
     "board": "Edexcel",
@@ -3314,35 +5702,62 @@ const ALEVEL_2026 = [
     "subject": "Politics",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "UK-00-Paper"
+    "paperName": "Paper 1: UK Politics and Core Political Ideas",
+    "date": "2026-05-21"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Politics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "UK-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: UK Government and Non-core Political Ideas",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Politics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Comparative-00-Paper"
+    "paper": "3A",
+    "paperName": "Paper 3A: Comparative Politics - USA",
+    "date": "2026-06-16"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Politics",
     "tier": "N/A",
+    "paper": "3B",
+    "paperName": "Paper 3B: Comparative Politics - Global Politics",
+    "date": "2026-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Comparative-00-Paper"
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Portuguese",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Portuguese and written response to works",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Portuguese",
+    "date": "2026-06-11"
   },
   {
     "board": "Edexcel",
@@ -3350,44 +5765,26 @@ const ALEVEL_2026 = [
     "subject": "Psychology",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Foundations-00-Paper"
+    "paperName": "Paper 1: Foundations in Psychology",
+    "date": "2026-05-15"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Psychology",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Applications-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Applications of Psychology",
+    "date": "2026-05-20"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Psychology",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Psychological-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Psychology",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Social-00-Paper"
-  },
-  {
-    "board": "Edexcel",
-    "level": "A-Level",
-    "subject": "Psychology",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "AS",
-    "date": "Biological-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Psychological Skills",
+    "date": "2026-06-05"
   },
   {
     "board": "Edexcel",
@@ -3395,35 +5792,35 @@ const ALEVEL_2026 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Philosophy-00-Paper"
+    "paperName": "Paper 1: Philosophy of Religion",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Religious Studies",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Religion-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Religion and Ethics",
+    "date": "2026-06-09"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Religious Studies",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "New-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: New Testament Studies",
+    "date": "2026-06-15"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Religious Studies",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Study-00-Paper"
+    "paper": 4,
+    "paperName": "Paper 4: Study of Religion",
+    "date": "2026-06-22"
   },
   {
     "board": "Edexcel",
@@ -3431,17 +5828,17 @@ const ALEVEL_2026 = [
     "subject": "Russian",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2026-06-01"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Russian",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-08"
   },
   {
     "board": "Edexcel",
@@ -3449,17 +5846,17 @@ const ALEVEL_2026 = [
     "subject": "Spanish",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Listening,-00-Paper"
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Spanish",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Written-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2026-06-12"
   },
   {
     "board": "Edexcel",
@@ -3467,174 +5864,81 @@ const ALEVEL_2026 = [
     "subject": "Statistics",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "A-level",
-    "date": "Data-00-Paper"
+    "paperName": "Paper 1: Data and Probability",
+    "date": "2026-06-04"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Statistics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Statistical-00-Paper"
+    "paper": 2,
+    "paperName": "Paper 2: Statistical Inference",
+    "date": "2026-06-09"
   },
   {
     "board": "Edexcel",
     "level": "A-Level",
     "subject": "Statistics",
     "tier": "N/A",
-    "paper": 1,
-    "paperName": "A-level",
-    "date": "Statistics-00-Paper"
+    "paper": 3,
+    "paperName": "Paper 3: Statistics in Practice",
+    "date": "2026-06-17"
   },
-
-  // ── OCR A-Level 2026 — Source: OCR Final Timetable AS/A Level June 2026 (April 2025) ──
-  { "board": "OCR", "level": "A-Level", "subject": "Biology A", "tier": "N/A", "paper": 1, "paperName": "Biological Processes (H420/01)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "A-Level", "subject": "Biology A", "tier": "N/A", "paper": 2, "paperName": "Biological Diversity (H420/02)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "A-Level", "subject": "Biology A", "tier": "N/A", "paper": 3, "paperName": "Unified Biology (H420/03)", "date": "2026-06-16" },
-  { "board": "OCR", "level": "A-Level", "subject": "Biology B (Advancing Biology)", "tier": "N/A", "paper": 1, "paperName": "Fundamentals of Biology (H422/01)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "A-Level", "subject": "Biology B (Advancing Biology)", "tier": "N/A", "paper": 2, "paperName": "Scientific Literacy in Biology (H422/02)", "date": "2026-06-12" },
-  { "board": "OCR", "level": "A-Level", "subject": "Biology B (Advancing Biology)", "tier": "N/A", "paper": 3, "paperName": "Practical Skills in Biology (H422/03)", "date": "2026-06-16" },
-  { "board": "OCR", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Operating in a Local Business Environment (H431/01)", "date": "2026-05-13" },
-  { "board": "OCR", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "The UK Business Environment (H431/02)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 3, "paperName": "The Global Business Environment (H431/03)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry A", "tier": "N/A", "paper": 1, "paperName": "Periodic Table, Elements and Physical Chemistry (H432/01)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry A", "tier": "N/A", "paper": 2, "paperName": "Synthesis and Analytical Techniques (H432/02)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry A", "tier": "N/A", "paper": 3, "paperName": "Unified Chemistry (H432/03)", "date": "2026-06-15" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry B (Salters)", "tier": "N/A", "paper": 1, "paperName": "Fundamentals of Chemistry (H433/01)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry B (Salters)", "tier": "N/A", "paper": 2, "paperName": "Scientific Literacy in Chemistry (H433/02)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "A-Level", "subject": "Chemistry B (Salters)", "tier": "N/A", "paper": 3, "paperName": "Practical Skills in Chemistry (H433/03)", "date": "2026-06-15" },
-  { "board": "OCR", "level": "A-Level", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Computer Systems (H446/01)", "date": "2026-06-10" },
-  { "board": "OCR", "level": "A-Level", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Algorithms and Programming (H446/02)", "date": "2026-06-17" },
-  { "board": "OCR", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Microeconomics (H460/01)", "date": "2026-05-11" },
-  { "board": "OCR", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "Macroeconomics (H460/02)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 3, "paperName": "Themes in Economics (H460/03)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "A-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Exploring Language (H470/01)", "date": "2026-05-11" },
-  { "board": "OCR", "level": "A-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Dimensions of Linguistic Variation (H470/02)", "date": "2026-05-22" },
-  { "board": "OCR", "level": "A-Level", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Drama and Poetry Pre-1900 (H472/01)", "date": "2026-05-13" },
-  { "board": "OCR", "level": "A-Level", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Comparative and Contextual Study (H472/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "A-Level", "subject": "Film Studies", "tier": "N/A", "paper": 1, "paperName": "Film History (H410/01)", "date": "2026-05-22" },
-  { "board": "OCR", "level": "A-Level", "subject": "Film Studies", "tier": "N/A", "paper": 2, "paperName": "Critical Approaches to Film (H410/02)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Physical Systems (H481/01)", "date": "2026-05-12" },
-  { "board": "OCR", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Human Interactions (H481/02)", "date": "2026-05-21" },
-  { "board": "OCR", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 3, "paperName": "Geographical Debates (H481/03)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "A-Level", "subject": "History A", "tier": "N/A", "paper": 1, "paperName": "Thematic Study and Historical Interpretations (H505/Y301)", "date": "2026-05-19" },
-  { "board": "OCR", "level": "A-Level", "subject": "History A", "tier": "N/A", "paper": 2, "paperName": "British Period Study and Enquiry (H505/Y101)", "date": "2026-06-02" },
-  { "board": "OCR", "level": "A-Level", "subject": "History A", "tier": "N/A", "paper": 3, "paperName": "Non-British Period Study (H505/Y201)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 1, "paperName": "The Legal System and Criminal Law (H418/01)", "date": "2026-05-21" },
-  { "board": "OCR", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 2, "paperName": "Law Making and the Law of Tort (H418/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 3, "paperName": "The Nature of Law and Human Rights or Contract (H418/03-04)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics A", "tier": "N/A", "paper": 1, "paperName": "Pure Mathematics (H240/01)", "date": "2026-06-03" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics A", "tier": "N/A", "paper": 2, "paperName": "Pure Mathematics and Statistics (H240/02)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics A", "tier": "N/A", "paper": 3, "paperName": "Pure Mathematics and Mechanics (H240/03)", "date": "2026-06-18" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics B (MEI)", "tier": "N/A", "paper": 1, "paperName": "Pure Mathematics and Mechanics (H640/01)", "date": "2026-06-03" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics B (MEI)", "tier": "N/A", "paper": 2, "paperName": "Pure Mathematics and Statistics (H640/02)", "date": "2026-06-11" },
-  { "board": "OCR", "level": "A-Level", "subject": "Mathematics B (MEI)", "tier": "N/A", "paper": 3, "paperName": "Pure Mathematics and Comprehension (H640/03)", "date": "2026-06-18" },
-  { "board": "OCR", "level": "A-Level", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Media Messages (H409/01)", "date": "2026-05-14" },
-  { "board": "OCR", "level": "A-Level", "subject": "Media Studies", "tier": "N/A", "paper": 2, "paperName": "Evolving Media (H409/02)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Physiological Factors Affecting Performance (H555/01)", "date": "2026-05-21" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physical Education", "tier": "N/A", "paper": 2, "paperName": "Psychological Factors Affecting Performance (H555/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physical Education", "tier": "N/A", "paper": 3, "paperName": "Socio-cultural Issues in Physical Activity and Sport (H555/03)", "date": "2026-06-16" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics A", "tier": "N/A", "paper": 1, "paperName": "Modelling Physics (H556/01)", "date": "2026-05-20" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics A", "tier": "N/A", "paper": 2, "paperName": "Exploring Physics (H556/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics A", "tier": "N/A", "paper": 3, "paperName": "Unified Physics (H556/03)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics B (Advancing Physics)", "tier": "N/A", "paper": 1, "paperName": "Fundamentals of Physics (H557/01)", "date": "2026-05-20" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics B (Advancing Physics)", "tier": "N/A", "paper": 2, "paperName": "Scientific Literacy in Physics (H557/02)", "date": "2026-06-01" },
-  { "board": "OCR", "level": "A-Level", "subject": "Physics B (Advancing Physics)", "tier": "N/A", "paper": 3, "paperName": "Practical Skills in Physics (H557/03)", "date": "2026-06-08" },
-  { "board": "OCR", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Research Methods (H567/01)", "date": "2026-05-15" },
-  { "board": "OCR", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Psychological Themes Through Core Studies (H567/02)", "date": "2026-05-20" },
-  { "board": "OCR", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 3, "paperName": "Applied Psychology (H567/03)", "date": "2026-06-05" },
-  { "board": "OCR", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Philosophy of Religion (H573/01)", "date": "2026-06-04" },
-  { "board": "OCR", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Religion and Ethics (H573/02)", "date": "2026-06-09" },
-  { "board": "OCR", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 3, "paperName": "Developments in Christian Thought (H573/03)", "date": "2026-06-15" },
-  { "board": "OCR", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Socialisation, Culture and Identity (H580/01)", "date": "2026-05-18" },
-  { "board": "OCR", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Researching and Understanding Social Inequalities (H580/02)", "date": "2026-06-03" },
-  { "board": "OCR", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 3, "paperName": "Debates in Contemporary Society (H580/03)", "date": "2026-06-12" },
-
-  // ── Eduqas A-Level 2026 — Source: WJEC Final Timetable, April 2025 ──
-  { "board": "Eduqas", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "Component 1: Energy, Homeostasis and the Environment (A400U10-1)", "date": "2026-06-04" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "Component 2: Continuity and Change (A400U20-1)", "date": "2026-06-12" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 3, "paperName": "Component 3: Organisms and Environments (A400U30-1)", "date": "2026-06-15" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 1, "paperName": "Component 1: Business Opportunities and Functions (A510U10-1)", "date": "2026-05-13" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 2, "paperName": "Component 2: Business Analysis and Strategy (A510U20-1)", "date": "2026-05-19" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Business", "tier": "N/A", "paper": 3, "paperName": "Component 3: Business in a Changing World (A510U30-1)", "date": "2026-06-09" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "Component 1: Physical and Inorganic Chemistry (A410U10-1)", "date": "2026-06-02" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "Component 2: Organic Chemistry and Analysis (A410U20-1)", "date": "2026-06-08" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 3, "paperName": "Component 3: Physical Chemistry and Practical Skills (A410U30-1)", "date": "2026-06-15" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Computer Science", "tier": "N/A", "paper": 1, "paperName": "Component 1: Computer Architecture, Data, Communication and Applications (A500U10-1)", "date": "2026-06-10" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Computer Science", "tier": "N/A", "paper": 2, "paperName": "Component 2: Algorithms and Programming (A500U20-1)", "date": "2026-06-17" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 1, "paperName": "Component 1: Microeconomics (A520U10-1)", "date": "2026-05-11" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 2, "paperName": "Component 2: Macroeconomics (A520U20-1)", "date": "2026-05-18" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Economics", "tier": "N/A", "paper": 3, "paperName": "Component 3: Microeconomics and Macroeconomics (A520U30-1)", "date": "2026-06-04" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Language", "tier": "N/A", "paper": 1, "paperName": "Component 1: Language in Context (A700U10-1)", "date": "2026-05-11" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Language", "tier": "N/A", "paper": 2, "paperName": "Component 2: Language Investigation and Creative Writing (A700U20-1)", "date": "2026-05-22" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Language", "tier": "N/A", "paper": 3, "paperName": "Component 3: Language, Power and Identity (A700U30-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Literature", "tier": "N/A", "paper": 1, "paperName": "Component 1: Poetry (A720U10-1)", "date": "2026-05-13" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Literature", "tier": "N/A", "paper": 2, "paperName": "Component 2: Drama (A720U20-1)", "date": "2026-06-01" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "English Literature", "tier": "N/A", "paper": 3, "paperName": "Component 3: Prose (A720U30-1)", "date": "2026-06-10" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "Component 1: Changing Landscapes (A110U10-1)", "date": "2026-05-12" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "Component 2: Changing Places (A110U20-1)", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 3, "paperName": "Component 3: Global Systems and Global Governance (A110U30-1)", "date": "2026-06-08" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 1, "paperName": "Component 1: The Nature of Law and the English Legal System (A150U10-1)", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 2, "paperName": "Component 2: The Law of Obligations (A150U20-1)", "date": "2026-06-01" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Law", "tier": "N/A", "paper": 3, "paperName": "Component 3: Human Rights Law (A150U30-1)", "date": "2026-06-09" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Media Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Media Products, Industries and Audiences (A680U10-1)", "date": "2026-05-14" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Media Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: Media Forms and Products in Depth (A680U20-1)", "date": "2026-06-04" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Component 1: Anatomy, Physiology, Biomechanics (A550U10-1)", "date": "2026-05-21" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Physical Education", "tier": "N/A", "paper": 2, "paperName": "Component 2: Psychology and Socio-cultural Issues (A550U20-1)", "date": "2026-06-01" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Component 1: Newtonian Physics (A420U10-1)", "date": "2026-05-20" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Component 2: Electromagnetism and Light (A420U20-1)", "date": "2026-06-01" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 3, "paperName": "Component 3: Oscillations and Nuclei (A420U30-1)", "date": "2026-06-08" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Component 1: Memories, Thinking, Social Behaviour and Diversity (A290U10-1)", "date": "2026-05-15" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Component 2: Behaviour, Alternatives, Research (A290U20-1)", "date": "2026-05-20" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Psychology", "tier": "N/A", "paper": 3, "paperName": "Component 3: Applied and Issues (A290U30-1)", "date": "2026-06-05" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1: Introduction to the Study of Religion (A120U10-1)", "date": "2026-06-04" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2: The Study of Religion (A120U20-1)", "date": "2026-06-09" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 3, "paperName": "Component 3: Applied Study of Religion (A120U30-1)", "date": "2026-06-15" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 1, "paperName": "Component 1: Socialisation and Identity (A200U10-1)", "date": "2026-05-18" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 2, "paperName": "Component 2: Understanding Social Processes (A200U20-1)", "date": "2026-06-03" },
-  { "board": "Eduqas", "level": "A-Level", "subject": "Sociology", "tier": "N/A", "paper": 3, "paperName": "Component 3: Social Change (A200U30-1)", "date": "2026-06-12" },
-
-  // ── CCEA A-Level 2026 — replaces earlier "estimated" placeholders with dates verified
-  // directly against CCEA's own "Final GCE Timetable, Summer 2026" (ccea.org.uk/document/23625,
-  // Version 2, updated 02/12/2025). Several of the previous estimates were wrong (e.g. Biology AS
-  // Unit 1 was listed as 12 May; CCEA's own timetable has it on 8 May) — corrected below. History,
-  // Geography, Business Studies and Technology and Design are newly added; they had no A-Level
-  // date entries at all before despite topics.js having full A-Level content for all four.
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Molecules and Cells", "date": "2026-05-08" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Organisms and Biodiversity", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Physiology, Coordination and Control", "date": "2026-06-01" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Biology", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Biochemistry, Genetics and Evolutionary Trends", "date": "2026-06-12" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Basic Concepts in Physical and Inorganic Chemistry", "date": "2026-05-12" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Further Physical and Organic Chemistry", "date": "2026-05-19" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Further Physical and Inorganic Chemistry", "date": "2026-05-25" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Chemistry", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Analytical, Transition Metals, Electrochemistry and Organic Nitrogen", "date": "2026-06-10" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Pure Mathematics with Mechanics", "date": "2026-05-14" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Pure Mathematics with Statistics", "date": "2026-05-22" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Pure Mathematics", "date": "2026-05-28" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Pure Mathematics with Mechanics or Statistics", "date": "2026-06-03" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Mathematics", "tier": "N/A", "paper": 5, "paperName": "A2 Unit 3 (if applicable to your specification route)", "date": "TBC", "note": "CCEA's own Final GCE Timetable (Summer 2026) only shows 2 AS units + 2 A2 units for Mathematics — this 5th paper slot could not be verified against it and is left TBC rather than guessed. Worth checking whether this paper still exists in the current CCEA Mathematics spec." },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Forces, Energy and Electricity", "date": "2026-05-13" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Waves, Photons and Medical Physics", "date": "2026-05-20" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Momentum, Thermal Physics, Circular Motion, Oscillations and Atomic Physics", "date": "2026-05-18" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Physics", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Fields, Capacitors and Particle Physics", "date": "2026-06-08" },
-  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Change Over Time", "date": "2026-05-13" },
-  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Dictatorship and Democracy", "date": "2026-05-18" },
-  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1: Breadth Study", "date": "2026-05-19" },
-  { "board": "CCEA", "level": "A-Level", "subject": "History", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2: Historical Investigation", "date": "2026-06-02" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1: Physical Geography I", "date": "2026-05-12" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2: Human Geography I", "date": "2026-05-20" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 3, "paperName": "AS Unit 3: Fieldwork Report", "date": "2026-05-26" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 1: Physical Geography II", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 5, "paperName": "A2 Unit 2: Human Geography II", "date": "2026-05-29" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Geography", "tier": "N/A", "paper": 6, "paperName": "A2 Unit 3: Decision-Making Exercise", "date": "2026-06-04" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 1, "paperName": "AS Unit 1", "date": "2026-05-15" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 2, "paperName": "AS Unit 2", "date": "2026-05-21" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 3, "paperName": "A2 Unit 1", "date": "2026-05-27" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Business Studies", "tier": "N/A", "paper": 4, "paperName": "A2 Unit 2", "date": "2026-06-09" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Technology and Design", "tier": "N/A", "paper": 1, "paperName": "AS 1: Systems and Control (Core)", "date": "2026-05-11" },
-  { "board": "CCEA", "level": "A-Level", "subject": "Technology and Design", "tier": "N/A", "paper": 2, "paperName": "A2 Unit 1", "date": "2026-05-22" },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Turkish",
+    "date": "2026-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Turkish and written response to works",
+    "date": "2026-06-02"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Turkish",
+    "date": "2026-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing (research question) in Urdu",
+    "date": "2026-05-22"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Urdu and written response to works",
+    "date": "2026-06-05"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Urdu",
+    "date": "2026-06-12"
+  }
 ]
 
 // ── CCEA AS-Level 2026 — genuinely separate entries, not merged into the A-Level list above.
