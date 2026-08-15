@@ -290,10 +290,22 @@ export function subjectColour(name) {
 // other on the modern-language subjects but this list here didn't have them at all, meaning
 // isTiered('French') returned false — wrong, GCSE French *is* tiered). This is now the one place
 // it's defined; the other two files import it from here instead of keeping their own copy.
+//
+// 2026-08-14 data-fixing-chat pass: removed 'Further Mathematics' (it isn't tiered — GCSE FM is a
+// single untiered paper, and paperDatabase.js already stored it that way; having it here made the
+// UI capable of showing a nonsensical Higher/Foundation choice for a qualification that has none).
+// Added 'Bengali', 'Modern Hebrew', 'Panjabi' — confirmed tiered (Higher/Foundation) against AQA's
+// official June 2025 grade boundaries document, but missing here, which meant getBoundaries()
+// couldn't find their real boundary data even once it existed in paperDatabase.js.
+// Same pass, second update: added 'Arabic', 'Greek', 'Gujarati', 'Japanese', 'Persian',
+// 'Portuguese', 'Russian', 'Turkish' — Edexcel-only community languages, confirmed tiered against
+// Pearson's official June 2025 GCSE grade boundaries document, same missing-from-list problem.
 export const TIERED_SUBJECTS = [
-  'Mathematics','Further Mathematics','Biology','Chemistry','Physics',
+  'Mathematics','Biology','Chemistry','Physics',
   'Combined Science','Combined Science: Trilogy','Combined Science: Synergy','Statistics',
-  'French','German','Spanish','Italian','Mandarin Chinese','Polish','Urdu','Welsh Second Language',
+  'Arabic','Bengali','French','German','Greek','Gujarati','Italian','Japanese','Mandarin Chinese',
+  'Modern Hebrew','Panjabi','Persian','Polish','Portuguese','Russian','Spanish','Turkish','Urdu',
+  'Welsh Second Language',
 ]
 
 export function isTiered(subjectName) {
