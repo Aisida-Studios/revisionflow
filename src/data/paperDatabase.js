@@ -700,6 +700,32 @@ export const GRADE_BOUNDARIES = {
     'WJEC-German-Foundation': { maxMarks:240, boundaries:[null,null,null,null,170,154,119,84,50] },
     'WJEC-Spanish-Higher': { maxMarks:240, boundaries:[190,168,146,130,115,100,92,null,null] },
     'WJEC-Spanish-Foundation': { maxMarks:240, boundaries:[null,null,null,null,178,157,120,83,46] },
+
+    // ── Edexcel AS-Level additions, real June 2025 boundaries (Pearson) — board had zero AS-Level coverage before ──
+    'Edexcel-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[108, 95, 82, 69, 57], grades:['A','B','C','D','E'] },
+    'Edexcel-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[92, 81, 70, 60, 50], grades:['A','B','C','D','E'] },
+    'Edexcel-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[106, 92, 78, 64, 51], grades:['A','B','C','D','E'] },
+    'Edexcel-Physics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[102, 87, 72, 57, 43], grades:['A','B','C','D','E'] },
+    'Edexcel-History-N/A-ASLevel': { maxMarks:100, level:'AS-Level', boundaries:[81, 72, 63, 54, 46], grades:['A','B','C','D','E'] },
+    'Edexcel-Geography-N/A-ASLevel': { maxMarks:180, level:'AS-Level', boundaries:[119, 107, 95, 83, 72], grades:['A','B','C','D','E'] },
+    'Edexcel-Business-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[103, 91, 80, 69, 58], grades:['A','B','C','D','E'] },
+    'Edexcel-Economics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[115, 104, 93, 82, 72], grades:['A','B','C','D','E'] },
+    'Edexcel-Psychology-N/A-ASLevel': { maxMarks:140, level:'AS-Level', boundaries:[77, 68, 59, 50, 42], grades:['A','B','C','D','E'] },
+
+    // ── OCR AS-Level additions, real June 2025 boundaries (Cambridge OCR) — board had zero AS-Level coverage before ──
+    'OCR-Biology-N/A-ASLevel': { maxMarks:140, level:'AS-Level', boundaries:[87, 78, 69, 60, 51], grades:['A','B','C','D','E'] },
+    'OCR-Chemistry-N/A-ASLevel': { maxMarks:140, level:'AS-Level', boundaries:[113, 99, 85, 72, 59], grades:['A','B','C','D','E'] },
+    'OCR-Physics-N/A-ASLevel': { maxMarks:140, level:'AS-Level', boundaries:[93, 81, 69, 57, 46], grades:['A','B','C','D','E'] },
+    'OCR-Computer Science-N/A-ASLevel': { maxMarks:140, level:'AS-Level', boundaries:[102, 88, 74, 61, 48], grades:['A','B','C','D','E'] },
+    'OCR-History-N/A-ASLevel': { maxMarks:100, level:'AS-Level', boundaries:[67, 57, 48, 39, 30], grades:['A','B','C','D','E'] },
+    'OCR-Geography-N/A-ASLevel': { maxMarks:150, level:'AS-Level', boundaries:[91, 80, 70, 60, 50], grades:['A','B','C','D','E'] },
+
+    // ── WJEC/Eduqas AS-Level additions, real June 2025 boundaries (Eduqas) — board had zero AS-Level coverage before ──
+    'WJEC-Biology-N/A-ASLevel': { maxMarks:150, level:'AS-Level', boundaries:[89, 79, 69, 59, 50], grades:['A','B','C','D','E'] },
+    'WJEC-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[96, 82, 68, 55, 42], grades:['A','B','C','D','E'] },
+    'WJEC-Physics-N/A-ASLevel': { maxMarks:150, level:'AS-Level', boundaries:[106, 95, 84, 73, 62], grades:['A','B','C','D','E'] },
+    'WJEC-Geography-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[124, 111, 98, 85, 72], grades:['A','B','C','D','E'] },
+    'WJEC-English Literature-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[144, 128, 113, 98, 83], grades:['A','B','C','D','E'] },
 },
 
   // ─── 2024 ──────────────────────────────────────────────────────────────────
