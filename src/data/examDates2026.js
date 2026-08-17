@@ -2708,7 +2708,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2: Body Systems, Ecology and the Environment",
-    "date": "2026-06-05"
+    "date": "2026-06-08"
   },
   {
     "board": "CCEA",
@@ -2726,7 +2726,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2: Further Chemical Reactions, Rates and Equilibrium, Calculations and Organic Chemistry",
-    "date": "2026-06-12"
+    "date": "2026-06-11"
   },
   {
     "board": "CCEA",
@@ -2770,7 +2770,16 @@ const GCSE_2026 = [
     "subject": "English Language",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Unit 1: Writing for Purpose and Audience",
+    "paperName": "Unit 1: Talking and Listening (Speaking and Listening moderated separately)",
+    "date": "2026-05-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4: Writing for Purpose and Audience",
     "date": "2026-05-21"
   },
   {
@@ -2789,7 +2798,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2: The Study of Poetry and Drama",
-    "date": "2026-06-05"
+    "date": "2026-05-28"
   },
   {
     "board": "CCEA",
@@ -2807,7 +2816,16 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2: Living in Our World",
-    "date": "2026-06-11"
+    "date": "2026-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3: Fieldwork",
+    "date": "2026-06-05"
   },
   {
     "board": "CCEA",
@@ -2879,7 +2897,7 @@ const GCSE_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Unit 1: Forces, Energy and Electricity",
-    "date": "2026-06-02"
+    "date": "2026-05-22"
   },
   {
     "board": "CCEA",
@@ -2929,28 +2947,38 @@ const GCSE_2026 = [
   {
     "board": "CCEA",
     "level": "GCSE",
-    "subject": "Computer Science",
+    "subject": "Digital Technology",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Unit 1: Digital Technology",
-    "date": "2026-05-13"
+    "paperName": "Unit 1: Digital Technology Core",
+    "date": "2026-06-01"
   },
   {
     "board": "CCEA",
     "level": "GCSE",
-    "subject": "Computer Science",
+    "subject": "Digital Technology",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Unit 2: Practical Problem Solving",
-    "date": "2026-05-19"
+    "paperName": "Unit 2: Multimedia or Programming (route-dependent)",
+    "date": "2026-06-01"
   },
+  
   {
     "board": "CCEA",
     "level": "GCSE",
     "subject": "Technology and Design",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Unit 1: Designing and Making",
+    "paperName": "Unit 1: Technology and Design Core",
+    "date": "2026-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2: Designing and Making (option A/B/C)",
     "date": "2026-06-10"
   },
   {
