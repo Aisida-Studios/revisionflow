@@ -3462,7 +3462,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Pure Core",
-    "date": "2026-05-11"
+    "date": "2026-05-21"
   },
   {
     "board": "AQA",
@@ -3471,7 +3471,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Paper 2 (optional route)",
-    "date": "2026-05-15"
+    "date": "2026-06-05"
   },
   {
     "board": "AQA",
@@ -3480,7 +3480,7 @@ const ALEVEL_2026 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3 (optional route)",
-    "date": "2026-05-15"
+    "date": "2026-06-12"
   },
   {
     "board": "AQA",
@@ -3620,6 +3620,24 @@ const ALEVEL_2026 = [
   {
     "board": "AQA",
     "level": "A-Level",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2026-06-04"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, Reading and Writing",
+    "date": "2026-06-15"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
     "subject": "Music",
     "tier": "N/A",
     "paper": 1,
@@ -3634,6 +3652,24 @@ const ALEVEL_2026 = [
     "paper": 1,
     "paperName": "Paper 1: Reading & Writing",
     "date": "2026-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, Reading and Writing",
+    "date": "2026-06-12"
   },
   {
     "board": "AQA",
@@ -3706,6 +3742,24 @@ const ALEVEL_2026 = [
     "paper": 1,
     "paperName": "Paper 1: Reading & Writing",
     "date": "2026-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2026-06-01"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, Reading and Writing",
+    "date": "2026-06-09"
   },
   {
     "board": "AQA",
@@ -6137,7 +6191,7 @@ const ASLEVEL_2026 = [
   { "board": "Eduqas", "level": "AS-Level", "subject": "Physical Education", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
   { "board": "Eduqas", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-13" },
   { "board": "Eduqas", "level": "AS-Level", "subject": "Physics", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-20" },
-  { "board": "Eduqas", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-12" },
+  { "board": "Eduqas", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 1, "paperName": "Component 1", "date": "2026-05-11" },
   { "board": "Eduqas", "level": "AS-Level", "subject": "Psychology", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-19" },
   { "board": "Eduqas", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 1, "paperName": "Component 1 (options A to F)", "date": "2026-05-15" },
   { "board": "Eduqas", "level": "AS-Level", "subject": "Religious Studies", "tier": "N/A", "paper": 2, "paperName": "Component 2", "date": "2026-05-21" },
