@@ -4925,16 +4925,6 @@ const ALEVEL_2026 = [
   {
     "board": "CCEA",
     "level": "A-Level",
-    "subject": "Mathematics",
-    "tier": "N/A",
-    "paper": 5,
-    "paperName": "A2 Unit 3 (if applicable to your specification route)",
-    "date": "TBC",
-    "note": "CCEA's own Final GCE Timetable (Summer 2026) only shows 2 AS units + 2 A2 units for Mathematics — this 5th paper slot could not be verified against it and is left TBC rather than guessed. Worth checking whether this paper still exists in the current CCEA Mathematics spec."
-  },
-  {
-    "board": "CCEA",
-    "level": "A-Level",
     "subject": "Physics",
     "tier": "N/A",
     "paper": 1,
