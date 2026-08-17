@@ -2342,24 +2342,6 @@ const GCSE_2026 = [
     "date": "2026-05-20"
   },
   {
-    "board": "OCR",
-    "level": "GCSE",
-    "subject": "Sociology",
-    "tier": "N/A",
-    "paper": 1,
-    "paperName": "Sociology Paper 1",
-    "date": "2026-05-08"
-  },
-  {
-    "board": "OCR",
-    "level": "GCSE",
-    "subject": "Sociology",
-    "tier": "N/A",
-    "paper": 2,
-    "paperName": "Sociology Paper 2",
-    "date": "2026-05-21"
-  },
-  {
     "board": "Eduqas",
     "level": "GCSE",
     "subject": "Biology",
