@@ -6304,6 +6304,2197 @@ const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Art & Design (Textile Design)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Three-dimensional Design)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Photography)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
+
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Arabic (F/H)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Arabic (F/H)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Arabic (F/H)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Astronomy",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Naked-eye Astronomy",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Astronomy",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Telescopic Astronomy",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Biblical Hebrew",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Language",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Biblical Hebrew",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Literature",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Investigating Small Business",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Building a Business",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mandarin Chinese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Chinese (F/H)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mandarin Chinese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Chinese (F/H)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mandarin Chinese",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Chinese (F/H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Citizenship Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Citizenship Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Biology 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Chemistry 1 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Physics 1 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Biology 2 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Paper 5: Chemistry 2 (F/H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Combined Science",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Paper 6: Physics 2 (F/H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Principles of Computer Science",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Application of Computational Thinking",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Design and Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (choice of material/system)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Drama",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Theatre Makers in Practice",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Fiction and Imaginative Writing",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Non-Fiction and Transactional Writing",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Language 2.0",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Non-Fiction Texts",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Language 2.0",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Contemporary Texts",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Shakespeare and Post-1914 Literature",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: 19th Century Novel & Poetry since 1789",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: The Physical Environment",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: The Human Environment",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Geographical Investigations",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Global Geographical Issues",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: UK Geographical Issues",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: People and Environment Issues",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Listening and understanding in German (F/H)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in German (F/H)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in German (F/H)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Greek (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Greek (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Greek (F/H)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Gujarati (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Gujarati (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Gujarati (F/H)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Thematic study and historic environment",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Period study & British depth study",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Modern depth study",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Italian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Italian (F/H)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Italian",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Italian (F/H)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Italian",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Italian (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Japanese (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Japanese (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Japanese (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (Non-Calculator) (F/H)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (Calculator) (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (Calculator) (F/H)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Appraising",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Persian (F/H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Persian (F/H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Persian (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Fitness and Body Systems",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Health and Performance",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Portuguese (F/H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Portuguese (F/H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Portuguese (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Area of Study 1 – Study of Religion",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Area of Study 2 – Study of Second Religion",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Area of Study 3 – Philosophy and Ethics",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Area of Study 4 – Textual Studies",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Area of Study 1 – Religion and Ethics",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Area of Study 2 – Religion, Peace and Conflict",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Religious Studies B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Area of Study 3 – Religion, Philosophy and Social Justice",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Russian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Russian (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Russian",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Russian (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Russian",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Russian (F/H)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Listening and understanding in Spanish (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Spanish (F/H)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Spanish (F/H)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Turkish (F/H)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Turkish (F/H)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Turkish (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening and understanding in Urdu (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in Urdu (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in Urdu (F/H)",
+    "date": "2027-05-25"
+  },
+
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4 (H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in biology (F)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in biology (F)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Breadth in biology (H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Depth in biology (H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Business 1: business activity, marketing and people",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Business 2: operations, finance and influences on business",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4 (H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in chemistry (F)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in chemistry (F)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Breadth in chemistry (H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry B",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Depth in chemistry (H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Citizenship Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Citizenship in perspective",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Citizenship Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Citizenship in action",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Citizenship Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Our rights, our society, our world",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (Biology) (F)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (Biology) (F)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (Chemistry) (F)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4 (Chemistry) (F)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Paper 5 (Physics) (F)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Paper 6 (Physics) (F)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "Paper 7 (Biology) (H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "Paper 8 (Biology) (H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 9,
+    "paperName": "Paper 9 (Chemistry) (H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 10,
+    "paperName": "Paper 10 (Chemistry) (H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 11,
+    "paperName": "Paper 11 (Physics) (H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science A",
+    "tier": "N/A",
+    "paper": 12,
+    "paperName": "Paper 12 (Physics) (H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biology (F)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Chemistry (F)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Physics (F)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Combined science (F)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Biology (H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Chemistry (H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "Physics (H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Combined Science B",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "Combined science (H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Computer systems",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Computational thinking, algorithms and programming",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Design and Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of design and technology",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Drama",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Drama: Performance and response",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introduction to economics",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "National and international economics",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Communicating information and ideas",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring effects and impact",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring modern and literary heritage texts",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring poetry and Shakespeare",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Food Preparation and Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Food preparation and nutrition",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Living in the UK today",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The world around us",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical skills",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Our natural world",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "People and society",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical exploration",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Period study with non-British depth study",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Thematic study",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "British depth study with a study of the historic environment",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "History around us",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "British history – thematic study and depth study",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "World history - period study and depth study",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F, calculator)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F, non-calculator)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (F, calculator)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4 (H, calculator)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Paper 5 (H, non-calculator)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Paper 6 (H, calculator)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Television and promoting media",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Music and news",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening and appraising",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical factors affecting performance",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Socio-cultural issues and sports psychology",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4 (H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in physics (F)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in physics (F)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Breadth in physics (H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics B",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Depth in physics (H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Studies and applications in psychology 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Studies and applications in psychology 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Beliefs, Teachings and Practices (Options 1-5)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Religion, Philosophy and Ethics in the Modern World (Options 1-5)",
+    "date": "2027-05-21"
+  },
+
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2 (On screen)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Design & Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Drama",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Food Preparation & Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (Written)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (Studies A to H)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2 (Studies A to H)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 Foundation Tier",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 1 Higher Tier",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 2 Foundation Tier",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Component 2 Higher Tier",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (Full Course)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Route A Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Route A Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Route A Component 3 (Options 1-5)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-25"
+  },
+
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 & Unit 4",
+    "date": "2027-05-31"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (Drama/Poetry)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (H)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4 (H)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Unit 5/6 (F, Non-Calc/Calc)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Unit 7/8 (H, Non-Calc/Calc)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (option A/B/C)",
+    "date": "2027-06-03"
+  },
 ]
 
 export const EXAM_DATES_2027 = [...GCSE_2027]
