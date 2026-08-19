@@ -8497,7 +8497,3427 @@ const GCSE_2027 = [
   },
 ]
 
-export const EXAM_DATES_2027 = [...GCSE_2027]
+const CCEA_ASLEVEL_2027 = [
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Systems and Control AS 1 Core",
+    "date": "2027-05-10"
+  },
+]
+
+const ASLEVEL_2027 = [
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Business 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Business 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Inorganic and Physical Chemistry",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Organic and Physical Chemistry",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (options A-E)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The operation of markets and market failure",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The national economy in a global context",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language and the individual",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Language varieties",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Literature A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Love through the ages: Shakespeare and poetry",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Literature A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Love through the ages: prose",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Literature B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Literary genres: Drama (options A and B)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "English Literature B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Literary genres: Prose and poetry (options A and B)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (options D, M and S)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical geography and people and the environment",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Human geography and fieldwork investigation",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (options A-L)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (options A-S)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introductory topics in Psychology",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychology in context",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Philosophy of religion and ethics",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Study of religion (options A-E)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Education with methods in context",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Research methods and topics in Sociology",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-05-17"
+  },
+
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Marketing and People",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Managing Business Activities",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Core Inorganic and Physical Chemistry",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Core Organic and Physical Chemistry",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Language: Context and Identity",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Child Language",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Voices in Speech and Writing",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Varieties in Language and Literature",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Poetry & Drama",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Prose",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Core Pure Mathematics",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Further Mathematics Options",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Dynamic Landscapes",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Dynamic Places",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Breadth study with interpretations",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Depth Study",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Pure Mathematics",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Statistics and Mechanics",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Music Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Listening and analysing",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Music Technology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 4: Producing and analysing",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Core Physics I",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Core Physics II",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: UK Politics",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: UK Government",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Social and Cognitive Psychology",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Biological Psychology and Learning Theories",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Philosophy of Religion",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Religion and Ethics",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: New Testament Studies",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Study of Religion",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2 (on-screen)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (Options A-F)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },]
+
+const ALEVEL_2027 = [
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Accounting",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Financial Accounting",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Accounting",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Accounting for analysis and decision-making",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Art, craft and design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Fine art)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Graphic communication)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Textile design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Three-dimensional design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Art & Design (Photography)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Portfolio & Externally Set Assignment",
+    "date": "Submit by 31 May 2027"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Bengali",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Reading and writing",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Bengali",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Bengali",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biblical Hebrew",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation, comprehension and composition",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biblical Hebrew",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Prose literature",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biblical Hebrew",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Poetry",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Business 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Business 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Business 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Inorganic and Physical Chemistry",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Organic and Physical Chemistry",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (options A-E)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Dance",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Critical engagement",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Design & Technology: Fashion and Textiles",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Design & Technology: Fashion and Textiles",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Design & Technology: Product Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Design & Technology: Product Design",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Drama and Theatre",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Markets and market failure",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "National and international economy",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Economic principles and issues",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Telling Stories",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring conflict",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language, the individual and society",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Language diversity and change",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Literature A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Love through the ages",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Literature A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Texts in shared contexts (options A and B)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Literature B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Literary genres (options A and B)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "English Literature B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Texts and genres (options A and B)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Environmental Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Environmental Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (options D, M and S)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical geography",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Human geography",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (options A-L)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (options A-T)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (options A and B)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Reading and writing",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Modern Hebrew",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Appraising music",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Reading and writing",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Panjabi",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Philosophy",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Epistemology and moral philosophy",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Philosophy",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The metaphysics of God and mind",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Factors affecting participation",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Factors affecting optimal performance",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Reading and writing",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Writing",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Polish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The Government and Politics of the UK",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Comparative Politics: USA",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Political Ideas",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introductory topics in Psychology",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychology in context",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Issues and options in Psychology",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Philosophy of religion and ethics",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Study of religion and dialogues (options A-E)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Education with theory and methods",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Topics in Sociology",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Crime and deviance with theory and methods",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening, reading and writing",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "AQA",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-06-08"
+  },
+
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Arabic and written response to works",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Arabic",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Arabic",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology A (Salters Nuffield)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: The Natural Environment and Species Survival",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology A (Salters Nuffield)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Energy, Exercise and Co-ordination",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology A (Salters Nuffield)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Applications in Biology",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Advanced Biochemistry, Microbiology and Genetics",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Physiology, Evolution and Ecology",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Biology",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Marketing, people and global businesses",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Business activities, decisions and strategy",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Investigating business in a competitive environment",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Advanced Inorganic and Physical Chemistry",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Organic and Physical Chemistry",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Chemistry",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Mandarin Chinese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, Reading and Translation",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Mandarin Chinese",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Design & Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Design and Technology (Product Design)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Theatre Makers in Practice",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Markets and Business Behaviour",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: The National and Global Economy",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Microeconomics and Macroeconomics",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Markets and how they work",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Competing in the global economy",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Economics B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: The economic environment and business",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Voices in Speech and Writing",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Varieties in Language and Literature",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Language Variation",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Child Language",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Investigating Language",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Drama",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Prose",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Poetry",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Core Pure Mathematics 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Core Pure Mathematics 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Greek and written response to works",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Greek",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Greek",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Gujarati and written response to works",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Gujarati",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Gujarati",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Breadth study with interpretations",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Depth Study",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Themes in breadth with aspects in depth",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "History of Art",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Visual analysis and themes",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "History of Art",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Periods",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Italian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Italian",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Japanese and written response to works",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Japanese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Pure Mathematics 1",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Pure Mathematics 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Statistics & Mechanics",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Appraising",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Music Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3: Listening and analysing",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Music Technology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 4: Producing and analysing",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Persian and written response to works",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Persian",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Persian",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1: Scientific Principles of Physical Education",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2: Psychological and Social Principles of Physical Education",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Advanced Physics I",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Advanced Physics II",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: General and Practical Principles in Physics",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: UK Politics and Core Political Ideas",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: UK Government and Non-core Political Ideas",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": "3A",
+    "paperName": "Paper 3A: Comparative Politics - USA",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Politics",
+    "tier": "N/A",
+    "paper": "3B",
+    "paperName": "Paper 3B: Comparative Politics - Global Politics",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Portuguese and written response to works",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Portuguese",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Portuguese",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Foundations in Psychology",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Applications of Psychology",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Psychological Skills",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Philosophy of Religion",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Religion and Ethics",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: New Testament Studies",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Study of Religion",
+    "date": "2027-06-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Russian",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Russian",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Listening, reading and translation",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Written response to works and translation",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Data and Probability",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Statistical Inference",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Statistics in Practice",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Turkish and written response to works",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Turkish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Turkish",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Translation into English, reading comprehension and writing",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Translation into Urdu and written response to works",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Urdu",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Listening, reading and writing in Urdu",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Lang & Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Design & Technology (Fashion and Textiles)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Design & Technology (Product Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (Options A-F)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Business Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-24"
+  },]
+
+export const EXAM_DATES_2027 = [...GCSE_2027, ...ASLEVEL_2027, ...CCEA_ASLEVEL_2027, ...ALEVEL_2027]
 
 // subjects.js only offers 'WJEC' as a pickable board (see its audit notes — 'Eduqas' and 'WJEC'
 // are meant to resolve to the same data, same as topics.js's BOARD_ALIASES), but every entry in
