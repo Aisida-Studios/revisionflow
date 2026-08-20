@@ -726,6 +726,24 @@ export const GRADE_BOUNDARIES = {
     'WJEC-Physics-N/A-ASLevel': { maxMarks:150, level:'AS-Level', boundaries:[106, 95, 84, 73, 62], grades:['A','B','C','D','E'] },
     'WJEC-Geography-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[124, 111, 98, 85, 72], grades:['A','B','C','D','E'] },
     'WJEC-English Literature-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[144, 128, 113, 98, 83], grades:['A','B','C','D','E'] },
+
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2025) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
 },
 
   // ─── 2024 ──────────────────────────────────────────────────────────────────
@@ -915,6 +933,24 @@ export const GRADE_BOUNDARIES = {
     'AQA-Statistics-Foundation': { maxMarks:160, boundaries:[null,null,null,null,108,85,65,46,27] },
     'AQA-Urdu-Higher': { maxMarks:240, boundaries:[223,203,183,157,131,105,92,null,null] },
     'AQA-Urdu-Foundation': { maxMarks:240, boundaries:[null,null,null,null,133,117,86,55,24] },
+
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2024) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
 },
 
   // ─── 2023 ──────────────────────────────────────────────────────────────────
@@ -985,6 +1021,24 @@ export const GRADE_BOUNDARIES = {
     'AQA-Statistics-Foundation': { maxMarks:160, boundaries:[null,null,null,null,98,75,55,35,15] },
     'AQA-Urdu-Higher': { maxMarks:240, boundaries:[223,203,184,157,130,104,91,null,null] },
     'AQA-Urdu-Foundation': { maxMarks:240, boundaries:[null,null,null,null,147,131,95,59,24] },
+
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2023) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
 },
 
   // ─── 2022 ──────────────────────────────────────────────────────────────────
@@ -1054,6 +1108,24 @@ export const GRADE_BOUNDARIES = {
     'AQA-Statistics-Foundation': { maxMarks:160, boundaries:[null,null,null,null,87,69,49,30,11] },
     'AQA-Urdu-Higher': { maxMarks:240, boundaries:[211,190,170,147,125,103,92,null,null] },
     'AQA-Urdu-Foundation': { maxMarks:240, boundaries:[null,null,null,null,140,119,87,55,24] },
+
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2022) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
 },
 
   // ─── 2021 (pandemic year — lower boundaries) ──────────────────────────────
@@ -1090,7 +1162,25 @@ export const GRADE_BOUNDARIES = {
     'AQA-Physics-N/A-Alevel':          { maxMarks:83,  level:'A-Level', boundaries:[57,46,35,25,16,8],  grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
     'Edexcel-Mathematics-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[64,50,39,29,19,9],  grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
     'OCR-Computer Science-N/A-Alevel': { maxMarks:100, level:'A-Level', boundaries:[66,54,42,31,20,10], grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
-  },
+  
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2021) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+},
 
   // ─── 2020 (pandemic year — no summer exams) ────────────────────────────────
   2020: {
@@ -1126,7 +1216,25 @@ export const GRADE_BOUNDARIES = {
     'AQA-Physics-N/A-Alevel':          { maxMarks:83,  level:'A-Level', boundaries:[56,45,34,24,15,7],  grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
     'Edexcel-Mathematics-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[63,49,38,28,18,8],  grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
     'OCR-Computer Science-N/A-Alevel': { maxMarks:100, level:'A-Level', boundaries:[65,53,41,30,19,9],  grades:['A*','A','B','C','D','E'], note:'~estimated pandemic year' },
-  },
+  
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2020) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+},
 
   // ─── 2019 ──────────────────────────────────────────────────────────────────
   2019: {
@@ -1195,6 +1303,24 @@ export const GRADE_BOUNDARIES = {
     'AQA-Statistics-Foundation': { maxMarks:160, boundaries:[null,null,null,null,93,81,58,36,14] },
     'AQA-Urdu-Higher': { maxMarks:240, boundaries:[221,210,199,175,151,127,115,null,null] },
     'AQA-Urdu-Foundation': { maxMarks:240, boundaries:[null,null,null,null,174,158,113,68,24] },
+
+    // ── CCEA AS/A-Level additions — real UMS boundaries, stable for the specification's lifetime per CCEA's own documentation, so applied to every year (2019) ──
+    'CCEA-Biology-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Business Studies-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Chemistry-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Geography-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-History-N/A-ASLevel': { maxMarks:200, level:'AS-Level', boundaries:[160, 140, 120, 100, 80], grades:['A','B','C','D','E'] },
+    'CCEA-Mathematics-N/A-ASLevel': { maxMarks:160, level:'AS-Level', boundaries:[128, 112, 96, 80, 64], grades:['A','B','C','D','E'] },
+    'CCEA-Physics-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Technology and Design-N/A-ASLevel': { maxMarks:240, level:'AS-Level', boundaries:[192, 168, 144, 120, 96], grades:['A','B','C','D','E'] },
+    'CCEA-Biology-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Business Studies-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Chemistry-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Geography-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-History-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Mathematics-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[320, 280, 240, 200, 160], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Physics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
+    'CCEA-Technology and Design-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[240, 210, 180, 150, 120], grades:['A','B','C','D','E'], note:'A* deliberately not included — CCEA awards A* only when a candidate achieves grade A overall AND 90% UMS aggregation specifically across their A2 units, a compound rule this single total-UMS threshold cannot correctly represent' },
 },
 }
 
