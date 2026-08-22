@@ -467,7 +467,63 @@ export const PAPER_DATABASE = {
 export const GRADE_BOUNDARIES = {
   // 2026 boundaries are not yet published (released by boards in August 2026).
   // We use 2025 values as estimates — the app shows a disclaimer when 2026 is selected.
-  2026: null,  // sentinel — getBoundaries() falls back to 2025 when this is null
+  2026: {
+    // GCSE results day 2026 was 20 August. Real boundaries now exist and are being added board by
+    // board as each is verified against the official published document, not all at once.
+  
+    // AQA GCSE, real June 2026 boundaries, published today (20 August 2026, results day)
+    'AQA-Business': { maxMarks:180, boundaries:[133,124,115,102,89,77,55,34,13] },
+    'AQA-Citizenship Studies': { maxMarks:160, boundaries:[141,132,124,111,98,85,64,44,24] },
+    'AQA-Computer Science': { maxMarks:180, boundaries:[160,148,136,114,93,72,54,37,20] },
+    'AQA-Dance': { maxMarks:400, boundaries:[333,309,286,254,222,190,146,103,60] },
+    'AQA-Design & Technology': { maxMarks:200, boundaries:[179,165,151,134,117,100,74,48,23] },
+    'AQA-Drama': { maxMarks:200, boundaries:[167,156,145,130,115,100,74,49,24] },
+    'AQA-Economics': { maxMarks:160, boundaries:[136,128,120,107,94,82,61,40,19] },
+    'AQA-Engineering': { maxMarks:200, boundaries:[177,166,156,140,124,108,80,53,26] },
+    'AQA-English Language': { maxMarks:160, boundaries:[122,112,103,93,84,75,55,35,16] },
+    'AQA-English Literature': { maxMarks:160, boundaries:[142,127,113,97,81,66,49,33,17] },
+    'AQA-Food Preparation & Nutrition': { maxMarks:200, boundaries:[172,158,145,128,112,96,71,47,23] },
+    'AQA-Geography': { maxMarks:252, boundaries:[204,185,166,148,130,112,82,53,24] },
+    'AQA-Media Studies': { maxMarks:240, boundaries:[184,170,156,137,118,99,73,47,21] },
+    'AQA-Music': { maxMarks:240, boundaries:[198,185,173,158,144,130,102,74,46] },
+    'AQA-Physical Education': { maxMarks:260, boundaries:[216,202,188,170,153,136,103,70,38] },
+    'AQA-Psychology': { maxMarks:200, boundaries:[168,154,141,122,104,86,62,38,14] },
+    'AQA-Sociology': { maxMarks:200, boundaries:[164,153,143,128,113,98,71,44,18] },
+    'AQA-History': { maxMarks:168, boundaries:[119,107,96,84,73,62,44,26,9] },
+    'AQA-Religious Studies': { maxMarks:204, boundaries:[170,157,144,125,107,89,66,43,20] },
+    'AQA-Bengali-Higher': { maxMarks:240, boundaries:[202,177,152,127,102,78,66,null,null] },
+    'AQA-Bengali-Foundation': { maxMarks:240, boundaries:[null,null,null,null,126,101,78,55,33] },
+    'AQA-Biology-Higher': { maxMarks:200, boundaries:[133,120,107,88,70,52,43,null,null] },
+    'AQA-Biology-Foundation': { maxMarks:200, boundaries:[null,null,null,null,144,127,91,55,19] },
+    'AQA-Chemistry-Higher': { maxMarks:200, boundaries:[155,137,120,94,68,43,30,null,null] },
+    'AQA-Chemistry-Foundation': { maxMarks:200, boundaries:[null,null,null,null,132,110,81,52,24] },
+    'AQA-Mandarin Chinese-Higher': { maxMarks:240, boundaries:[212,178,144,123,102,81,70,null,null] },
+    'AQA-Mandarin Chinese-Foundation': { maxMarks:240, boundaries:[null,null,null,null,143,121,88,56,24] },
+    'AQA-French-Higher': { maxMarks:200, boundaries:[179,164,149,135,121,108,101,null,null] },
+    'AQA-French-Foundation': { maxMarks:200, boundaries:[null,null,null,null,146,134,98,62,27] },
+    'AQA-German-Higher': { maxMarks:200, boundaries:[176,160,144,128,113,98,90,null,null] },
+    'AQA-German-Foundation': { maxMarks:200, boundaries:[null,null,null,null,149,136,99,63,27] },
+    'AQA-Italian-Higher': { maxMarks:240, boundaries:[181,157,133,116,100,84,76,null,null] },
+    'AQA-Italian-Foundation': { maxMarks:240, boundaries:[null,null,null,null,136,120,91,62,33] },
+    'AQA-Mathematics-Higher': { maxMarks:240, boundaries:[219,192,166,131,97,63,46,null,null] },
+    'AQA-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,187,154,115,76,38] },
+    'AQA-Modern Hebrew-Higher': { maxMarks:240, boundaries:[203,173,143,122,101,81,71,null,null] },
+    'AQA-Modern Hebrew-Foundation': { maxMarks:240, boundaries:[null,null,null,null,157,132,107,82,57] },
+    'AQA-Panjabi-Higher': { maxMarks:240, boundaries:[222,199,177,156,136,116,106,null,null] },
+    'AQA-Panjabi-Foundation': { maxMarks:240, boundaries:[null,null,null,null,175,156,112,68,24] },
+    'AQA-Physics-Higher': { maxMarks:200, boundaries:[157,142,128,107,87,67,57,null,null] },
+    'AQA-Physics-Foundation': { maxMarks:200, boundaries:[null,null,null,null,141,126,92,58,24] },
+    'AQA-Polish-Higher': { maxMarks:240, boundaries:[193,171,150,139,128,118,113,null,null] },
+    'AQA-Polish-Foundation': { maxMarks:240, boundaries:[null,null,null,null,147,134,97,60,24] },
+    'AQA-Spanish-Higher': { maxMarks:200, boundaries:[175,155,135,120,105,90,82,null,null] },
+    'AQA-Spanish-Foundation': { maxMarks:200, boundaries:[null,null,null,null,144,130,94,59,24] },
+    'AQA-Statistics-Higher': { maxMarks:160, boundaries:[114,98,83,67,51,35,27,null,null] },
+    'AQA-Statistics-Foundation': { maxMarks:160, boundaries:[null,null,null,null,92,76,57,38,20] },
+    'AQA-Urdu-Higher': { maxMarks:240, boundaries:[219,196,173,149,125,101,89,null,null] },
+    'AQA-Urdu-Foundation': { maxMarks:240, boundaries:[null,null,null,null,138,122,89,56,24] },
+    'AQA-Combined Science-Higher': { maxMarks:420, boundaries:[298,280,262,245,228,208,188,168,149], note:'maxMarks is the real Trilogy total; boundaries not yet fixed, 17-outcome double-award scale, same issue as every other year' },
+    'AQA-Combined Science-Foundation': { maxMarks:420, boundaries:[276,257,238,208,178,149,120,91,62], note:'maxMarks corrected; boundaries not yet fixed, see Higher tier note' },
+  },
 
   // ─── 2025 ──────────────────────────────────────────────────────────────────
   2025: {
@@ -1440,46 +1496,47 @@ function normSubj(subject) {
 }
 
 export function getBoundaries(board, subject, tier, year, level) {
-  // 2026 boundaries not yet published — fall back to 2025 as estimate
-  const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
-  const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
-  if (!yearData) return null
-  const estimated = year === 2026
-
   const norm = normSubj(subject)
   const isTieredSubj = TIERED.includes(subject) || TIERED.includes(norm)
   const isALevel = level === 'A-Level'
   const isASLevel = level === 'AS-Level'
 
-  if (isALevel) {
-    return yearData[`${board}-${subject}-N/A-Alevel`]
-        || yearData[`${board}-${norm}-N/A-Alevel`]
-        || null
+  function lookupIn(yearData) {
+    if (!yearData) return null
+    if (isALevel) {
+      return yearData[`${board}-${subject}-N/A-Alevel`] || yearData[`${board}-${norm}-N/A-Alevel`] || null
+    }
+    if (isASLevel) {
+      return yearData[`${board}-${subject}-N/A-ASLevel`] || yearData[`${board}-${norm}-N/A-ASLevel`] || null
+    }
+    if (isTieredSubj && tier && tier !== 'N/A') {
+      return yearData[`${board}-${subject}-${tier}`]
+          || yearData[`${board}-${norm}-${tier}`]
+          || yearData[`${board}-${subject}`]
+          || yearData[`${board}-${norm}`]
+          || null
+    }
+    return yearData[`${board}-${subject}`] || yearData[`${board}-${norm}`] || null
   }
 
-  if (isASLevel) {
-    // Mirrors the A-Level branch above. AS-Level boundaries are now seeded for AQA 2025 (see
-    // above) — for every other board/year combination not yet seeded, this still correctly
-    // returns null so the app falls back to a plain grade dropdown (see getGradeOptions) instead
-    // of ever attaching a GCSE or A-Level boundary to an AS-Level attempt.
-    return yearData[`${board}-${subject}-N/A-ASLevel`]
-        || yearData[`${board}-${norm}-N/A-ASLevel`]
-        || null
+  // 2026 results started landing 13 Aug (A-Level/AS) and 20 Aug (GCSE) 2026. Try real 2026 data
+  // first for this specific combo before falling back, instead of the old blanket redirect that
+  // would have silently ignored real 2026 data forever once it existed.
+  if (year === 2026 && GRADE_BOUNDARIES[2026]) {
+    const real2026 = lookupIn(GRADE_BOUNDARIES[2026])
+    if (real2026) return real2026
   }
-
-  if (isTieredSubj && tier && tier !== 'N/A') {
-    return yearData[`${board}-${subject}-${tier}`]
-        || yearData[`${board}-${norm}-${tier}`]
-        || yearData[`${board}-${subject}`]
-        || yearData[`${board}-${norm}`]
-        || null
-  }
-  return yearData[`${board}-${subject}`]
-      || yearData[`${board}-${norm}`]
-      || null
+  const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
+  const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
+  return lookupIn(yearData)
 }
 
 export function getBoundariesForPaper(board, subject, tier, year, paper, level) {
+  // Mirrors the 2026-first-then-fallback logic in getBoundaries() above.
+  if (year === 2026 && GRADE_BOUNDARIES[2026] && level !== 'A-Level' && level !== 'AS-Level') {
+    const paperKey2026 = `${board}-${subject}-P${paper}`
+    if (GRADE_BOUNDARIES[2026][paperKey2026]) return GRADE_BOUNDARIES[2026][paperKey2026]
+  }
   const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
   const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
   // A handful of untiered GCSE subjects (AQA English Literature, AQA Geography) have a different
