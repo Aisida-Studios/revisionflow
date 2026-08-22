@@ -1255,6 +1255,11 @@ function QuizTab({ mySets, uid, profile }) {
     if (uid && selectedSet && total > 0) {
       try {
         const { saveQuizResult } = await import('../utils/firestore')
+        // Qualification is derived the same way PastPapers.jsx derives it for attempts — from
+        // the subject's current entry in profile.subjects, not the flashcard set itself (sets
+        // don't carry a qualification field). This is what lets future qualification switches
+        // (see Settings.jsx) tell current-level quiz history apart from superseded history.
+        const subjMeta = profile?.subjects?.find(s => s.name === selectedSet.subject)
         await saveQuizResult(uid, {
           subject: selectedSet.subject,
           setId: selectedSet.id,
@@ -1262,6 +1267,7 @@ function QuizTab({ mySets, uid, profile }) {
           score: got,
           total,
           percentage: Math.round((got / total) * 100),
+          qualification: getSubjectQualification(subjMeta, profile),
         })
       } catch (e) {}
     }
