@@ -274,8 +274,9 @@ module.exports.handler = async function(event) {
       // archived record was classified; leftAmbiguous is records with no usable signal at all
       // (no tag, no diagnostic grade, no other record for that subject to compare against) —
       // those are deliberately left untouched rather than guessed at with nothing to go on.
-      const summary = { usersChecked: 0, subjectsWithHistory: 0, archivedByTag: 0, archivedByGrade: 0, archivedByTime: 0, leftAmbiguous: 0 }
+      const summary = { usersChecked: 0, subjectsWithHistory: 0, archivedByTag: 0, archivedByGrade: 0, archivedByTime: 0, leftAmbiguous: 0, examDatesRemoved: 0 }
       const toArchive = []
+      const examDateFixes = [] // { userId, keptExamDates }
 
       for (const userDoc of userDocs) {
         const profile = userDoc.data()
@@ -297,6 +298,8 @@ module.exports.handler = async function(event) {
           if (!d.subject) return
           ;(bySubject[d.subject] = bySubject[d.subject] || []).push(d)
         })
+
+        const switchedSubjectNames = new Set()
 
         for (const subjectName of Object.keys(bySubject)) {
           const records = bySubject[subjectName]
@@ -328,7 +331,20 @@ module.exports.handler = async function(event) {
               summary.leftAmbiguous++
             }
           }
-          if (touchedThisSubject) summary.subjectsWithHistory++
+          if (touchedThisSubject) { summary.subjectsWithHistory++; switchedSubjectNames.add(subjectName) }
+        }
+
+        // A subject with confirmed superseded history also means any exam date entries still
+        // sitting there for that subject are for a qualification it's no longer at — a new
+        // specification means new dates, which the student re-adds in Exam Dates, so old ones
+        // aren't worth keeping around the way Past Papers/quiz history is.
+        const examDates = Array.isArray(profile.examDates) ? profile.examDates : []
+        if (switchedSubjectNames.size && examDates.length) {
+          const keptExamDates = examDates.filter(e => !switchedSubjectNames.has(e.subject))
+          if (keptExamDates.length !== examDates.length) {
+            examDateFixes.push({ userId: userDoc.id, keptExamDates })
+            summary.examDatesRemoved += examDates.length - keptExamDates.length
+          }
         }
       }
 
@@ -337,6 +353,9 @@ module.exports.handler = async function(event) {
         const batch = db.batch()
         toArchive.slice(i, i + batchSize).forEach(ref => batch.update(ref, { archived: true }))
         await batch.commit()
+      }
+      for (const fix of examDateFixes) {
+        await db.collection('users').doc(fix.userId).update({ examDates: fix.keptExamDates })
       }
 
       return respond(200, { ok: true, summary: { ...summary, totalArchived: toArchive.length } })
