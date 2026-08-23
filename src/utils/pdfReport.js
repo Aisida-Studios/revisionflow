@@ -151,14 +151,18 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   }
 
   // ── Page 3: Papers ───────────────────────────────────────────────────────
-  if ((paperAttempts||[]).length > 0) {
+  // Superseded-qualification attempts are archived rather than deleted (see
+  // qualificationSwitch.js) — excluded here so an old GCSE paper can't show up in a report
+  // that's meant to reflect the student's current AS-Level/A-Level standing.
+  const activePapers = (paperAttempts||[]).filter(a=>!a.archived)
+  if (activePapers.length > 0) {
     newPage()
     sectionHeader('Past Paper Performance')
-    const subjs=[...new Set(paperAttempts.map(a=>a.subject))]
+    const subjs=[...new Set(activePapers.map(a=>a.subject))]
     doc.autoTable({
       startY:y,
       head:[['Subject','Papers','Avg %','Latest','Best Grade','Best %']],
-      body:subjs.map(s=>{const sub=paperAttempts.filter(a=>a.subject===s);const avg=Math.round(sub.reduce((sum,a)=>sum+(a.percentage||0),0)/sub.length);const best=sub.reduce((b,a)=>(a.percentage||0)>(b.percentage||0)?a:b,sub[0]);return[s,sub.length,`${avg}%`,sub[0]?.grade||'–',best?.grade||'–',`${best?.percentage||0}%`]}),
+      body:subjs.map(s=>{const sub=activePapers.filter(a=>a.subject===s);const avg=Math.round(sub.reduce((sum,a)=>sum+(a.percentage||0),0)/sub.length);const best=sub.reduce((b,a)=>(a.percentage||0)>(b.percentage||0)?a:b,sub[0]);return[s,sub.length,`${avg}%`,sub[0]?.grade||'–',best?.grade||'–',`${best?.percentage||0}%`]}),
       margin:{left:M,right:M},
       styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
@@ -173,7 +177,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
     doc.autoTable({
       startY:y,
       head:[['Subject','Paper','Board','Year','Score','%','Grade']],
-      body:paperAttempts.slice(0,20).map(a=>[a.subject,`P${a.paper}`,a.board,String(a.year),`${a.score}/${a.maxMarks}`,`${a.percentage}%`,a.grade||'–']),
+      body:activePapers.slice(0,20).map(a=>[a.subject,`P${a.paper}`,a.board,String(a.year),`${a.score}/${a.maxMarks}`,`${a.percentage}%`,a.grade||'–']),
       margin:{left:M,right:M},
       styles:{fontSize:7.5,cellPadding:2.5,textColor:[30,20,50]},
       headStyles:{fillColor:MID,textColor:WHITE,fontStyle:'bold',fontSize:7.5},
@@ -185,15 +189,23 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   }
 
   // ── Page 4: Topics ───────────────────────────────────────────────────────
-  if ((topics||[]).length > 0) {
+  // Same reasoning as the topics list on the Topics page — a topic only counts here if it's
+  // at its subject's CURRENT qualification, so a switch doesn't blend two levels together.
+  const subjectsList = profile?.subjects || []
+  const activeTopics = (topics||[]).filter(t => {
+    const subjMeta = subjectsList.find(s => s.name === t.subjectId)
+    if (!subjMeta) return true
+    return (t.qualification || subjMeta.qualification) === subjMeta.qualification
+  })
+  if (activeTopics.length > 0) {
     newPage()
     sectionHeader('Topic Confidence Overview')
-    const subjs=[...new Set(topics.map(t=>t.subjectId).filter(Boolean))]
+    const subjs=[...new Set(activeTopics.map(t=>t.subjectId).filter(Boolean))]
     for(const subj of subjs){
       checkSpace(20)
       doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...MID)
       doc.text(subj,M,y);y+=5
-      const st=topics.filter(t=>t.subjectId===subj)
+      const st=activeTopics.filter(t=>t.subjectId===subj)
       const counts=[1,2,3,4,5].map(c=>st.filter(t=>(t.confidence||3)===c).length)
       const maxVal=Math.max(...counts,1)
       const barW=(W-M*2)/5-3,barMaxH=14
