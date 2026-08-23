@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { updateUserProfile, archiveSupersededAttempts } from '../utils/firestore'
+import { updateUserProfile, archiveSupersededAttempts, deleteSubjectAttempts } from '../utils/firestore'
 import { detectQualificationSwitches } from '../utils/qualificationSwitch'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
 import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
@@ -40,6 +40,9 @@ export default function Settings() {
   const { isPro, isBeta } = useIsPro()
   const { theme, toggle } = useTheme()
   const [saving,       setSaving]       = useState(false)
+  // Subjects that just switched qualification, awaiting the student's keep/remove choice —
+  // see detectAndOfferSwitchChoice below. Null when there's nothing pending.
+  const [pendingSwitches, setPendingSwitches] = useState(null)
   const [searchParams]                    = useSearchParams()
   const [tab,          setTab]          = useState(() => {
     const t = searchParams.get('tab')
@@ -67,18 +70,40 @@ export default function Settings() {
 
   // Called after subjects are saved, with the subjects array from just before the save. Finds
   // any subject whose qualification changed (directly, or a same-named subject swapped in at a
-  // different level) and archives that subject's superseded Past Papers attempts/quiz results
-  // so they stop counting toward current-qualification views. Never blocks the subjects save
-  // itself — if archiving fails for one subject, the others still get processed.
-  async function archiveSwitchedSubjects(oldSubjects, newSubjects) {
+  // different level). Exam dates for that subject are cleared straight away — a new
+  // qualification means a new specification, so the old dates aren't useful to keep either way
+  // and the student adds fresh ones in Exam Dates. Past Papers/quiz history is different: it's
+  // worth asking about, so this puts up the keep/remove choice instead of deciding silently.
+  async function detectAndOfferSwitchChoice(oldSubjects, newSubjects, currentExamDates) {
     const switches = detectQualificationSwitches(oldSubjects, newSubjects, profile)
+    if (!switches.length) return
+
+    const switchedNames = new Set(switches.map(sw => sw.subjectName))
+    const keptExamDates = (currentExamDates || []).filter(e => !switchedNames.has(e.subject))
+    if (keptExamDates.length !== (currentExamDates || []).length) {
+      try { await updateUserProfile(user.uid, { examDates: keptExamDates }) } catch (e) { console.error('[examDates cleanup]', e) }
+    }
+
+    setPendingSwitches(switches)
+  }
+
+  // The student's answer to the keep/remove dialog. Archiving hides the old history but keeps
+  // it (still counts toward lifetime stats); removing deletes it outright and can't be undone.
+  async function resolvePendingSwitches(keep) {
+    const switches = pendingSwitches
+    setPendingSwitches(null)
     for (const sw of switches) {
       try {
-        await archiveSupersededAttempts(user.uid, sw.subjectName, sw.newQualification)
+        if (keep) {
+          await archiveSupersededAttempts(user.uid, sw.subjectName, sw.newQualification)
+        } else {
+          await deleteSubjectAttempts(user.uid, sw.subjectName, sw.newQualification)
+        }
       } catch (e) {
-        console.error('[archiveSwitchedSubjects]', sw.subjectName, e)
+        console.error('[resolvePendingSwitches]', sw.subjectName, e)
       }
     }
+    toast.success(keep ? 'Old history kept, hidden from your current view' : 'Old history removed')
   }
 
   async function saveProfile() {
@@ -102,7 +127,7 @@ export default function Settings() {
     const oldSubjects = profile?.subjects || []
     await updateUserProfile(user.uid, { subjects })
     await refreshProfile()
-    await archiveSwitchedSubjects(oldSubjects, subjects)
+    await detectAndOfferSwitchChoice(oldSubjects, subjects, profile?.examDates)
     toast.success('Subjects updated')
     setSaving(false)
   }
@@ -404,7 +429,7 @@ export default function Settings() {
             const oldSubjects = profile?.subjects || []
             await updateUserProfile(user.uid, { qualification: newQualFlow, subjects: newSubjects, examDates: [] })
             await refreshProfile()
-            await archiveSwitchedSubjects(oldSubjects, newSubjects)
+            await detectAndOfferSwitchChoice(oldSubjects, newSubjects, [])
             setQual(newQualFlow)
             setSubjects(newSubjects)
             setNewQualFlow(null)
@@ -413,6 +438,33 @@ export default function Settings() {
             setSaving(false)
           }}
         />
+      )}
+
+      {/* Old-qualification history: keep (hidden) or remove choice */}
+      {pendingSwitches && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 440 }}>
+            <div className="modal-header">
+              <span className="modal-title">Keep your old history?</span>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '4px 0 16px' }}>
+              You've moved on from {pendingSwitches.map(sw => `${sw.subjectName} (${sw.oldQualification})`).join(', ')}.
+              Either way, it won't show up in your {pendingSwitches[0]?.newQualification} view from here on —
+              the only choice is whether the old Past Papers and quiz history is kept somewhere hidden, or removed for good.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => resolvePendingSwitches(false)}>
+                Remove it
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => resolvePendingSwitches(true)}>
+                Keep it, hidden
+              </button>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 10 }}>
+              "Remove it" can't be undone.
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
