@@ -1148,6 +1148,9 @@ function StatsTab({ email }) {
             <div><strong>{archiveResult.usersChecked}</strong> user{archiveResult.usersChecked !== 1 ? 's' : ''} had Past Papers or quiz history checked</div>
             <div><strong>{archiveResult.subjectsWithHistory}</strong> subject switch{archiveResult.subjectsWithHistory !== 1 ? 'es' : ''} found</div>
             <div><strong>{archiveResult.totalArchived}</strong> entr{archiveResult.totalArchived !== 1 ? 'ies' : 'y'} filed away in total</div>
+            {archiveResult.examDatesRemoved > 0 && (
+              <div><strong>{archiveResult.examDatesRemoved}</strong> old exam date{archiveResult.examDatesRemoved !== 1 ? 's' : ''} cleared out too</div>
+            )}
             <div style={{ color: 'var(--text-muted)', paddingLeft: 14, lineHeight: 1.7 }}>
               — {archiveResult.archivedByTag} already had a level recorded<br/>
               — {archiveResult.archivedByGrade} worked out from the grade itself<br/>
