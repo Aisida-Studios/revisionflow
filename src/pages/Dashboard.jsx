@@ -193,7 +193,7 @@ export default function Dashboard() {
     Promise.all([
       getSessions(user.uid),
       getPaperAttempts(user.uid),
-      getTopicsWithConfidence(user.uid),
+      getTopicsWithConfidence(user.uid, profile?.subjects),
       getQuizResults(user.uid),
     ]).then(([sessions, papers, topicDocs, quizzes]) => {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
