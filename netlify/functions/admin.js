@@ -227,6 +227,121 @@ module.exports.handler = async function(event) {
       return respond(200, { ok: true })
     }
 
+    // ── Archive Past Papers/quiz results superseded by a qualification switch ──────
+    // One-time (safe to re-run) backfill: for every user and every subject, finds history
+    // that belongs to a qualification other than the subject's current one and flags it
+    // archived:true so it drops out of current-qualification views but keeps counting toward
+    // lifetime stats. Already-tagged records are handled directly. Untagged (legacy) records
+    // are classified in order: grade format (a numeric grade or a Combined Science pair can
+    // only be GCSE, "A*" can only be A-Level), then whichever other record for the same
+    // subject is closest in time, then left alone (treated as current) if neither applies.
+    // Mirrors gradeImpliesQualification / nearestTaggedQualification / archiveSupersededAttempts
+    // in src/utils/firestore.js — keep the two in sync if either one changes.
+    if (action === 'archiveSupersededQualificationData') {
+      const { targetUid: onlyUid } = body
+
+      function gradeImpliesQualification(grade) {
+        if (!grade) return null
+        const g = String(grade).trim()
+        if (/^[1-9]$/.test(g)) return 'GCSE'
+        if (/^[1-9]-[1-9]$/.test(g)) return 'GCSE'
+        if (g === 'A*') return 'A-Level'
+        return null
+      }
+      function subjectQualification(subject, profile) {
+        return (subject && subject.qualification) || (profile && profile.qualification) || 'GCSE'
+      }
+      function nearestTaggedQualification(records, targetMillis) {
+        let best = null, bestDiff = Infinity
+        for (const r of records) {
+          if (!r.qualification || r.createdAtMillis == null) continue
+          const diff = Math.abs(r.createdAtMillis - targetMillis)
+          if (diff < bestDiff) { bestDiff = diff; best = r.qualification }
+        }
+        return best
+      }
+
+      let userDocs
+      if (onlyUid) {
+        const single = await db.collection('users').doc(onlyUid).get()
+        userDocs = single.exists ? [single] : []
+      } else {
+        const snap = await db.collection('users').get()
+        userDocs = snap.docs
+      }
+
+      // usersChecked/subjectsWithHistory count real activity found; archivedBy* count how each
+      // archived record was classified; leftAmbiguous is records with no usable signal at all
+      // (no tag, no diagnostic grade, no other record for that subject to compare against) —
+      // those are deliberately left untouched rather than guessed at with nothing to go on.
+      const summary = { usersChecked: 0, subjectsWithHistory: 0, archivedByTag: 0, archivedByGrade: 0, archivedByTime: 0, leftAmbiguous: 0 }
+      const toArchive = []
+
+      for (const userDoc of userDocs) {
+        const profile = userDoc.data()
+        const subjectsList = Array.isArray(profile.subjects) ? profile.subjects : []
+        if (!subjectsList.length) continue
+
+        const [papersSnap, quizzesSnap] = await Promise.all([
+          db.collection('users').doc(userDoc.id).collection('paperAttempts').get(),
+          db.collection('users').doc(userDoc.id).collection('quizResults').get(),
+        ])
+        const allDocs = [...papersSnap.docs, ...quizzesSnap.docs]
+          .map(d => ({ ref: d.ref, ...d.data() }))
+          .filter(d => !d.archived)
+        if (!allDocs.length) continue
+        summary.usersChecked++
+
+        const bySubject = {}
+        allDocs.forEach(d => {
+          if (!d.subject) return
+          ;(bySubject[d.subject] = bySubject[d.subject] || []).push(d)
+        })
+
+        for (const subjectName of Object.keys(bySubject)) {
+          const records = bySubject[subjectName]
+          const subjMeta = subjectsList.find(s => s.name === subjectName)
+          const currentQual = subjectQualification(subjMeta, profile)
+
+          const tagged = records
+            .filter(d => d.qualification)
+            .map(d => ({ qualification: d.qualification, createdAtMillis: d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : null }))
+
+          let touchedThisSubject = false
+
+          for (const d of records) {
+            if (d.qualification) {
+              if (d.qualification !== currentQual) { toArchive.push(d.ref); summary.archivedByTag++; touchedThisSubject = true }
+              continue
+            }
+            const byGrade = gradeImpliesQualification(d.grade)
+            if (byGrade) {
+              if (byGrade !== currentQual) { toArchive.push(d.ref); summary.archivedByGrade++; touchedThisSubject = true }
+              continue
+            }
+            const targetMillis = d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : null
+            const nearest = targetMillis != null ? nearestTaggedQualification(tagged, targetMillis) : null
+            if (nearest) {
+              if (nearest !== currentQual) { toArchive.push(d.ref); summary.archivedByTime++; touchedThisSubject = true }
+              // else nearest === currentQual: confidently current, correctly left unarchived
+            } else {
+              summary.leftAmbiguous++
+            }
+          }
+          if (touchedThisSubject) summary.subjectsWithHistory++
+        }
+      }
+
+      const batchSize = 400
+      for (let i = 0; i < toArchive.length; i += batchSize) {
+        const batch = db.batch()
+        toArchive.slice(i, i + batchSize).forEach(ref => batch.update(ref, { archived: true }))
+        await batch.commit()
+      }
+
+      return respond(200, { ok: true, summary: { ...summary, totalArchived: toArchive.length } })
+    }
+
     return respond(400, { error: 'Unknown action: ' + action })
 
   } catch(e) {
