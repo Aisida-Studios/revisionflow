@@ -951,6 +951,23 @@ function dayKey(d) { return d.toISOString().slice(0, 10) }
 function StatsTab({ email }) {
   const [stats,   setStats]   = useState(null)
   const [loading, setLoading] = useState(true)
+  const [archiving, setArchiving] = useState(false)
+  const [archiveResult, setArchiveResult] = useState(null)
+
+  async function runQualificationArchive() {
+    if (!window.confirm("This checks every user's Past Papers and quiz history and files away anything left over from a subject's previous qualification level. Nothing gets deleted, just hidden from current-level views. Continue?")) return
+    setArchiving(true)
+    setArchiveResult(null)
+    try {
+      const data = await adminCall('archiveSupersededQualificationData', email)
+      setArchiveResult(data.summary)
+      toast.success(`Done — ${data.summary.totalArchived} record${data.summary.totalArchived !== 1 ? 's' : ''} filed away`)
+    } catch(e) {
+      toast.error(e.message)
+    } finally {
+      setArchiving(false)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -1115,6 +1132,35 @@ function StatsTab({ email }) {
           <li>✓ Paywall gates on Pro features (ProGate in use across the app)</li>
         </ul>
       </div>
+
+      <Section title="Qualification switch cleanup" icon={<RefreshCw size={15} />}>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.6 }}>
+          Goes through every user's Past Papers and quiz history and files away anything left over from a subject's
+          previous qualification level — e.g. old GCSE Physics papers for someone now doing AS-Level Physics — so it
+          stops counting toward their current predicted grade and Past Papers view. Nothing is deleted: filed-away
+          entries still count toward lifetime stats, and this is safe to run more than once.
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={runQualificationArchive} disabled={archiving}>
+          {archiving ? 'Running…' : 'Run cleanup'}
+        </button>
+        {archiveResult && (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem' }}>
+            <div><strong>{archiveResult.usersChecked}</strong> user{archiveResult.usersChecked !== 1 ? 's' : ''} had Past Papers or quiz history checked</div>
+            <div><strong>{archiveResult.subjectsWithHistory}</strong> subject switch{archiveResult.subjectsWithHistory !== 1 ? 'es' : ''} found</div>
+            <div><strong>{archiveResult.totalArchived}</strong> entr{archiveResult.totalArchived !== 1 ? 'ies' : 'y'} filed away in total</div>
+            <div style={{ color: 'var(--text-muted)', paddingLeft: 14, lineHeight: 1.7 }}>
+              — {archiveResult.archivedByTag} already had a level recorded<br/>
+              — {archiveResult.archivedByGrade} worked out from the grade itself<br/>
+              — {archiveResult.archivedByTime} worked out from when it happened
+            </div>
+            {archiveResult.leftAmbiguous > 0 && (
+              <div style={{ color: 'var(--warning)' }}>
+                {archiveResult.leftAmbiguous} entr{archiveResult.leftAmbiguous !== 1 ? 'ies' : 'y'} had nothing to go on and were left alone
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
     </div>
   )
 }
