@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { updateUserProfile } from '../utils/firestore'
+import { updateUserProfile, archiveSupersededAttempts } from '../utils/firestore'
+import { detectQualificationSwitches } from '../utils/qualificationSwitch'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
 import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
 import { GRADE_BOUNDARIES, AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
@@ -64,6 +65,22 @@ export default function Settings() {
   const addSubjQual = newSubjLevel || qual
   const addSubjList = getSubjectList(addSubjQual)
 
+  // Called after subjects are saved, with the subjects array from just before the save. Finds
+  // any subject whose qualification changed (directly, or a same-named subject swapped in at a
+  // different level) and archives that subject's superseded Past Papers attempts/quiz results
+  // so they stop counting toward current-qualification views. Never blocks the subjects save
+  // itself — if archiving fails for one subject, the others still get processed.
+  async function archiveSwitchedSubjects(oldSubjects, newSubjects) {
+    const switches = detectQualificationSwitches(oldSubjects, newSubjects, profile)
+    for (const sw of switches) {
+      try {
+        await archiveSupersededAttempts(user.uid, sw.subjectName, sw.newQualification)
+      } catch (e) {
+        console.error('[archiveSwitchedSubjects]', sw.subjectName, e)
+      }
+    }
+  }
+
   async function saveProfile() {
     setSaving(true)
     await updateUserProfile(user.uid, {
@@ -79,8 +96,13 @@ export default function Settings() {
 
   async function saveSubjects() {
     setSaving(true)
+    // Captured before the write — AuthContext keeps `profile` live via onSnapshot, so it can
+    // update mid-function once the write below lands. Reading it now, not after, is what makes
+    // this a reliable "before" snapshot to diff against.
+    const oldSubjects = profile?.subjects || []
     await updateUserProfile(user.uid, { subjects })
     await refreshProfile()
+    await archiveSwitchedSubjects(oldSubjects, subjects)
     toast.success('Subjects updated')
     setSaving(false)
   }
@@ -378,8 +400,11 @@ export default function Settings() {
           onClose={() => setNewQualFlow(null)}
           onComplete={async (newSubjects) => {
             setSaving(true)
+            // Captured before the write, same reasoning as saveSubjects() above.
+            const oldSubjects = profile?.subjects || []
             await updateUserProfile(user.uid, { qualification: newQualFlow, subjects: newSubjects, examDates: [] })
             await refreshProfile()
+            await archiveSwitchedSubjects(oldSubjects, newSubjects)
             setQual(newQualFlow)
             setSubjects(newSubjects)
             setNewQualFlow(null)
