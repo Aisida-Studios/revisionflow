@@ -213,7 +213,8 @@ export default function AIAdvisor() {
       const ts = await getDocs(collection(db,'users',user.uid,'topics'))
       topics = ts.docs.map(d=>d.data())
     } catch(e) {}
-    const res = await suggestNextTopic(nextSubj, topics, examDates)
+    const subj = profile?.subjects?.find(s => s.name === nextSubj)
+    const res = await suggestNextTopic(nextSubj, topics, examDates, getSubjectQualification(subj, profile), user?.uid)
     setNextTopic(res.text||res.error||'')
     setNextLoad(false)
   }
