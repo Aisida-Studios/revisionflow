@@ -59,10 +59,12 @@ export function buildAIContext(profile, opts = {}) {
   // ── Topic confidence ─────────────────────────────────────────────
   if (topics.length) {
     lines.push('\n=== TOPIC CONFIDENCE (1=low, 5=high) ===')
-    const currentSubjectNames = new Set((profile.subjects || []).map(s => s.name))
+    const subjectsList = profile.subjects || []
     const bySubject = {}
     topics.forEach(t => {
-      if (!currentSubjectNames.has(t.subjectId)) return
+      const subjMeta = subjectsList.find(s => s.name === t.subjectId)
+      if (!subjMeta) return
+      if ((t.qualification || subjMeta.qualification) !== subjMeta.qualification) return
       if (!bySubject[t.subjectId]) bySubject[t.subjectId] = []
       bySubject[t.subjectId].push(t)
     })
@@ -97,7 +99,7 @@ export function buildAIContext(profile, opts = {}) {
   if (papers.length) {
     lines.push('\n=== PAST PAPER PERFORMANCE ===')
     const bySubject = {}
-    papers.forEach(p => {
+    papers.filter(p => !p.archived).forEach(p => {
       if (!bySubject[p.subject]) bySubject[p.subject] = []
       bySubject[p.subject].push(p)
     })
