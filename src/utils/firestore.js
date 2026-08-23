@@ -22,7 +22,8 @@ import {
   serverTimestamp,
   increment,
   where,
-  limit
+  limit,
+  writeBatch
 } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
@@ -509,6 +510,91 @@ export const saveQuizResult = async (uid, data) => {
 export const getQuizResults = async (uid) => {
   const snap = await getDocs(collection(db, 'users', uid, 'quizResults'))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+/* =========================
+   QUALIFICATION SWITCH ARCHIVING
+   When a subject's qualification changes (see qualificationSwitch.js + Settings.jsx), the
+   Past Papers attempts and quiz results logged under the old qualification need to stop
+   counting toward current-qualification views (Predicted Grades, Past Papers subject
+   breakdown) — without being deleted, since they still count toward lifetime stats.
+========================= */
+
+// A grade string that's exclusive to one qualification's scale. Numeric grades (and Combined
+// Science's hyphenated pairs, e.g. "7-6") only ever occur at GCSE; A* only occurs at A-Level.
+// Everything else (A-E, U, BTEC-style grades) is shared across qualifications, so this
+// deliberately returns null rather than guessing when the grade alone doesn't settle it.
+export function gradeImpliesQualification(grade) {
+  if (!grade) return null
+  const g = String(grade).trim()
+  if (/^[1-9]$/.test(g)) return 'GCSE'
+  if (/^[1-9]-[1-9]$/.test(g)) return 'GCSE'
+  if (g === 'A*') return 'A-Level'
+  return null
+}
+
+// Among other records for the same subject that DO carry a qualification, finds the one
+// closest in time to targetMillis and returns its qualification — the best available guess
+// for an untagged record when the grade format alone doesn't settle it.
+function nearestTaggedQualification(records, targetMillis) {
+  let best = null
+  let bestDiff = Infinity
+  for (const r of records) {
+    if (!r.qualification || r.createdAtMillis == null) continue
+    const diff = Math.abs(r.createdAtMillis - targetMillis)
+    if (diff < bestDiff) { bestDiff = diff; best = r.qualification }
+  }
+  return best
+}
+
+// Archives (archived: true) every paperAttempts/quizResults doc for this user + subject that
+// belongs to a qualification other than currentQualification. Already-tagged docs are handled
+// directly; untagged docs are classified in order: grade format, then nearest tagged record in
+// time for the same subject, then left alone (treated as current) if neither signal exists.
+// Safe to call more than once — already-archived docs are left as-is.
+export const archiveSupersededAttempts = async (uid, subjectName, currentQualification) => {
+  const [papersSnap, quizzesSnap] = await Promise.all([
+    getDocs(query(collection(db, 'users', uid, 'paperAttempts'), where('subject', '==', subjectName))),
+    getDocs(query(collection(db, 'users', uid, 'quizResults'), where('subject', '==', subjectName))),
+  ])
+
+  const allDocs = [
+    ...papersSnap.docs.map(d => ({ ref: d.ref, ...d.data() })),
+    ...quizzesSnap.docs.map(d => ({ ref: d.ref, ...d.data() })),
+  ].filter(d => !d.archived)
+
+  // Anchor set for the nearest-neighbour fallback: every already-tagged record for this subject.
+  const tagged = allDocs
+    .filter(d => d.qualification)
+    .map(d => ({ qualification: d.qualification, createdAtMillis: d.createdAt?.toMillis?.() ?? null }))
+
+  const toArchive = []
+  for (const d of allDocs) {
+    if (d.qualification) {
+      if (d.qualification !== currentQualification) toArchive.push(d.ref)
+      continue
+    }
+    // Untagged — try the grade first (paper attempts only; quiz results have no grade field)
+    const byGrade = gradeImpliesQualification(d.grade)
+    if (byGrade) {
+      if (byGrade !== currentQualification) toArchive.push(d.ref)
+      continue
+    }
+    // Fall back to whichever tagged record for this subject is closest in time
+    const targetMillis = d.createdAt?.toMillis?.() ?? null
+    const nearest = targetMillis != null ? nearestTaggedQualification(tagged, targetMillis) : null
+    if (nearest && nearest !== currentQualification) toArchive.push(d.ref)
+    // else: no usable signal at all for this one — leave it, treated as current
+  }
+
+  const batchSize = 400
+  for (let i = 0; i < toArchive.length; i += batchSize) {
+    const batch = writeBatch(db)
+    toArchive.slice(i, i + batchSize).forEach(ref => batch.update(ref, { archived: true }))
+    await batch.commit()
+  }
+
+  return { archived: toArchive.length, checked: allDocs.length }
 }
 
 /* =========================
