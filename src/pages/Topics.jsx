@@ -181,7 +181,10 @@ export default function Topics() {
     if (selSubj === 'All') {
       setTopics(all)
     } else {
-      setTopics(all.filter(t=>t.subjectId===selSubj))
+      // subjectId alone isn't enough once a subject's switched qualification (e.g. GCSE
+      // Physics -> AS-Level Physics) — both sets of topic docs share that name, so without the
+      // qualification check here they'd show up blended together on this page.
+      setTopics(all.filter(t=>t.subjectId===selSubj && (t.qualification||selLevel)===selLevel))
     }
   }
 
