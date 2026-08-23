@@ -68,18 +68,15 @@ export default function PastPapers() {
     setAiLoading(false)
   }
 
-  // Legacy attempts (logged before qualification was tagged) have no `.qualification` field —
-  // treated as belonging to whatever's currently selected, since we can't know retroactively and
-  // hiding them would look like data loss. Once tagged, an attempt only counts for a subject if
-  // its qualification actually matches that subject's current one — otherwise switching from GCSE
-  // to A-Level (or AS-Level to A-Level) would keep blending old grades into the new average.
-  function matchesCurrentQualification(attempt, subjectName) {
-    const subjMeta = profile?.subjects?.find(s => s.name === subjectName)
-    const subjQual = getSubjectQualification(subjMeta, profile)
-    return !attempt.qualification || attempt.qualification === subjQual
+  // Attempts from a subject's previous qualification (before a GCSE -> AS-Level/A-Level switch,
+  // say) are flagged archived:true rather than deleted — see qualificationSwitch.js and
+  // archiveSupersededAttempts in utils/firestore.js. They still count toward lifetime stats
+  // elsewhere, just not in this subject-specific view.
+  function matchesCurrentQualification(attempt) {
+    return !attempt.archived
   }
 
-  const filtered = (selSubject ? attempts.filter(a=>a.subject===selSubject && matchesCurrentQualification(a, selSubject)) : [...attempts])
+  const filtered = (selSubject ? attempts.filter(a=>a.subject===selSubject && matchesCurrentQualification(a)) : [...attempts])
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       const map = {
