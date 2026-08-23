@@ -342,8 +342,9 @@ Provide:
   return callAI(prompt, SYSTEM, 8192, uid)
 }
 
-export async function suggestNextTopic(subject, topicConfidences, examDates, uid) {
-  const subjectTopics = topicConfidences?.filter(t => t.subjectId === subject) || []
+export async function suggestNextTopic(subject, topicConfidences, examDates, qualification, uid) {
+  const qual = qualification || 'GCSE'
+  const subjectTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.qualification || qual) === qual) || []
   const nextExam = examDates?.filter(e => e.subject === subject && new Date(e.examDate) > new Date())
     .sort((a,b) => new Date(a.examDate) - new Date(b.examDate))[0]
   const prompt = `Suggest the single most important topic for this student to revise next:
