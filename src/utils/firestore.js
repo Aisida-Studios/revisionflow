@@ -547,12 +547,13 @@ function nearestTaggedQualification(records, targetMillis) {
   return best
 }
 
-// Archives (archived: true) every paperAttempts/quizResults doc for this user + subject that
-// belongs to a qualification other than currentQualification. Already-tagged docs are handled
-// directly; untagged docs are classified in order: grade format, then nearest tagged record in
-// time for the same subject, then left alone (treated as current) if neither signal exists.
-// Safe to call more than once — already-archived docs are left as-is.
-export const archiveSupersededAttempts = async (uid, subjectName, currentQualification) => {
+// Shared by archiveSupersededAttempts and deleteSubjectAttempts below: finds every
+// paperAttempts/quizResults doc ref for this user + subject that belongs to a qualification
+// other than currentQualification, without doing anything to them yet. Already-tagged docs
+// are handled directly; untagged docs are classified in order: grade format, then nearest
+// tagged record in time for the same subject, then left alone (treated as current) if
+// neither signal is available.
+async function findSupersededRefs(uid, subjectName, currentQualification) {
   const [papersSnap, quizzesSnap] = await Promise.all([
     getDocs(query(collection(db, 'users', uid, 'paperAttempts'), where('subject', '==', subjectName))),
     getDocs(query(collection(db, 'users', uid, 'quizResults'), where('subject', '==', subjectName))),
@@ -568,33 +569,55 @@ export const archiveSupersededAttempts = async (uid, subjectName, currentQualifi
     .filter(d => d.qualification)
     .map(d => ({ qualification: d.qualification, createdAtMillis: d.createdAt?.toMillis?.() ?? null }))
 
-  const toArchive = []
+  const superseded = []
   for (const d of allDocs) {
     if (d.qualification) {
-      if (d.qualification !== currentQualification) toArchive.push(d.ref)
+      if (d.qualification !== currentQualification) superseded.push(d.ref)
       continue
     }
     // Untagged — try the grade first (paper attempts only; quiz results have no grade field)
     const byGrade = gradeImpliesQualification(d.grade)
     if (byGrade) {
-      if (byGrade !== currentQualification) toArchive.push(d.ref)
+      if (byGrade !== currentQualification) superseded.push(d.ref)
       continue
     }
     // Fall back to whichever tagged record for this subject is closest in time
     const targetMillis = d.createdAt?.toMillis?.() ?? null
     const nearest = targetMillis != null ? nearestTaggedQualification(tagged, targetMillis) : null
-    if (nearest && nearest !== currentQualification) toArchive.push(d.ref)
+    if (nearest && nearest !== currentQualification) superseded.push(d.ref)
     // else: no usable signal at all for this one — leave it, treated as current
   }
 
+  return { superseded, checked: allDocs.length }
+}
+
+// Hides superseded history without deleting it (archived: true) — still counts toward
+// lifetime stats, just excluded from current-qualification views. Safe to call more than
+// once — already-archived docs are left as-is. Used when a student chooses to keep their
+// old-qualification history after a switch (see the Settings.jsx switch-choice dialog).
+export const archiveSupersededAttempts = async (uid, subjectName, currentQualification) => {
+  const { superseded, checked } = await findSupersededRefs(uid, subjectName, currentQualification)
   const batchSize = 400
-  for (let i = 0; i < toArchive.length; i += batchSize) {
+  for (let i = 0; i < superseded.length; i += batchSize) {
     const batch = writeBatch(db)
-    toArchive.slice(i, i + batchSize).forEach(ref => batch.update(ref, { archived: true }))
+    superseded.slice(i, i + batchSize).forEach(ref => batch.update(ref, { archived: true }))
     await batch.commit()
   }
+  return { archived: superseded.length, checked }
+}
 
-  return { archived: toArchive.length, checked: allDocs.length }
+// Permanently removes superseded history instead of archiving it — used when a student
+// chooses NOT to keep their old-qualification history after a switch. Irreversible, unlike
+// archiving, so this should only ever run after explicit confirmation in the UI.
+export const deleteSubjectAttempts = async (uid, subjectName, currentQualification) => {
+  const { superseded, checked } = await findSupersededRefs(uid, subjectName, currentQualification)
+  const batchSize = 400
+  for (let i = 0; i < superseded.length; i += batchSize) {
+    const batch = writeBatch(db)
+    superseded.slice(i, i + batchSize).forEach(ref => batch.delete(ref))
+    await batch.commit()
+  }
+  return { deleted: superseded.length, checked }
 }
 
 /* =========================
@@ -604,9 +627,18 @@ export const archiveSupersededAttempts = async (uid, subjectName, currentQualifi
    predicted-grade widgets — that only need the confidence data, not the full edit flow.
 ========================= */
 
-export const getTopicsWithConfidence = async (uid) => {
+// Only returns topics for each subject's CURRENT qualification — a topic logged before a
+// GCSE -> AS-Level/A-Level switch is excluded here at the source, so every consumer (the
+// dashboard's weak-topics and predicted-grade widgets) is automatically qualification-safe
+// without needing its own filter. subjects: pass profile.subjects.
+export const getTopicsWithConfidence = async (uid, subjects = []) => {
   const snap = await getDocs(collection(db, 'users', uid, 'topics'))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  return all.filter(t => {
+    const subjMeta = subjects.find(s => s.name === t.subjectId)
+    if (!subjMeta) return true // subject isn't currently active at all — not this function's call to make
+    return (t.qualification || subjMeta.qualification) === subjMeta.qualification
+  })
 }
 
 /* =========================
