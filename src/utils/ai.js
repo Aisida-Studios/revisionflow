@@ -317,8 +317,11 @@ export async function chatWithAI(messages, userContext, uid) {
 
 export async function predictGrade(subject, paperAttempts, topicConfidences, qualification, uid) {
   const qual = qualification || 'GCSE'
-  const subjectAttempts = paperAttempts?.filter(a => a.subject === subject) || []
-  const weakTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.confidence||3) <= 2) || []
+  // Attempts from a subject's previous qualification are archived rather than deleted (see
+  // qualificationSwitch.js) — exclude them so a GCSE paper can't feed into an AS-Level/A-Level
+  // prediction. Same reasoning for topics logged before the switch.
+  const subjectAttempts = paperAttempts?.filter(a => a.subject === subject && !a.archived) || []
+  const weakTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.qualification || qual) === qual && (t.confidence||3) <= 2) || []
   const exampleRange = qual === 'GCSE' ? 'e.g. grade 7-8' : qual === 'AS-Level' ? 'e.g. B-C' : 'e.g. B-C'
   const scaleNote = qual === 'GCSE'
     ? 'Grades are numeric 9 (highest) to 1 (lowest).'
