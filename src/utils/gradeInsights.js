@@ -66,14 +66,25 @@ export function computeSubjectPredictions(topics, paperAttempts, quizResults, pr
 
   const out = []
   for (const subject of subjects) {
-    const papers = (paperAttempts || []).filter(p => p.subject === subject && p.percentage != null)
+    // Superseded attempts (subject switched qualification) are archived rather than deleted —
+    // exclude them here so old-level results don't drag on a current-level prediction.
+    const papers = (paperAttempts || []).filter(p => p.subject === subject && p.percentage != null && !p.archived)
     const quizzes = (quizResults || [])
-      .filter(q => q.subject === subject && q.percentage != null)
+      .filter(q => q.subject === subject && q.percentage != null && !q.archived)
       .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
       .slice(0, 10) // most recent 10 — recent performance should count more than a stale average
     if (!papers.length && !quizzes.length) continue
 
-    const subjTopics = (topics || []).filter(t => t.subjectId === subject)
+    const allSubjTopics = (topics || []).filter(t => t.subjectId === subject)
+
+    const subjProfile = profile?.subjects?.find(s => s.name === subject)
+    const qualification = subjProfile?.qualification || allSubjTopics[0]?.qualification || profile?.qualification || 'GCSE'
+    const board = subjProfile?.board || allSubjTopics[0]?.board || papers[0]?.board || 'AQA'
+
+    // Topic confidence only counts toward the prediction if it's for the subject's current
+    // qualification — a topic rated before a GCSE -> AS-Level/A-Level switch shouldn't drag
+    // on a prediction for the level the student's actually on now.
+    const subjTopics = allSubjTopics.filter(t => (t.qualification || qualification) === qualification)
     const ratedTopics = subjTopics.filter(t => (t.confidence || 0) > 0 && t.confidence !== 3)
     const confidencePct = ratedTopics.length
       ? ratedTopics.reduce((s, t) => s + confidenceToPercent(t.confidence), 0) / ratedTopics.length
@@ -87,10 +98,6 @@ export function computeSubjectPredictions(topics, paperAttempts, quizResults, pr
     const weighted = [[paperAvg, 0.5], [quizAvg, 0.3], [confidencePct, 0.2]].filter(([v]) => v != null)
     const totalWeight = weighted.reduce((s, [, w]) => s + w, 0)
     const blendedPct = Math.round(weighted.reduce((s, [v, w]) => s + v * w, 0) / totalWeight)
-
-    const subjProfile = profile?.subjects?.find(s => s.name === subject)
-    const qualification = subjProfile?.qualification || subjTopics[0]?.qualification || profile?.qualification || 'GCSE'
-    const board = subjProfile?.board || subjTopics[0]?.board || papers[0]?.board || 'AQA'
 
     out.push({
       subject, board, qualification,
