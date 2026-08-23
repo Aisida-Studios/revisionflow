@@ -196,7 +196,7 @@ export default function Analytics() {
   const gradeTrajectory = useMemo(() => {
     if (!gradeSub) return []
     return attempts
-      .filter(a => a.subject === gradeSub && a.percentage)
+      .filter(a => a.subject === gradeSub && a.percentage && !a.archived)
       .sort((a, b) => new Date(a.attemptDate || a.createdAt?.seconds * 1000 || 0) - new Date(b.attemptDate || b.createdAt?.seconds * 1000 || 0))
       .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} ${a.year}`, percentage: Math.round(a.percentage), grade: a.grade || '' }))
   }, [attempts, gradeSub])
@@ -628,7 +628,7 @@ export default function Analytics() {
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No papers logged yet — log papers in Past Papers</p></div>
           ) : (() => {
             const bySubject = {}
-            attempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
+            attempts.forEach(a => { if (!a.archived) bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
             const data = Object.entries(bySubject).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count)
             return (
               <ResponsiveContainer width="100%" height={180}>
