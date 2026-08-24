@@ -1,10 +1,11 @@
 // src/utils/qualificationSwitch.js
-// Detects when a student's subject list implies a qualification change for a subject name —
-// either directly (they edited a subject's own qualification) or implicitly (the old subject
-// is gone and a same-named one reappears at a different level, e.g. GCSE Physics -> AS-Level
-// Physics with no single "switch" click). Used by Settings.jsx to trigger archiving of that
-// subject's superseded Past Papers attempts and quiz results — see archiveSupersededAttempts
-// in firestore.js for what actually happens once a switch is detected here.
+// Detects when a student's subject list means a subject's history is no longer "current" —
+// either because it switched level (directly, or a same-named subject reappearing at a
+// different level, e.g. GCSE Physics -> AS-Level Physics with no single "switch" click), or
+// because it was dropped entirely with nothing replacing it. Used by Settings.jsx to offer the
+// keep/remove choice for that subject's superseded Past Papers attempts and quiz results —
+// see archiveSupersededAttempts/deleteSubjectAttempts in firestore.js for what happens once
+// the student answers.
 //
 // Matching is done by subject NAME, not by the subject's client-generated id — id is freshly
 // regenerated (Date.now().toString()) every time a subject is added, so a remove-then-add of
@@ -16,8 +17,8 @@ import { getSubjectQualification } from '../data/subjects'
 // profile: the profile object to resolve fallback qualification against — pass the profile as
 // it was BEFORE this save (see the callers' comments about onSnapshot timing).
 // Returns: [{ subjectName, oldQualification, newQualification }, ...] — one entry per subject
-// name whose active qualification changed. A subject that's simply removed with no same-named
-// replacement is NOT included: there's no current view left for its old data to bleed into.
+// name that's no longer current. newQualification is null for a subject dropped with no
+// same-named replacement — there's nothing to switch it "to", just old history to deal with.
 export function detectQualificationSwitches(oldSubjects, newSubjects, profile) {
   const oldList = Array.isArray(oldSubjects) ? oldSubjects : []
   const newList = Array.isArray(newSubjects) ? newSubjects : []
@@ -45,8 +46,12 @@ export function detectQualificationSwitches(oldSubjects, newSubjects, profile) {
       if (newQual !== oldQual) {
         switches.push({ subjectName: oldSubj.name, oldQualification: oldQual, newQualification: newQual })
       }
+      continue
     }
-    // No same-named replacement: subject just dropped, not a qualification switch.
+
+    // No same-named replacement: subject dropped entirely. Its history isn't current either —
+    // offer it for the same keep/remove choice, just with nothing to switch "to".
+    switches.push({ subjectName: oldSubj.name, oldQualification: oldQual, newQualification: null })
   }
 
   return switches
