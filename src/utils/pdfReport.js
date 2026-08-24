@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
+import { filterToCurrentQualification } from './firestore'
 
 const PURPLE  = [124, 58,  237]
 const DARK    = [26,  17,  46]
@@ -154,7 +155,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   // Superseded-qualification attempts are archived rather than deleted (see
   // qualificationSwitch.js) — excluded here so an old GCSE paper can't show up in a report
   // that's meant to reflect the student's current AS-Level/A-Level standing.
-  const activePapers = (paperAttempts||[]).filter(a=>!a.archived)
+  const activePapers = filterToCurrentQualification(paperAttempts||[], profile?.subjects)
   if (activePapers.length > 0) {
     newPage()
     sectionHeader('Past Paper Performance')
@@ -192,11 +193,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   // Same reasoning as the topics list on the Topics page — a topic only counts here if it's
   // at its subject's CURRENT qualification, so a switch doesn't blend two levels together.
   const subjectsList = profile?.subjects || []
-  const activeTopics = (topics||[]).filter(t => {
-    const subjMeta = subjectsList.find(s => s.name === t.subjectId)
-    if (!subjMeta) return true
-    return (t.qualification || subjMeta.qualification) === subjMeta.qualification
-  })
+  const activeTopics = filterToCurrentQualification(topics||[], subjectsList)
   if (activeTopics.length > 0) {
     newPage()
     sectionHeader('Topic Confidence Overview')
