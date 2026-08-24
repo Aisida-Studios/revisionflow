@@ -199,7 +199,8 @@ export default function Dashboard() {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const getDate = s => s.date || (s.startTime?.toDate ? format(s.startTime.toDate(), 'yyyy-MM-dd') : (typeof s.startTime === 'string' ? s.startTime.slice(0,10) : null))
       setTodaySessions(sessions.filter(s => getDate(s) === todayStr))
-      const sorted = [...papers].sort((a,b) => {
+      const currentPapersOnly = filterToCurrentQualification(papers, profile?.subjects)
+      const sorted = [...currentPapersOnly].sort((a,b) => {
         const da = a.attemptDate ? new Date(a.attemptDate) : new Date((a.createdAt?.seconds||0)*1000)
         const db2= b.attemptDate ? new Date(b.attemptDate) : new Date((b.createdAt?.seconds||0)*1000)
         return db2 - da
