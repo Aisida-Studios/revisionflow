@@ -547,6 +547,56 @@ function nearestTaggedQualification(records, targetMillis) {
   return best
 }
 
+// The single source of truth for "does this record belong on screen right now" — used by
+// every current-qualification view (Predicted Grades, Past Papers, Analytics' subject
+// breakdowns, the AI tutor's context, PDF reports). Unlike checking the archived flag alone,
+// this is computed live against the student's CURRENT subjects list every time it's called,
+// so a view is correct even if a record was never explicitly archived by some earlier trigger
+// or backfill — it doesn't depend on that having already run successfully.
+//
+// A subject that's been dropped entirely (no current entry at all) excludes ALL of its
+// records — there's no current view for them to belong to. A subject that's still active only
+// keeps records matching its CURRENT qualification: tagged records are compared directly,
+// untagged ones are classified by grade format, then by the nearest tagged record in time for
+// the same subject, and excluded if neither gives an answer — old data shouldn't be shown on
+// a guess that it might be current.
+export function filterToCurrentQualification(records, subjectsList) {
+  const list = Array.isArray(subjectsList) ? subjectsList : []
+  const all = records || []
+  const subjectNameOf = r => r.subject || r.subjectId
+
+  const taggedBySubject = {}
+  all.forEach(r => {
+    if (r.qualification) {
+      const key = subjectNameOf(r)
+      (taggedBySubject[key] = taggedBySubject[key] || []).push({
+        qualification: r.qualification,
+        createdAtMillis: r.createdAt?.toMillis?.() ?? null,
+      })
+    }
+  })
+
+  return all.filter(r => {
+    if (r.archived) return false // explicitly resolved as "keep, hidden" — never shown as current
+    const subjMeta = list.find(s => s.name === subjectNameOf(r))
+    if (!subjMeta) return false // subject dropped entirely
+    const currentQual = subjMeta.qualification
+
+    if (r.qualification) return r.qualification === currentQual
+
+    const byGrade = gradeImpliesQualification(r.grade)
+    if (byGrade) return byGrade === currentQual
+
+    const targetMillis = r.createdAt?.toMillis?.() ?? null
+    if (targetMillis != null) {
+      const nearest = nearestTaggedQualification(taggedBySubject[subjectNameOf(r)] || [], targetMillis)
+      if (nearest) return nearest === currentQual
+    }
+
+    return false
+  })
+}
+
 // Shared by archiveSupersededAttempts and deleteSubjectAttempts below: finds every
 // paperAttempts/quizResults doc ref for this user + subject that belongs to a qualification
 // other than currentQualification, without doing anything to them yet. Already-tagged docs
@@ -636,7 +686,7 @@ export const getTopicsWithConfidence = async (uid, subjects = []) => {
   const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
   return all.filter(t => {
     const subjMeta = subjects.find(s => s.name === t.subjectId)
-    if (!subjMeta) return true // subject isn't currently active at all — not this function's call to make
+    if (!subjMeta) return false // subject dropped entirely — no current view for this to belong to
     return (t.qualification || subjMeta.qualification) === subjMeta.qualification
   })
 }
