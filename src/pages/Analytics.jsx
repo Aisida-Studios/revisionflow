@@ -161,9 +161,12 @@ export default function Analytics() {
       counts[s.subject] = (counts[s.subject] || 0) + (parseInt(s.duration) || 45)
     })
     return Object.entries(counts)
-      .map(([name, minutes]) => ({ name, minutes, hours: Math.round(minutes / 60 * 10) / 10 }))
+      .map(([name, minutes]) => ({
+        name, minutes, hours: Math.round(minutes / 60 * 10) / 10,
+        qualification: profile?.subjects?.find(s => s.name === name)?.qualification,
+      }))
       .sort((a, b) => b.minutes - a.minutes)
-  }, [completedSessions])
+  }, [completedSessions, profile])
 
   // ── Subject balance (how close to equal distribution) ────────────────────
   const subjectBalance = useMemo(() => {
@@ -171,6 +174,7 @@ export default function Analytics() {
     const target = totalMinutes / subjectDist.length
     return subjectDist.map(s => ({
       name:  s.name.length > 14 ? s.name.slice(0, 12) + '…' : s.name,
+      qualification: s.qualification,
       actual: s.hours,
       target: Math.round(target / 60 * 10) / 10,
       pct: Math.min(100, Math.round((s.minutes / Math.max(target, 1)) * 100)),
@@ -478,7 +482,7 @@ export default function Analytics() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
                 {subjectDist.map((s, i) => (
                   <span key={s.name} className="badge" style={{ background: (SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length]) + '22', color: SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length] }}>
-                    {s.name}: {s.hours}h
+                    {s.name}{s.qualification && <span style={{ opacity: 0.75, fontWeight: 400 }}> ({s.qualification})</span>}: {s.hours}h
                   </span>
                 ))}
               </div>
@@ -493,7 +497,10 @@ export default function Analytics() {
               {subjectBalance.map((s, i) => (
                 <div key={s.name}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{s.name}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                      {s.name}
+                      {s.qualification && <span className="badge badge-grey" style={{ marginLeft: 6, fontSize: '0.65rem' }}>{s.qualification}</span>}
+                    </span>
                     <span style={{ fontSize: '0.8rem', color: s.pct < 50 ? 'var(--danger)' : s.pct > 150 ? 'var(--warning)' : 'var(--success)', fontWeight: 600 }}>
                       {s.pct}%{s.pct < 50 ? ' ⚠️' : s.pct > 150 ? ' 📈' : ' ✓'}
                     </span>
