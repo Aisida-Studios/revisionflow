@@ -4,7 +4,7 @@ import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts } from '../utils/firestore'
+import { getPaperAttempts, filterToCurrentQualification } from '../utils/firestore'
 import { format, subDays, eachDayOfInterval, startOfWeek, getDay } from 'date-fns'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, RadarChart, Radar,
@@ -63,6 +63,13 @@ export default function Analytics() {
   const [dateRange, setDateRange] = useState(30)
   const [gradeSub,  setGradeSub]  = useState('')
   const [activeTab, setActiveTab] = useState('overview')
+
+  // Computed live against current subjects — used by every breakdown/chart below that's about
+  // "how am I doing", so old-qualification data doesn't quietly reappear the way relying on the
+  // archived flag alone did. The two lifetime stats (top bar "Papers logged", and "Papers
+  // attempted"/"Topics rated" under Personal Records) deliberately keep using the raw, unfiltered
+  // `attempts`/`topics` instead — those are meant to count everything, forever.
+  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
 
   useEffect(() => {
     if (!user) return
@@ -170,17 +177,17 @@ export default function Analytics() {
     }))
   }, [subjectDist, totalMinutes])
 
-  const currentSubjectNames = useMemo(() => new Set((profile?.subjects || []).map(s => s.name)), [profile])
-  const currentTopics = useMemo(() => topics.filter(t => currentSubjectNames.has(t.subjectId)), [topics, currentSubjectNames])
+  const currentSubjects = useMemo(() => profile?.subjects || [], [profile])
+  const currentTopics = useMemo(() => filterToCurrentQualification(topics, currentSubjects), [topics, currentSubjects])
 
   // ── Topic confidence breakdown ────────────────────────────────────────────
   const confidenceBreakdown = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    topics.forEach(t => { if (currentSubjectNames.has(t.subjectId) && t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
+    currentTopics.forEach(t => { if (t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
     const labels = { 1: 'Not started', 2: 'Struggling', 3: 'Getting there', 4: 'Confident', 5: 'Mastered' }
     const colours = { 1: '#ef4444', 2: '#f97316', 3: '#f59e0b', 4: '#10b981', 5: '#7c3aed' }
     return Object.entries(counts).map(([k, v]) => ({ name: labels[k], value: v, colour: colours[k] })).filter(c => c.value > 0)
-  }, [topics, currentSubjectNames])
+  }, [currentTopics])
 
   const weakTopics = useMemo(() =>
     currentTopics.filter(t => t.confidence <= 2).slice(0, 8)
@@ -195,11 +202,11 @@ export default function Analytics() {
   // ── Grade trajectory ──────────────────────────────────────────────────────
   const gradeTrajectory = useMemo(() => {
     if (!gradeSub) return []
-    return attempts
-      .filter(a => a.subject === gradeSub && a.percentage && !a.archived)
+    return currentAttempts
+      .filter(a => a.subject === gradeSub && a.percentage)
       .sort((a, b) => new Date(a.attemptDate || a.createdAt?.seconds * 1000 || 0) - new Date(b.attemptDate || b.createdAt?.seconds * 1000 || 0))
       .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} ${a.year}`, percentage: Math.round(a.percentage), grade: a.grade || '' }))
-  }, [attempts, gradeSub])
+  }, [currentAttempts, gradeSub])
 
   const gradeTrend = useMemo(() => {
     if (gradeTrajectory.length < 2) return null
@@ -551,7 +558,7 @@ export default function Analytics() {
                   </div>
                 ))}
                 <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {topics.length} topics rated total
+                  {currentTopics.length} topics rated total
                 </div>
               </div>
             </div>
@@ -624,11 +631,11 @@ export default function Analytics() {
         </Section>
 
         <Section title="Papers by Subject" icon={<BookOpen size={16}/>}>
-          {attempts.length === 0 ? (
+          {currentAttempts.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No papers logged yet — log papers in Past Papers</p></div>
           ) : (() => {
             const bySubject = {}
-            attempts.forEach(a => { if (!a.archived) bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
+            currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
             const data = Object.entries(bySubject).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count)
             return (
               <ResponsiveContainer width="100%" height={180}>
@@ -645,7 +652,7 @@ export default function Analytics() {
         </Section>
 
         <Section title="Score Distribution" icon={<BarChart2 size={16}/>}>
-          {attempts.filter(a => a.percentage).length === 0 ? (
+          {currentAttempts.filter(a => a.percentage).length === 0 ? (
             <p style={{ color: 'var(--text-muted)' }}>No percentage scores logged yet</p>
           ) : (() => {
             const buckets = [
@@ -657,7 +664,7 @@ export default function Analytics() {
               { label: '80–90%', min: 80, max: 90,  count: 0 },
               { label: '90–100%',min: 90, max: 101, count: 0 },
             ]
-            attempts.forEach(a => {
+            currentAttempts.forEach(a => {
               if (!a.percentage) return
               const b = buckets.find(b => a.percentage >= b.min && a.percentage < b.max)
               if (b) b.count++
@@ -685,8 +692,8 @@ export default function Analytics() {
         <Section title="AI Study Summary" icon={<Star size={16}/>}>
           <AIInsights
             sessions={completedSessions}
-            topics={topics}
-            attempts={attempts}
+            topics={currentTopics}
+            attempts={currentAttempts}
             profile={profile}
             dateRange={dateRange}
             recentMinutes={recentMinutes}
