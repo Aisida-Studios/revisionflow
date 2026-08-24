@@ -448,8 +448,8 @@ export default function Settings() {
               <span className="modal-title">Keep your old history?</span>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '4px 0 16px' }}>
-              You've moved on from {pendingSwitches.map(sw => `${sw.subjectName} (${sw.oldQualification})`).join(', ')}.
-              Either way, it won't show up in your {pendingSwitches[0]?.newQualification} view from here on —
+              {pendingSwitches.map(sw => sw.subjectName).join(', ')} {pendingSwitches.length === 1 ? "isn't" : "aren't"} part of your current subjects anymore.
+              Either way, {pendingSwitches.length === 1 ? 'it' : 'they'} won't show up anywhere in your account from here on —
               the only choice is whether the old Past Papers and quiz history is kept somewhere hidden, or removed for good.
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
