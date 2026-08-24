@@ -304,7 +304,10 @@ module.exports.handler = async function(event) {
         for (const subjectName of Object.keys(bySubject)) {
           const records = bySubject[subjectName]
           const subjMeta = subjectsList.find(s => s.name === subjectName)
-          const currentQual = subjectQualification(subjMeta, profile)
+          // No current entry at all for this subject (dropped, nothing replaced it) — there's
+          // no qualification for its history to still match, so everything about it should be
+          // superseded, not compared against the account's general qualification.
+          const currentQual = subjMeta ? subjectQualification(subjMeta, profile) : null
 
           const tagged = records
             .filter(d => d.qualification)
