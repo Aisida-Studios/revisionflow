@@ -58,33 +58,30 @@ export function computeWeakTopics(topics, limit = 6) {
 // real quiz or paper result — confidence alone (especially the untouched default of 3)
 // isn't real evidence, so a subject with nothing but default-rated topics gets no
 // prediction rather than a fabricated-looking one.
+// Only predicts for the student's CURRENTLY active subjects — a subject dropped entirely (no
+// current entry in profile.subjects, same name or otherwise) is skipped outright, however much
+// history it has. paperAttempts/quizResults/topics should already be filtered to each subject's
+// current qualification before being passed in (see filterToCurrentQualification and
+// getTopicsWithConfidence in utils/firestore.js) — this function decides which of the current
+// subjects have enough data to predict, it doesn't re-derive what "current" means itself.
 export function computeSubjectPredictions(topics, paperAttempts, quizResults, profile) {
-  const subjects = new Set([
-    ...(paperAttempts || []).map(p => p.subject),
-    ...(quizResults || []).map(q => q.subject),
-  ].filter(Boolean))
+  const activeSubjects = profile?.subjects || []
 
   const out = []
-  for (const subject of subjects) {
-    // Superseded attempts (subject switched qualification) are archived rather than deleted —
-    // exclude them here so old-level results don't drag on a current-level prediction.
-    const papers = (paperAttempts || []).filter(p => p.subject === subject && p.percentage != null && !p.archived)
+  for (const subjProfile of activeSubjects) {
+    const subject = subjProfile.name
+    const qualification = subjProfile.qualification || profile?.qualification || 'GCSE'
+
+    const papers = (paperAttempts || []).filter(p => p.subject === subject && p.percentage != null)
     const quizzes = (quizResults || [])
-      .filter(q => q.subject === subject && q.percentage != null && !q.archived)
+      .filter(q => q.subject === subject && q.percentage != null)
       .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
       .slice(0, 10) // most recent 10 — recent performance should count more than a stale average
     if (!papers.length && !quizzes.length) continue
 
-    const allSubjTopics = (topics || []).filter(t => t.subjectId === subject)
+    const subjTopics = (topics || []).filter(t => t.subjectId === subject)
+    const board = subjProfile.board || subjTopics[0]?.board || papers[0]?.board || 'AQA'
 
-    const subjProfile = profile?.subjects?.find(s => s.name === subject)
-    const qualification = subjProfile?.qualification || allSubjTopics[0]?.qualification || profile?.qualification || 'GCSE'
-    const board = subjProfile?.board || allSubjTopics[0]?.board || papers[0]?.board || 'AQA'
-
-    // Topic confidence only counts toward the prediction if it's for the subject's current
-    // qualification — a topic rated before a GCSE -> AS-Level/A-Level switch shouldn't drag
-    // on a prediction for the level the student's actually on now.
-    const subjTopics = allSubjTopics.filter(t => (t.qualification || qualification) === qualification)
     const ratedTopics = subjTopics.filter(t => (t.confidence || 0) > 0 && t.confidence !== 3)
     const confidencePct = ratedTopics.length
       ? ratedTopics.reduce((s, t) => s + confidenceToPercent(t.confidence), 0) / ratedTopics.length
