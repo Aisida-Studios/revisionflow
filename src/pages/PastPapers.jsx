@@ -1,7 +1,7 @@
 // src/pages/PastPapers.jsx
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { savePaperAttempt, getPaperAttempts, getPaperStructures, submitPaperStructure, deletePaperAttempt, updatePaperAttempt } from '../utils/firestore'
+import { savePaperAttempt, getPaperAttempts, getPaperStructures, submitPaperStructure, deletePaperAttempt, updatePaperAttempt, filterToCurrentQualification } from '../utils/firestore'
 import { collection } from 'firebase/firestore'
 import { db } from '../firebase'
 import { analyseWeaknesses } from '../utils/ai'
@@ -63,20 +63,19 @@ export default function PastPapers() {
 
   async function handleAnalyse() {
     setAiLoading(true)
-    const res = await analyseWeaknesses(attempts, selSubject)
+    const res = await analyseWeaknesses(currentAttempts, selSubject)
     setAiAnalysis(res.text||res.error||'')
     setAiLoading(false)
   }
 
-  // Attempts from a subject's previous qualification (before a GCSE -> AS-Level/A-Level switch,
-  // say) are flagged archived:true rather than deleted — see qualificationSwitch.js and
-  // archiveSupersededAttempts in utils/firestore.js. They still count toward lifetime stats
-  // elsewhere, just not in this subject-specific view.
-  function matchesCurrentQualification(attempt) {
-    return !attempt.archived
-  }
+  // Computed live against the student's current subjects every render, rather than trusting
+  // the archived flag alone — see filterToCurrentQualification in utils/firestore.js. This is
+  // the one place that decides what counts as "current" for this whole page; everything below
+  // reads from this, not the raw attempts fetch, so nothing here can accidentally skip the check
+  // the way the old "only filter when a subject is selected" logic used to.
+  const currentAttempts = filterToCurrentQualification(attempts, profile?.subjects)
 
-  const filtered = (selSubject ? attempts.filter(a=>a.subject===selSubject && matchesCurrentQualification(a)) : [...attempts])
+  const filtered = (selSubject ? currentAttempts.filter(a=>a.subject===selSubject) : [...currentAttempts])
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       const map = {
@@ -99,7 +98,7 @@ export default function PastPapers() {
   const chartData = [...filtered].reverse().map(a=>({ name:`${a.subject} P${a.paper} ${a.year}`, percentage:a.percentage, grade:a.grade }))
 
   const subjectAverages = subjects.map(s=>{
-    const sub = attempts.filter(a=>a.subject===s && matchesCurrentQualification(a, s))
+    const sub = currentAttempts.filter(a=>a.subject===s)
     const avg = sub.length ? Math.round(sub.reduce((sum,a)=>sum+a.percentage,0)/sub.length) : null
     return { subject:s, avg, count:sub.length, latest:sub[0] }
   })
