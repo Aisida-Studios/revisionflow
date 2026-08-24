@@ -7,7 +7,7 @@ import DailyQuests from '../components/DailyQuests'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { getSessions, getPaperAttempts, getTopicsWithConfidence, getQuizResults } from '../utils/firestore'
+import { getSessions, getPaperAttempts, getTopicsWithConfidence, getQuizResults, filterToCurrentQualification } from '../utils/firestore'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getDailyAdvice } from '../utils/ai'
@@ -254,7 +254,9 @@ export default function Dashboard() {
   const badges = (profile?.badges||[]).map(id => BADGE_LIST.find(b=>b.id===id)).filter(Boolean)
 
   const weakTopics = computeWeakTopics(topics)
-  const predictions = computeSubjectPredictions(topics, allPapers, quizResults, profile)
+  const currentPapers = filterToCurrentQualification(allPapers, profile?.subjects)
+  const currentQuizResults = filterToCurrentQualification(quizResults, profile?.subjects)
+  const predictions = computeSubjectPredictions(topics, currentPapers, currentQuizResults, profile)
   const visiblePredictions = (isPro || isBeta) ? predictions : predictions.slice(0, 1)
   const hiddenPredictionCount = predictions.length - visiblePredictions.length
 
