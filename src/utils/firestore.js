@@ -569,7 +569,8 @@ export function filterToCurrentQualification(records, subjectsList) {
   all.forEach(r => {
     if (r.qualification) {
       const key = subjectNameOf(r)
-      (taggedBySubject[key] = taggedBySubject[key] || []).push({
+      if (!taggedBySubject[key]) taggedBySubject[key] = []
+      taggedBySubject[key].push({
         qualification: r.qualification,
         createdAtMillis: r.createdAt?.toMillis?.() ?? null,
       })
