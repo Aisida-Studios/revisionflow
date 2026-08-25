@@ -35,7 +35,7 @@ function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggli
     <div style={{ width:'100%', maxWidth:560 }}>
       <div onClick={() => setFlipped(f => !f)} style={{ cursor:'pointer', perspective:1200, width:'100%', height:260, userSelect:'none', marginBottom:16 }}>
         <div style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform 0.42s cubic-bezier(0.4,0,0.2,1)', transform:flipped?'rotateY(180deg)':'rotateY(0deg)' }}>
-          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:16, background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.06))', border:'1px solid rgba(124,58,237,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
+          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:16, background:'linear-gradient(135deg,rgba(20,83,45,0.15),rgba(34,197,94,0.06))', border:'1px solid rgba(20,83,45,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
             <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Card {index+1} of {total}</div>
             <div style={{ fontSize:'1.1rem', fontWeight:600, color:'var(--text-primary)', textAlign:'center', lineHeight:1.55 }}>{card.q}</div>
             <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:6 }}>Tap to flip</div>
@@ -354,7 +354,7 @@ function MatchMode({ cards, onDone }) {
           return <button key={tile.id} onClick={()=>!isM&&select(tile)}
             style={{ padding:'14px 12px', borderRadius:12, border:'none', cursor:isM?'default':'pointer',
               fontWeight:600, fontSize:'0.82rem', lineHeight:1.4, textAlign:'center', transition:'all 0.2s',
-              background:isM?'rgba(16,185,129,0.15)':isW?'rgba(239,68,68,0.12)':isS?'rgba(124,58,237,0.2)':'var(--bg-surface)',
+              background:isM?'rgba(16,185,129,0.15)':isW?'rgba(239,68,68,0.12)':isS?'rgba(20,83,45,0.2)':'var(--bg-surface)',
               border:`2px solid ${isM?'rgba(16,185,129,0.5)':isW?'rgba(239,68,68,0.5)':isS?'var(--accent)':'var(--border)'}`,
               color:isM?'var(--success)':isW?'var(--danger)':isS?'var(--accent-light)':'var(--text-primary)',
               transform:isS?'scale(1.03)':'scale(1)', opacity:isM?.6:1 }}>
@@ -571,7 +571,7 @@ ${questions}`
                 <button key={i} onClick={() => selectMC(opt)}
                   style={{ padding: '10px 16px', borderRadius: 16, border: 'none', cursor: ch ? 'default' : 'pointer',
                     textAlign: 'left', fontSize: '0.88rem', lineHeight: 1.4, fontWeight: isSel ? 700 : 500, transition: 'all 0.2s',
-                    background: !ch ? (isSel ? 'rgba(124,58,237,0.15)' : 'var(--bg-hover)') : isC ? 'rgba(16,185,129,0.15)' : isSel ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)',
+                    background: !ch ? (isSel ? 'rgba(20,83,45,0.15)' : 'var(--bg-hover)') : isC ? 'rgba(16,185,129,0.15)' : isSel ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)',
                     border: `1.5px solid ${!ch ? (isSel ? 'var(--accent)' : 'var(--border)') : isC ? 'rgba(16,185,129,0.5)' : isSel ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
                     color: !ch ? 'var(--text-primary)' : isC ? 'var(--success)' : isSel ? 'var(--danger)' : 'var(--text-muted)' }}>
                   <span style={{ marginRight: 8, opacity: .6 }}>{['A','B','C','D'][i]}.</span>{opt.a}
@@ -783,7 +783,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
         {MODES.map(m=>(
           <button key={m.id} onClick={()=>setMode(m.id)}
             style={{ padding:'16px 14px', borderRadius:14, border:'2px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', textAlign:'left', transition:'all 0.18s' }}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='rgba(124,58,237,0.05)'}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='rgba(20,83,45,0.05)'}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg-surface)'}}>
             <div style={{ fontSize:'1.5rem', marginBottom:6 }}>{m.icon}</div>
             <div style={{ fontWeight:700, fontSize:'0.9rem', marginBottom:3 }}>{m.label}</div>
@@ -1414,7 +1414,7 @@ function QuizTab({ mySets, uid, profile }) {
               {mySets.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
                   style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
-                    background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                    background: selectedSet?.id === set.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -1442,7 +1442,7 @@ function QuizTab({ mySets, uid, profile }) {
               {publicSets.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
                   style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
-                    background: selectedSet?.id === set.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                    background: selectedSet?.id === set.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -1476,7 +1476,7 @@ function QuizTab({ mySets, uid, profile }) {
                   <button key={m.id} onClick={() => setQuizMode(m.id)}
                     style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 16,
                       border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
-                      background: quizMode === m.id ? 'rgba(124,58,237,0.06)' : 'var(--bg-surface)',
+                      background: quizMode === m.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
                       cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.label}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
@@ -1895,7 +1895,7 @@ function TopicNotesTab({ profile, uid }) {
                   <button key={i} onClick={() => { setTopic(t); loadNote(t) }}
                     style={{
                       width: '100%', textAlign: 'left', padding: '10px 14px',
-                      background: topic === t ? 'rgba(124,58,237,0.1)' : 'transparent',
+                      background: topic === t ? 'rgba(20,83,45,0.1)' : 'transparent',
                       border: 'none', borderBottom: '1px solid var(--border)',
                       cursor: 'pointer', fontSize: '0.82rem', lineHeight: 1.4,
                       color: topic === t ? 'var(--accent-light)' : 'var(--text-primary)',
@@ -2099,7 +2099,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
         {/* Score hero */}
         <div style={{ padding: '20px 24px', borderRadius: 14,
           background: 'var(--bg-card)', border: '2px solid var(--border)', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', fontWeight: 900, color, lineHeight: 1 }}>
+          <div style={{ fontSize: '3rem', fontWeight: 800, color, lineHeight: 1 }}>
             {r.awarded != null ? r.awarded : '?'}<span style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-muted)' }}>/{r.outOf}</span>
           </div>
           <div style={{ fontSize: '1rem', fontWeight: 700, color, marginTop: 4 }}>
@@ -2163,7 +2163,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
         {/* How to improve */}
         {r.improvements && (
           <div style={{ padding: '14px 16px', borderRadius: 18,
-            background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+            background: 'rgba(20,83,45,0.06)', border: '1px solid rgba(20,83,45,0.2)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               To reach the next mark band
