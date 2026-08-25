@@ -1,4 +1,4 @@
-// src/pages/Dashboard.jsx — UI v3
+// src/pages/Dashboard.jsx — UI v4
 import React, { useEffect, useState, useRef } from 'react'
 import AIOutput from '../components/AIOutput'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
@@ -20,20 +20,24 @@ import { format } from 'date-fns'
 import {
   Flame, Zap, Calendar, FileText, Brain,
   CheckSquare, MessageSquare, ArrowRight, Clock, TrendingUp, Trophy,
-  CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, Gift, Crown,
-  Star, Sparkles, BookOpen, Target, Snowflake, Lock,
+  CheckCircle2, Circle, AlertCircle, ChevronRight, ChevronLeft, Gift, Crown,
+  Star, Sparkles, BookOpen, Target, Snowflake, Lock, Timer as TimerIcon,
+  GraduationCap, Rocket,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { isExamDone, daysUntilExam as _daysTil } from '../utils/examUtils'
 
 
 // ── Beta thanks banner ────────────────────────────────────────────────────────
+// Gold-toned rather than the brand green — this is a premium/reward moment
+// (permanent lifetime Pro for early users), same visual language as the Pro
+// badge and Upgrade CTA in Layout.jsx.
 function BetaThanksBanner({ onDismiss }) {
   return (
     <div className="slide-up" style={{
       marginBottom: 20, borderRadius: 24, overflow: 'hidden',
-      background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #6366f1 100%)',
-      boxShadow: '0 8px 32px rgba(124,58,237,0.4), 0 2px 0 rgba(255,255,255,0.1) inset',
+      background: 'linear-gradient(135deg, #b45309 0%, #f59e0b 55%, #fbbf24 100%)',
+      boxShadow: '0 8px 32px rgba(180,83,9,0.35), 0 2px 0 rgba(255,255,255,0.1) inset',
     }}>
       <div style={{ padding: '20px 22px', position: 'relative' }}>
         <button onClick={onDismiss} style={{
@@ -43,9 +47,9 @@ function BetaThanksBanner({ onDismiss }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>×</button>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-          <span className="float" style={{ fontSize: '2.5rem', flexShrink: 0 }}>👑</span>
+          <span className="float" style={{ flexShrink: 0, marginTop: 2 }}><Crown size={34} color="#fff" /></span>
           <div>
-            <div style={{ fontWeight: 900, fontSize: '1rem', color: '#fff', marginBottom: 5 }}>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', marginBottom: 5 }}>
               Thank you for being a beta user!
             </div>
             <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.65, margin: '0 0 14px' }}>
@@ -128,11 +132,11 @@ function WelcomeCard({ profile, onDismiss }) {
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ emoji, label, value, sub, colour, link, loading }) {
+function StatCard({ icon:Icon, label, value, sub, colour, link, loading }) {
   const inner = (
     <div className="card card-interactive" style={{ textAlign: 'center', padding: '18px 14px' }}>
-      <div style={{ fontSize: '1.8rem', marginBottom: 4 }}>{emoji}</div>
-      <div style={{ fontSize: '1.6rem', fontWeight: 900, color: colour, letterSpacing: '-0.02em', lineHeight: 1 }}>
+      <Icon size={22} color={colour} style={{ marginBottom: 6 }} />
+      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: colour, letterSpacing: '-0.02em', lineHeight: 1 }}>
         {loading ? '—' : value}
       </div>
       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '4px 0 2px' }}>{label}</div>
@@ -144,16 +148,15 @@ function StatCard({ emoji, label, value, sub, colour, link, loading }) {
 }
 
 // ── Quick action ──────────────────────────────────────────────────────────────
-function QuickAction({ emoji, label, to, colour }) {
+function QuickAction({ icon:Icon, label, to, colour }) {
   return (
     <Link to={to} style={{ textDecoration: 'none' }}>
       <div className="card card-interactive" style={{ textAlign: 'center', padding: '16px 10px' }}>
         <div style={{
           width: 52, height: 52, borderRadius: 16, margin: '0 auto 10px',
           background: colour + '18', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.6rem',
           border: `2px solid ${colour}30`,
-        }}>{emoji}</div>
+        }}><Icon size={22} color={colour} /></div>
         <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', lineHeight: 1.3 }}>{label}</div>
       </div>
     </Link>
@@ -199,8 +202,7 @@ export default function Dashboard() {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const getDate = s => s.date || (s.startTime?.toDate ? format(s.startTime.toDate(), 'yyyy-MM-dd') : (typeof s.startTime === 'string' ? s.startTime.slice(0,10) : null))
       setTodaySessions(sessions.filter(s => getDate(s) === todayStr))
-      const currentPapersOnly = filterToCurrentQualification(papers, profile?.subjects)
-      const sorted = [...currentPapersOnly].sort((a,b) => {
+      const sorted = [...papers].sort((a,b) => {
         const da = a.attemptDate ? new Date(a.attemptDate) : new Date((a.createdAt?.seconds||0)*1000)
         const db2= b.attemptDate ? new Date(b.attemptDate) : new Date((b.createdAt?.seconds||0)*1000)
         return db2 - da
@@ -261,6 +263,32 @@ export default function Dashboard() {
   const visiblePredictions = (isPro || isBeta) ? predictions : predictions.slice(0, 1)
   const hiddenPredictionCount = predictions.length - visiblePredictions.length
 
+  // Per-subject progress (confidence-based) — was missing entirely; derived
+  // straight from the already-loaded `topics`, grouped by t.subject, average
+  // t.confidence (1–5 scale) converted to a percentage. Sorted alphabetically
+  // rather than weakest-first, since "Weak topics this week" already covers
+  // that framing further down — this section is a neutral overview instead.
+  const subjectProgress = Object.values(
+    topics.reduce((acc, t) => {
+      if (!t.subject) return acc
+      if (!acc[t.subject]) acc[t.subject] = { subject: t.subject, sum: 0, rated: 0, total: 0 }
+      acc[t.subject].total += 1
+      if (t.confidence != null && t.confidence > 0) {
+        acc[t.subject].sum += t.confidence
+        acc[t.subject].rated += 1
+      }
+      return acc
+    }, {})
+  ).map(s => ({
+    subject: s.subject,
+    pct: s.rated ? Math.round((s.sum / s.rated / 5) * 100) : 0,
+    rated: s.rated,
+    total: s.total,
+  })).sort((a,b) => a.subject.localeCompare(b.subject))
+
+  // First not-yet-completed session today, for the "next session" hero card.
+  const nextSession = todaySessions.find(s => !s.completed) || null
+
   // Streak freeze status — mirrors the rolling 7-day window logic in
   // firestore.js:recordActivityStreak, purely for display here (that function is the only
   // place that actually consumes/writes a freeze).
@@ -284,20 +312,22 @@ export default function Dashboard() {
   const setupDone     = setupSteps.every(s=>s.done)
   const setupProgress = setupSteps.filter(s=>s.done).length
 
+  // Was morning/afternoon only (anything after 12:00 said "Good afternoon",
+  // including 9pm) — now the three-state greeting the brief calls for.
   const hour     = new Date().getHours()
-  const greeting = hour<12?'Good morning':'Good afternoon'
+  const greeting = hour<12 ? 'Good morning' : hour<18 ? 'Good afternoon' : 'Good evening'
   const hasRef   = !!profile?.referredBy
 
   const QUICK_ACTIONS = [
-    { emoji:'✨', label:'Study Tools', to:'/study',       colour:'#7c3aed' },
-    { emoji:'🧠', label:'Topics',      to:'/topics',      colour:'#8b5cf6' },
-    { emoji:'⏱',  label:'Timer',       to:'/timer',       colour:'#06b6d4' },
-    { emoji:'🤖', label:'AI Advisor',  to:'/ai',          colour:'#a855f7' },
-    { emoji:'🎓', label:'Tutor',       to:'/tutor',       colour:'#14b8a6' },
-    { emoji:'📄', label:'Past Papers', to:'/papers',      colour:'#f59e0b' },
-    { emoji:'📅', label:'Calendar',    to:'/calendar',    colour:'#10b981' },
-    { emoji:'📊', label:'Analytics',   to:'/analytics',   colour:'#3b82f6' },
-    { emoji:'🏆', label:'Leaderboard', to:'/leaderboard', colour:'#f43f5e' },
+    { icon:Zap,            label:'Study Tools', to:'/study',       colour:'var(--accent)' },
+    { icon:Brain,          label:'Topics',      to:'/topics',      colour:'#0369a1' },
+    { icon:TimerIcon,      label:'Timer',       to:'/timer',       colour:'#0891b2' },
+    { icon:MessageSquare,  label:'AI Advisor',  to:'/ai',          colour:'#64748b' },
+    { icon:GraduationCap,  label:'Tutor',       to:'/tutor',       colour:'#0d9488' },
+    { icon:FileText,       label:'Past Papers', to:'/papers',      colour:'#f59e0b' },
+    { icon:Calendar,       label:'Calendar',    to:'/calendar',    colour:'#10b981' },
+    { icon:TrendingUp,     label:'Analytics',   to:'/analytics',   colour:'#3b82f6' },
+    { icon:Trophy,         label:'Leaderboard', to:'/leaderboard', colour:'#f43f5e' },
   ]
 
   return (
@@ -349,9 +379,9 @@ export default function Dashboard() {
             <div style={{
               display:'flex', alignItems:'center', gap:6,
               padding:'6px 14px', borderRadius:999,
-              background:'linear-gradient(135deg,#7c3aed,#a855f7)',
-              color:'#fff', fontSize:'0.8rem', fontWeight:800,
-              boxShadow:'0 4px 14px rgba(124,58,237,0.35)',
+              background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
+              color:'#fff', fontSize:'0.8rem', fontWeight:700,
+              boxShadow:'var(--shadow-sm)',
             }}>
               <Crown size={14} /> Pro
             </div>
@@ -364,8 +394,8 @@ export default function Dashboard() {
         <div className="card slide-up" style={{ marginBottom:20, borderColor:'var(--border-strong)' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, flexWrap:'wrap', gap:8 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:'1.3rem' }}>🚀</span>
-              <span style={{ fontWeight:800, fontSize:'0.95rem' }}>Get started — {setupProgress}/{setupSteps.length} complete</span>
+              <Rocket size={19} color="var(--accent)" />
+              <span style={{ fontWeight:700, fontSize:'0.95rem' }}>Get started — {setupProgress}/{setupSteps.length} complete</span>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               <div className="progress-bar" style={{ width:90, height:10 }}>
@@ -384,7 +414,7 @@ export default function Dashboard() {
                 border: `2px solid ${step.done ? 'var(--success-border)' : 'var(--border)'}`,
                 transition:'all 0.2s',
               }}>
-                <span style={{ fontSize:'1.1rem' }}>{step.done ? '✅' : '⭕'}</span>
+                {step.done ? <CheckCircle2 size={18} color="var(--success)" /> : <Circle size={18} color="var(--text-muted)" />}
                 <span style={{ flex:1, fontWeight:600, fontSize:'0.875rem', color: step.done ? 'var(--success)' : 'var(--text-primary)', textDecoration: step.done?'line-through':'none' }}>
                   {step.label}
                 </span>
@@ -395,13 +425,99 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ── Your next session ── */}
+      <div className="card" style={{ marginBottom:20 }}>
+        {nextSession ? (
+          <div>
+            <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+              Your next session
+            </div>
+            <h2 style={{ marginBottom:2 }}>{nextSession.subject}</h2>
+            <p style={{ fontSize:'0.9rem', marginBottom:14 }}>{nextSession.title || 'Revision session'}</p>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, color:'var(--text-muted)', fontSize:'0.82rem' }}>
+              <Clock size={14} /> {nextSession.duration || 45} min
+            </div>
+            <Link to="/study" className="btn btn-primary">
+              Start session <ArrowRight size={16} />
+            </Link>
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+              Your next session
+            </div>
+            <h3 style={{ marginBottom:6 }}>Nothing scheduled for today</h3>
+            <p style={{ fontSize:'0.875rem', marginBottom:14 }}>Jump into a subject now, or generate a plan from your calendar.</p>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+              <Link to="/study" className="btn btn-primary">Start studying</Link>
+              <Link to="/calendar" className="btn btn-secondary">Open calendar</Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Upcoming exams ── */}
+      {(profile?.examDates||[]).filter(e=>e.examDate&&!isExamDone(e.examDate)).length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Clock size={18} /> Upcoming exams</h3>
+            <Link to="/exams" className="btn btn-ghost btn-sm">Manage</Link>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10 }}>
+            {(profile.examDates||[])
+              .filter(e=>e.examDate&&!isExamDone(e.examDate))
+              .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
+              .slice(0,4)
+              .map(e => {
+                const days = _daysTil(e.examDate)
+                const urg  = days<=7?'var(--danger)':days<=14?'var(--warning)':'var(--accent)'
+                return (
+                  <div key={e.id||e.examDate} className="card" style={{ borderColor: days<=7?'var(--danger-border)':days<=14?'var(--warning-border)':'var(--border)', background: days<=7?'var(--danger-pale)':days<=14?'var(--warning-pale)':'var(--bg-card)' }}>
+                    <div style={{ fontWeight:700, fontSize:'2rem', color:urg, lineHeight:1 }}>
+                      {days===0?'Today':days===1?'1d':`${days}d`}
+                    </div>
+                    <div style={{ fontWeight:700, fontSize:'0.85rem', marginTop:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {e.subject}
+                    </div>
+                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{e.board} · {e.examDate}</div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Your progress (per-subject confidence) ── */}
+      {subjectProgress.length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <h3 style={{ marginBottom:12 }}>Your progress</h3>
+          <div className="card">
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              {subjectProgress.map(s => (
+                <div key={s.subject}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:'0.85rem' }}>
+                    <span style={{ fontWeight:600 }}>{s.subject}</span>
+                    <span style={{ fontWeight:700, color:'var(--text-secondary)' }}>
+                      {s.rated>0 ? `${s.pct}%` : 'Not rated yet'}
+                    </span>
+                  </div>
+                  <div className="progress-bar" style={{ height:8 }}>
+                    <div className="progress-fill" style={{ width:`${s.pct}%`, background: subjectColour?.(s.subject)||'var(--accent)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── XP + level card ── */}
       <div className="card" style={{ marginBottom:20, background:'linear-gradient(135deg,var(--accent-pale),var(--bg-card))' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10, flexWrap:'wrap', gap:8 }}>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-              <span style={{ fontSize:'1.4rem' }}>⚡</span>
-              <span style={{ fontWeight:900, fontSize:'1.1rem', color:'var(--accent)' }}>Level {level}</span>
+              <Zap size={19} color="var(--accent)" />
+              <span style={{ fontWeight:800, fontSize:'1.1rem', color:'var(--accent)' }}>Level {level}</span>
               <span className="badge badge-purple">{levelTitle}</span>
             </div>
             <div style={{ fontSize:'0.78rem', color:'var(--text-muted)' }}>
@@ -409,7 +525,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ textAlign:'right' }}>
-            <div style={{ fontWeight:900, fontSize:'1.4rem', color:'var(--accent)' }}>{totalXP.toLocaleString()}</div>
+            <div style={{ fontWeight:800, fontSize:'1.4rem', color:'var(--accent)' }}>{totalXP.toLocaleString()}</div>
             <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Total XP</div>
           </div>
         </div>
@@ -418,12 +534,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Stats row ── */}
+      {/* ── Stats row (streak lives here — visible, but secondary to the above) ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
-        <StatCard emoji="🔥" label="Streak"    value={`${profile?.streak||0}d`}  sub={freezesRemaining>0?`🧊 ${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left`:'No freezes left this week'} colour="var(--warning)"      link="/analytics" loading={dataLoading} />
-        <StatCard emoji="📅" label="Sessions today"     value={todaySessions.length}        sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
-        <StatCard emoji="🏅" label="Badges"    value={badges.length}               sub="earned"         colour="var(--gold)"         link="/profile"   loading={dataLoading} />
-        <StatCard emoji="⏰" label="Next exam" value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
+        <StatCard icon={Flame}    label="Streak"        value={`${profile?.streak||0}d`}  sub={freezesRemaining>0?`${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left`:'No freezes left this week'} colour="var(--warning)" link="/analytics" loading={dataLoading} />
+        <StatCard icon={Calendar} label="Sessions today" value={todaySessions.length}      sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
+        <StatCard icon={Trophy}   label="Badges"         value={badges.length}             sub="earned"         colour="var(--gold)"  link="/profile"   loading={dataLoading} />
+        <StatCard icon={Clock}    label="Next exam"      value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
       </div>
 
       {/* ── Daily quests ── */}
@@ -431,104 +547,13 @@ export default function Dashboard() {
         <DailyQuests />
       </div>
 
-      {/* ── Predicted grades ── */}
-      {(profile?.subjects||[]).length > 0 && (
-        <div style={{ marginBottom:20 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>🎯</span> Predicted grades</h3>
-            {predictions.length > 0 && <span style={{ fontSize:'0.68rem', color:'var(--text-muted)' }}>Rough estimate, not official</span>}
-          </div>
-          {dataLoading ? (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
-              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:104, borderRadius:16 }} />)}
-            </div>
-          ) : predictions.length === 0 ? (
-            <div className="card empty-state" style={{ padding:'20px 16px' }}>
-              <span style={{ fontSize:'2rem' }}>📊</span>
-              <p style={{ fontSize:'0.82rem', margin:0 }}>Log a past paper or take a quiz to see a predicted grade here</p>
-            </div>
-          ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
-              {visiblePredictions.map(p => (
-                <div key={p.subject} className="card" style={{ padding:'14px' }}>
-                  <div style={{ fontWeight:700, fontSize:'0.82rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:6 }}>
-                    {p.subject}
-                  </div>
-                  <div style={{ fontWeight:900, fontSize:'1.8rem', color:gradeColour(p.grade), lineHeight:1 }}>{p.grade}</div>
-                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:4 }}>{p.percentage}% blended</div>
-                  <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:6, lineHeight:1.4 }}>
-                    {[
-                      p.sources.papers ? `${p.sources.papers} paper${p.sources.papers===1?'':'s'}` : null,
-                      p.sources.quizzes ? `${p.sources.quizzes} quiz${p.sources.quizzes===1?'':'zes'}` : null,
-                      p.sources.topicsRated ? `${p.sources.topicsRated} rated topic${p.sources.topicsRated===1?'':'s'}` : null,
-                    ].filter(Boolean).join(' · ')}
-                  </div>
-                </div>
-              ))}
-              {hiddenPredictionCount > 0 && (
-                <Link to="/pro" style={{ textDecoration:'none' }}>
-                  <div className="card" style={{ padding:'14px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', height:'100%', border:'1px dashed var(--border)', minHeight:104 }}>
-                    <Lock size={16} style={{ color:'var(--text-muted)', marginBottom:6 }} />
-                    <div style={{ fontSize:'0.78rem', fontWeight:700 }}>+{hiddenPredictionCount} more subject{hiddenPredictionCount===1?'':'s'}</div>
-                    <div style={{ fontSize:'0.68rem', color:'var(--accent)', marginTop:2 }}>Unlock with Pro</div>
-                  </div>
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Weak topics this week ── */}
-      {(profile?.subjects||[]).length > 0 && (
-        <div style={{ marginBottom:20 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>🧠</span> Weak topics this week</h3>
-            <Link to="/topics" className="btn btn-ghost btn-sm">Rate topics</Link>
-          </div>
-          {dataLoading ? (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:52, borderRadius:12 }} />)}
-            </div>
-          ) : weakTopics.length === 0 ? (
-            <div className="card empty-state" style={{ padding:'20px 16px' }}>
-              <span style={{ fontSize:'2rem' }}>✅</span>
-              <p style={{ fontSize:'0.82rem', margin:0 }}>Nothing rated below 2/5 right now — nice work</p>
-            </div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {weakTopics.map(t => (
-                <Link key={t.id} to="/topics" style={{ textDecoration:'none', color:'inherit' }}>
-                  <div className="card card-interactive" style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px' }}>
-                    <div style={{ width:4, height:32, borderRadius:99, background: subjectColour?.(t.subject)||'var(--accent)', flexShrink:0 }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:700, fontSize:'0.85rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {t.name}
-                      </div>
-                      <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>
-                        {t.subject}{t.board ? ` · ${t.board}` : ''}
-                      </div>
-                    </div>
-                    <div style={{ display:'flex', gap:3, flexShrink:0 }}>
-                      {[1,2,3,4,5].map(n => (
-                        <span key={n} style={{ width:7, height:7, borderRadius:'50%', background: n<=t.confidence?'var(--danger)':'var(--border)' }} />
-                      ))}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Today + AI Briefing ── */}
+      {/* ── Today + Daily Briefing ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
         {/* Today's sessions */}
         <div className="card">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
             <h4 style={{ display:'flex', alignItems:'center', gap:7 }}>
-              <span style={{ fontSize:'1.1rem' }}>📅</span> Today
+              <Calendar size={16} /> Today
             </h4>
             <Link to="/calendar" className="btn btn-secondary btn-sm">View all</Link>
           </div>
@@ -560,7 +585,7 @@ export default function Dashboard() {
                       {s.start} · {s.duration||45}min
                     </div>
                   </div>
-                  {s.completed && <span style={{ fontSize:'1.1rem' }}>✅</span>}
+                  {s.completed && <CheckCircle2 size={18} color="var(--success)" />}
                 </div>
               ))}
               {todaySessions.length > 4 && (
@@ -572,10 +597,10 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* AI Briefing */}
+        {/* Daily Briefing */}
         <div className="card accent-card">
           <h4 style={{ display:'flex', alignItems:'center', gap:7, marginBottom:10 }}>
-            <span style={{ fontSize:'1.1rem' }}>🤖</span> AI Daily Briefing
+            <Sparkles size={16} /> Daily Briefing
             <span style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginLeft:'auto', fontWeight:400 }}>Updates daily</span>
           </h4>
           {aiLoading ? (
@@ -586,7 +611,7 @@ export default function Dashboard() {
             <AIOutput text={aiAdvice} />
           ) : (
             <div className="empty-state" style={{ padding:'16px 0' }}>
-              <span style={{ fontSize:'2rem' }}>💭</span>
+              <Sparkles size={28} style={{ opacity:0.35 }} />
               <p style={{ fontSize:'0.82rem', margin:0 }}>No briefing yet today</p>
               <button className="btn btn-secondary btn-sm" style={{ marginTop:8 }} onClick={loadDailyBriefing}>
                 Generate briefing
@@ -596,52 +621,112 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── Predicted grades ── */}
+      {(profile?.subjects||[]).length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Target size={18} /> Predicted grades</h3>
+            {predictions.length > 0 && <span style={{ fontSize:'0.68rem', color:'var(--text-muted)' }}>Rough estimate, not official</span>}
+          </div>
+          {dataLoading ? (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:104, borderRadius:16 }} />)}
+            </div>
+          ) : predictions.length === 0 ? (
+            <div className="card empty-state" style={{ padding:'20px 16px' }}>
+              <TrendingUp size={28} style={{ opacity:0.35 }} />
+              <p style={{ fontSize:'0.82rem', margin:0 }}>Log a past paper or take a quiz to see a predicted grade here</p>
+            </div>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
+              {visiblePredictions.map(p => (
+                <div key={p.subject} className="card" style={{ padding:'14px' }}>
+                  <div style={{ fontWeight:700, fontSize:'0.82rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:6 }}>
+                    {p.subject}
+                  </div>
+                  <div style={{ fontWeight:800, fontSize:'1.8rem', color:gradeColour(p.grade), lineHeight:1 }}>{p.grade}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:4 }}>{p.percentage}% blended</div>
+                  <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:6, lineHeight:1.4 }}>
+                    {[
+                      p.sources.papers ? `${p.sources.papers} paper${p.sources.papers===1?'':'s'}` : null,
+                      p.sources.quizzes ? `${p.sources.quizzes} quiz${p.sources.quizzes===1?'':'zes'}` : null,
+                      p.sources.topicsRated ? `${p.sources.topicsRated} rated topic${p.sources.topicsRated===1?'':'s'}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+              ))}
+              {hiddenPredictionCount > 0 && (
+                <Link to="/pro" style={{ textDecoration:'none' }}>
+                  <div className="card" style={{ padding:'14px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', height:'100%', border:'1px dashed var(--border)', minHeight:104 }}>
+                    <Lock size={16} style={{ color:'var(--text-muted)', marginBottom:6 }} />
+                    <div style={{ fontSize:'0.78rem', fontWeight:700 }}>+{hiddenPredictionCount} more subject{hiddenPredictionCount===1?'':'s'}</div>
+                    <div style={{ fontSize:'0.68rem', color:'var(--accent)', marginTop:2 }}>Unlock with Pro</div>
+                  </div>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Weak topics this week ── */}
+      {(profile?.subjects||[]).length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Brain size={18} /> Weak topics this week</h3>
+            <Link to="/topics" className="btn btn-ghost btn-sm">Rate topics</Link>
+          </div>
+          {dataLoading ? (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton-pulse" style={{ height:52, borderRadius:12 }} />)}
+            </div>
+          ) : weakTopics.length === 0 ? (
+            <div className="card empty-state" style={{ padding:'20px 16px' }}>
+              <CheckCircle2 size={28} style={{ opacity:0.35 }} />
+              <p style={{ fontSize:'0.82rem', margin:0 }}>Nothing rated below 2/5 right now — nice work</p>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {weakTopics.map(t => (
+                <Link key={t.id} to="/topics" style={{ textDecoration:'none', color:'inherit' }}>
+                  <div className="card card-interactive" style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px' }}>
+                    <div style={{ width:4, height:32, borderRadius:99, background: subjectColour?.(t.subject)||'var(--accent)', flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:'0.85rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {t.name}
+                      </div>
+                      <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>
+                        {t.subject}{t.board ? ` · ${t.board}` : ''}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', gap:3, flexShrink:0 }}>
+                      {[1,2,3,4,5].map(n => (
+                        <span key={n} style={{ width:7, height:7, borderRadius:'50%', background: n<=t.confidence?'var(--danger)':'var(--border)' }} />
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Quick actions grid ── */}
       <div style={{ marginBottom:20 }}>
         <h3 style={{ marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:'1.1rem' }}>⚡</span> Quick actions
+          <Zap size={18} /> Quick actions
         </h3>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
           {QUICK_ACTIONS.map(a => <QuickAction key={a.to} {...a} />)}
         </div>
       </div>
 
-      {/* ── Upcoming exams ── */}
-      {(profile?.examDates||[]).filter(e=>e.examDate&&!isExamDone(e.examDate)).length > 0 && (
-        <div style={{ marginBottom:20 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>⏰</span> Upcoming exams</h3>
-            <Link to="/exams" className="btn btn-ghost btn-sm">Manage</Link>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10 }}>
-            {(profile.examDates||[])
-              .filter(e=>e.examDate&&!isExamDone(e.examDate))
-              .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
-              .slice(0,4)
-              .map(e => {
-                const days = _daysTil(e.examDate)
-                const urg  = days<=7?'var(--danger)':days<=14?'var(--warning)':'var(--accent)'
-                return (
-                  <div key={e.id||e.examDate} className="card" style={{ borderColor: days<=7?'var(--danger-border)':days<=14?'var(--warning-border)':'var(--border)', background: days<=7?'var(--danger-pale)':days<=14?'var(--warning-pale)':'var(--bg-card)' }}>
-                    <div style={{ fontWeight:800, fontSize:'2rem', color:urg, lineHeight:1 }}>
-                      {days===0?'📢':days===1?'1d':`${days}d`}
-                    </div>
-                    <div style={{ fontWeight:700, fontSize:'0.85rem', marginTop:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {e.subject}
-                    </div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{e.board} · {e.examDate}</div>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
-      )}
-
       {/* ── Recent papers ── */}
       {recentPapers.length > 0 && (
         <div style={{ marginBottom:20 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>📄</span> Recent papers</h3>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><FileText size={18} /> Recent papers</h3>
             <Link to="/papers" className="btn btn-ghost btn-sm">View all</Link>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
@@ -670,7 +755,7 @@ export default function Dashboard() {
       {badges.length > 0 && (
         <div style={{ marginBottom:20 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><span>🏅</span> Badges</h3>
+            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Trophy size={18} /> Badges</h3>
             <Link to="/profile" className="btn btn-ghost btn-sm">View all {badges.length}</Link>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
@@ -688,7 +773,7 @@ export default function Dashboard() {
       {/* ── Referral entry ── */}
       {!hasRef && (
         <div className="card" style={{ marginBottom:20, textAlign:'center', padding:24 }}>
-          <div style={{ fontSize:'1.8rem', marginBottom:8 }}>🎁</div>
+          <Gift size={28} color="var(--accent)" style={{ marginBottom:8 }} />
           <h4 style={{ marginBottom:6 }}>Have a referral code?</h4>
           <p style={{ fontSize:'0.875rem', marginBottom:12 }}>You both earn XP + unlock the Rocket icon</p>
           {showRefInput ? (
