@@ -10,34 +10,64 @@ import {
   LayoutDashboard, Calendar, FileText, Brain, CheckSquare,
   Users, Trophy, User, MessageSquare, Clock, Settings, LogOut,
   Menu, Sun, Moon, Zap, Timer, BarChart2, HelpCircle, X,
-  ChevronLeft, ChevronRight, Crown, GraduationCap,
+  ChevronLeft, ChevronRight, Crown, GraduationCap, RotateCcw,
+  MoreHorizontal,
 } from 'lucide-react'
 
-const NAV = [
-  { to:'/dashboard',   label:'Dashboard',    icon:LayoutDashboard, emoji:'🏠' },
-  { to:'/calendar',    label:'Calendar',     icon:Calendar,        emoji:'📅' },
-  { to:'/exams',       label:'Exam Dates',   icon:Clock,           emoji:'⏰' },
-  { to:'/papers',      label:'Past Papers',  icon:FileText,        emoji:'📄' },
-  { to:'/topics',      label:'Topics',       icon:Brain,           emoji:'🧠' },
-  { to:'/study',       label:'Study Tools',  icon:Zap,             emoji:'✨' },
-  { to:'/tutor',       label:'Tutor',        icon:GraduationCap,   emoji:'🎓', pro:true },
-  { to:'/tasks',       label:'Tasks',        icon:CheckSquare,     emoji:'✅' },
-  { to:'/timer',       label:'Timer',        icon:Timer,           emoji:'⏱'  },
-  { to:'/analytics',   label:'Analytics',    icon:BarChart2,       emoji:'📊' },
-  { to:'/ai',          label:'AI Advisor',   icon:MessageSquare,   emoji:'🤖' },
-  { to:'/friends',     label:'Friends',      icon:Users,           emoji:'👥' },
-  { to:'/leaderboard', label:'Leaderboard',  icon:Trophy,          emoji:'🏆' },
-  { to:'/profile',     label:'Profile',      icon:User,            emoji:'👤' },
-  { to:'/settings',    label:'Settings',     icon:Settings,        emoji:'⚙️'  },
-  { to:'/help',        label:'Help',         icon:HelpCircle,      emoji:'❓' },
+// Grouped for the desktop sidebar — primary destinations ungrouped at the top,
+// then Tools / Social / Account with a small uppercase heading each (heading
+// omitted entirely when the sidebar is collapsed, same as every label already
+// was). Icons render for real now — emoji dropped from primary nav iconography.
+const NAV_GROUPS = [
+  {
+    heading: null,
+    items: [
+      { to:'/dashboard', label:'Dashboard',   icon:LayoutDashboard },
+      { to:'/calendar',  label:'Calendar',    icon:Calendar },
+      { to:'/exams',     label:'Exam Dates',  icon:Clock },
+      { to:'/papers',    label:'Past Papers', icon:FileText },
+      { to:'/topics',    label:'Topics',      icon:Brain },
+    ],
+  },
+  {
+    heading: 'Tools',
+    items: [
+      { to:'/study',     label:'Study Tools', icon:Zap },
+      { to:'/ai',        label:'AI Advisor',  icon:MessageSquare },
+      { to:'/tutor',     label:'Tutor',       icon:GraduationCap, pro:true },
+      { to:'/tasks',     label:'Tasks',       icon:CheckSquare },
+      { to:'/timer',     label:'Timer',       icon:Timer },
+      { to:'/mistakes',  label:'Mistakes',    icon:RotateCcw },
+      { to:'/analytics', label:'Analytics',   icon:BarChart2 },
+    ],
+  },
+  {
+    heading: 'Social',
+    items: [
+      { to:'/friends',     label:'Friends',     icon:Users },
+      { to:'/leaderboard', label:'Leaderboard', icon:Trophy },
+    ],
+  },
+  {
+    heading: 'Account',
+    items: [
+      { to:'/profile',  label:'Profile',  icon:User },
+      { to:'/settings', label:'Settings', icon:Settings },
+      { to:'/help',     label:'Help',     icon:HelpCircle },
+    ],
+  },
 ]
 
+// Mobile bottom nav — five items per the redesign brief. "More" isn't a route:
+// it opens the same slide-in drawer the hamburger button already opens (full
+// NAV_GROUPS), so there's one "everything else" surface, not two to keep in
+// sync, and no new page/route needed for it.
 const MOBILE_NAV = [
-  { to:'/dashboard',   label:'Home',   icon:LayoutDashboard },
-  { to:'/study',       label:'Study',  icon:Zap },
-  { to:'/topics',      label:'Topics', icon:Brain },
-  { to:'/ai',          label:'AI',     icon:MessageSquare },
-  { to:'/profile',     label:'Me',     icon:User },
+  { to:'/dashboard', label:'Home',     icon:LayoutDashboard },
+  { to:'/study',     label:'Study',    icon:Zap },
+  { to:'/topics',    label:'Topics',   icon:Brain },
+  { to:'/calendar',  label:'Calendar', icon:Calendar },
+  { action:'more',   label:'More',     icon:MoreHorizontal },
 ]
 
 export default function Layout() {
@@ -108,11 +138,11 @@ export default function Layout() {
   const Avatar = ({ size=38 }) => (
     <div style={{
       width:size, height:size, borderRadius:'50%', flexShrink:0,
-      background:'linear-gradient(135deg,#7c3aed,#a855f7)',
+      background:'linear-gradient(135deg,var(--accent),var(--accent-light))',
       display:'flex', alignItems:'center', justifyContent:'center',
       fontSize:iconEmoji?(size*0.45)+'px':(size*0.35)+'px', fontWeight:800,
-      border:'2.5px solid rgba(168,85,247,0.5)',
-      userSelect:'none', boxShadow:'0 2px 8px rgba(124,58,237,0.3)',
+      border:'2.5px solid rgba(34,197,94,0.4)',
+      userSelect:'none', boxShadow:'var(--shadow-sm)',
     }}>
       {iconEmoji||initial}
     </div>
@@ -153,13 +183,13 @@ export default function Layout() {
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <div style={{
                 width:32, height:32, borderRadius:10, flexShrink:0,
-                background:'linear-gradient(135deg,#7c3aed,#a855f7)',
+                background:'linear-gradient(135deg,var(--accent),var(--accent-light))',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:'0 4px 12px rgba(124,58,237,0.4)',
+                boxShadow:'var(--shadow-sm)',
               }}>
                 <Zap size={16} color="#fff" />
               </div>
-              <span style={{ fontWeight:900, fontSize:'0.95rem', letterSpacing:'-0.02em', color:'var(--text-primary)' }}>
+              <span style={{ fontWeight:800, fontSize:'0.95rem', letterSpacing:'-0.02em', color:'var(--text-primary)' }}>
                 Revision<span style={{ color:'var(--accent)' }}>Flow</span>
               </span>
             </div>
@@ -203,10 +233,10 @@ export default function Layout() {
                     <span style={{
                       display:'inline-flex', alignItems:'center', gap:2,
                       padding:'1px 6px', borderRadius:999,
-                      background:'linear-gradient(135deg,#7c3aed,#a855f7)',
-                      color:'#fff', fontSize:'0.55rem', fontWeight:900,
+                      background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
+                      color:'#fff', fontSize:'0.55rem', fontWeight:800,
                       letterSpacing:'0.05em', flexShrink:0,
-                    }}>⚡PRO</span>
+                    }}><Crown size={9}/>PRO</span>
                   )}
                 </div>
                 <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:1, fontWeight:500 }}>
@@ -237,37 +267,48 @@ export default function Layout() {
 
         {/* Nav */}
         <nav style={{ flex:1, display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden' }}>
-          {NAV.map(({ to, label, icon:Icon, emoji, pro }) => (
-            <NavLink key={to} to={to} title={collapsed ? label : undefined}
-              style={({ isActive }) => ({
-                display:'flex', alignItems:'center',
-                gap: collapsed ? 0 : 9,
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                padding: collapsed ? '9px 0' : '9px 12px',
-                borderRadius: 12,
-                fontSize:'0.85rem', fontWeight: isActive ? 800 : 500,
-                color: isActive ? '#fff' : 'var(--text-secondary)',
-                background: isActive
-                  ? 'linear-gradient(135deg,var(--accent),var(--purple-500))'
-                  : 'transparent',
-                textDecoration:'none',
-                cursor:'pointer',
-                width:'100%',
-                whiteSpace:'nowrap',
-                minHeight:38,
-                border:'none',
-                transition:'all 0.15s cubic-bezier(0.34,1.56,0.64,1)',
-                boxShadow: isActive ? '0 4px 12px rgba(124,58,237,0.35), 0 2px 0 var(--purple-800)' : 'none',
-                transform: isActive ? 'scale(1.01)' : 'scale(1)',
-              })}>
-              {({ isActive }) => (
-                <>
-                  <span style={{ fontSize:'1rem', flexShrink:0 }}>{emoji}</span>
-                  {!collapsed && <span style={{ flex:1 }}>{label}</span>}
-                  {!collapsed && pro && !isPro && <ProBadge style={{ fontSize:'0.55rem', padding:'0 5px', flexShrink:0 }} />}
-                </>
+          {NAV_GROUPS.map(group => (
+            <React.Fragment key={group.heading || 'primary'}>
+              {group.heading && !collapsed && (
+                <div style={{
+                  fontSize:'0.68rem', fontWeight:700, color:'var(--text-muted)',
+                  textTransform:'uppercase', letterSpacing:'0.06em',
+                  padding:'14px 12px 6px',
+                }}>{group.heading}</div>
               )}
-            </NavLink>
+              {group.items.map(({ to, label, icon:Icon, pro }) => (
+                <NavLink key={to} to={to} title={collapsed ? label : undefined}
+                  style={({ isActive }) => ({
+                    display:'flex', alignItems:'center',
+                    gap: collapsed ? 0 : 9,
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    padding: collapsed ? '9px 0' : '9px 12px',
+                    borderRadius: 12,
+                    fontSize:'0.85rem', fontWeight: isActive ? 700 : 500,
+                    color: isActive ? '#fff' : 'var(--text-secondary)',
+                    background: isActive
+                      ? 'linear-gradient(135deg,var(--accent),var(--purple-500))'
+                      : 'transparent',
+                    textDecoration:'none',
+                    cursor:'pointer',
+                    width:'100%',
+                    whiteSpace:'nowrap',
+                    minHeight:38,
+                    border:'none',
+                    transition:'all 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+                    boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                    transform: isActive ? 'scale(1.01)' : 'scale(1)',
+                  })}>
+                  {({ isActive }) => (
+                    <>
+                      <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} style={{ flexShrink:0 }}/>
+                      {!collapsed && <span style={{ flex:1 }}>{label}</span>}
+                      {!collapsed && pro && !isPro && <ProBadge style={{ fontSize:'0.55rem', padding:'0 5px', flexShrink:0 }} />}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </React.Fragment>
           ))}
         </nav>
 
@@ -276,14 +317,14 @@ export default function Layout() {
           <a href="/pro" style={{
             display:'flex', alignItems:'center', gap:10,
             margin:'10px 0 4px', padding:'12px 14px', borderRadius:16,
-            background:'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))',
-            border:'2px solid var(--border-strong)',
+            background:'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))',
+            border:'2px solid var(--gold-border)',
             textDecoration:'none', flexShrink:0,
             transition:'all 0.2s',
           }}>
-            <span style={{ fontSize:'1.3rem' }}>⚡</span>
+            <Crown size={20} color="var(--gold)" style={{ flexShrink:0 }}/>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontWeight:800, fontSize:'0.8rem', color:'var(--accent)' }}>Upgrade to Pro</div>
+              <div style={{ fontWeight:700, fontSize:'0.8rem', color:'var(--gold)' }}>Upgrade to Pro</div>
               <div style={{ fontSize:'0.68rem', color:'var(--text-muted)' }}>Unlimited AI · from £3.99/mo</div>
             </div>
           </a>
@@ -292,9 +333,9 @@ export default function Layout() {
           <a href="/pro" title="Upgrade to Pro" style={{
             display:'flex', justifyContent:'center', alignItems:'center',
             margin:'8px 0 4px', padding:'9px', borderRadius:12,
-            background:'var(--accent-pale)', border:'2px solid var(--border-strong)',
-            textDecoration:'none', fontSize:'1.2rem', flexShrink:0,
-          }}>⚡</a>
+            background:'var(--gold-pale)', border:'2px solid var(--gold-border)',
+            textDecoration:'none', flexShrink:0,
+          }}><Crown size={18} color="var(--gold)"/></a>
         )}
 
         {/* Bottom buttons */}
@@ -346,12 +387,12 @@ export default function Layout() {
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <div style={{
                 width:26, height:26, borderRadius:8,
-                background:'linear-gradient(135deg,#7c3aed,#a855f7)',
+                background:'linear-gradient(135deg,var(--accent),var(--accent-light))',
                 display:'flex', alignItems:'center', justifyContent:'center',
               }}>
                 <Zap size={13} color="#fff"/>
               </div>
-              <span style={{ fontWeight:900, fontSize:'1rem', letterSpacing:'-0.02em' }}>
+              <span style={{ fontWeight:800, fontSize:'1rem', letterSpacing:'-0.02em' }}>
                 Revision<span style={{ color:'var(--accent)' }}>Flow</span>
               </span>
             </div>
@@ -410,30 +451,46 @@ export default function Layout() {
           paddingBottom:'env(safe-area-inset-bottom)',
           boxShadow:'0 -4px 24px rgba(0,0,0,0.1)',
         }}>
-          {MOBILE_NAV.map(({ to, label, icon:Icon }) => (
-            <NavLink key={to} to={to} style={({ isActive }) => ({
-              flex:1, display:'flex', flexDirection:'column',
-              alignItems:'center', justifyContent:'center',
-              gap:3, padding:'10px 4px',
-              color: isActive ? 'var(--accent)' : 'var(--text-muted)',
-              textDecoration:'none', fontSize:'0.67rem', fontWeight:700,
-              background: isActive ? 'var(--accent-pale)' : 'transparent',
-              borderTop: isActive ? '2px solid var(--accent)' : '2px solid transparent',
-              transition:'all 0.15s cubic-bezier(0.34,1.56,0.64,1)',
-            })}>
-              {({ isActive }) => (
-                <>
-                  <div style={{
-                    transform: isActive ? 'scale(1.15) translateY(-1px)' : 'scale(1)',
-                    transition:'transform 0.2s cubic-bezier(0.34,1.56,0.64,1)',
-                  }}>
-                    <Icon size={20} strokeWidth={isActive?2.5:1.8}/>
-                  </div>
-                  <span>{label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+          {MOBILE_NAV.map(({ to, label, icon:Icon, action }) =>
+            action === 'more' ? (
+              <button key="more" onClick={() => setMobileOpen(true)} style={{
+                flex:1, display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                gap:3, padding:'10px 4px', border:'none', cursor:'pointer',
+                background: mobileOpen ? 'var(--accent-pale)' : 'transparent',
+                color: mobileOpen ? 'var(--accent)' : 'var(--text-muted)',
+                fontSize:'0.67rem', fontWeight:700,
+                borderTop: mobileOpen ? '2px solid var(--accent)' : '2px solid transparent',
+                transition:'all 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+              }}>
+                <Icon size={20} strokeWidth={mobileOpen?2.5:1.8}/>
+                <span>{label}</span>
+              </button>
+            ) : (
+              <NavLink key={to} to={to} style={({ isActive }) => ({
+                flex:1, display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                gap:3, padding:'10px 4px',
+                color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                textDecoration:'none', fontSize:'0.67rem', fontWeight:700,
+                background: isActive ? 'var(--accent-pale)' : 'transparent',
+                borderTop: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                transition:'all 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+              })}>
+                {({ isActive }) => (
+                  <>
+                    <div style={{
+                      transform: isActive ? 'scale(1.15) translateY(-1px)' : 'scale(1)',
+                      transition:'transform 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+                    }}>
+                      <Icon size={20} strokeWidth={isActive?2.5:1.8}/>
+                    </div>
+                    <span>{label}</span>
+                  </>
+                )}
+              </NavLink>
+            )
+          )}
         </nav>
       )}
     </>
