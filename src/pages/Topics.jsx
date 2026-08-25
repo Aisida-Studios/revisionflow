@@ -340,9 +340,9 @@ export default function Topics() {
             // ── Resources view ──
             <div>
               {selSubj && (
-                <div style={{padding:'10px 14px',borderRadius:10,background:'rgba(124,58,237,0.07)',border:'1px solid rgba(124,58,237,0.2)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
                   <div>
-                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>AI Revision Guides for {selSubj}</div>
+                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides for {selSubj}</div>
                     <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Worked examples, mark scheme language and exam technique per topic</div>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
@@ -357,9 +357,9 @@ export default function Topics() {
             <div>
               {/* Link to Study Tools revision guide */}
               {selSubj && (
-                <div style={{padding:'10px 14px',borderRadius:10,background:'rgba(124,58,237,0.07)',border:'1px solid rgba(124,58,237,0.2)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
                   <div>
-                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>AI Revision Guides available</div>
+                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides available</div>
                     <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Browse spec-accurate revision guides for {selSubj} topics</div>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
@@ -413,9 +413,9 @@ export default function Topics() {
                 const pct = total>0?Math.round((mastered/total)*100):0
                 return (
                   <div>
-                    <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))',borderRadius:12,border:'1px solid rgba(124,58,237,0.2)'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))',borderRadius:12,border:'1px solid var(--border-strong)'}}>
                       <div style={{textAlign:'center',minWidth:70}}>
-                        <div style={{fontSize:'2rem',fontWeight:900,color:'var(--accent-light)'}}>{pct}%</div>
+                        <div style={{fontSize:'2rem',fontWeight:800,color:'var(--accent-light)'}}>{pct}%</div>
                         <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>Mastered</div>
                       </div>
                       <div style={{flex:1}}>
