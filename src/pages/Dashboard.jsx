@@ -168,6 +168,7 @@ export default function Dashboard() {
   const { isPro, isBeta } = useIsPro()
   const [gdprConsent,         setGdprConsent]         = useState(localStorage.getItem('gdpr_consent') === 'true')
   const [todaySessions,       setTodaySessions]        = useState([])
+  const [allSessions,         setAllSessions]          = useState([])
   const [recentPapers,        setRecentPapers]         = useState([])
   const [allPapers,           setAllPapers]            = useState([])
   const [topics,              setTopics]               = useState([])
@@ -202,6 +203,7 @@ export default function Dashboard() {
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const getDate = s => s.date || (s.startTime?.toDate ? format(s.startTime.toDate(), 'yyyy-MM-dd') : (typeof s.startTime === 'string' ? s.startTime.slice(0,10) : null))
       setTodaySessions(sessions.filter(s => getDate(s) === todayStr))
+      setAllSessions(sessions)
       const sorted = [...papers].sort((a,b) => {
         const da = a.attemptDate ? new Date(a.attemptDate) : new Date((a.createdAt?.seconds||0)*1000)
         const db2= b.attemptDate ? new Date(b.attemptDate) : new Date((b.createdAt?.seconds||0)*1000)
@@ -288,6 +290,40 @@ export default function Dashboard() {
 
   // First not-yet-completed session today, for the "next session" hero card.
   const nextSession = todaySessions.find(s => !s.completed) || null
+
+  // The four core progress metrics (brief §16) — study time, average grade,
+  // topic confidence, sessions. Study time/sessions use `allSessions` (added
+  // above; previously the fetch discarded everything except today). Average
+  // grade uses paper percentages only — quiz results aren't read here since
+  // their percentage field isn't verified against this page's data shape;
+  // safer to under-cover than to guess at an unverified field name.
+  const completedSessions = allSessions.filter(s => s.completed)
+  const totalStudyMinutes = completedSessions.reduce((sum, s) => sum + (s.duration || 0), 0)
+  const studyTimeLabel = `${Math.floor(totalStudyMinutes / 60)}h ${totalStudyMinutes % 60}m`
+  const avgGradePct = currentPapers.length
+    ? Math.round(currentPapers.reduce((sum, p) => sum + (p.percentage || 0), 0) / currentPapers.length)
+    : null
+  const ratedTopicsAll = topics.filter(t => t.confidence > 0)
+  const avgConfidencePct = ratedTopicsAll.length
+    ? Math.round((ratedTopicsAll.reduce((sum, t) => sum + t.confidence, 0) / ratedTopicsAll.length / 5) * 100)
+    : null
+
+  // Recent activity feed — merges the two sources that already have reliable,
+  // verified date handling (recentPapers is pre-sorted; today's completed
+  // sessions have a plain time string). Deliberately not pulling in topic
+  // rating history too, since that source's timestamp shape isn't verified
+  // here and a wrong merge would be worse than a shorter, correct list.
+  const recentActivity = [
+    ...recentPapers.slice(0,3).map(p => ({
+      key: `paper-${p.id}`, label: `Completed past paper`,
+      detail: `${p.subject} · Paper ${p.paperNumber}${p.year ? ` (${p.year})` : ''}`,
+      when: p.attemptDate || null,
+    })),
+    ...todaySessions.filter(s=>s.completed).slice(0,3).map(s => ({
+      key: `session-${s.id}`, label: `Completed session`,
+      detail: s.title || s.subject, when: 'Today',
+    })),
+  ].slice(0,4)
 
   // Streak freeze status — mirrors the rolling 7-day window logic in
   // firestore.js:recordActivityStreak, purely for display here (that function is the only
@@ -425,72 +461,104 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Your next session ── */}
-      <div className="card" style={{ marginBottom:20 }}>
-        {nextSession ? (
-          <div>
-            <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
-              Your next session
+      {/* ── Row 1: Next session + Upcoming exams, side by side ── */}
+      <div style={{ display:'grid', gridTemplateColumns: nextSession ? '1.6fr 1fr' : '1fr', gap:16, marginBottom:20 }} className="dash-row-1">
+        <div className="card">
+          {nextSession ? (
+            <div>
+              <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+                Your next session
+              </div>
+              <h2 style={{ marginBottom:2 }}>{nextSession.subject}</h2>
+              <p style={{ fontSize:'0.9rem', marginBottom:14 }}>{nextSession.title || 'Revision session'}</p>
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, color:'var(--text-muted)', fontSize:'0.82rem' }}>
+                <Clock size={14} /> {nextSession.duration || 45} min
+              </div>
+              <Link to="/study" className="btn btn-primary">
+                Start session <ArrowRight size={16} />
+              </Link>
             </div>
-            <h2 style={{ marginBottom:2 }}>{nextSession.subject}</h2>
-            <p style={{ fontSize:'0.9rem', marginBottom:14 }}>{nextSession.title || 'Revision session'}</p>
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, color:'var(--text-muted)', fontSize:'0.82rem' }}>
-              <Clock size={14} /> {nextSession.duration || 45} min
+          ) : (
+            <div>
+              <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+                Your next session
+              </div>
+              <h3 style={{ marginBottom:6 }}>Nothing scheduled for today</h3>
+              <p style={{ fontSize:'0.875rem', marginBottom:14 }}>Jump into a subject now, or generate a plan from your calendar.</p>
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                <Link to="/study" className="btn btn-primary">Start studying</Link>
+                <Link to="/calendar" className="btn btn-secondary">Open calendar</Link>
+              </div>
             </div>
-            <Link to="/study" className="btn btn-primary">
-              Start session <ArrowRight size={16} />
-            </Link>
-          </div>
-        ) : (
-          <div>
-            <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
-              Your next session
+          )}
+        </div>
+
+        {(profile?.examDates||[]).filter(e=>e.examDate&&!isExamDone(e.examDate)).length > 0 && (
+          <div className="card">
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+              <h4>Upcoming exams</h4>
+              <Link to="/exams" style={{ fontSize:'0.78rem', color:'var(--accent)', fontWeight:600 }}>View all</Link>
             </div>
-            <h3 style={{ marginBottom:6 }}>Nothing scheduled for today</h3>
-            <p style={{ fontSize:'0.875rem', marginBottom:14 }}>Jump into a subject now, or generate a plan from your calendar.</p>
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-              <Link to="/study" className="btn btn-primary">Start studying</Link>
-              <Link to="/calendar" className="btn btn-secondary">Open calendar</Link>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {(profile.examDates||[])
+                .filter(e=>e.examDate&&!isExamDone(e.examDate))
+                .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
+                .slice(0,3)
+                .map(e => {
+                  const days = _daysTil(e.examDate)
+                  const urg  = days<=7?'var(--danger)':days<=14?'var(--warning)':'var(--accent)'
+                  return (
+                    <div key={e.id||e.examDate} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ width:8, height:8, borderRadius:'50%', background:urg, flexShrink:0 }} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:'0.85rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.subject}</div>
+                        <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{e.board}</div>
+                      </div>
+                      <div style={{ fontSize:'0.78rem', fontWeight:700, color:urg, flexShrink:0 }}>
+                        {days===0?'Today':days===1?'1d':`${days}d`}
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
           </div>
         )}
       </div>
 
-      {/* ── Upcoming exams ── */}
-      {(profile?.examDates||[]).filter(e=>e.examDate&&!isExamDone(e.examDate)).length > 0 && (
-        <div style={{ marginBottom:20 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Clock size={18} /> Upcoming exams</h3>
-            <Link to="/exams" className="btn btn-ghost btn-sm">Manage</Link>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10 }}>
-            {(profile.examDates||[])
-              .filter(e=>e.examDate&&!isExamDone(e.examDate))
-              .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
-              .slice(0,4)
-              .map(e => {
-                const days = _daysTil(e.examDate)
-                const urg  = days<=7?'var(--danger)':days<=14?'var(--warning)':'var(--accent)'
-                return (
-                  <div key={e.id||e.examDate} className="card" style={{ borderColor: days<=7?'var(--danger-border)':days<=14?'var(--warning-border)':'var(--border)', background: days<=7?'var(--danger-pale)':days<=14?'var(--warning-pale)':'var(--bg-card)' }}>
-                    <div style={{ fontWeight:700, fontSize:'2rem', color:urg, lineHeight:1 }}>
-                      {days===0?'Today':days===1?'1d':`${days}d`}
-                    </div>
-                    <div style={{ fontWeight:700, fontSize:'0.85rem', marginTop:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {e.subject}
-                    </div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{e.board} · {e.examDate}</div>
-                  </div>
-                )
-              })}
+      {/* ── Row 2: Your progress — the four core metrics (§16) ── */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+          <h3>Your progress</h3>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span className="badge badge-purple" style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <Zap size={11} /> Level {level} · {totalXP.toLocaleString()} XP
+            </span>
+            <Link to="/analytics" style={{ fontSize:'0.78rem', color:'var(--accent)', fontWeight:600 }}>View analytics</Link>
           </div>
         </div>
-      )}
+        <div className="card">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16 }} className="dash-progress-grid">
+            {[
+              { icon:Clock, label:'Study time', value: dataLoading?'—':studyTimeLabel, colour:'var(--accent)' },
+              { icon:Target, label:'Average grade', value: dataLoading?'—':(avgGradePct!=null?`${avgGradePct}%`:'—'), colour:'var(--info)' },
+              { icon:Brain, label:'Topic confidence', value: dataLoading?'—':(avgConfidencePct!=null?`${avgConfidencePct}%`:'—'), colour:'var(--success)' },
+              { icon:Calendar, label:'Sessions', value: dataLoading?'—':completedSessions.length, colour:'var(--gold)' },
+            ].map(m => (
+              <div key={m.label} style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                <m.icon size={17} color={m.colour} style={{ marginTop:2, flexShrink:0 }} />
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontWeight:800, fontSize:'1.25rem', letterSpacing:'-0.01em', lineHeight:1.1 }}>{m.value}</div>
+                  <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:600, marginTop:2 }}>{m.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      {/* ── Your progress (per-subject confidence) ── */}
+      {/* ── Subject-by-subject progress (dashboard priority #3, §11/§15) ── */}
       {subjectProgress.length > 0 && (
         <div style={{ marginBottom:20 }}>
-          <h3 style={{ marginBottom:12 }}>Your progress</h3>
           <div className="card">
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               {subjectProgress.map(s => (
@@ -511,35 +579,54 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── XP + level card ── */}
-      <div className="card" style={{ marginBottom:20, background:'linear-gradient(135deg,var(--accent-pale),var(--bg-card))' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10, flexWrap:'wrap', gap:8 }}>
-          <div>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-              <Zap size={19} color="var(--accent)" />
-              <span style={{ fontWeight:800, fontSize:'1.1rem', color:'var(--accent)' }}>Level {level}</span>
-              <span className="badge badge-purple">{levelTitle}</span>
-            </div>
-            <div style={{ fontSize:'0.78rem', color:'var(--text-muted)' }}>
-              {xpThisLevel.toLocaleString()} / {xpNeeded.toLocaleString()} XP to Level {level+1}
-            </div>
+      {/* ── Row 3: Today's goal + Streak + Recent activity, side by side ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:20 }} className="dash-row-3">
+        <div className="card">
+          <h4 style={{ marginBottom:10 }}>Today's goal</h4>
+          <div style={{ fontWeight:800, fontSize:'1.6rem', marginBottom:8 }}>
+            {todaySessions.filter(s=>s.completed).length} / {todaySessions.length || 1}
+            <span style={{ fontSize:'0.78rem', fontWeight:600, color:'var(--text-muted)' }}> sessions</span>
           </div>
-          <div style={{ textAlign:'right' }}>
-            <div style={{ fontWeight:800, fontSize:'1.4rem', color:'var(--accent)' }}>{totalXP.toLocaleString()}</div>
-            <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Total XP</div>
+          <div className="progress-bar" style={{ height:10, marginBottom:10 }}>
+            <div className="progress-fill" style={{ width:`${todaySessions.length ? (todaySessions.filter(s=>s.completed).length/todaySessions.length)*100 : 0}%` }} />
           </div>
+          <Link to="/calendar" style={{ fontSize:'0.78rem', color:'var(--accent)', fontWeight:600 }}>View goals</Link>
         </div>
-        <div className="progress-bar" style={{ height:14 }}>
-          <div className="progress-fill xp-bar-fill" style={{ width:`${xpProgress}%` }} />
-        </div>
-      </div>
 
-      {/* ── Stats row (streak lives here — visible, but secondary to the above) ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
-        <StatCard icon={Flame}    label="Streak"        value={`${profile?.streak||0}d`}  sub={freezesRemaining>0?`${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left`:'No freezes left this week'} colour="var(--warning)" link="/analytics" loading={dataLoading} />
-        <StatCard icon={Calendar} label="Sessions today" value={todaySessions.length}      sub={`${todaySessions.filter(s=>s.completed).length} completed`} colour="var(--success)" link="/calendar" loading={dataLoading} />
-        <StatCard icon={Trophy}   label="Badges"         value={badges.length}             sub="earned"         colour="var(--gold)"  link="/profile"   loading={dataLoading} />
-        <StatCard icon={Clock}    label="Next exam"      value={daysToExam===0?'Today!':daysToExam===1?'1 day':daysToExam!=null?`${daysToExam}d`:'—'} sub={nextExam?.subject||'No exams'} colour={daysToExam!=null&&daysToExam<=7?'var(--danger)':daysToExam!=null&&daysToExam<=14?'var(--warning)':'var(--info)'} link="/exams" loading={dataLoading} />
+        <div className="card">
+          <h4 style={{ marginBottom:10 }}>{profile?.streak||0} day streak</h4>
+          <div style={{ display:'flex', gap:5, marginBottom:8 }}>
+            {['M','T','W','T','F','S','S'].map((d,i) => (
+              <div key={i} style={{ flex:1, textAlign:'center' }}>
+                <div style={{ fontSize:'0.62rem', color:'var(--text-muted)', marginBottom:3 }}>{d}</div>
+                <div style={{
+                  width:'100%', aspectRatio:1, borderRadius:'50%',
+                  background: i < Math.min(7, profile?.streak||0) ? 'var(--success)' : 'var(--bg-hover)',
+                  border: i < Math.min(7, profile?.streak||0) ? 'none' : '2px solid var(--border)',
+                }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>
+            {freezesRemaining>0?`${freezesRemaining} freeze${freezesRemaining===1?'':'s'} left this week`:'Keep it going!'}
+          </div>
+        </div>
+
+        <div className="card">
+          <h4 style={{ marginBottom:10 }}>Recent activity</h4>
+          {recentActivity.length === 0 ? (
+            <p style={{ fontSize:'0.8rem', margin:0 }}>Nothing yet — complete a session or a paper to see it here.</p>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+              {recentActivity.map(a => (
+                <div key={a.key} style={{ fontSize:'0.8rem' }}>
+                  <div style={{ fontWeight:600 }}>{a.label}</div>
+                  <div style={{ color:'var(--text-muted)', fontSize:'0.72rem' }}>{a.detail} · {a.when}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Daily quests ── */}
