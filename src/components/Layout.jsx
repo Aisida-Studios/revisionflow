@@ -182,10 +182,9 @@ export default function Layout() {
           {!collapsed && (
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <div style={{
-                width:32, height:32, borderRadius:10, flexShrink:0,
-                background:'linear-gradient(135deg,var(--accent),var(--accent-light))',
+                width:30, height:30, borderRadius:9, flexShrink:0,
+                background:'var(--accent)',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:'var(--shadow-sm)',
               }}>
                 <Zap size={16} color="#fff" />
               </div>
@@ -387,7 +386,7 @@ export default function Layout() {
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <div style={{
                 width:26, height:26, borderRadius:8,
-                background:'linear-gradient(135deg,var(--accent),var(--accent-light))',
+                background:'var(--accent)',
                 display:'flex', alignItems:'center', justifyContent:'center',
               }}>
                 <Zap size={13} color="#fff"/>
