@@ -1,0 +1,370 @@
+/* src/pages/Landing.css
+   Landing-page-only styles. Everything here is built on the tokens already
+   defined in src/styles/globals.css (--accent, --bg-*, --text-*, --border*,
+   --r-*, --shadow-*, --font) — no new colours or typography are introduced.
+
+   Class names are prefixed `lp-` to keep them safely scoped to this page and
+   avoid clashing with anything global or with another page's future classes —
+   with two deliberate exceptions: `.hero-section` and `.hero-stats` keep their
+   existing (unprefixed) names because globals.css already has responsive
+   `!important` rules targeting those exact class names at the 480px
+   breakpoint (padding/margin-top). Renaming them here would silently orphan
+   that existing global CSS instead of completing it. */
+
+.lp-page {
+  background: var(--bg-base);
+  min-height: 100vh;
+}
+
+/* ── Nav ──────────────────────────────────────────────────────────────────
+   The nav needs a translucent, theme-aware background for the sticky-blur
+   effect. That can't be built from a straight var() reference to --bg-base
+   (it's a hex custom property, and rgba() can't consume a hex string), so
+   the light/dark rgb equivalents are restated here as their own variable. */
+.lp-nav {
+  --lp-nav-bg: rgba(250, 250, 250, 0.82);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--lp-nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="dark"] .lp-nav {
+  --lp-nav-bg: rgba(12, 15, 13, 0.82);
+}
+.lp-nav-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.lp-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.lp-logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lp-logo-word {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.lp-logo-word span { color: var(--accent-light); }
+
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+.lp-nav-links a {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.lp-nav-links a:hover { color: var(--accent); }
+
+.lp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.lp-nav-signin {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+}
+.lp-nav-signin:hover { color: var(--accent); background: var(--bg-hover); }
+
+@media (max-width: 900px) {
+  .lp-nav-links { display: none; }
+}
+@media (max-width: 480px) {
+  .lp-nav-inner { padding: 12px 16px; gap: 8px; }
+}
+@media (max-width: 360px) {
+  .lp-logo-word { font-size: 1rem; }
+  .lp-nav-signin { padding: 9px 8px; }
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-section { padding: 64px 24px 48px; }
+}
+
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  background: var(--accent-pale);
+  color: var(--accent);
+  border: 1.5px solid var(--border-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin-bottom: 24px;
+  text-align: left;
+}
+[data-theme="dark"] .lp-eyebrow { color: var(--accent-light); }
+
+.lp-hero-title {
+  font-size: clamp(2rem, 1rem + 4.4vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 22px;
+}
+.lp-hero-sub {
+  font-size: clamp(1rem, 0.92rem + 0.3vw, 1.15rem);
+  max-width: 600px;
+  margin: 0 auto 34px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.lp-hero-microcopy {
+  margin-top: 14px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Hero stats — the grid this page was missing a finished responsive
+   implementation for. minmax(0,1fr) keeps a long label from stretching its
+   column wider than its share of the row (and thus wider than the card). */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 52px auto 0;
+  padding: 20px;
+  border-radius: var(--r-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  max-width: 560px;
+}
+@media (max-width: 480px) {
+  .hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 14px;
+  }
+}
+.lp-stat {
+  text-align: center;
+  min-width: 0;
+}
+.lp-stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-light);
+  line-height: 1.15;
+}
+.lp-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Feature cards ────────────────────────────────────────────────────── */
+.lp-features-head {
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto 44px;
+}
+.lp-features-head h2 { margin-bottom: 10px; }
+.lp-feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+.lp-feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  background: var(--accent-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp-feature-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lp-feature-desc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ── About / creator ──────────────────────────────────────────────────── */
+.lp-about-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+/* Solid fill, not --accent-pale: the avatar sits inside .accent-card, which
+   is already --accent-pale, so a pale-on-pale fill would nearly disappear
+   into its own container. Solid --accent (same combination .btn-primary
+   already uses in both themes) keeps it a distinct, legible focal point. */
+.lp-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.lp-badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: var(--r-full);
+  background: var(--accent-pale);
+  color: var(--accent);
+  border: 1.5px solid var(--border-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+[data-theme="dark"] .lp-badge-accent { color: var(--accent-light); }
+
+/* ── Trust / data section ─────────────────────────────────────────────── */
+.lp-trust-section {
+  padding: 56px 24px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+}
+.lp-trust-inner { max-width: 900px; margin: 0 auto; }
+.lp-trust-head { text-align: center; margin-bottom: 32px; }
+.lp-trust-head p { max-width: 560px; margin: 8px auto 0; }
+
+.lp-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.lp-trust-card {
+  padding: 18px;
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+}
+.lp-trust-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--accent-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.lp-trust-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+.lp-trust-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+.lp-trust-foot { text-align: center; font-size: 0.82rem; color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .lp-trust-section { padding: 40px 20px; }
+}
+
+/* ── Final CTA band ───────────────────────────────────────────────────── */
+.lp-cta-band {
+  padding: 64px 24px;
+  text-align: center;
+  background: var(--accent);
+}
+.lp-cta-band h2 { color: var(--text-on-accent); margin-bottom: 10px; }
+.lp-cta-band p { color: var(--text-on-accent); opacity: 0.88; margin-bottom: 28px; }
+
+/* White pill on a solid accent band — deliberately not var(--bg-card): the
+   band itself is always var(--accent) in both themes, so a fixed white
+   surface with accent-coloured text is what stays legible against it in
+   both light and dark mode, rather than a token that itself flips per theme. */
+.lp-cta-btn {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+.lp-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+  background: #fff;
+}
+
+@media (max-width: 480px) {
+  .lp-cta-band { padding: 48px 20px; }
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.lp-footer { border-top: 1px solid var(--border); }
+.lp-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 28px;
+}
+.lp-footer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.lp-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.lp-footer-links a { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
+.lp-footer-links a:hover { color: var(--accent); }
+.lp-footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .lp-footer-inner { padding: 24px 20px 20px; }
+  .lp-footer-top { justify-content: center; text-align: center; }
+  .lp-footer-bottom { justify-content: center; text-align: center; }
+}
