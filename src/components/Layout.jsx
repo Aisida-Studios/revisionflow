@@ -286,7 +286,7 @@ export default function Layout() {
                     fontSize:'0.85rem', fontWeight: isActive ? 700 : 500,
                     color: isActive ? '#fff' : 'var(--text-secondary)',
                     background: isActive
-                      ? 'linear-gradient(135deg,var(--accent),var(--purple-500))'
+                      ? 'var(--brand-gradient)'
                       : 'transparent',
                     textDecoration:'none',
                     cursor:'pointer',
