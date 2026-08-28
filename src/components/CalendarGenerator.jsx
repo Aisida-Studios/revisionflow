@@ -513,7 +513,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 {val:'add',label:'Add to existing calendar',desc:'All current sessions are kept — new ones are added on top'},
               ].map(opt=>(
                 <button key={opt.val} onClick={()=>setReplaceChoice(opt.val)}
-                  style={{padding:'10px 14px',borderRadius:'var(--radius-md)',border:`2px solid ${replaceChoice===opt.val?'var(--accent)':'var(--border)'}`,background:replaceChoice===opt.val?'rgba(124,58,237,0.1)':'var(--bg-surface)',textAlign:'left',cursor:'pointer',width:'100%'}}>
+                  style={{padding:'10px 14px',borderRadius:'var(--radius-md)',border:`2px solid ${replaceChoice===opt.val?'var(--accent)':'var(--border)'}`,background:replaceChoice===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)',textAlign:'left',cursor:'pointer',width:'100%'}}>
                   <div style={{fontWeight:600,fontSize:'0.875rem',marginBottom:2}}>{opt.label}</div>
                   <div style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{opt.desc}</div>
                 </button>
@@ -529,7 +529,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
             <div className="grid-4" style={{gap:8,marginBottom:14}}>
               {[
                 {l:'Total',     v:stats.total,     c:'var(--accent-light)'},
-                {l:'Content',   v:stats.content,   c:'var(--purple-300)'},
+                {l:'Content',   v:stats.content,   c:'#0d9488'},
                 {l:'Exam prac.',v:stats.exam,       c:'var(--info)'},
                 {l:'Emergency', v:stats.emergency,  c:'var(--danger)'},
               ].map(s=>(
