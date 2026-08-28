@@ -21,7 +21,7 @@ function Piece({ colour, x, delay, duration, size }) {
   )
 }
 
-const COLOURS = ['#7c3aed','#a855f7','#f59e0b','#10b981','#3b82f6','#f43f5e','#ec4899','#06b6d4']
+const COLOURS = ['#16a34a','#0d9488','#f59e0b','#10b981','#3b82f6','#f43f5e','#ec4899','#06b6d4']
 
 export default function StreakCelebration({ streak, onClose }) {
   const [visible, setVisible] = useState(true)
@@ -104,7 +104,7 @@ export default function StreakCelebration({ streak, onClose }) {
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            background: 'white',
+            background: 'var(--bg-card)',
             borderRadius: 28,
             padding: '40px 48px',
             textAlign: 'center',
@@ -113,7 +113,7 @@ export default function StreakCelebration({ streak, onClose }) {
             boxShadow: '0 24px 80px rgba(0,0,0,0.4)',
             animation: 'cardBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards',
             position: 'relative',
-            border: '3px solid #f3e8ff',
+            border: '3px solid var(--gold-border)',
             // Same fix as TooltipTour.jsx: no maxHeight/overflow meant a short viewport (landscape
             // mobile, a browser window with dev tools open) could push the close button and streak
             // count below the reachable area, with the fixed overlay itself not scrollable.
@@ -139,14 +139,14 @@ export default function StreakCelebration({ streak, onClose }) {
           </div>
 
           <div style={{
-            fontSize: '1.1rem', fontWeight: 900, color: '#1e1033',
+            fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-primary)',
             marginTop: 8, marginBottom: 6, letterSpacing: '-0.01em',
           }}>
             Day Streak! 🎉
           </div>
 
           <p style={{
-            fontSize: '0.9rem', color: '#6b7280', margin: '0 0 24px',
+            fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0 0 24px',
             lineHeight: 1.6,
           }}>
             {streak >= 30
@@ -161,32 +161,17 @@ export default function StreakCelebration({ streak, onClose }) {
           </p>
 
           {/* Keep it going bar */}
-          <div style={{
-            background: '#f3e8ff', borderRadius: 999, height: 10, marginBottom: 20,
-            overflow: 'hidden', border: '2px solid #e9d5ff',
-          }}>
-            <div style={{
-              height: '100%', borderRadius: 999,
-              background: 'linear-gradient(90deg, #7c3aed, #a855f7)',
-              width: `${Math.min(100, (streak / 30) * 100)}%`,
-              transition: 'width 1.2s 0.5s cubic-bezier(0.4,0,0.2,1)',
-              boxShadow: '0 0 8px rgba(168,85,247,0.6)',
-            }} />
+          <div className="progress-bar" style={{ height: 10, marginBottom: 20 }}>
+            <div
+              className="progress-fill"
+              style={{ width: `${Math.min(100, (streak / 30) * 100)}%`, transition: 'width 1.2s 0.5s cubic-bezier(0.4,0,0.2,1)' }}
+            />
           </div>
 
           <button
             onClick={() => { setVisible(false); onClose?.() }}
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-              color: '#fff', border: 'none', borderRadius: 999,
-              padding: '13px 32px', fontSize: '1rem', fontWeight: 800,
-              cursor: 'pointer', width: '100%',
-              boxShadow: '0 4px 0 #5b21b6, 0 6px 20px rgba(124,58,237,0.35)',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseEnter={e => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 0 #5b21b6, 0 10px 24px rgba(124,58,237,0.4)' }}
-            onMouseLeave={e => { e.target.style.transform = ''; e.target.style.boxShadow = '0 4px 0 #5b21b6, 0 6px 20px rgba(124,58,237,0.35)' }}
-            onMouseDown={e => { e.target.style.transform = 'translateY(2px)'; e.target.style.boxShadow = '0 1px 0 #5b21b6' }}>
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%' }}>
             Keep it up! 💪
           </button>
         </div>
