@@ -16,7 +16,7 @@ import { buildTopicId } from '../utils/topicId'
 import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Users, Brain, Sparkles, Star } from 'lucide-react'
 
-const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'AI Plan', 'Friends', 'Done']
+const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const DEFAULT_TIMES = {
   Monday:'17:00', Tuesday:'17:00', Wednesday:'16:00',
@@ -27,7 +27,7 @@ const STEP_ICONS = ['👋','🎓','📚','🎯','📅','🤖','👥','🎉']
 
 // Tiny inline confetti
 function Confetti() {
-  const colours = ['#7c3aed','#a855f7','#f59e0b','#22c55e','#3b82f6','#ec4899']
+  const colours = ['#16a34a','#0d9488','#f59e0b','#22c55e','#3b82f6','#ec4899']
   const pieces  = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
@@ -61,8 +61,8 @@ function XPPill({ xp }) {
   return (
     <div style={{
       display:'inline-flex', alignItems:'center', gap:5, padding:'4px 12px',
-      borderRadius:999, border:'1px solid rgba(124,58,237,0.3)',
-      background: flash ? 'rgba(124,58,237,0.18)' : 'rgba(124,58,237,0.08)',
+      borderRadius:999, border:'1px solid rgba(34,197,94,0.3)',
+      background: flash ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.08)',
       transition:'background 0.3s', fontSize:'0.82rem', fontWeight:700,
       color:'var(--accent-light)',
     }}>
@@ -201,7 +201,7 @@ export default function Onboarding() {
         <div style={{ textAlign:'center', marginBottom:20 }}>
           <div style={{
             width:44, height:44, borderRadius:12,
-            background:'linear-gradient(135deg,#7c3aed,#a855f7)',
+            background:'var(--brand-gradient)',
             display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px',
           }}>
             <Zap size={22} color="#fff"/>
@@ -277,7 +277,7 @@ export default function Onboarding() {
                 <button key={q} onClick={() => setQual(q)} style={{
                   width:'100%', textAlign:'left', cursor:'pointer', marginBottom:8,
                   border:`2px solid ${qual===q ? 'var(--accent)' : 'var(--border)'}`,
-                  background: qual===q ? 'rgba(124,58,237,0.08)' : 'var(--bg-card)',
+                  background: qual===q ? 'rgba(34,197,94,0.08)' : 'var(--bg-card)',
                   borderRadius:'var(--radius-md)', padding:'14px 16px',
                   display:'flex', alignItems:'center', justifyContent:'space-between',
                   transition:'all 0.15s',
@@ -301,7 +301,7 @@ export default function Onboarding() {
                 <button key={q} onClick={() => setQual(q)} style={{
                   width:'100%', textAlign:'left', cursor:'pointer', marginBottom:8,
                   border:`2px solid ${qual===q ? 'var(--accent)' : 'var(--border)'}`,
-                  background: qual===q ? 'rgba(124,58,237,0.08)' : 'var(--bg-card)',
+                  background: qual===q ? 'rgba(34,197,94,0.08)' : 'var(--bg-card)',
                   borderRadius:'var(--radius-md)', padding:'14px 16px',
                   display:'flex', alignItems:'center', justifyContent:'space-between',
                   transition:'all 0.15s',
@@ -410,7 +410,7 @@ export default function Onboarding() {
               <p style={{ marginBottom:14, fontSize:'0.85rem', color:'var(--text-secondary)' }}>
                 The AI uses these to prioritise what you revise and predict your progress.
               </p>
-              <div style={{ padding:12, background:'rgba(124,58,237,0.07)', borderRadius:10, border:'1px solid rgba(124,58,237,0.2)', marginBottom:14 }}>
+              <div style={{ padding:12, background:'rgba(34,197,94,0.07)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)', marginBottom:14 }}>
                 <label className="label">Apply one target to all subjects</label>
                 <select className="select" value={globalTarget} onChange={e => {
                   const val = e.target.value
@@ -500,7 +500,7 @@ export default function Onboarding() {
               </p>
               {!planDone ? (
                 <div style={{ textAlign:'center', padding:'24px 0' }}>
-                  <div style={{ fontSize:'3rem', marginBottom:12 }}>🤖</div>
+                  <Brain size={44} color="var(--accent-light)" style={{ marginBottom:12 }} />
                   <button className="btn btn-primary" onClick={generatePlan} disabled={aiLoading} style={{ padding:'11px 28px' }}>
                     {aiLoading ? 'Generating your plan…' : <><Sparkles size={15}/> Generate my AI study plan</>}
                   </button>
@@ -517,7 +517,7 @@ export default function Onboarding() {
               ) : (
                 <div>
                   <div style={{
-                    background:'rgba(124,58,237,0.06)', border:'1px solid rgba(124,58,237,0.15)',
+                    background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.15)',
                     borderRadius:10, padding:14, maxHeight:260, overflowY:'auto',
                     fontSize:'0.82rem', lineHeight:1.8, whiteSpace:'pre-wrap', marginBottom:10,
                   }}>
@@ -555,7 +555,7 @@ export default function Onboarding() {
                   </div>
                 ))}
               </div>
-              <div style={{ padding:'10px 14px', background:'rgba(124,58,237,0.06)', borderRadius:10, border:'1px solid rgba(124,58,237,0.2)', fontSize:'0.8rem', color:'var(--text-muted)' }}>
+              <div style={{ padding:'10px 14px', background:'rgba(34,197,94,0.06)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)', fontSize:'0.8rem', color:'var(--text-muted)' }}>
                 Your profile link: <strong style={{ color:'var(--accent-light)' }}>www.revisionflow.co.uk/u/{username || user?.uid?.slice(0,8)}</strong>
               </div>
               <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginTop:10 }}>Add friends from the Friends page after setup.</p>
@@ -568,7 +568,7 @@ export default function Onboarding() {
               <Confetti />
               <div style={{ fontSize:'4rem', marginBottom:12, position:'relative', zIndex:1 }}>🎉</div>
               <h2 style={{ marginBottom:8, position:'relative', zIndex:1 }}>You&apos;re all set!</h2>
-              <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 16px', borderRadius:999, background:'rgba(124,58,237,0.12)', border:'1px solid rgba(124,58,237,0.3)', marginBottom:20, position:'relative', zIndex:1 }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 16px', borderRadius:999, background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)', marginBottom:20, position:'relative', zIndex:1 }}>
                 <Zap size={15} color="var(--accent-light)" />
                 <span style={{ fontWeight:800, color:'var(--accent-light)', fontSize:'0.9rem' }}>+{xpPreview} XP waiting for you</span>
               </div>
