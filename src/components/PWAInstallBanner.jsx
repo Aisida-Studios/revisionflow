@@ -69,13 +69,13 @@ export default function PWAInstallBanner() {
         border: '1px solid var(--accent)',
         borderRadius: 'var(--radius-lg)',
         padding: '12px 16px',
-        boxShadow: '0 8px 32px rgba(124,58,237,0.25)',
+        boxShadow: '0 8px 32px rgba(20,83,45,0.2)',
         display: 'flex', alignItems: 'center', gap: 12,
         animation: 'slideUp 0.3s ease',
       }}>
         <div style={{
           width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-          background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+          background: 'var(--brand-gradient)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Smartphone size={20} color="#fff"/>
