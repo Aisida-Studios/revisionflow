@@ -530,7 +530,7 @@ export default function Dashboard() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <h3>Your progress</h3>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <span className="badge badge-purple" style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <span className="badge badge-accent" style={{ display:'flex', alignItems:'center', gap:4 }}>
               <Zap size={11} /> Level {level} · {totalXP.toLocaleString()} XP
             </span>
             <Link to="/analytics" style={{ fontSize:'0.78rem', color:'var(--accent)', fontWeight:600 }}>View analytics</Link>
