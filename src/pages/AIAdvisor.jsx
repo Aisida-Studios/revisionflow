@@ -302,7 +302,7 @@ export default function AIAdvisor() {
           <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:10,padding:'12px 0'}}>
             {messages.map((m,i)=>(
               <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',flexDirection:m.role==='user'?'row-reverse':'row'}}>
-                <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:m.role==='user'?'var(--accent)':'rgba(124,58,237,0.2)'}}>
+                <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:m.role==='user'?'var(--accent)':'rgba(34,197,94,0.2)'}}>
                   {m.role==='user'?'👤':<Zap size={14} color="var(--accent-light)"/>}
                 </div>
                 {m.role==='user' ? (
@@ -318,7 +318,7 @@ export default function AIAdvisor() {
             ))}
             {loading&&(
               <div style={{display:'flex',gap:8}}>
-                <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(124,58,237,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}><Zap size={14} color="var(--accent-light)"/></div>
+                <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(34,197,94,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}><Zap size={14} color="var(--accent-light)"/></div>
                 <div style={{padding:'9px 13px',background:'var(--bg-surface)',borderRadius:'var(--radius-lg)',border:'1px solid var(--border)'}}>
                   <div style={{display:'flex',gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:'50%',background:'var(--accent)',animation:`bounce 1s ease ${i*0.15}s infinite`}}/>)}</div>
                 </div>
@@ -401,7 +401,7 @@ export default function AIAdvisor() {
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:10}}>
             <div>
-              <h4>AI Study Plan</h4>
+              <h4>Study Plan</h4>
               <p style={{fontSize:'0.875rem'}}>Personalised plan based on your subjects, exam dates and preferences</p>
             </div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -443,7 +443,7 @@ export default function AIAdvisor() {
           </div>
 
           {planPrefs.showForm && (
-            <div style={{padding:14,background:'rgba(124,58,237,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',marginBottom:14}}>
+            <div style={{padding:14,background:'rgba(34,197,94,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',marginBottom:14}}>
               <h4 style={{marginBottom:12,fontSize:'0.9rem'}}>Customise your plan</h4>
               <div className="grid-2" style={{gap:10,marginBottom:12}}>
                 <div>
@@ -661,11 +661,11 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
         </p>
         {preview && (
           <>
-            <div style={{padding:'8px 12px',background:'rgba(124,58,237,0.08)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.82rem',marginBottom:14}}>
+            <div style={{padding:'8px 12px',background:'rgba(34,197,94,0.08)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.82rem',marginBottom:14}}>
               <strong>{preview.length} sessions</strong> across {Object.keys(bySubject).length} subjects:
               <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:6}}>
                 {Object.entries(bySubject).map(([s,n])=>(
-                  <span key={s} className="badge badge-purple" style={{fontSize:'0.72rem'}}>{s}: {n}</span>
+                  <span key={s} className="badge badge-accent" style={{fontSize:'0.72rem'}}>{s}: {n}</span>
                 ))}
               </div>
             </div>
@@ -674,7 +674,7 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
                 <div key={i} style={{display:'flex',gap:10,padding:'5px 10px',borderBottom:'1px solid var(--border)',fontSize:'0.78rem',alignItems:'center'}}>
                   <span style={{color:'var(--text-muted)',flexShrink:0,minWidth:68}}>{s.date}</span>
                   <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.title}</span>
-                  <span className={`badge badge-${s.type.includes('Exam')?'blue':'purple'}`} style={{fontSize:'0.65rem',flexShrink:0}}>{s.type==='Exam Practice'?'Exam':'Content'}</span>
+                  <span className={`badge badge-${s.type.includes('Exam')?'blue':'accent'}`} style={{fontSize:'0.65rem',flexShrink:0}}>{s.type==='Exam Practice'?'Exam':'Content'}</span>
                 </div>
               ))}
               {preview.length>8&&<div style={{padding:'4px 10px',fontSize:'0.72rem',color:'var(--text-muted)'}}>…and {preview.length-8} more</div>}
@@ -690,7 +690,7 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
             <button key={opt.val} onClick={()=>setMode(opt.val)}
               style={{display:'block',width:'100%',padding:'8px 12px',marginBottom:6,borderRadius:'var(--radius-md)',cursor:'pointer',textAlign:'left',
                 border:`2px solid ${mode===opt.val?'var(--accent)':'var(--border)'}`,
-                background:mode===opt.val?'rgba(124,58,237,0.1)':'var(--bg-surface)'}}>
+                background:mode===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)'}}>
               <span style={{fontWeight:600,fontSize:'0.875rem'}}>{opt.label}</span>
               <span style={{fontSize:'0.78rem',color:'var(--text-muted)',marginLeft:8}}>{opt.desc}</span>
             </button>
