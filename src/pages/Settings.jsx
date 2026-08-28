@@ -13,7 +13,7 @@ import ThemeSelector from '../components/ThemeSelector'
 import toast from 'react-hot-toast'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { auth } from '../firebase'
-import { Sun, Moon, Plus, X, Trash2, Crown, Zap } from 'lucide-react'
+import { Sun, Moon, Plus, X, Trash2, Crown } from 'lucide-react'
 
 function PortalButton({ uid }) {
   const [loading, setLoading] = React.useState(false)
@@ -253,7 +253,7 @@ export default function Settings() {
                 { v: 'BTEC-L3', label: 'BTEC (L3)' },
               ].map(({ v, label }) => (
                 <button key={v} onClick={() => setNewSubjLevel(v)}
-                  style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubjLevel || qual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubjLevel || qual) === v ? 'rgba(124,58,237,0.15)' : 'transparent', color: (newSubjLevel || qual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                  style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubjLevel || qual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubjLevel || qual) === v ? 'rgba(34,197,94,0.15)' : 'transparent', color: (newSubjLevel || qual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                   {label}
                 </button>
               ))}
@@ -376,20 +376,20 @@ export default function Settings() {
           <div>
             <label className="label" style={{ marginBottom: 8 }}>Subscription</label>
             {isBeta ? (
-              <div style={{ padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', border: '1px solid rgba(124,58,237,0.25)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Crown size={20} color="var(--accent-light)" style={{ flexShrink: 0 }} />
+              <div style={{ padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))', border: '1px solid var(--gold-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Crown size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                     Pro — Lifetime Access
-                    <span style={{ padding: '1px 8px', borderRadius: 999, background: 'rgba(124,58,237,0.15)', color: 'var(--accent-light)', fontSize: '0.68rem', fontWeight: 800 }}>BETA</span>
+                    <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--gold-pale)', color: 'var(--gold)', fontSize: '0.68rem', fontWeight: 800 }}>BETA</span>
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>All Pro features unlocked forever — thank you for being an early supporter</div>
                 </div>
               </div>
             ) : isPro ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))', border: '1px solid var(--gold-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Crown size={18} color="var(--accent-light)" style={{ flexShrink: 0 }} />
+                  <Crown size={18} color="var(--gold)" style={{ flexShrink: 0 }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Pro — Active</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -406,7 +406,7 @@ export default function Settings() {
                   <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
                 </div>
-                <a href="/pro" className="btn btn-primary btn-sm"><Zap size={13} /> Upgrade to Pro</a>
+                <a href="/pro" className="btn btn-primary btn-sm"><Crown size={13} /> Upgrade to Pro</a>
               </div>
             )}
           </div>
@@ -538,7 +538,7 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>This subject:</span>
                   {['AS-Level', 'A-Level'].map(v => (
                     <button key={v} onClick={() => setNewSubj(s => ({ ...s, qualification: v, name: '' }))}
-                      style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubj.qualification||newQual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubj.qualification||newQual) === v ? 'rgba(124,58,237,0.15)' : 'transparent', color: (newSubj.qualification||newQual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                      style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubj.qualification||newQual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubj.qualification||newQual) === v ? 'rgba(34,197,94,0.15)' : 'transparent', color: (newSubj.qualification||newQual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                       {v}
                     </button>
                   ))}
