@@ -11,7 +11,7 @@
 //   const { isPro } = useIsPro()
 
 import { Link } from 'react-router-dom'
-import { Zap, Lock } from 'lucide-react'
+import { Crown, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export function useIsPro() {
@@ -23,18 +23,20 @@ export function useIsPro() {
   }
 }
 
-// Inline lock badge — drop onto any element to show it's Pro
+// Inline lock badge — drop onto any element to show it's Pro.
+// Gold + Crown to match the Pro identity used in Layout.jsx's sidebar
+// (upgrade CTA, name-tag badge).
 export function ProBadge({ style = {} }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 3,
       padding: '1px 7px', borderRadius: 999,
-      background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+      background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
       color: '#fff', fontSize: '0.65rem', fontWeight: 800,
       letterSpacing: '0.04em', verticalAlign: 'middle',
       ...style,
     }}>
-      <Zap size={9} /> PRO
+      <Crown size={9} /> PRO
     </span>
   )
 }
@@ -49,13 +51,13 @@ export default function ProGate({ children, feature = 'this feature', compact = 
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
         padding: '8px 14px', borderRadius: 10,
-        background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)',
+        background: 'var(--gold-pale)', border: '1px solid var(--gold-border)',
       }}>
-        <Lock size={13} color="var(--accent-light)" />
+        <Lock size={13} color="var(--gold)" />
         <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
           {feature} is Pro-only.
         </span>
-        <Link to="/pro" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-light)' }}>
+        <Link to="/pro" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold)' }}>
           Upgrade →
         </Link>
       </div>
@@ -65,16 +67,16 @@ export default function ProGate({ children, feature = 'this feature', compact = 
   return (
     <div style={{
       padding: '32px 24px', borderRadius: 14, textAlign: 'center',
-      background: 'linear-gradient(135deg,rgba(124,58,237,0.08) 0%,rgba(168,85,247,0.04) 100%)',
-      border: '1px solid rgba(124,58,237,0.2)',
+      background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))',
+      border: '1px solid var(--gold-border)',
     }}>
       <div style={{
         width: 48, height: 48, borderRadius: '50%',
-        background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+        background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 14px',
       }}>
-        <Zap size={22} color="#fff" />
+        <Crown size={22} color="#fff" />
       </div>
       <h4 style={{ marginBottom: 6 }}>
         {feature.charAt(0).toUpperCase() + feature.slice(1)} is a Pro feature
@@ -84,7 +86,7 @@ export default function ProGate({ children, feature = 'this feature', compact = 
       </p>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link to="/pro" className="btn btn-primary" style={{ padding: '10px 24px' }}>
-          <Zap size={14} /> Upgrade to Pro — from £3.99/mo
+          <Crown size={14} /> Upgrade to Pro — from £3.99/mo
         </Link>
         <Link to="/pro" className="btn btn-ghost btn-sm">See all features →</Link>
       </div>
