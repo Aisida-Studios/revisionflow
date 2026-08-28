@@ -29,7 +29,7 @@ export default function OnboardingRecapPopup({ breakdown, displayName, onClose }
               <span>AI revision plan generated</span><strong>+{breakdown.plan} XP</strong>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-light)' }}>
             <span>Total</span><span>+{breakdown.total} XP</span>
           </div>
         </div>
