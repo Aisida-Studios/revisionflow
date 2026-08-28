@@ -768,7 +768,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       <TopBar />
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18, flexWrap:'wrap', gap:8 }}>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          <span className="badge badge-purple">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
+          <span className="badge badge-accent">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
           {subject&&<span className="badge badge-grey">{subject}</span>}
         </div>
         {setId && (
@@ -865,7 +865,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
           <span>{idx+1}/{filteredCards.length}</span><span>{Math.round(idx/filteredCards.length*100)}%</span>
         </div>
         <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius:3, transition:'width 0.3s' }} />
+          <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--accent),var(--accent-light))', borderRadius:3, transition:'width 0.3s' }} />
         </div>
       </div>
       <FlipCard card={filteredCards[idx]} index={idx} total={filteredCards.length} showRate onRate={handleFlashRate}
@@ -1328,7 +1328,7 @@ function QuizTab({ mySets, uid, profile }) {
             <ChevronLeft size={15} /> Back
           </button>
           <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
-          <span className="badge badge-purple">{quizCards.length} questions</span>
+          <span className="badge badge-accent">{quizCards.length} questions</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
           <TestMode cards={quizCards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
@@ -1663,7 +1663,7 @@ function PracticeTab({ mySets, uid }) {
             <span>{idx + 1}/{queue.length}</span><span>{Math.round(idx / queue.length * 100)}%</span>
           </div>
           <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: (idx / queue.length * 100) + '%', background: 'linear-gradient(90deg,var(--purple-700),var(--purple-400))', borderRadius: 3, transition: 'width 0.3s' }} />
+            <div style={{ height: '100%', width: (idx / queue.length * 100) + '%', background: 'linear-gradient(90deg,var(--accent),var(--accent-light))', borderRadius: 3, transition: 'width 0.3s' }} />
           </div>
         </div>
         <FlipCard card={item.card} index={idx} total={queue.length} showRate onRate={handleRate}
@@ -2571,7 +2571,7 @@ export default function Study() {
         <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><BookOpen size={15} /> Flashcards</button>
         <button className={'tab' + (tab === 'practice' ? ' active' : '')} onClick={() => setTab('practice')}>
           <Repeat size={15} /> Practice
-          {practiceDueCount > 0 && <span className="badge badge-purple" style={{ marginLeft: 6, fontSize: '0.65rem', padding: '1px 6px' }}>{practiceDueCount}</span>}
+          {practiceDueCount > 0 && <span className="badge badge-accent" style={{ marginLeft: 6, fontSize: '0.65rem', padding: '1px 6px' }}>{practiceDueCount}</span>}
         </button>
         <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ClipboardList size={15} /> Quiz</button>
         <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
@@ -2593,7 +2593,7 @@ export default function Study() {
 
           {flashTab === 'generate' && (
             <div className="card" style={{ maxWidth: 560 }}>
-              <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} color="var(--accent-light)" /> AI Flashcard Generator</h4>
+              <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} color="var(--accent-light)" /> Flashcard Generator</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div><label className="label">Subject</label>
                   <select className="select" value={fcSubject} onChange={e => setFcSubject(e.target.value)}>
@@ -2653,7 +2653,7 @@ export default function Study() {
                             <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteSet(set)}><Trash2 size={13} /></button>
                           </div>
                         </div>
-                        {set.isPublic && <span className="badge badge-purple" style={{ alignSelf: 'flex-start', fontSize: '0.68rem' }}>🌐 Public</span>}
+                        {set.isPublic && <span className="badge badge-accent" style={{ alignSelf: 'flex-start', fontSize: '0.68rem' }}>🌐 Public</span>}
                         <button className="btn btn-primary btn-sm" onClick={() => studySet(set)}>Study this set →</button>
                       </div>
                     ))}
@@ -2831,7 +2831,7 @@ export default function Study() {
                         <div style={{ flex: 1 }}>
                           <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Question {i + 1}</span>
                           {q.marks !== '?' && (
-                            <span className="badge badge-purple" style={{ marginLeft: 8, fontSize: '0.72rem' }}>
+                            <span className="badge badge-accent" style={{ marginLeft: 8, fontSize: '0.72rem' }}>
                               [{q.marks} mark{q.marks !== '1' ? 's' : ''}]
                             </span>
                           )}
