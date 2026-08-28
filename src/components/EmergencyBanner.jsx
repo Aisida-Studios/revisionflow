@@ -48,7 +48,7 @@ export default function EmergencyBanner() {
             : `${nextUrgentExam.subject} exam in ${days} day${days !== 1 ? 's' : ''}`}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Tap to open Emergency Mode — AI revision plan for your last few days
+          Tap to open Emergency Mode — your revision plan for the last few days
         </p>
       </div>
       <div className="btn btn-primary btn-sm" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
