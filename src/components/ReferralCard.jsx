@@ -30,7 +30,7 @@ export default function ReferralCard() {
     if (navigator.share) {
       await navigator.share({
         title: 'RevisionFlow',
-        text: 'I use RevisionFlow for my GCSE revision — free AI-powered tracker. Join using my link and we both get XP!',
+        text: 'I use RevisionFlow for my GCSE revision — free revision tracker. Join using my link and we both get XP!',
         url: referralUrl,
       })
     } else {
