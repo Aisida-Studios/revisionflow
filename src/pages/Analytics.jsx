@@ -15,7 +15,7 @@ import { SUBJECT_COLOURS } from '../data/subjects'
 import { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,
          Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'
 
-const COLOURS = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#a855f7']
+const COLOURS = ['#0d9488','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#166534']
 const HOUR_LABELS = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am',
                      '12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm']
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -189,7 +189,7 @@ export default function Analytics() {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     currentTopics.forEach(t => { if (t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
     const labels = { 1: 'Not started', 2: 'Struggling', 3: 'Getting there', 4: 'Confident', 5: 'Mastered' }
-    const colours = { 1: '#ef4444', 2: '#f97316', 3: '#f59e0b', 4: '#10b981', 5: '#7c3aed' }
+    const colours = { 1: '#dc2626', 2: '#f97316', 3: '#eab308', 4: '#84cc16', 5: '#16a34a' }
     return Object.entries(counts).map(([k, v]) => ({ name: labels[k], value: v, colour: colours[k] })).filter(c => c.value > 0)
   }, [currentTopics])
 
@@ -286,10 +286,10 @@ export default function Analytics() {
 
   const heatColour = (count) => {
     if (count === 0) return 'var(--bg-hover)'
-    if (count === 1) return 'rgba(124,58,237,0.35)'
-    if (count === 2) return 'rgba(124,58,237,0.58)'
-    if (count === 3) return 'rgba(124,58,237,0.78)'
-    return '#7c3aed'
+    if (count === 1) return 'rgba(34,197,94,0.35)'
+    if (count === 2) return 'rgba(34,197,94,0.58)'
+    if (count === 3) return 'rgba(34,197,94,0.78)'
+    return '#16a34a'
   }
 
   const fmtMins = (m) => m >= 60 ? `${Math.floor(m/60)}h ${m%60}m` : `${m}m`
@@ -323,11 +323,11 @@ export default function Analytics() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
         <StatCard icon={<Clock size={18}/>}    label="Total study time"    val={fmtMins(totalMinutes)}        colour="var(--accent-light)" />
         <StatCard icon={<Activity size={18}/>} label="Sessions completed"  val={completedSessions.length}     colour="var(--info)" />
-        <StatCard icon={<Zap size={18}/>}      label="Avg session length"  val={`${avgSessionLength}m`}       colour="var(--purple-300)" />
+        <StatCard icon={<Zap size={18}/>}      label="Avg session length"  val={`${avgSessionLength}m`}       colour="#0d9488" />
         <StatCard icon={<Flame size={18}/>}    label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
         <StatCard icon={<Target size={18}/>}   label="Completion rate"     val={`${completionRate}%`}         colour="var(--success)" />
         <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={attempts.length}              colour="var(--accent)" />
-        <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={topics.length}                colour="var(--purple-400)" />
+        <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={topics.length}                colour="#0891b2" />
         <StatCard icon={<BarChart2 size={18}/>}label="Avg daily (period)"  val={`${avgDailyMinutes}m`}        colour="var(--info)" />
       </div>
 
@@ -696,7 +696,7 @@ export default function Analytics() {
       {/* ══ INSIGHTS TAB ══ */}
       {activeTab === 'insights' && (<>
 
-        <Section title="AI Study Summary" icon={<Star size={16}/>}>
+        <Section title="Study Summary" icon={<Star size={16}/>}>
           <AIInsights
             sessions={completedSessions}
             topics={currentTopics}
@@ -740,7 +740,7 @@ export default function Analytics() {
                 desc="Short daily sessions beat long irregular ones. Even 20 minutes every day will build momentum and improve retention." />
             )}
             {weeklyPattern.some(d => d.hours === 0 && ['Sat','Sun'].includes(d.day)) && attempts.length > 0 && (
-              <Rec icon="📅" colour="var(--purple-400)"
+              <Rec icon="📅" colour="#0d9488"
                 title="Use weekends for papers"
                 desc="Weekends are great for timed past paper practice when you have longer uninterrupted blocks." />
             )}
