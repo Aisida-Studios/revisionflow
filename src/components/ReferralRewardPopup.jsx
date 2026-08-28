@@ -45,8 +45,8 @@ export default function ReferralRewardPopup({ variant, onClose }) {
           {copy.rewards.map(r => (
             <div key={r.label} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '10px 14px', background: 'rgba(124,58,237,0.08)',
-              border: '1px solid rgba(124,58,237,0.2)', borderRadius: 'var(--r-md)',
+              padding: '10px 14px', background: 'rgba(34,197,94,0.08)',
+              border: '1px solid rgba(34,197,94,0.2)', borderRadius: 'var(--r-md)',
               fontWeight: 700, fontSize: '0.9rem',
             }}>
               <span style={{ fontSize: '1.1rem' }}>{r.icon}</span> {r.label}
