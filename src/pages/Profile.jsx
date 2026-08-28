@@ -340,7 +340,7 @@ export default function Profile() {
             )}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
-            {['Unlimited AI topic notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
+            {['Unlimited Topic Notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
               <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'var(--gold-pale)', border: '1px solid var(--gold-border)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--gold)' }}>
                 <Check size={10} /> {f}
               </span>
