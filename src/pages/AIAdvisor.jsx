@@ -615,7 +615,7 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
           date:    sessionDate.toISOString().slice(0,10),
           start:   `${String(hour).padStart(2,'0')}:00`,
           startTime: sessionDate.toISOString(), endTime: endDate.toISOString(),
-          duration: 45, source: 'ai-plan', completed: false, notes: 'Generated from AI Study Plan',
+          duration: 45, source: 'ai-plan', completed: false, notes: 'Generated from Study Plan',
         })
       }
     })
@@ -657,7 +657,7 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
           <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
         </div>
         <p style={{fontSize:'0.875rem',marginBottom:14}}>
-          This will create revision sessions in your calendar based on the AI study plan.
+          This will create revision sessions in your calendar based on the study plan.
         </p>
         {preview && (
           <>
