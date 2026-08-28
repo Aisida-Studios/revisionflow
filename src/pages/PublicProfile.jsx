@@ -90,7 +90,7 @@ export default function PublicProfile() {
         {/* Hero card */}
         <div className="card accent-card" style={{ padding:32, textAlign:'center', marginBottom:20 }}>
           <div style={{ width:80, height:80, borderRadius:'50%',
-            background:'linear-gradient(135deg,#7c3aed,#a855f7)',
+            background:'var(--brand-gradient)',
             display:'flex', alignItems:'center', justifyContent:'center',
             fontWeight:800, fontSize:'2.2rem', margin:'0 auto 16px' }}>
             {iconEmoji || (p.displayName||'U')[0].toUpperCase()}
@@ -103,7 +103,7 @@ export default function PublicProfile() {
           )}
           {lvl && (
             <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 12px',
-              borderRadius:999, background:'rgba(124,58,237,0.12)', marginBottom:16,
+              borderRadius:999, background:'var(--accent-pale)', marginBottom:16,
               fontSize:'0.8rem', fontWeight:700, color:'var(--accent-light)' }}>
               <Star size={12} /> Level {p.level||1} — {lvl.title}
             </div>
@@ -122,7 +122,7 @@ export default function PublicProfile() {
               <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:2 }}>Day streak</div>
             </div>
             <div>
-              <div style={{ fontSize:'1.6rem', fontWeight:800, color:'var(--purple-300)' }}>
+              <div style={{ fontSize:'1.6rem', fontWeight:800, color:'var(--accent-light)' }}>
                 {unlockedBadges.length}
               </div>
               <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:2 }}>Badges</div>
@@ -157,7 +157,7 @@ export default function PublicProfile() {
               {unlockedBadges.map(b => (
                 <div key={b.id} title={b.name + ': ' + b.desc}
                   style={{ width:48, height:48, borderRadius:10,
-                    background:'rgba(124,58,237,0.1)', border:'1px solid var(--border)',
+                    background:'rgba(34,197,94,0.1)', border:'1px solid var(--border)',
                     display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.6rem',
                     cursor:'default' }}>
                   {b.icon}
@@ -169,7 +169,7 @@ export default function PublicProfile() {
 
         {/* CTA */}
         <div style={{ textAlign:'center', padding:'28px 24px', borderRadius:16,
-          background:'rgba(124,58,237,0.06)', border:'1px solid rgba(124,58,237,0.15)' }}>
+          background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.15)' }}>
           <div style={{ fontSize:'1.5rem', marginBottom:8 }}>⚡</div>
           <h4 style={{ marginBottom:6 }}>Track your own revision</h4>
           <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginBottom:16, maxWidth:300, margin:'0 auto 16px' }}>
