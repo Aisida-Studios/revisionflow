@@ -96,14 +96,14 @@ function BadgeToast({ badge, visible, onDismiss }) {
       background: 'var(--bg-card)',
       border: '1px solid var(--accent)',
       borderRadius: 'var(--radius-lg)',
-      boxShadow: '0 8px 32px rgba(124,58,237,0.25)',
+      boxShadow: '0 8px 32px rgba(20,83,45,0.25)',
       maxWidth: 340,
       animation: visible ? 'slideInRight 0.3s ease' : 'slideOutRight 0.3s ease',
       cursor: 'pointer',
     }} onClick={onDismiss}>
       <div style={{
         width: 48, height: 48, borderRadius: 12,
-        background: 'rgba(124,58,237,0.15)',
+        background: 'var(--accent-pale)',
         border: '1px solid var(--accent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '1.8rem', flexShrink: 0,
@@ -164,7 +164,7 @@ function BadgeCelebration({ badge, onClose }) {
         <div style={{
           width: 140, height: 140,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, rgba(124,58,237,0) 70%)',
+          background: 'radial-gradient(circle, rgba(34,197,94,0.35) 0%, rgba(34,197,94,0) 70%)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
           animation: 'badgePulse 1.5s ease-in-out infinite',
@@ -172,10 +172,10 @@ function BadgeCelebration({ badge, onClose }) {
           <div style={{
             width: 110, height: 110,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+            background: 'var(--brand-gradient)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '3.5rem',
-            boxShadow: '0 0 60px rgba(124,58,237,0.8), 0 0 120px rgba(124,58,237,0.4)',
+            boxShadow: '0 0 50px rgba(34,197,94,0.7), 0 0 100px rgba(34,197,94,0.35)',
           }}>
             {badge.icon}
           </div>
@@ -237,7 +237,7 @@ function Confetti() {
     delay:    `${Math.random() * 0.8}s`,
     duration: `${1.5 + Math.random() * 1.5}s`,
     size:     `${6 + Math.random() * 8}px`,
-    color:    ['#7c3aed','#a855f7','#f59e0b','#10b981','#3b82f6','#ef4444','#ec4899'][Math.floor(Math.random()*7)],
+    color:    ['#16a34a','#0d9488','#f59e0b','#10b981','#3b82f6','#ef4444','#ec4899'][Math.floor(Math.random()*7)],
     shape:    Math.random() > 0.5 ? '50%' : '2px',
   }))
 
