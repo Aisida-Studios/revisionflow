@@ -140,8 +140,8 @@ function TopicsEditor() {
                 </div>
               ))}
               {(override.added || []).map((t, i) => (
-                <div key={'added-' + i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 8 }}>
-                  <span style={{ fontSize: '0.85rem' }}>{t.name} <span className="badge badge-purple" style={{ marginLeft: 6 }}>admin-added</span></span>
+                <div key={'added-' + i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(34,197,94,0.08)', borderRadius: 8 }}>
+                  <span style={{ fontSize: '0.85rem' }}>{t.name} <span className="badge badge-accent" style={{ marginLeft: 6 }}>admin-added</span></span>
                   <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => removeAdded(i)} disabled={saving}>Remove</button>
                 </div>
               ))}
