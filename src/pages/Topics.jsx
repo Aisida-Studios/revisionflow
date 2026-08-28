@@ -766,7 +766,7 @@ function ResourcesPanel({ subject, allSubjects }) {
       </div>
 
       <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:12,lineHeight:1.6}}>
-        All resources listed are free. Clicking opens them in a new tab. Use the AI Advice button on individual topics for personalised recommendations for specific topics.
+        All resources listed are free. Clicking opens them in a new tab. Use the Advice button on individual topics for personalised recommendations for specific topics.
       </p>
     </div>
   )
