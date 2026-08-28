@@ -239,10 +239,10 @@ export default function Onboarding() {
               <h2 style={{ marginBottom:8 }}>Let&apos;s set you up</h2>
               <p style={{ marginBottom:6, color:'var(--text-secondary)', lineHeight:1.7 }}>
                 5 minutes. We&apos;ll pre-load all your spec topics, auto-fill your exam dates,
-                and generate a personalised AI revision plan.
+                and generate a personalised revision plan.
               </p>
               <div style={{ display:'flex', justifyContent:'center', gap:16, margin:'20px 0', flexWrap:'wrap' }}>
-                {[['📚','Topics pre-loaded'],['⏰','Exam dates auto-filled'],['🤖','AI study plan'],['🏆','Start earning XP']].map(([e,t]) => (
+                {[['📚','Topics pre-loaded'],['⏰','Exam dates auto-filled'],['🤖','Study plan'],['🏆','Start earning XP']].map(([e,t]) => (
                   <div key={t} style={{ display:'flex', alignItems:'center', gap:6, fontSize:'0.82rem', fontWeight:600, color:'var(--text-secondary)' }}>
                     <span>{e}</span> {t}
                   </div>
@@ -408,7 +408,7 @@ export default function Onboarding() {
             <div className="fade-in">
               <h3 style={{ marginBottom:4 }}>Set your grade targets</h3>
               <p style={{ marginBottom:14, fontSize:'0.85rem', color:'var(--text-secondary)' }}>
-                The AI uses these to prioritise what you revise and predict your progress.
+                RevisionFlow uses these to prioritise what you revise and predict your progress.
               </p>
               <div style={{ padding:12, background:'rgba(34,197,94,0.07)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)', marginBottom:14 }}>
                 <label className="label">Apply one target to all subjects</label>
@@ -457,7 +457,7 @@ export default function Onboarding() {
             <div className="fade-in">
               <h3 style={{ marginBottom:4 }}>When can you revise?</h3>
               <p style={{ marginBottom:14, fontSize:'0.85rem', color:'var(--text-secondary)' }}>
-                Used for AI schedule generation. Change any time in Settings.
+                Used to generate your revision plan. Change any time in Settings.
               </p>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {DAYS.map(day => (
@@ -488,12 +488,12 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* Step 5 — AI Plan */}
+          {/* Step 5 — Plan */}
           {step===5 && (
             <div className="fade-in">
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                 <Brain size={20} color="var(--accent-light)"/>
-                <h3 style={{ margin:0 }}>Your AI revision plan</h3>
+                <h3 style={{ margin:0 }}>Your revision plan</h3>
               </div>
               <p style={{ marginBottom:16, fontSize:'0.875rem', color:'var(--text-secondary)' }}>
                 Built around your {subjects.length} subject{subjects.length!==1?'s':''}, targets, and availability using AI.
@@ -502,7 +502,7 @@ export default function Onboarding() {
                 <div style={{ textAlign:'center', padding:'24px 0' }}>
                   <Brain size={44} color="var(--accent-light)" style={{ marginBottom:12 }} />
                   <button className="btn btn-primary" onClick={generatePlan} disabled={aiLoading} style={{ padding:'11px 28px' }}>
-                    {aiLoading ? 'Generating your plan…' : <><Sparkles size={15}/> Generate my AI study plan</>}
+                    {aiLoading ? 'Generating your plan…' : <><Sparkles size={15}/> Generate my study plan</>}
                   </button>
                   {aiLoading && (
                     <div style={{ marginTop:16 }}>
