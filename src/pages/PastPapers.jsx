@@ -119,7 +119,7 @@ export default function PastPapers() {
       <div className="tabs" style={{marginBottom:16}}>
         {['attempts','progress','analyse'].map(t=>(
           <button key={t} className={`tab${tab===t?' active':''}`} onClick={()=>setTab(t)}>
-            {t==='attempts'?'Attempts':t==='progress'?'Progress':'AI Analysis'}
+            {t==='attempts'?'Attempts':t==='progress'?'Progress':'Analysis'}
           </button>
         ))}
       </div>
@@ -171,10 +171,10 @@ export default function PastPapers() {
                 </tr></thead>
                 <tbody>
                   {filtered.map(a=>(
-                    <tr key={a.id} style={{background:selected.includes(a.id)?'rgba(124,58,237,0.08)':undefined}}>
+                    <tr key={a.id} style={{background:selected.includes(a.id)?'rgba(34,197,94,0.08)':undefined}}>
                       <td><input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggleSelect(a.id)} style={{accentColor:'var(--accent)'}}/></td>
                       <td><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[a.subject]||'var(--accent)',flexShrink:0}}/>{a.subject}</div></td>
-                      <td><span className="badge badge-purple" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
+                      <td><span className="badge badge-accent" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
                       <td>P{a.paper}</td>
                       <td>{a.board}</td>
                       <td>{a.year}</td>
@@ -217,7 +217,7 @@ export default function PastPapers() {
       {tab==='analyse' && (
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-            <h4 style={{display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> AI Analysis</h4>
+            <h4 style={{display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> Analysis</h4>
             <button className="btn btn-primary btn-sm" onClick={handleAnalyse} disabled={aiLoading||filtered.length===0}>
               {aiLoading?'Analysing…':'Analyse'}
             </button>
@@ -364,7 +364,7 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
 
           {/* Grade boundaries — show both marks and % */}
           {(autoBoundary || useCustom) && (
-            <div style={{padding:'10px 12px',background:'rgba(124,58,237,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.8rem'}}>
+            <div style={{padding:'10px 12px',background:'rgba(34,197,94,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.8rem'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                 <span style={{fontWeight:600}}>
                   Grade boundaries ({form.year}){useCustom?' — custom':' — auto-filled'}
@@ -549,12 +549,12 @@ function BoundaryEditorModal({ profile, onClose }) {
         {bounds ? (
           <div>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
-              <span className="badge badge-purple">{selLevel}</span>
+              <span className="badge badge-accent">{selLevel}</span>
               <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Total marks: {bounds.maxMarks}</span>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:6,textAlign:'center'}}>
               {(bounds.grades || ['9','8','7','6','5','4','3','2','1']).map((g,i)=>(
-                <div key={g} style={{padding:8,background:'rgba(124,58,237,0.08)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
+                <div key={g} style={{padding:8,background:'rgba(34,197,94,0.08)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
                   <div style={{fontWeight:800,color:gradeColour(g),fontSize:'1.1rem'}}>{g}</div>
                   <div style={{fontSize:'0.75rem',marginTop:2}}>{bounds.boundaries[i]??'–'}</div>
                 </div>
@@ -633,7 +633,7 @@ function EditEntryModal({ attempt, onClose, onSave }) {
               placeholder="Topics to revisit, things that went well…"/>
           </div>
           {form.score && form.maxMarks && (
-            <div style={{padding:'6px 12px',background:'rgba(124,58,237,0.08)',borderRadius:'var(--radius-md)',fontSize:'0.82rem'}}>
+            <div style={{padding:'6px 12px',background:'rgba(34,197,94,0.08)',borderRadius:'var(--radius-md)',fontSize:'0.82rem'}}>
               {Math.round((form.score/form.maxMarks)*100)}% — this will update the percentage. The grade will remain unless the paper had grade boundaries set during entry.
             </div>
           )}
