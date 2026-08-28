@@ -322,7 +322,7 @@ export default function Calendar() {
               return (
                 <div key={i}
                   className={`cal-day${isToday(date)?' today':''}${otherMonth?' other-month':''}${ds.length>0?' has-session':''}${ds.some(s=>s.completed)?' completed':''}`}
-                  style={{background:isSel?'rgba(124,58,237,0.25)':undefined,border:isSel?'1px solid var(--accent)':undefined}}
+                  style={{background:isSel?'rgba(34,197,94,0.25)':undefined,border:isSel?'1px solid var(--accent)':undefined}}
                   onClick={()=>setSelected(date)}>
                   <span style={{fontWeight:isToday(date)?700:400,fontSize:'0.8rem'}}>{format(date,'d')}</span>
                   {ds.length>0&&(
@@ -663,7 +663,7 @@ function ImportReviewModal({ parsed, profile, existingCount, onClose, onConfirm 
               <button key={opt.val} onClick={()=>setMode(opt.val)}
                 style={{padding:'9px 14px',borderRadius:'var(--radius-md)',cursor:'pointer',textAlign:'left',width:'100%',
                   border:`2px solid ${mode===opt.val?'var(--accent)':'var(--border)'}`,
-                  background:mode===opt.val?'rgba(124,58,237,0.1)':'var(--bg-surface)'}}>
+                  background:mode===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)'}}>
                 <span style={{fontWeight:600,fontSize:'0.875rem'}}>{opt.label}</span>
                 <span style={{fontSize:'0.78rem',color:'var(--text-muted)',marginLeft:8}}>{opt.desc}</span>
               </button>
