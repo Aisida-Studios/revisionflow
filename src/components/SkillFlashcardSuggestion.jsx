@@ -55,7 +55,7 @@ export default function SkillFlashcardSuggestion({ attempts, subject, board, lev
   return (
     <div style={{
       marginTop: 14, padding: '14px 16px', borderRadius: 'var(--radius-md)',
-      background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.25)',
+      background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.25)',
     }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
         Next step
