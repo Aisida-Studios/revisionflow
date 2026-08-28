@@ -62,13 +62,13 @@ export default function XPToast() {
             borderRadius: 999,
             background: t.kind === 'freeze'
               ? 'linear-gradient(135deg, #0891b2, #06b6d4)'
-              : 'linear-gradient(135deg, #7c3aed, #a855f7)',
+              : 'var(--brand-gradient)',
             color: '#fff',
             fontWeight: 800,
             fontSize: '1rem',
             boxShadow: t.kind === 'freeze'
               ? '0 4px 20px rgba(8,145,178,0.5)'
-              : '0 4px 20px rgba(124,58,237,0.5)',
+              : '0 4px 20px rgba(34,197,94,0.5)',
             animation: 'xpFloatUp 2.2s ease forwards',
             whiteSpace: 'nowrap',
             userSelect: 'none',
