@@ -222,7 +222,7 @@ export default function PastPapers() {
               {aiLoading?'Analysing…':'Analyse'}
             </button>
           </div>
-          {filtered.length===0&&<p>Log at least one paper to get AI analysis.</p>}
+          {filtered.length===0&&<p>Log at least one paper to get an analysis.</p>}
           {aiLoading&&<div className="loading-center"><div className="spinner"/></div>}
           {aiAnalysis&&<div style={{whiteSpace:'pre-wrap',fontSize:'0.875rem',lineHeight:1.8}}>{aiAnalysis}</div>}
         </div>
