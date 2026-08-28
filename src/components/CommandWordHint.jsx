@@ -23,7 +23,7 @@ export default function CommandWordHint({ questionText }) {
         }}>
         <span style={{
           padding: '2px 10px', borderRadius: 999, fontSize: '0.7rem',
-          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)',
+          background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
           color: 'var(--accent-light)', textTransform: 'capitalize',
         }}>
           {match.word}
@@ -33,7 +33,7 @@ export default function CommandWordHint({ questionText }) {
       {open && (
         <div style={{
           marginTop: 8, padding: '10px 14px', borderRadius: 'var(--radius-md)',
-          background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)',
+          background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
           fontSize: '0.82rem', lineHeight: 1.55,
         }}>
           <div style={{ color: 'var(--text-primary)', marginBottom: 4 }}>{match.meaning}</div>
