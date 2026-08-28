@@ -19,7 +19,7 @@ export async function generateStreakCard({
   subjects,
   bestStreak,
   profileIcon,
-  accentColor = '#7c3aed',
+  accentColor = '#14532d',
 }) {
   const W = 1080, H = 1080  // Square for Instagram/TikTok
 
@@ -75,7 +75,7 @@ export async function generateStreakCard({
   ctx.textBaseline = 'alphabetic'
   ctx.font = 'bold 48px -apple-system, system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillStyle = '#1a1025'
+  ctx.fillStyle = '#1a1a1f'
   ctx.fillText(truncate(displayName || 'Student', 18), W / 2, avatarY + 108)
 
   const lvlText = `Level ${level} · ${levelTitle}`
@@ -141,7 +141,7 @@ export async function generateStreakCard({
     subList.forEach((s, i) => {
       const x = startX + i * (subW + 10)
       roundRect(ctx, x, subY, subW, 44, 22)
-      ctx.fillStyle = '#f4f0fa'
+      ctx.fillStyle = '#f2f2f0'
       ctx.fill()
       ctx.font = 'bold 19px -apple-system, system-ui, sans-serif'
       ctx.textAlign = 'center'
@@ -153,7 +153,7 @@ export async function generateStreakCard({
   // ── Bottom CTA ────────────────────────────────────────────────────
   ctx.font = 'bold 24px -apple-system, system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillStyle = '#9b8bb0'
+  ctx.fillStyle = '#8c8c8c'
   ctx.fillText('Join the revision revolution 🚀', W / 2, cardY + cardH - 32)
 
   return canvas.toDataURL('image/png')
