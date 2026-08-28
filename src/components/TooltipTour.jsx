@@ -30,7 +30,7 @@ function buildSteps(profile) {
       route: '/dashboard',
       title: '📅 Your Dashboard',
       body: examCount > 0
-        ? "This is home base — today's sessions, your next exam countdown, streak, and a fresh AI tip every day."
+        ? "This is home base — today's sessions, your next exam countdown, streak, and a fresh tip every day."
         : "This is home base. Once you add exam dates, you'll see a live countdown here alongside today's sessions and streak.",
     },
     {
@@ -38,19 +38,19 @@ function buildSteps(profile) {
       title: '📅 Calendar',
       body: subjList
         ? 'Generate a full revision schedule for ' + subjList + ' with one click — built around your exam dates and the availability you set during signup.'
-        : 'Generate a full revision schedule with AI, built around your exam dates and availability.',
+        : 'Generate a full revision schedule with one click, built around your exam dates and availability.',
     },
     {
       route: '/topics',
       title: '🧠 Topics',
       body: subjects.length
-        ? 'Every topic for ' + (subjNames[0] || 'your subjects') + ' is already pre-loaded. Rate your confidence 1–5 on each one, and the AI will know exactly what to prioritise.'
-        : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and the AI prioritises accordingly.',
+        ? 'Every topic for ' + (subjNames[0] || 'your subjects') + ' is already pre-loaded. Rate your confidence 1–5 on each one, and RevisionFlow will know exactly what to prioritise.'
+        : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and RevisionFlow prioritises accordingly.',
     },
     {
       route: '/study',
       title: '📚 Study Tools',
-      body: 'Generate AI flashcards for any topic, run a timed quiz, tackle board-accurate exam questions, and get your written answers marked leniently — like a real examiner would, not just exact-match.',
+      body: 'Generate flashcards for any topic, run a timed quiz, tackle board-accurate exam questions, and get your written answers marked leniently — like a real examiner would, not just exact-match.',
     },
     {
       route: '/ai',
@@ -68,7 +68,7 @@ function buildSteps(profile) {
       route: '/dashboard',
       title: "🎯 You're all set, " + firstName + '!',
       body: examCount === 0
-        ? 'First step: add your exam dates so the countdown and AI scheduling can kick in. Good luck! 🚀'
+        ? 'First step: add your exam dates so the countdown and scheduling can kick in. Good luck! 🚀'
         : "Jump into Calendar to generate your first revision schedule, or head straight to Topics to start rating your confidence. Good luck! 🚀",
     },
   ]
