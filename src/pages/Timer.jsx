@@ -151,7 +151,7 @@ const SCENE_CSS = `
 @keyframes lampGlow { 0%,100%{opacity:.7} 50%{opacity:1} }
 
 /* Shared ring for circular progress on dark scenes */
-.scene-ring { filter: drop-shadow(0 0 18px rgba(124,58,237,0.6)); }
+.scene-ring { filter: drop-shadow(0 0 18px rgba(34,197,94,0.6)); }
 `
 
 /* ─── Particle generator ──────────────────────────────────────── */
@@ -617,7 +617,7 @@ export default function Timer() {
                     return <line key={i}
                       x1={cx+r1*Math.cos(angle)} y1={cx+r1*Math.sin(angle)}
                       x2={cx+r2*Math.cos(angle)} y2={cx+r2*Math.sin(angle)}
-                      stroke={onScene?'rgba(255,255,255,0.18)':'rgba(124,58,237,0.2)'}
+                      stroke={onScene?'rgba(255,255,255,0.18)':'rgba(34,197,94,0.2)'}
                       strokeWidth={i%5===0?2:1}
                     />
                   })}
@@ -808,7 +808,7 @@ function playBtn(onScene, bg='var(--accent)') {
   return {
     padding:'11px 28px', borderRadius:24, border:'none', cursor:'pointer',
     fontWeight:700, fontSize:'0.95rem', color:'white',
-    background:bg, boxShadow:`0 4px 18px ${bg==='var(--accent)'?'rgba(124,58,237,0.45)':'rgba(0,0,0,0.3)'}`,
+    background:bg, boxShadow:`0 4px 18px ${bg==='var(--accent)'?'rgba(34,197,94,0.45)':'rgba(0,0,0,0.3)'}`,
     transition:'all 0.18s',
   }
 }
