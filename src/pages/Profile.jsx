@@ -98,7 +98,7 @@ export default function Profile() {
     setShowCard(true)
     try {
       const { generateStreakCard } = await import('../utils/streakCard')
-      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7c3aed'
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14532d'
       const url = await generateStreakCard({
         displayName: profile?.displayName || user?.displayName || 'Student',
         streak:      profile?.streak      || 0,
@@ -253,7 +253,7 @@ export default function Profile() {
       {/* ── Header card ── */}
       <div className="card accent-card" style={{ marginBottom: 20, padding: 28, textAlign: 'center' }}>
         {/* Avatar */}
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.8rem', margin: '0 auto 14px' }}>
+        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.8rem', margin: '0 auto 14px' }}>
           {iconEmoji || (profile?.displayName || 'U')[0].toUpperCase()}
         </div>
 
@@ -268,7 +268,7 @@ export default function Profile() {
           {[
             { label: 'XP',      val: (profile?.xp || 0).toLocaleString(),                                col: 'var(--accent-light)' },
             { label: 'Streak',  val: <><span className="streak-fire">🔥</span>{profile?.streak || 0}</>, col: 'var(--warning)' },
-            { label: 'Level',   val: `Lv.${profile?.level || 1}`,                                        col: 'var(--purple-300)' },
+            { label: 'Level',   val: `Lv.${profile?.level || 1}`,                                        col: 'var(--info)' },
             { label: 'Badges',  val: unlockedBadges.length,                                               col: 'var(--success)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center' }}>
@@ -314,16 +314,16 @@ export default function Profile() {
 
       {/* ── Pro subscription card ── */}
       {(isPro || isBeta) && (
-        <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg,rgba(124,58,237,0.1) 0%,rgba(168,85,247,0.05) 100%)', border: '1px solid rgba(124,58,237,0.3)' }}>
+        <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg,var(--gold-pale) 0%,var(--bg-muted) 100%)', border: '1px solid var(--gold-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#f59e0b,#fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Crown size={20} color="#fff" />
               </div>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                   RevisionFlow Pro
-                  {isBeta && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: 'rgba(124,58,237,0.15)', color: 'var(--accent-light)', fontWeight: 700 }}>LIFETIME</span>}
+                  {isBeta && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: 'var(--gold-pale)', color: 'var(--gold)', fontWeight: 700 }}>LIFETIME</span>}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
                   {isBeta
@@ -341,7 +341,7 @@ export default function Profile() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
             {['Unlimited AI topic notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
-              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-light)' }}>
+              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'var(--gold-pale)', border: '1px solid var(--gold-border)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--gold)' }}>
                 <Check size={10} /> {f}
               </span>
             ))}
@@ -372,7 +372,7 @@ export default function Profile() {
                   <span style={{ fontWeight: 600 }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
                   {getSubjectQualification(s, profile) !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{getSubjectQualification(s, profile)}</span>}
-                  {s.tier && s.tier !== 'N/A' && <span className="badge badge-purple">{s.tier}</span>}
+                  {s.tier && s.tier !== 'N/A' && <span className="badge badge-accent">{s.tier}</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   {profile?.startingGrades?.[s.name] && (
@@ -408,7 +408,7 @@ export default function Profile() {
             const unlocked = earnedIds.includes(b.id)
             return (
               <div key={b.id} title={b.desc}
-                style={{ padding: 10, borderRadius: 'var(--radius-md)', textAlign: 'center', border: `1px solid ${unlocked ? 'rgba(124,58,237,0.45)' : 'var(--border)'}`, background: unlocked ? 'rgba(124,58,237,0.12)' : 'var(--bg-surface)', transition: 'all 0.2s' }}
+                style={{ padding: 10, borderRadius: 'var(--radius-md)', textAlign: 'center', border: `1px solid ${unlocked ? 'rgba(34,197,94,0.45)' : 'var(--border)'}`, background: unlocked ? 'rgba(34,197,94,0.12)' : 'var(--bg-surface)', transition: 'all 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 <div style={{ fontSize: '1.5rem', marginBottom: 4, opacity: unlocked ? 1 : 0.35 }}>{b.icon}</div>
