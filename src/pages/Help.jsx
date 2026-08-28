@@ -216,10 +216,10 @@ const FEATURES = [
   { icon: BookOpen,      title: 'Dashboard',        desc: 'XP, streak, next exam countdown, daily quests, AI briefing, welcome card for new users', colour: 'var(--accent)' },
   { icon: Calendar,      title: 'Calendar',          desc: 'AI schedule generator, multi-day task blocks, ICS import/export', colour: '#3b82f6' },
   { icon: FileText,      title: 'Past Papers',       desc: 'Grade tracking, boundaries (2019–2025, 2026 estimated), mistakes log', colour: '#f59e0b' },
-  { icon: Brain,         title: 'Topics',            desc: 'Confidence ratings, heatmap, priority, notes, mastery tab, per-topic resource links', colour: '#8b5cf6' },
-  { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (20 free / 50 Pro), custom sets, public library, on-demand memory aids', colour: '#a855f7' },
+  { icon: Brain,         title: 'Topics',            desc: 'Confidence ratings, heatmap, priority, notes, mastery tab, per-topic resource links', colour: '#0369a1' },
+  { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (20 free / 50 Pro), custom sets, public library, on-demand memory aids', colour: '#f43f5e' },
   { icon: Repeat,        title: 'Practice',          desc: 'Spaced repetition across every set — cards you keep missing come back the most', colour: '#14b8a6' },
-  { icon: ClipboardList, title: 'Exam Questions',    desc: 'Board-accurate questions (all 6 boards), real command words, hidden mark schemes, examiner tips', colour: '#7c3aed' },
+  { icon: ClipboardList, title: 'Exam Questions',    desc: 'Board-accurate questions (all 6 boards), real command words, hidden mark schemes, examiner tips', colour: '#84cc16' },
   { icon: Star,          title: 'Answer Marker',     desc: 'AI marks like a real examiner — score, AO breakdown, command-word coaching, photo input', colour: '#ec4899' },
   { icon: MessageSquare, title: 'AI Advisor',        desc: 'Chat, grade predictor, next steps, study plans (longer on Pro), resource recommendations', colour: '#06b6d4' },
   { icon: GraduationCap, title: 'Tutor',             desc: 'Pro only — Maths step-by-step solver and English essay feedback, both accept a photo', colour: '#0891b2' },
@@ -308,7 +308,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           </button>
         </div>
         {(loading || answer) && (
-          <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.7 }}>
+          <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.7 }}>
             <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--accent-light)', fontSize: '0.78rem' }}>✨ RevisionFlow Assistant</div>
             {loading
               ? <span style={{ color: 'var(--text-muted)' }}>Finding answer…</span>
@@ -326,7 +326,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       </div>
 
       {/* What's new banner */}
-      <div style={{ marginBottom: 24, padding: '14px 18px', background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.05))', borderRadius: 12, border: '1px solid rgba(124,58,237,0.25)' }}>
+      <div style={{ marginBottom: 24, padding: '14px 18px', background: 'linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04))', borderRadius: 12, border: '1px solid rgba(34,197,94,0.25)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-light)', marginBottom: 8 }}>🆕 Recently added</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
           <span>✦ <strong>Tutor (Pro)</strong> — Maths step-by-step solver and English essay feedback, both accept a photo instead of typing</span>
