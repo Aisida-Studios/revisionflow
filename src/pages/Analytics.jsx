@@ -810,7 +810,7 @@ Keep it under 200 words total. Address them as "you". Don't use bullet points.`
   if (!generated && !loading) return (
     <div style={{ textAlign: 'center', padding: '16px 0' }}>
       <p style={{ color: 'var(--text-muted)', marginBottom: 14, fontSize: '0.875rem' }}>
-        Get a personalised AI summary of your study patterns and recommendations
+        Get a personalised summary of your study patterns and recommendations
       </p>
       <button className="btn btn-primary" onClick={generate}>✨ Generate my study summary</button>
     </div>
