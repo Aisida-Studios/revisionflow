@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { Zap, Check, Lock, Star, Crown, ArrowLeft, Sparkles } from 'lucide-react'
+import { Check, Lock, Star, Crown, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const FREE_FEATURES = [
@@ -83,7 +83,7 @@ export default function Pro() {
         <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
           <div style={{
             width: 72, height: 72, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+            background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 20px',
           }}>
@@ -101,8 +101,8 @@ export default function Pro() {
             {PRO_FEATURES.filter(f => f.highlight).map(f => (
               <div key={f.label} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 14px', background: 'rgba(124,58,237,0.07)',
-                borderRadius: 10, border: '1px solid rgba(124,58,237,0.2)',
+                padding: '10px 14px', background: 'var(--gold-pale)',
+                borderRadius: 10, border: '1px solid var(--gold-border)',
                 fontSize: '0.875rem', fontWeight: 600,
               }}>
                 <Check size={15} color="var(--success)" style={{ flexShrink: 0 }} />
@@ -137,11 +137,11 @@ export default function Pro() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 14px',
-            borderRadius: 999, background: 'rgba(124,58,237,0.1)',
-            border: '1px solid rgba(124,58,237,0.3)', marginBottom: 16,
-            fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-light)', letterSpacing: '0.06em',
+            borderRadius: 999, background: 'var(--gold-pale)',
+            border: '1px solid var(--gold-border)', marginBottom: 16,
+            fontSize: '0.78rem', fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.06em',
           }}>
-            <Sparkles size={12} /> REVISIONFLOW PRO
+            <Crown size={12} /> REVISIONFLOW PRO
           </div>
           <h1 style={{ fontSize: '2rem', marginBottom: 10, lineHeight: 1.2 }}>
             Unlock your full potential
@@ -211,14 +211,14 @@ export default function Pro() {
           {/* Pro */}
           <div style={{
             padding: 24, borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg,rgba(124,58,237,0.12) 0%,rgba(168,85,247,0.06) 100%)',
-            border: '2px solid var(--accent)',
+            background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))',
+            border: '2px solid var(--gold)',
             position: 'relative',
           }}>
             <div style={{
               position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
               padding: '3px 14px', borderRadius: 999,
-              background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+              background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
               color: '#fff', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em',
               whiteSpace: 'nowrap',
             }}>MOST POPULAR</div>
@@ -226,10 +226,10 @@ export default function Pro() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>Pro</span>
-                <Zap size={15} color="var(--accent-light)" />
+                <Crown size={15} color="var(--gold)" />
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-light)' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--gold)' }}>
                   £{plan === 'annual' ? annualMonthly : monthlyPrice.toFixed(2)}
                 </span>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>/mo</span>
