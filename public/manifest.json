@@ -1,7 +1,7 @@
 {
   "name": "RevisionFlow",
   "short_name": "RevisionFlow",
-  "description": "AI-powered GCSE, AS-Level & A-Level revision tracker",
+  "description": "GCSE, AS-Level & A-Level revision tracker",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
