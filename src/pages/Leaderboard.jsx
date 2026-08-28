@@ -15,7 +15,7 @@ function Avatar({ icon, name, size = 32 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg,var(--purple-700),var(--purple-400))',
+      background: 'var(--brand-gradient)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: emoji ? size * 0.55 + 'px' : size * 0.4 + 'px',
       fontWeight: 700, userSelect: 'none',
@@ -41,8 +41,8 @@ function BoardRow({ entry, rank, isMe }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '10px 14px', borderRadius: 10,
-      background: isMe ? 'rgba(124,58,237,0.1)' : 'var(--bg-surface)',
-      border: `1px solid ${isMe ? 'rgba(124,58,237,0.35)' : 'var(--border)'}`,
+      background: isMe ? 'rgba(34,197,94,0.1)' : 'var(--bg-surface)',
+      border: `1px solid ${isMe ? 'rgba(34,197,94,0.35)' : 'var(--border)'}`,
     }}>
       <RankBadge rank={rank} />
       <Avatar icon={entry.profileIcon} name={name} />
