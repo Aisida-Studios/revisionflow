@@ -209,7 +209,7 @@ function ContentTab({ email }) {
     <div>
       <AdminAutoGenerate />
 
-      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+      <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Manual single-subject generator</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           For spot-checking or regenerating one subject at a time. For everything else, use auto-generate above.
@@ -291,7 +291,7 @@ function ContentTab({ email }) {
 
       {/* ── BULK FLASHCARD GENERATOR ── */}
       <div style={{ marginBottom: 20, marginTop: 28, padding: '12px 16px', borderRadius: 10,
-        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Bulk flashcard generator</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           Generate a public flashcard set for every topic in a subject. Saved to Public Sets — all students can quiz on them.
@@ -517,7 +517,7 @@ function ResourcesTab({ email }) {
   return (
     <div>
       <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10,
-        background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Verified resource links</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           These power the "Resources" button on each topic in Topics.jsx. Keywords are matched as
@@ -825,8 +825,8 @@ function BetaTab({ email }) {
   return (
     <div>
       {/* What beta means */}
-      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(124,58,237,0.06)',
-        border: '1px solid rgba(124,58,237,0.2)', marginBottom: 20 }}>
+      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.06)',
+        border: '1px solid rgba(34,197,94,0.2)', marginBottom: 20 }}>
         <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Star size={15} color="var(--accent)" /> What beta means
         </div>
