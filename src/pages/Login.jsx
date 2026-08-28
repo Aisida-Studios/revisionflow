@@ -39,7 +39,7 @@ export default function Login() {
       <div style={{width:'100%',maxWidth:400}}>
         {/* Logo */}
         <div style={{textAlign:'center',marginBottom:32}}>
-          <div style={{width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 0 24px rgba(124,58,237,0.4)'}}>
+          <div style={{width:52,height:52,borderRadius:14,background:'var(--brand-gradient)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 0 24px rgba(34,197,94,0.4)'}}>
             <Zap size={26} color="#fff"/>
           </div>
           <h2>Welcome back</h2>
