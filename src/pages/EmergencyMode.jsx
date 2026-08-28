@@ -298,7 +298,7 @@ export default function EmergencyMode() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Panel 1 — Predicted grade */}
-          <div className="card" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.3)' }}>
+          <div className="card" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <Target size={18} color="var(--accent-light)" />
               <h3 style={{ margin: 0, fontSize: '1rem' }}>Predicted grade</h3>
