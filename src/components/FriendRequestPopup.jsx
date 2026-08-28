@@ -43,7 +43,7 @@ export default function FriendRequestPopup({ request, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
           <div style={{
             width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg,var(--purple-700),var(--purple-400))',
+            background: 'var(--brand-gradient)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 700, fontSize: '1.2rem',
           }}>
