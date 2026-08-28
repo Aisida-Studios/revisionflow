@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
       {/* Nav */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 24px', borderBottom:'1px solid var(--border)', background:'var(--bg-surface)' }}>
         <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', color:'var(--text-primary)', fontWeight:800, fontSize:'1.05rem' }}>
-          <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#7c3aed,#a855f7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:32, height:32, borderRadius:8, background:'var(--brand-gradient)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Zap size={18} color="#fff"/>
           </div>
           Revision<span style={{ color:'var(--accent-light)' }}>Flow</span>
@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           Last updated: 20 July 2026 · Effective date: 20 July 2026
         </p>
 
-        <div style={{ padding:'14px 18px', background:'rgba(124,58,237,0.08)', border:'1px solid var(--accent)', borderRadius:'var(--radius-md)', marginBottom:'2rem', fontSize:'0.875rem', lineHeight:1.7 }}>
+        <div style={{ padding:'14px 18px', background:'rgba(34,197,94,0.08)', border:'1px solid var(--accent)', borderRadius:'var(--radius-md)', marginBottom:'2rem', fontSize:'0.875rem', lineHeight:1.7 }}>
           This Privacy Policy explains how <strong>RevisionFlow</strong> ("we", "us", "our") collects, uses, stores and protects your personal data when you use our revision tracking application at <strong>revisionflow.netlify.app</strong>. This policy complies with the <strong>UK General Data Protection Regulation (UK GDPR)</strong> and the <strong>Data Protection Act 2018</strong>.
         </div>
 
