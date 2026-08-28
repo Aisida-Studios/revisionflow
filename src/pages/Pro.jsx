@@ -7,8 +7,8 @@ import { Check, Lock, Star, Crown, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const FREE_FEATURES = [
-  '5 AI topic note generations per day',
-  'Up to 20 flashcards per AI generation',
+  '5 Topic Note generations per day',
+  'Up to 20 flashcards per generation',
   '30 AI Advisor messages per day',
   '3 essay feedback requests per day',
   '5 photo scans per day',
@@ -26,8 +26,8 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   { label: 'AI Tutor — Maths step-by-step solver & English essay feedback', highlight: true },
   { label: 'Predicted grade for every subject', highlight: true },
-  { label: 'Unlimited AI topic note generations', highlight: true },
-  { label: 'Up to 50 flashcards per AI generation', highlight: true },
+  { label: 'Unlimited Topic Note generations', highlight: true },
+  { label: 'Up to 50 flashcards per generation', highlight: true },
   { label: 'Timed challenge quiz mode', highlight: true },
   { label: '150 AI Advisor messages/day + longer, more detailed study plans', highlight: true },
   { label: '15 essay feedback requests per day', highlight: false },
