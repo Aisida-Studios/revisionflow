@@ -17,7 +17,7 @@ export default function ReferralCard() {
   useEffect(() => {
     if (!referralUrl) return
     const encoded = encodeURIComponent(referralUrl)
-    setQrDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encoded}&bgcolor=ffffff&color=7c3aed&margin=4`)
+    setQrDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encoded}&bgcolor=ffffff&color=14532d&margin=4`)
   }, [referralUrl])
 
   function copyLink() {
@@ -100,9 +100,9 @@ export default function ReferralCard() {
       <div style={{
         marginTop: 14,
         padding: '8px 12px',
-        background: 'rgba(124,58,237,0.08)',
+        background: 'rgba(34,197,94,0.08)',
         borderRadius: 'var(--radius-md)',
-        border: '1px solid rgba(124,58,237,0.2)',
+        border: '1px solid rgba(34,197,94,0.2)',
         fontSize: '0.8rem',
         display: 'flex',
         gap: 12,
