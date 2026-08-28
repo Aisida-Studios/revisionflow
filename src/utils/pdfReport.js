@@ -4,8 +4,8 @@ import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { filterToCurrentQualification } from './firestore'
 
-const PURPLE  = [124, 58,  237]
-const DARK    = [26,  17,  46]
+const ACCENT  = [20, 83, 45]
+const DARK    = [20, 28, 24]
 const MID     = [44,  62,  80]
 const WHITE   = [255, 255, 255]
 const SUCCESS = [34,  197, 94]
@@ -14,10 +14,10 @@ const DANGER  = [239, 68,  68]
 
 function gradeRgb(grade) {
   const map = {
-    '9':[124,58,237],'8':[37,99,235],'7':[8,145,178],'6':[5,150,105],
+    '9':[22,163,74],'8':[37,99,235],'7':[8,145,178],'6':[5,150,105],
     '5':[101,163,13],'4':[202,138,4],'3':[217,119,6],'2':[234,88,12],
     '1':[220,38,38],'U':[107,114,128],
-    'A*':[124,58,237],'A':[37,99,235],'B':[5,150,105],'C':[202,138,4],
+    'A*':[22,163,74],'A':[37,99,235],'B':[5,150,105],'C':[202,138,4],
     'D':[217,119,6],'E':[220,38,38],
   }
   return map[String(grade)] || [107,114,128]
@@ -46,7 +46,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
 
   function sectionHeader(title) {
     checkSpace(16)
-    doc.setFillColor(...PURPLE)
+    doc.setFillColor(...ACCENT)
     doc.roundedRect(M,y,W-M*2,8,2,2,'F')
     doc.setTextColor(...WHITE)
     doc.setFont('helvetica','bold')
@@ -57,7 +57,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
 
   function bodyText(text) {
     checkSpace(7)
-    doc.setTextColor(60,50,90)
+    doc.setTextColor(38,42,39)
     doc.setFont('helvetica','normal')
     doc.setFontSize(8.5)
     const lines = doc.splitTextToSize(text, W-M*2)
@@ -68,14 +68,14 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   // ── Cover ────────────────────────────────────────────────────────────────
   doc.setFillColor(...DARK)
   doc.rect(0,0,W,H,'F')
-  doc.setFillColor(...PURPLE)
+  doc.setFillColor(...ACCENT)
   doc.rect(0,H*0.35,W,H*0.3,'F')
   doc.setTextColor(...WHITE)
   doc.setFont('helvetica','bold')
   doc.setFontSize(26)
   doc.text('RevisionFlow',W/2,80,{align:'center'})
   doc.setFontSize(13)
-  doc.setTextColor(200,180,255)
+  doc.setTextColor(190,224,204)
   doc.text('Progress Report',W/2,92,{align:'center'})
   doc.setFillColor(44,62,80)
   doc.roundedRect(M*2,105,W-M*4,28,3,3,'F')
@@ -85,13 +85,13 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   doc.text(profile?.displayName||'Student',W/2,116,{align:'center'})
   doc.setFont('helvetica','normal')
   doc.setFontSize(9)
-  doc.setTextColor(180,160,220)
+  doc.setTextColor(178,214,190)
   doc.text(`Level ${profile?.level||1}  ·  ${profile?.xp||0} XP  ·  ${profile?.streak||0} day streak`,W/2,126,{align:'center'})
 
   const boxW=36,boxH=22,boxY=148,gap=5
   const startX=(W-(boxW*4+gap*3))/2
   ;[
-    {label:'Subjects',value:(profile?.subjects||[]).length,col:PURPLE},
+    {label:'Subjects',value:(profile?.subjects||[]).length,col:ACCENT},
     {label:'Papers',  value:(paperAttempts||[]).length,    col:[37,99,235]},
     {label:'Topics',  value:(topics||[]).length,           col:[5,150,105]},
     {label:'Mistakes',value:(mistakes||[]).length,         col:[217,119,6]},
@@ -107,7 +107,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
     doc.setFont('helvetica','normal')
     doc.text(s.label,bx+boxW/2,boxY+boxH*0.82,{align:'center'})
   })
-  doc.setTextColor(150,130,200)
+  doc.setTextColor(140,168,150)
   doc.setFontSize(8)
   doc.setFont('helvetica','italic')
   doc.text(`Generated ${format(new Date(),'EEEE, d MMMM yyyy')}`,W/2,184,{align:'center'})
@@ -121,9 +121,9 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
       head:[['Subject','Level','Board','Tier','Starting','Current','Target']],
       body:profile.subjects.map(s=>[s.name,s.qualification||profile.qualification||'GCSE',s.board,s.tier&&s.tier!=='N/A'?s.tier:'–',profile.startingGrades?.[s.name]||'–',s.currentGrade||'–',s.targetGrade||'9']),
       margin:{left:M,right:M},
-      styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
+      styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
-      alternateRowStyles:{fillColor:[248,245,255]},
+      alternateRowStyles:{fillColor:[243,248,245]},
       columnStyles:{0:{fontStyle:'bold'},5:{fontStyle:'bold'}},
       didParseCell(d){if(d.section==='body'&&d.column.index===5)d.cell.styles.textColor=gradeRgb(d.cell.raw)},
       theme:'grid',
@@ -141,9 +141,9 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
         head:[['Subject','Paper','Date','Days']],
         body:upcoming.map(e=>{const d=Math.ceil((new Date(e.examDate)-new Date())/86400000);return[e.subject,`Paper ${e.paper}`,format(new Date(e.examDate),'d MMM yyyy'),d<=0?'Today!':d===1?'Tomorrow':`${d} days`]}),
         margin:{left:M,right:M},
-        styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
+        styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
         headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
-        alternateRowStyles:{fillColor:[248,245,255]},
+        alternateRowStyles:{fillColor:[243,248,245]},
         didParseCell(d){if(d.section==='body'&&d.column.index===3){const v=parseInt(d.cell.raw);d.cell.styles.textColor=(d.cell.raw==='Today!'||d.cell.raw==='Tomorrow')?DANGER:v<=14?WARNING:SUCCESS;d.cell.styles.fontStyle='bold'}},
         theme:'grid',
       })
@@ -165,9 +165,9 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
       head:[['Subject','Papers','Avg %','Latest','Best Grade','Best %']],
       body:subjs.map(s=>{const sub=activePapers.filter(a=>a.subject===s);const avg=Math.round(sub.reduce((sum,a)=>sum+(a.percentage||0),0)/sub.length);const best=sub.reduce((b,a)=>(a.percentage||0)>(b.percentage||0)?a:b,sub[0]);return[s,sub.length,`${avg}%`,sub[0]?.grade||'–',best?.grade||'–',`${best?.percentage||0}%`]}),
       margin:{left:M,right:M},
-      styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
+      styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
-      alternateRowStyles:{fillColor:[248,245,255]},
+      alternateRowStyles:{fillColor:[243,248,245]},
       didParseCell(d){if(d.section==='body'&&(d.column.index===3||d.column.index===4)){d.cell.styles.textColor=gradeRgb(d.cell.raw);d.cell.styles.fontStyle='bold'}},
       theme:'grid',
     })
@@ -180,9 +180,9 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
       head:[['Subject','Paper','Board','Year','Score','%','Grade']],
       body:activePapers.slice(0,20).map(a=>[a.subject,`P${a.paper}`,a.board,String(a.year),`${a.score}/${a.maxMarks}`,`${a.percentage}%`,a.grade||'–']),
       margin:{left:M,right:M},
-      styles:{fontSize:7.5,cellPadding:2.5,textColor:[30,20,50]},
+      styles:{fontSize:7.5,cellPadding:2.5,textColor:[32,36,33]},
       headStyles:{fillColor:MID,textColor:WHITE,fontStyle:'bold',fontSize:7.5},
-      alternateRowStyles:{fillColor:[248,245,255]},
+      alternateRowStyles:{fillColor:[243,248,245]},
       didParseCell(d){if(d.section==='body'&&d.column.index===6){d.cell.styles.textColor=gradeRgb(d.cell.raw);d.cell.styles.fontStyle='bold'}},
       theme:'grid',
     })
@@ -210,13 +210,13 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
         const bh=Math.max(1.5,(count/maxVal)*barMaxH),bx=M+i*(barW+3),by=y+barMaxH-bh
         doc.setFillColor(...[[239,68,68],[249,115,22],[245,158,11],[132,204,22],[34,197,94]][i])
         doc.rect(bx,by,barW,bh,'F')
-        doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(60,50,90)
+        doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(38,42,39)
         if(count>0)doc.text(String(count),bx+barW/2,by-1,{align:'center'})
         doc.setFont('helvetica','normal');doc.setFontSize(5.5)
         doc.text(['1','2','3','4','5'][i],bx+barW/2,y+barMaxH+4,{align:'center'})
       })
       const weak=st.filter(t=>(t.confidence||3)<=2).slice(0,5)
-      if(weak.length){doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(60,50,90);doc.text('Weakest:',M,y+8);doc.setFont('helvetica','normal');doc.setTextColor(...DANGER);weak.forEach((t,i)=>doc.text(`• ${t.name}`,M+2,y+13+i*4.5))}
+      if(weak.length){doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(38,42,39);doc.text('Weakest:',M,y+8);doc.setFont('helvetica','normal');doc.setTextColor(...DANGER);weak.forEach((t,i)=>doc.text(`• ${t.name}`,M+2,y+13+i*4.5))}
       y+=barMaxH+22
     }
   }
@@ -232,9 +232,9 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
       head:[['Subject','Total','Unresolved','Resolved']],
       body:Object.entries(byS).map(([s,d])=>[s,d.total,d.unresolved,d.total-d.unresolved]),
       margin:{left:M,right:M},
-      styles:{fontSize:8.5,cellPadding:3,textColor:[30,20,50]},
+      styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
-      alternateRowStyles:{fillColor:[248,245,255]},
+      alternateRowStyles:{fillColor:[243,248,245]},
       didParseCell(d){if(d.section==='body'&&d.column.index===2&&parseInt(d.cell.raw)>0){d.cell.styles.textColor=DANGER;d.cell.styles.fontStyle='bold'}if(d.section==='body'&&d.column.index===3)d.cell.styles.textColor=SUCCESS},
       theme:'grid',
     })
@@ -244,7 +244,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   checkSpace(40)
   sectionHeader('Gamification Summary')
   const gW=(W-M*2-10)/3,gY=y
-  ;[{label:'Total XP',value:(profile?.xp||0).toLocaleString(),col:PURPLE},{label:'Level',value:String(profile?.level||1),col:[37,99,235]},{label:'Day Streak',value:`${profile?.streak||0} 🔥`,col:WARNING}].forEach((s,i)=>{
+  ;[{label:'Total XP',value:(profile?.xp||0).toLocaleString(),col:ACCENT},{label:'Level',value:String(profile?.level||1),col:[37,99,235]},{label:'Day Streak',value:`${profile?.streak||0} 🔥`,col:WARNING}].forEach((s,i)=>{
     const bx=M+i*(gW+5)
     doc.setFillColor(...s.col);doc.roundedRect(bx,gY,gW,20,3,3,'F')
     doc.setTextColor(...WHITE);doc.setFont('helvetica','bold');doc.setFontSize(15)
@@ -259,7 +259,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   const pages=doc.internal.getNumberOfPages()
   for(let p=1;p<=pages;p++){
     doc.setPage(p)
-    doc.setTextColor(150,130,200);doc.setFont('helvetica','italic');doc.setFontSize(7)
+    doc.setTextColor(140,168,150);doc.setFont('helvetica','italic');doc.setFontSize(7)
     doc.text(`RevisionFlow · ${profile?.displayName||'Student'} · ${format(new Date(),'d MMMM yyyy')}`,W/2,H-6,{align:'center'})
   }
 
