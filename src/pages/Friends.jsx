@@ -118,7 +118,7 @@ export default function Friends() {
     const lvl = LEVELS[Math.min((f.level || 1) - 1, LEVELS.length - 1)]
     return (
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,var(--purple-700),var(--purple-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
           {(f.displayName || 'U')[0].toUpperCase()}
         </div>
         <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -137,7 +137,7 @@ export default function Friends() {
     <div className="fade-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <h2>Friends</h2>
-        <span className="badge badge-purple"><Users size={12} /> {friends.length} friends</span>
+        <span className="badge badge-accent"><Users size={12} /> {friends.length} friends</span>
       </div>
 
       {/* ── Referral card — invite friends ── */}
@@ -231,7 +231,7 @@ export default function Friends() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {requests.map(req => (
               <div key={req.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,var(--purple-700),var(--purple-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
                   {(req.fromName || req.from || 'U')[0].toUpperCase()}
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
