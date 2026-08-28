@@ -7,11 +7,11 @@ export const THEMES = {
   default: {
     name: 'Default',
     unlock: 'free',
-    accent: '#7c3aed',
-    accentLight: '#a855f7',
-    description: 'The classic RevisionFlow purple',
+    accent: '#14532d',
+    accentLight: '#22c55e',
+    description: 'RevisionFlow sage green',
     bgOverrides: null,
-    preview: ['#7c3aed', '#a855f7', '#4f46e5'],
+    preview: ['#14532d', '#22c55e', '#4ade80'],
   },
   midnight: {
     name: 'Midnight',
