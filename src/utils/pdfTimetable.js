@@ -3,13 +3,13 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format, startOfWeek, addDays } from 'date-fns'
 
-const PURPLE = [124,58,237]
-const DARK   = [15,10,30]
-const LIGHT  = [245,243,255]
+const ACCENT = [20,83,45]
+const DARK   = [20,28,24]
+const LIGHT  = [230,245,236]
 const WHITE  = [255,255,255]
 const GREY   = [100,100,120]
 
-const PALETTE = [[167,139,250],[96,165,250],[52,211,153],[251,191,36],[248,113,113],[236,72,153],[34,211,238],[132,204,22],[249,115,22],[168,85,247]]
+const PALETTE = [[13,148,136],[96,165,250],[52,211,153],[251,191,36],[248,113,113],[236,72,153],[34,211,238],[132,204,22],[249,115,22],[22,101,52]]
 const SUBJECT_PDF_COLOURS = {}
 let paletteIdx = 0
 function subjectColour(name) {
@@ -21,7 +21,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' })
   const W=297, H=210, M=12
 
-  doc.setFillColor(...PURPLE)
+  doc.setFillColor(...ACCENT)
   doc.rect(0,0,W,22,'F')
   doc.setTextColor(...WHITE)
   doc.setFontSize(15)
@@ -39,7 +39,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
 
   if (upcoming.length) {
-    doc.setFillColor(...PURPLE)
+    doc.setFillColor(...ACCENT)
     doc.rect(M,y,W-M*2,6,'F')
     doc.setTextColor(...WHITE)
     doc.setFontSize(7.5)
@@ -51,7 +51,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     const cols = [70, 40, 35, 35, 50, 40]
     const headers = ['Subject','Board','Paper','Date','Days remaining','Grade target']
     let hx = M
-    doc.setFillColor(230,225,255)
+    doc.setFillColor(224,242,229)
     doc.rect(M, y, W-M*2, 5.5, 'F')
     doc.setTextColor(...DARK)
     doc.setFontSize(6.5)
@@ -65,9 +65,9 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
       const isToday = days <= 0
       const isUrgent = days <= 7
 
-      doc.setFillColor(...(idx%2===0 ? [248,245,255] : [255,255,255]))
+      doc.setFillColor(...(idx%2===0 ? [243,248,245] : [255,255,255]))
       doc.rect(M, y, W-M*2, 7, 'F')
-      doc.setDrawColor(220,215,240)
+      doc.setDrawColor(210,225,215)
       doc.rect(M, y, W-M*2, 7, 'S')
 
       // Urgency colour bar on left
@@ -116,13 +116,13 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     const wStart = addDays(weekStart,week*7)
     const wEnd   = addDays(wStart,6)
 
-    doc.setFillColor(...PURPLE);doc.rect(M,y,W-M*2,5.5,'F')
+    doc.setFillColor(...ACCENT);doc.rect(M,y,W-M*2,5.5,'F')
     doc.setTextColor(...WHITE);doc.setFontSize(6.5);doc.setFont('helvetica','bold')
     doc.text(`Week of ${format(wStart,'d MMM')} – ${format(wEnd,'d MMM yyyy')}`, M+3, y+3.8)
     y+=5.5
 
     DAYS.forEach((day,i)=>{
-      doc.setFillColor(230,225,255);doc.rect(M+i*colW,y,colW,4.5,'F')
+      doc.setFillColor(224,242,229);doc.rect(M+i*colW,y,colW,4.5,'F')
       doc.setTextColor(...DARK);doc.setFontSize(6.5);doc.setFont('helvetica','bold')
       doc.text(`${day} ${format(addDays(wStart,i),'d')}`,M+i*colW+colW/2,y+3.2,{align:'center'})
     })
@@ -134,7 +134,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
         const daySessions = (sessions||[]).filter(s=>{const sd=s.date||(s.startTime?String(s.startTime).substring(0,10):null);return sd===dayStr&&!s.completed}).sort((a,b)=>(a.start||'').localeCompare(b.start||''))
         const session = daySessions[row]
         const x=M+i*colW, cellY=y+row*rowH
-        doc.setFillColor(...WHITE);doc.setDrawColor(220,215,240);doc.rect(x,cellY,colW,rowH,'FD')
+        doc.setFillColor(...WHITE);doc.setDrawColor(210,225,215);doc.rect(x,cellY,colW,rowH,'FD')
         if (session) {
           const rgb=subjectColour(session.subject)
           doc.setFillColor(...rgb.map(c=>Math.min(255,c+60)));doc.rect(x,cellY,2,rowH,'F')
@@ -154,7 +154,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
   const pages=doc.internal.getNumberOfPages()
   for(let p=1;p<=pages;p++){
     doc.setPage(p)
-    doc.setFillColor(...PURPLE);doc.rect(0,H-7,W,7,'F')
+    doc.setFillColor(...ACCENT);doc.rect(0,H-7,W,7,'F')
     doc.setTextColor(...WHITE);doc.setFontSize(6);doc.setFont('helvetica','normal')
     doc.text('RevisionFlow — www.revisionflow.co.uk', M, H-2.5)
     doc.text(`Page ${p} of ${pages}`, W-M, H-2.5, {align:'right'})
