@@ -304,7 +304,7 @@ export default function AdminAutoGenerate() {
               <button key={l} disabled={running} onClick={() => toggle(levels, setLevels, l)}
                 style={{ padding: '4px 10px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: running ? 'default' : 'pointer',
                   border: `1px solid ${levels.includes(l) ? 'var(--accent)' : 'var(--border)'}`,
-                  background: levels.includes(l) ? 'rgba(124,58,237,0.15)' : 'transparent',
+                  background: levels.includes(l) ? 'rgba(34,197,94,0.15)' : 'transparent',
                   color: levels.includes(l) ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                 {l}
               </button>
@@ -318,7 +318,7 @@ export default function AdminAutoGenerate() {
               <button key={b} disabled={running} onClick={() => toggle(boards, setBoards, b)}
                 style={{ padding: '4px 10px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: running ? 'default' : 'pointer',
                   border: `1px solid ${boards.includes(b) ? 'var(--accent)' : 'var(--border)'}`,
-                  background: boards.includes(b) ? 'rgba(124,58,237,0.15)' : 'transparent',
+                  background: boards.includes(b) ? 'rgba(34,197,94,0.15)' : 'transparent',
                   color: boards.includes(b) ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                 {b}
               </button>
@@ -332,7 +332,7 @@ export default function AdminAutoGenerate() {
               <button key={v} disabled={running} onClick={() => toggle(types, setTypes, v)}
                 style={{ padding: '4px 10px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: running ? 'default' : 'pointer',
                   border: `1px solid ${types.includes(v) ? 'var(--accent)' : 'var(--border)'}`,
-                  background: types.includes(v) ? 'rgba(124,58,237,0.15)' : 'transparent',
+                  background: types.includes(v) ? 'rgba(34,197,94,0.15)' : 'transparent',
                   color: types.includes(v) ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                 {label}
               </button>
