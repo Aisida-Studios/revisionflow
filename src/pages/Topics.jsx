@@ -435,7 +435,13 @@ export default function Topics() {
                         return confTopics.map(t=>(
                           <div key={t.id} style={{padding:'8px 10px',borderRadius:8,background:`${confCols[conf]}15`,border:`1px solid ${confCols[conf]}40`,cursor:'pointer'}}
                             onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={`${t.name} — click to increase confidence`}>
-                            <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3,marginBottom:3}}>{t.name}</div>
+                            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:4,marginBottom:3}}>
+                              <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3}}>{t.name}</div>
+                              <Link to={`/topics/${t.id}`} onClick={e=>e.stopPropagation()} title="Open topic"
+                                style={{flexShrink:0,color:'var(--text-muted)',display:'flex',marginTop:1}}>
+                                <ExternalLink size={11}/>
+                              </Link>
+                            </div>
                             <div style={{display:'flex',gap:2}}>{[1,2,3,4,5].map(n=>(
                               <div key={n} style={{width:7,height:7,borderRadius:2,background:conf>=n?confCols[conf]:'var(--bg-hover)'}}/>
                             ))}</div>
@@ -458,7 +464,10 @@ export default function Topics() {
                   return (
                     <div key={t.id} style={{padding:'8px 10px',borderRadius:'var(--radius-md)',background:bg,border:`1px solid ${border}`,cursor:'pointer',position:'relative'}}
                       title={`${t.name} — ${CONF_LABELS[conf]}`}>
-                      <div style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4}}>{t.name}</div>
+                      <Link to={`/topics/${t.id}`} style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4,display:'block',color:'inherit',textDecoration:'none'}}
+                        onMouseEnter={e=>e.currentTarget.style.color='var(--accent-light)'} onMouseLeave={e=>e.currentTarget.style.color='inherit'}>
+                        {t.name}
+                      </Link>
                       <div className="conf-dots" style={{gap:3}}>
                         {[1,2,3,4,5].map(n=>(
                           <div key={n} className={`conf-dot${conf>=n?` filled-${n}`:''}`} style={{width:8,height:8}}
