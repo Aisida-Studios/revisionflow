@@ -191,7 +191,7 @@ export default function Layout() {
         <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
           <div className="sidebar-brand">
             <Link to="/dashboard" className="sidebar-brand-link">
-              <span className="sidebar-logo">RF</span>
+              <span className="sidebar-logo"><Zap size={16} /></span>
               {!collapsed && <span>RevisionFlow</span>}
             </Link>
             <button
@@ -248,7 +248,7 @@ export default function Layout() {
       {isMobile && (
         <header className="topbar">
           <Link to="/dashboard" className="topbar-brand">
-            <span className="sidebar-logo">RF</span>
+            <span className="sidebar-logo"><Zap size={16} /></span>
             <span>RevisionFlow</span>
           </Link>
           <button type="button" className="topbar-avatar-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
