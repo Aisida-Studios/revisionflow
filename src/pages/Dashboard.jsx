@@ -2,9 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Flame, Trophy, Clock, Target, TrendingUp, BookOpen, ChevronRight,
-  CalendarDays, Award, PlayCircle, CheckCircle2, Lock, Compass,
-  ClipboardList, Inbox, Gift, PartyPopper, X,
+  ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,
+  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
@@ -22,67 +21,113 @@ import {
 } from '../utils/firestore'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { computeSubjectPredictions, computeWeakTopics } from '../utils/gradeInsights'
-import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
+import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
 import { gradeColour } from '../utils/calendar'
-import { LEVELS, levelFromXP, subjectColour } from '../data/subjects'
+import { LEVELS, levelFromXP } from '../data/subjects'
 import { BADGE_MAP } from '../data/badges'
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Small presentational helpers, local to this file only. Section.jsx was
-   ruled out — it's the collapsible admin-panel primitive (AdminDataEditor /
-   Admin.jsx), not a general card, so it's the wrong shape for a student-
-   facing dashboard. These use the SAME existing tokens/classes (.card,
-   .badge-*, .conf-dots, .streak-fire, .empty-state, .progress-bar) as the
-   rest of the app rather than inventing a parallel visual language.
+   Matches the reference mockup: plain greeting (no card behind it), a
+   dominant "next session" card with a line-art illustration, Today +
+   Streak stacked beside it, then a plain three-column row. No icons in
+   card headers — just bold text ("card-eyebrow"), matching the mockup
+   exactly. Everything below that row is real product functionality that
+   isn't pictured in the mockup (predicted grades, quests, badges, quick
+   actions, referrals) — kept, but restyled in the same plain language so
+   the page reads as one design rather than a mockup glued to a leftover.
    ───────────────────────────────────────────────────────────────────────── */
 
-function greetingWord(hour) {
-  if (hour < 5) return 'Still up'
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  if (hour < 21) return 'Good evening'
-  return 'Good evening'
-}
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAY_NARROW = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+function toJsDate(value) {
+  if (!value) return null
+  if (value.toDate) return value.toDate()
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d
+}
+function formatShortDate(d) { return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}` }
+function formatFullDate(d) { return `${WEEKDAY_FULL[d.getDay()]} ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}` }
+function fmtDuration(minutes) {
+  if (!minutes) return '0m'
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
 function firstName(profile, user) {
   const raw = profile?.displayName || user?.displayName || ''
   return raw.trim().split(' ')[0] || 'there'
 }
-
-function fmtHours(minutes) {
-  if (!minutes) return '0h'
-  const h = minutes / 60
-  return h >= 10 ? `${Math.round(h)}h` : `${Math.round(h * 10) / 10}h`
+function greetingWord(hour) {
+  if (hour < 5) return 'Still up'
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
-function SubjectDot({ subject }) {
-  return <span className="subject-dot" style={{ background: subjectColour(subject) }} />
-}
-
-function ExamRow({ exam }) {
-  const urgency = countdownUrgency(exam.examDate)
+/* Simple two-flower line-art illustration, built from scratch for this
+   card — sage/green tones only, all colour comes from existing tokens. */
+function GrowthIllustration() {
   return (
-    <li className="exam-row">
-      <SubjectDot subject={exam.subject} />
-      <div className="exam-row-main">
-        <span className="exam-row-subject">{exam.subject}</span>
-        <span className="exam-row-meta">{exam.board}{exam.qualification ? ` · ${exam.qualification}` : ''}</span>
-      </div>
-      <span className={`badge ${urgency === 'urgent' ? 'badge-red' : urgency === 'soon' ? 'badge-amber' : 'badge-grey'}`}>
-        {countdownLabel(exam.examDate)}
-      </span>
-    </li>
+    <svg viewBox="0 0 180 130" className="growth-illustration" aria-hidden="true">
+      <path d="M8 116 H172" stroke="var(--border)" strokeWidth="1.5" />
+      <path d="M62 116 C59 92 66 74 63 46" stroke="var(--accent-light)" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M112 116 C114 96 101 80 106 54" stroke="var(--accent-light)" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M63 82 C51 79 49 68 59 65 C65 70 65 78 63 82Z" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1.4" />
+      <path d="M106 94 C97 92 94 83 101 79 C109 83 109 90 106 94Z" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1.4" />
+      <g transform="translate(63,42)">
+        <circle cx="0" cy="-9" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="-5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="-8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="0" cy="0" r="3.5" fill="var(--accent)" />
+      </g>
+      <g transform="translate(106,52) scale(0.82)">
+        <circle cx="0" cy="-9" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="-5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="-8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
+        <circle cx="0" cy="0" r="3.5" fill="var(--accent)" />
+      </g>
+      <circle cx="32" cy="58" r="2.5" fill="var(--border-strong)" />
+      <circle cx="148" cy="68" r="3.5" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1" />
+      <circle cx="153" cy="34" r="2" fill="var(--accent-light)" />
+    </svg>
   )
 }
 
-function EmptyInline({ icon: Icon, text, actionLabel, actionTo }) {
+function EmptyMini({ text, to, label }) {
   return (
-    <div className="empty-state" style={{ padding: '32px 16px' }}>
-      <Icon size={30} strokeWidth={1.5} className="empty-icon" style={{ fontSize: 'unset', opacity: 0.45 }} />
-      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>{text}</p>
-      {actionTo && (
-        <Link to={actionTo} className="btn btn-secondary btn-sm">{actionLabel}</Link>
-      )}
+    <div className="mini-empty">
+      <p>{text}</p>
+      {to && <Link to={to} className="card-footer-link">{label} <ArrowRight size={13} /></Link>}
+    </div>
+  )
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="dash">
+      <Skeleton width={220} height={32} />
+      <Skeleton width={160} height={16} style={{ marginTop: 8 }} />
+      <div className="dash-top-row" style={{ marginTop: 24 }}>
+        <Skeleton height={220} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Skeleton height={100} />
+          <Skeleton height={100} />
+        </div>
+      </div>
+      <div className="dash-trio" style={{ marginTop: 16 }}>
+        <Skeleton height={180} />
+        <Skeleton height={180} />
+        <Skeleton height={180} />
+      </div>
     </div>
   )
 }
@@ -110,16 +155,16 @@ function SetupChecklist({ profile }) {
   const remaining = items.filter((i) => !i.done)
   if (!remaining.length) return null
   return (
-    <div className="card accent-card" style={{ marginBottom: 16 }}>
-      <div className="dash-card-head"><h2>Finish setting up</h2></div>
-      <ul className="checklist">
+    <div className="card" style={{ marginBottom: 16 }}>
+      <p className="card-eyebrow">Finish setting up</p>
+      <ul className="plain-list">
         {remaining.map((i) => (
-          <li key={i.label}>
-            <Link to={i.to} className="checklist-item">
+          <li key={i.label} className="plain-row">
+            <Link to={i.to} className="plain-row-main" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span className="checklist-dot" />
-              {i.label}
-              <ChevronRight size={14} />
+              <span className="plain-row-title">{i.label}</span>
             </Link>
+            <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />
           </li>
         ))}
       </ul>
@@ -128,52 +173,20 @@ function SetupChecklist({ profile }) {
 }
 
 function BadgeShowcase({ earnedIds }) {
-  const earned = (earnedIds || [])
-    .map((id) => BADGE_MAP[id])
-    .filter(Boolean)
+  const earned = (earnedIds || []).map((id) => BADGE_MAP[id]).filter(Boolean)
   if (!earned.length) {
-    return <EmptyInline icon={Trophy} text="No badges yet — keep revising to unlock your first one." />
+    return <EmptyMini text="No badges yet — keep revising to unlock your first one." />
   }
   return (
     <div className="badge-showcase">
       {earned.slice(0, 12).map((b) => (
-        <span key={b.id} className="badge badge-pop" title={b.description || b.name}>
+        <span key={b.id} className="mini-tag" title={b.description || b.name}>
           {b.icon} {b.name}
         </span>
       ))}
     </div>
   )
 }
-
-function DashboardSkeleton() {
-  return (
-    <div className="dash">
-      <div className="card hero-section">
-        <Skeleton width={180} height={30} />
-        <Skeleton width={260} height={16} style={{ marginTop: 10 }} />
-        <div className="hero-stats" style={{ marginTop: 28 }}>
-          {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={64} />)}
-        </div>
-      </div>
-      <div className="dash-row-1" style={{ marginTop: 20 }}>
-        <Skeleton height={180} />
-        <Skeleton height={180} />
-      </div>
-    </div>
-  )
-}
-
-const QUICK_ACTIONS = [
-  { to: '/study', label: 'Start studying', icon: BookOpen },
-  { to: '/timer', label: 'Focus timer', icon: Clock },
-  { to: '/papers', label: 'Past papers', icon: ClipboardList },
-  { to: '/topics', label: 'Topics', icon: Target },
-  { to: '/tutor', label: 'Tutor', icon: Compass },
-  { to: '/ai', label: 'AI Advisor', icon: TrendingUp },
-  { to: '/mistakes', label: 'Mistakes log', icon: X },
-  { to: '/calendar', label: 'Plan my week', icon: CalendarDays },
-  { to: '/exams', label: 'Exam dates', icon: Award },
-]
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -193,9 +206,7 @@ export default function Dashboard() {
     () => typeof window !== 'undefined' && localStorage.getItem('rf_beta_thanks_dismissed') === '1'
   )
 
-  useEffect(() => {
-    document.title = 'Dashboard · RevisionFlow'
-  }, [])
+  useEffect(() => { document.title = 'Dashboard · RevisionFlow' }, [])
 
   function dismissBetaThanks() {
     localStorage.setItem('rf_beta_thanks_dismissed', '1')
@@ -220,8 +231,6 @@ export default function Dashboard() {
       setDataLoading(false)
     }).catch(() => { if (!cancelled) setDataLoading(false) })
     return () => { cancelled = true }
-    // profile.subjects is included so a subject/qualification change in Settings
-    // is reflected next time this mounts, rather than reading a stale closure.
   }, [user, profile?.subjects])
 
   const currentPapers = useMemo(
@@ -232,39 +241,12 @@ export default function Dashboard() {
     () => filterToCurrentQualification(quizResults, profile?.subjects || []),
     [quizResults, profile?.subjects]
   )
-
   const predictions = useMemo(
     () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []),
     [topics, currentPapers, currentQuizzes, profile]
   )
-  const weakTopics = useMemo(() => computeWeakTopics(topics, 5), [topics])
-
-  const upcomingExams = useMemo(
-    () => filterUpcomingExams(profile?.examDates || []).slice(0, 4),
-    [profile?.examDates]
-  )
-  const nextExam = upcomingExams[0] || null
-
-  const now = new Date()
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
-  const minutesThisWeek = useMemo(() => {
-    return sessions
-      .filter((s) => s.completed)
-      .filter((s) => {
-        const d = s.date?.toDate ? s.date.toDate() : (s.startTime?.toDate ? s.startTime.toDate() : (s.date ? new Date(s.date) : null))
-        return d && d >= weekStart
-      })
-      .reduce((sum, s) => sum + (s.duration || 0), 0)
-  }, [sessions])
-
-  const completedSessionCount = useMemo(() => sessions.filter((s) => s.completed).length, [sessions])
-
-  const avgPrediction = useMemo(() => {
-    if (!predictions.length) return null
-    const withPct = predictions.filter((p) => typeof p.percentage === 'number')
-    if (!withPct.length) return null
-    return Math.round(withPct.reduce((sum, p) => sum + p.percentage, 0) / withPct.length)
-  }, [predictions])
+  const weakTopics = useMemo(() => computeWeakTopics(topics, 4), [topics])
+  const upcomingExams = useMemo(() => filterUpcomingExams(profile?.examDates || []).slice(0, 4), [profile?.examDates])
 
   const avgConfidence = useMemo(() => {
     if (!topics.length) return null
@@ -273,6 +255,63 @@ export default function Dashboard() {
     return Math.round((rated.reduce((sum, t) => sum + t.confidence, 0) / rated.length) * 20)
   }, [topics])
 
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
+
+  const todaySessions = useMemo(() => {
+    return sessions
+      .map((s) => ({ ...s, _date: toJsDate(s.date) }))
+      .filter((s) => s._date && s._date >= today && s._date < tomorrow)
+  }, [sessions])
+
+  const todayMinutes = useMemo(
+    () => todaySessions.filter((s) => s.completed).reduce((sum, s) => sum + (s.duration || 0), 0),
+    [todaySessions]
+  )
+
+  const upcomingSessions = useMemo(() => {
+    return sessions
+      .filter((s) => !s.completed)
+      .map((s) => ({ ...s, _date: toJsDate(s.date) }))
+      .filter((s) => s._date)
+      .sort((a, b) => a._date - b._date)
+  }, [sessions])
+  const nextSession = upcomingSessions[0] || null
+
+  const last7Days = useMemo(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today); d.setDate(today.getDate() - i)
+      const done = sessions.some((s) => {
+        if (!s.completed) return false
+        const sd = toJsDate(s.date)
+        return sd && sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate()
+      })
+      days.push({ key: d.toISOString(), label: WEEKDAY_NARROW[d.getDay()], done, isToday: i === 0 })
+    }
+    return days
+  }, [sessions])
+
+  const recentActivity = useMemo(() => {
+    const fromSessions = sessions.filter((s) => s.completed).map((s) => ({
+      id: `s-${s.id}`, icon: BookOpen, title: 'Revised topic',
+      sub: s.title || s.subject || 'Study session', date: toJsDate(s.date),
+    }))
+    const fromPapers = currentPapers.map((p) => ({
+      id: `p-${p.id}`, icon: ClipboardList, title: 'Completed past paper',
+      sub: `${p.subject || ''}${p.paperNumber ? ` — Paper ${p.paperNumber}` : ''}`.trim() || 'Past paper',
+      date: toJsDate(p.createdAt || p.attemptDate),
+    }))
+    const fromQuizzes = currentQuizzes.map((q) => ({
+      id: `q-${q.id}`, icon: CheckCircle2, title: 'Completed quiz',
+      sub: q.subject || 'Quiz', date: toJsDate(q.createdAt || q.date),
+    }))
+    return [...fromSessions, ...fromPapers, ...fromQuizzes]
+      .filter((i) => i.date)
+      .sort((a, b) => b.date - a.date)
+      .slice(0, 4)
+  }, [sessions, currentPapers, currentQuizzes])
+
   const xp = profile?.xp || 0
   const level = levelFromXP(xp)
   const thisLevel = LEVELS[level - 1] || LEVELS[0]
@@ -280,9 +319,7 @@ export default function Dashboard() {
   const xpIntoLevel = xp - (thisLevel?.xpRequired || 0)
   const xpForNext = nextLevel ? nextLevel.xpRequired - (thisLevel?.xpRequired || 0) : 0
   const xpPercent = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpForNext) * 100)) : 100
-
   const streak = profile?.streak || 0
-  const hasAnyData = sessions.length > 0 || currentPapers.length > 0 || currentQuizzes.length > 0
 
   const visiblePredictions = isPro ? predictions : predictions.slice(0, 1)
   const hiddenPredictionCount = Math.max(0, predictions.length - visiblePredictions.length)
@@ -303,9 +340,7 @@ export default function Dashboard() {
     }
   }
 
-  if (!profile) {
-    return <DashboardSkeleton />
-  }
+  if (!profile) return <DashboardSkeleton />
 
   return (
     <div className="dash">
@@ -316,234 +351,263 @@ export default function Dashboard() {
       {profile?.betaUser && !betaThanksDismissed && <BetaThanks onDismiss={dismissBetaThanks} />}
       <SetupChecklist profile={profile} />
 
-      {/* ── Hero: who you are, how you're doing, what's next ─────────────── */}
-      <section className="card hero-section" data-tour="dashboard-greeting">
-        <div className="hero-top">
-          <div>
-            <p className="hero-eyebrow">{greetingWord(now.getHours())}</p>
-            <h1 className="hero-title">{firstName(profile, user)}</h1>
-            {nextExam ? (
-              <p className="hero-sub">
-                <CalendarDays size={16} />
-                {nextExam.subject} · {countdownLabel(nextExam.examDate)}
-              </p>
-            ) : (
-              <p className="hero-sub">No exams on your calendar yet — add your subjects in Settings.</p>
-            )}
+      {/* ── Plain greeting — no card, no background, matching the reference ── */}
+      <div className="dash-header">
+        <h1 className="dash-greeting">{greetingWord(new Date().getHours())}, {firstName(profile, user)}</h1>
+        <p className="dash-date">{formatFullDate(new Date())}</p>
+      </div>
+
+      {/* ── Next session (dominant) + Today / Streak ─────────────────────── */}
+      {dataLoading ? (
+        <div className="dash-top-row" style={{ marginTop: 24 }}>
+          <Skeleton height={220} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Skeleton height={100} /><Skeleton height={100} />
           </div>
-          {isPro && <span className="badge badge-gold">Pro</span>}
         </div>
-
-        {dataLoading ? (
-          <div className="hero-stats" style={{ marginTop: 28 }}>
-            {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={64} />)}
+      ) : (
+        <div className="dash-top-row" style={{ marginTop: 24 }}>
+          <div className="card next-session-card">
+            <p className="card-eyebrow">Your next session</p>
+            {nextSession ? (
+              <>
+                <h2 className="next-session-subject">{nextSession.subject || 'Study session'}</h2>
+                <p className="next-session-topic">{nextSession.title || 'Revision session'}</p>
+                {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
+                <Link to="/timer" className="btn btn-primary next-session-cta">
+                  Start session <ArrowRight size={16} />
+                </Link>
+              </>
+            ) : (
+              <div className="next-session-empty">
+                <p style={{ color: 'var(--text-secondary)', margin: '4px 0 14px', maxWidth: 260 }}>
+                  Nothing scheduled next — plan a session or jump straight in.
+                </p>
+                <Link to="/calendar" className="btn btn-primary next-session-cta">
+                  Plan a session <ArrowRight size={16} />
+                </Link>
+              </div>
+            )}
+            <GrowthIllustration />
           </div>
-        ) : (
-          <div className="hero-stats" data-tour="dashboard-streak">
-            <div className="hero-stat">
-              <Flame size={20} className="streak-fire" style={{ color: streak > 0 ? '#f97316' : 'var(--text-muted)' }} />
-              <div>
-                <span className="stat-value" style={{ fontSize: '1.5rem' }}>{streak}</span>
-                <span className="stat-label">day streak</span>
+
+          <div className="dash-side-col">
+            <div className="card">
+              <p className="card-eyebrow">Today</p>
+              <div className="today-stats-row">
+                <div className="stat-pair">
+                  <span className="stat-num">{todaySessions.length}</span>
+                  <span className="stat-cap">sessions</span>
+                </div>
+                <div className="stat-pair">
+                  <span className="stat-num">{avgConfidence != null ? `${avgConfidence}%` : '—'}</span>
+                  <span className="stat-cap">confidence</span>
+                </div>
+                <div className="stat-pair">
+                  <span className="stat-num">{fmtDuration(todayMinutes)}</span>
+                  <span className="stat-cap">study time</span>
+                </div>
               </div>
             </div>
-            <div className="hero-stat">
-              <Trophy size={20} style={{ color: 'var(--accent)' }} />
-              <div>
-                <span className="stat-value" style={{ fontSize: '1.5rem' }}>Lv {level}</span>
-                <span className="stat-label">{thisLevel?.title || 'Studier'}</span>
+            <div className="card">
+              <p className="card-eyebrow">Streak</p>
+              <div className="streak-row">
+                <span className="stat-num">{streak}</span>
+                <span className="stat-cap">days</span>
               </div>
-            </div>
-            <div className="hero-stat">
-              <Clock size={20} style={{ color: 'var(--info)' }} />
-              <div>
-                <span className="stat-value" style={{ fontSize: '1.5rem' }}>{fmtHours(minutesThisWeek)}</span>
-                <span className="stat-label">this week</span>
-              </div>
-            </div>
-            <div className="hero-stat hero-stat--xp">
-              <div className="hero-xp-row">
-                <span className="stat-label" style={{ marginTop: 0 }}>{xpIntoLevel} / {xpForNext || '—'} XP</span>
-                <Link to="/profile" className="dash-link-sm">Level {level + 1} <ChevronRight size={12} /></Link>
-              </div>
-              <div className="progress-bar" role="progressbar" aria-valuenow={xpPercent} aria-valuemin={0} aria-valuemax={100} aria-label="XP progress to next level">
-                <div className="progress-fill xp-bar-fill" style={{ width: `${xpPercent}%` }} />
+              <div className="week-dots">
+                {last7Days.map((d) => (
+                  <div key={d.key} className="week-dot-col">
+                    <span className="week-dot-label">{d.label}</span>
+                    <span className={`week-dot ${d.done ? 'week-dot--done' : ''} ${d.isToday && !d.done ? 'week-dot--today' : ''}`}>
+                      {d.done && <CheckCircle2 size={11} />}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        )}
-      </section>
-
-      {!dataLoading && !hasAnyData && (
-        <div className="card accent-card" style={{ marginTop: 20, textAlign: 'center', padding: '40px 24px' }}>
-          <BookOpen size={32} style={{ color: 'var(--accent)' }} />
-          <h2 style={{ margin: '12px 0 6px' }}>Your revision hub is ready</h2>
-          <p style={{ color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-            Log your first session to start tracking streaks, XP and progress.
-          </p>
-          <Link to="/study" className="btn btn-primary">Start studying</Link>
         </div>
       )}
 
-      {/* ── Row 1: what's coming up, what to do right now ────────────────── */}
-      <div className="dash-row-1" style={{ marginTop: 20 }}>
+      {/* ── Upcoming / Needs attention / Recent activity ─────────────────── */}
+      <div className="dash-trio" style={{ marginTop: 16 }}>
         <div className="card">
-          <div className="dash-card-head">
-            <h2><CalendarDays size={18} /> Upcoming exams</h2>
-            <Link to="/exams" className="dash-link-sm">All dates <ChevronRight size={12} /></Link>
-          </div>
-          {dataLoading ? (
-            <Skeleton height={120} />
-          ) : upcomingExams.length ? (
-            <ul className="exam-list">
-              {upcomingExams.map((e) => <ExamRow key={e.id || `${e.subject}-${e.examDate}`} exam={e} />)}
-            </ul>
-          ) : (
-            <EmptyInline icon={CalendarDays} text="No upcoming exams found for your subjects." actionLabel="Check exam dates" actionTo="/exams" />
-          )}
-        </div>
-
-        <div className="card">
-          <div className="dash-card-head">
-            <h2><Target size={18} /> Needs attention</h2>
-            <Link to="/topics" className="dash-link-sm">All topics <ChevronRight size={12} /></Link>
-          </div>
-          {dataLoading ? (
-            <Skeleton height={120} />
-          ) : weakTopics.length ? (
-            <ul className="priority-list">
-              {weakTopics.map((t) => (
-                <li key={t.id} className="priority-row">
-                  <SubjectDot subject={t.subject} />
-                  <div className="priority-row-main">
-                    <span className="priority-row-name">{t.name}</span>
-                    <span className="priority-row-meta">{t.subject}</span>
+          <p className="card-eyebrow">Upcoming</p>
+          {dataLoading ? <Skeleton height={130} /> : upcomingSessions.length ? (
+            <ul className="plain-list">
+              {upcomingSessions.slice(0, 4).map((s) => (
+                <li key={s.id} className="plain-row">
+                  <div className="plain-row-main">
+                    <span className="plain-row-title">{s.subject || 'Study session'}</span>
+                    <span className="plain-row-sub">{s.title || ''}</span>
                   </div>
-                  <div className="conf-dots" aria-hidden="true">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <span key={n} className={`conf-dot ${n <= t.confidence ? `active-${t.confidence}` : ''}`} style={{ cursor: 'default' }} />
-                    ))}
-                  </div>
+                  <span className="plain-row-meta">{formatShortDate(s._date)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <EmptyInline icon={Target} text="Nothing flagged as low-confidence — nice work." actionLabel="Rate your topics" actionTo="/topics" />
+            <EmptyMini text="Nothing scheduled yet." to="/calendar" label="Plan your week" />
+          )}
+          <Link to="/calendar" className="card-footer-link">View full calendar <ArrowRight size={13} /></Link>
+        </div>
+
+        <div className="card">
+          <p className="card-eyebrow">Needs attention</p>
+          {dataLoading ? <Skeleton height={130} /> : weakTopics.length ? (
+            <>
+              <p className="card-sub-line">{weakTopics.length} topic{weakTopics.length === 1 ? ' is' : 's are'} below 60% confidence</p>
+              <ul className="plain-list">
+                {weakTopics.map((t) => (
+                  <li key={t.id} className="progress-row">
+                    <div className="progress-row-top">
+                      <span>{t.name}</span>
+                      <span>{t.confidence * 20}%</span>
+                    </div>
+                    <div className="thin-progress">
+                      <div className="thin-progress-fill" style={{ width: `${t.confidence * 20}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <EmptyMini text="Nothing flagged — nice work staying on top of things." />
+          )}
+          <Link to="/topics" className="card-footer-link">View all weak topics <ArrowRight size={13} /></Link>
+        </div>
+
+        <div className="card">
+          <p className="card-eyebrow">Recent activity</p>
+          {dataLoading ? <Skeleton height={130} /> : recentActivity.length ? (
+            <ul className="plain-list">
+              {recentActivity.map((i) => (
+                <li key={i.id} className="plain-row">
+                  <span className="row-icon-chip"><i.icon size={14} /></span>
+                  <div className="plain-row-main">
+                    <span className="plain-row-title">{i.title}</span>
+                    <span className="plain-row-sub">{i.sub}</span>
+                  </div>
+                  <span className="plain-row-meta">{formatShortDate(i.date)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyMini text="Your first session will show up here." to="/study" label="Start studying" />
+          )}
+          <Link to="/analytics" className="card-footer-link">View all activity <ArrowRight size={13} /></Link>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────────
+          Below the mockup's fold: real functionality not pictured in the
+          reference image, restyled in the same plain language rather than
+          removed. See the accompanying note for why this is here.
+         ───────────────────────────────────────────────────────────────── */}
+
+      {upcomingExams.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <p className="card-eyebrow"><CalendarDays size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Upcoming exams</p>
+          <ul className="plain-list">
+            {upcomingExams.map((e) => (
+              <li key={e.id || `${e.subject}-${e.examDate}`} className="plain-row">
+                <div className="plain-row-main">
+                  <span className="plain-row-title">{e.subject}</span>
+                  <span className="plain-row-sub">{e.board}{e.qualification ? ` · ${e.qualification}` : ''}</span>
+                </div>
+                <span className="plain-row-meta">{countdownLabel(e.examDate)}</span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/exams" className="card-footer-link">All exam dates <ArrowRight size={13} /></Link>
+        </div>
+      )}
+
+      <div className="grid-2" style={{ marginTop: 16 }}>
+        <div className="card">
+          <p className="card-eyebrow"><CheckSquare size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Today's plan</p>
+          {dataLoading ? <Skeleton height={90} /> : todaySessions.length ? (
+            <ul className="plain-list">
+              {todaySessions.slice(0, 4).map((s) => (
+                <li key={s.id} className="plain-row">
+                  <div className="plain-row-main">
+                    <span className="plain-row-title">{s.title || s.subject}</span>
+                    <span className="plain-row-sub">{s.duration ? `${s.duration} min` : ''}</span>
+                  </div>
+                  {s.completed ? (
+                    <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
+                  ) : (
+                    <span className="mini-tag">Pending</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyMini text="Nothing scheduled for today." to="/calendar" label="Plan today" />
           )}
         </div>
+        <div className="card"><DailyQuests /></div>
       </div>
 
-      {/* ── Today: goals and quests ────────────────────────────────────────── */}
-      <div className="grid-2" style={{ marginTop: 20 }}>
+      <div className="dash-row-3" style={{ marginTop: 16 }}>
         <div className="card">
-          <div className="dash-card-head">
-            <h2><CheckCircle2 size={18} /> Today's plan</h2>
-            <Link to="/calendar" className="dash-link-sm">Calendar <ChevronRight size={12} /></Link>
-          </div>
-          <TodayPlan sessions={sessions} loading={dataLoading} />
-        </div>
-        <div className="card">
-          <DailyQuests />
-        </div>
-      </div>
-
-      {/* ── Progress overview: the four numbers that matter ───────────────── */}
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="dash-card-head">
-          <h2><TrendingUp size={18} /> Progress</h2>
-          <Link to="/analytics" className="dash-link-sm">Full analytics <ChevronRight size={12} /></Link>
-        </div>
-        {dataLoading ? (
-          <div className="dash-progress-grid">
-            {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={78} />)}
-          </div>
-        ) : (
-          <div className="dash-progress-grid">
-            <div className="dash-progress-cell">
-              <span className="stat-value">{fmtHours(minutesThisWeek)}</span>
-              <span className="stat-label">Study time this week</span>
-            </div>
-            <div className="dash-progress-cell">
-              <span className="stat-value">{avgPrediction != null ? `${avgPrediction}%` : '—'}</span>
-              <span className="stat-label">Average score</span>
-            </div>
-            <div className="dash-progress-cell">
-              <span className="stat-value">{avgConfidence != null ? `${avgConfidence}%` : '—'}</span>
-              <span className="stat-label">Topic confidence</span>
-            </div>
-            <div className="dash-progress-cell">
-              <span className="stat-value">{completedSessionCount}</span>
-              <span className="stat-label">Sessions completed</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Row 3: predicted grades + recent activity ──────────────────────── */}
-      <div className="dash-row-3" style={{ marginTop: 20 }}>
-        <div className="card">
-          <div className="dash-card-head">
-            <h2><Award size={18} /> Predicted grades</h2>
-          </div>
-          {dataLoading ? (
-            <Skeleton height={140} />
-          ) : predictions.length ? (
+          <p className="card-eyebrow"><Award size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Predicted grades</p>
+          {dataLoading ? <Skeleton height={120} /> : predictions.length ? (
             <>
-              <ul className="grade-list">
+              <ul className="plain-list">
                 {visiblePredictions.map((p) => (
-                  <li key={`${p.board}-${p.subject}`} className="grade-row">
-                    <SubjectDot subject={p.subject} />
-                    <span className="grade-row-subject">{p.subject}</span>
-                    <span className="badge" style={{ background: `${gradeColour(p.grade)}22`, color: gradeColour(p.grade), fontWeight: 800 }}>
+                  <li key={`${p.board}-${p.subject}`} className="plain-row">
+                    <span className="plain-row-title" style={{ flex: 1 }}>{p.subject}</span>
+                    <span className="mini-tag" style={{ color: gradeColour(p.grade), borderColor: gradeColour(p.grade), fontWeight: 800 }}>
                       {p.grade}
                     </span>
                   </li>
                 ))}
               </ul>
               {hiddenPredictionCount > 0 && (
-                <Link to="/pro" className="dash-locked-row">
-                  <Lock size={14} />
-                  <span>{hiddenPredictionCount} more subject{hiddenPredictionCount > 1 ? 's' : ''} — unlock with Pro</span>
+                <Link to="/pro" className="card-footer-link" style={{ marginTop: 8 }}>
+                  {hiddenPredictionCount} more subject{hiddenPredictionCount > 1 ? 's' : ''} with Pro <ArrowRight size={13} />
                 </Link>
               )}
             </>
           ) : (
-            <EmptyInline icon={Award} text="Complete a quiz or past paper to see predicted grades." actionLabel="Try a paper" actionTo="/papers" />
+            <EmptyMini text="Complete a quiz or past paper to see predicted grades." to="/papers" label="Try a paper" />
           )}
         </div>
 
         <div className="card">
-          <div className="dash-card-head">
-            <h2><PlayCircle size={18} /> Recent activity</h2>
+          <p className="card-eyebrow"><Trophy size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Achievements</p>
+          <div className="streak-row" style={{ marginBottom: 10 }}>
+            <span className="stat-num" style={{ fontSize: '1.4rem' }}>Level {level}</span>
+            <span className="stat-cap">{thisLevel?.title || ''}</span>
           </div>
-          <RecentActivity sessions={sessions} papers={currentPapers} loading={dataLoading} />
+          <div className="thin-progress" style={{ marginBottom: 4 }}>
+            <div className="thin-progress-fill" style={{ width: `${xpPercent}%` }} />
+          </div>
+          <p className="card-sub-line" style={{ marginBottom: 14 }}>{xpIntoLevel} / {xpForNext || '—'} XP to level {level + 1}</p>
+          <BadgeShowcase earnedIds={profile.badges} />
+          <Link to="/profile" className="card-footer-link" style={{ marginTop: 12 }}>All badges <ArrowRight size={13} /></Link>
         </div>
       </div>
 
-      {/* ── Quick actions ───────────────────────────────────────────────────── */}
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="dash-card-head"><h2>Quick actions</h2></div>
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="card-eyebrow">Quick actions</p>
         <div className="grid-3 quick-actions">
-          {QUICK_ACTIONS.map((a) => (
-            <Link key={a.to} to={a.to} className="quick-action">
-              <a.icon size={18} />
-              <span>{a.label}</span>
-            </Link>
-          ))}
+          <Link to="/study" className="quick-action"><BookOpen size={18} /><span>Start studying</span></Link>
+          <Link to="/timer" className="quick-action"><Target size={18} /><span>Focus timer</span></Link>
+          <Link to="/papers" className="quick-action"><ClipboardList size={18} /><span>Past papers</span></Link>
+          <Link to="/topics" className="quick-action"><Target size={18} /><span>Topics</span></Link>
+          <Link to="/tutor" className="quick-action"><BookOpen size={18} /><span>Tutor</span></Link>
+          <Link to="/ai" className="quick-action"><Target size={18} /><span>AI Advisor</span></Link>
+          <Link to="/mistakes" className="quick-action"><X size={18} /><span>Mistakes log</span></Link>
+          <Link to="/calendar" className="quick-action"><CalendarDays size={18} /><span>Plan my week</span></Link>
+          <Link to="/exams" className="quick-action"><Award size={18} /><span>Exam dates</span></Link>
         </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="dash-card-head">
-          <h2><Trophy size={18} /> Achievements</h2>
-          <Link to="/profile" className="dash-link-sm">All badges <ChevronRight size={12} /></Link>
-        </div>
-        <BadgeShowcase earnedIds={profile.badges} />
       </div>
 
       {!profile.referredBy && (
-        <div className="card gold-card" style={{ marginTop: 20 }}>
-          <div className="dash-card-head"><h2><Gift size={18} /> Have a referral code?</h2></div>
+        <div className="card gold-card" style={{ marginTop: 16 }}>
+          <p className="card-eyebrow"><Gift size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Have a referral code?</p>
           <form onSubmit={handleApplyRefCode} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <input
               className="input"
@@ -562,98 +626,5 @@ export default function Dashboard() {
         </div>
       )}
     </div>
-  )
-}
-
-/* ── Today's plan: calendar-scheduled sessions for today ────────────────── */
-function TodayPlan({ sessions, loading }) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-
-  const todaySessions = useMemo(() => {
-    return sessions.filter((s) => {
-      const d = s.date?.toDate ? s.date.toDate() : (s.date ? new Date(s.date) : null)
-      return d && d >= today && d < tomorrow
-    })
-  }, [sessions])
-
-  if (loading) return <Skeleton height={90} />
-
-  if (!todaySessions.length) {
-    return <EmptyInline icon={Inbox} text="Nothing scheduled for today." actionLabel="Plan today" actionTo="/calendar" />
-  }
-
-  const done = todaySessions.filter((s) => s.completed).length
-
-  return (
-    <div>
-      <div className="progress-bar" style={{ marginBottom: 12 }}>
-        <div className="progress-fill" style={{ width: `${Math.round((done / todaySessions.length) * 100)}%` }} />
-      </div>
-      <ul className="exam-list">
-        {todaySessions.slice(0, 4).map((s) => (
-          <li key={s.id} className="exam-row">
-            <SubjectDot subject={s.subject} />
-            <div className="exam-row-main">
-              <span className="exam-row-subject">{s.title || s.subject}</span>
-              <span className="exam-row-meta">{s.duration ? `${s.duration} min` : ''}</span>
-            </div>
-            {s.completed ? (
-              <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />
-            ) : (
-              <span className="badge badge-grey">Pending</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-/* ── Recent activity: merges recent sessions + recent papers ────────────── */
-function RecentActivity({ sessions, papers, loading }) {
-  const items = useMemo(() => {
-    const fromSessions = sessions
-      .filter((s) => s.completed)
-      .map((s) => ({
-        id: `s-${s.id}`,
-        subject: s.subject,
-        label: s.title || s.subject || 'Study session',
-        date: s.date?.toDate ? s.date.toDate() : (s.date ? new Date(s.date) : null),
-        icon: BookOpen,
-      }))
-    const fromPapers = papers.map((p) => ({
-      id: `p-${p.id}`,
-      subject: p.subject,
-      label: `${p.subject} — Paper ${p.paperNumber || ''}`.trim(),
-      date: p.createdAt?.toDate ? p.createdAt.toDate() : (p.attemptDate ? new Date(p.attemptDate) : null),
-      icon: ClipboardList,
-    }))
-    return [...fromSessions, ...fromPapers]
-      .filter((i) => i.date)
-      .sort((a, b) => b.date - a.date)
-      .slice(0, 5)
-  }, [sessions, papers])
-
-  if (loading) return <Skeleton height={120} />
-
-  if (!items.length) {
-    return <EmptyInline icon={PartyPopper} text="No activity yet — your first session will show up here." actionLabel="Start studying" actionTo="/study" />
-  }
-
-  return (
-    <ul className="exam-list">
-      {items.map((i) => (
-        <li key={i.id} className="exam-row">
-          <SubjectDot subject={i.subject} />
-          <div className="exam-row-main">
-            <span className="exam-row-subject">{i.label}</span>
-            <span className="exam-row-meta">{i.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-          </div>
-        </li>
-      ))}
-    </ul>
   )
 }
