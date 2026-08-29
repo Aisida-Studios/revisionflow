@@ -1,6 +1,6 @@
 // src/pages/Topics.jsx
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
@@ -420,7 +420,7 @@ export default function Topics() {
                       </div>
                       <div style={{flex:1}}>
                         <div style={{height:8,background:'var(--bg-hover)',borderRadius:4,overflow:'hidden'}}>
-                          <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,var(--purple-700),var(--purple-400))',borderRadius:4,transition:'width 0.5s ease'}}/>
+                          <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,var(--accent),var(--accent-light))',borderRadius:4,transition:'width 0.5s ease'}}/>
                         </div>
                         <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:'0.72rem',color:'var(--text-muted)'}}>
                           <span>{mastered} strong (4-5)</span><span>{total-mastered} to improve</span>
@@ -490,7 +490,10 @@ export default function Topics() {
                         <input type="checkbox" checked={selected.includes(t.id)} onChange={()=>toggleSelect(t.id)}
                           style={{width:15,height:15,accentColor:'var(--accent)',marginTop:3,flexShrink:0}}/>
                         <div style={{flex:1}}>
-                          <div style={{fontWeight:600,marginBottom:6}}>{t.name}</div>
+                          <Link to={`/topics/${t.id}`} style={{fontWeight:600,marginBottom:6,display:'block',color:'inherit',textDecoration:'none'}}
+                            onMouseEnter={e=>e.currentTarget.style.color='var(--accent-light)'} onMouseLeave={e=>e.currentTarget.style.color='inherit'}>
+                            {t.name}
+                          </Link>
                           <div style={{display:'flex',alignItems:'center',gap:8}}>
                             <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Confidence:</span>
                             <div className="conf-dots">
@@ -766,7 +769,7 @@ function ResourcesPanel({ subject, allSubjects }) {
       </div>
 
       <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:12,lineHeight:1.6}}>
-        All resources listed are free. Clicking opens them in a new tab. Use the Advice button on individual topics for personalised recommendations for specific topics.
+        All resources listed are free. Clicking opens them in a new tab. Use the AI Advice button on individual topics for personalised recommendations for specific topics.
       </p>
     </div>
   )
