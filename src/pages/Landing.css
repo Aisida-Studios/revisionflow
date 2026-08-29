@@ -1,26 +1,24 @@
 /* src/pages/Landing.css
-   Landing-page-only styles. Everything here is built on the tokens already
-   defined in src/styles/globals.css (--accent, --bg-*, --text-*, --border*,
-   --r-*, --shadow-*, --font) — no new colours or typography are introduced.
+   Landing-page-only styles, built entirely on tokens already defined in
+   src/styles/globals.css (--accent, --bg-*, --text-*, --border*, --r-*,
+   --shadow-*). No new colours are invented for UI chrome — the only literal
+   hex/rgb values in this file are the real per-subject colours pulled from
+   src/data/subjects.js's SUBJECT_COLOURS (Biology #27ae60, Chemistry #8e44ad,
+   etc.), used for the subject strip and hero preview mockup so they stay
+   accurate to the live app rather than inventing a new palette.
 
-   Class names are prefixed `lp-` to keep them safely scoped to this page and
-   avoid clashing with anything global or with another page's future classes —
-   with two deliberate exceptions: `.hero-section` and `.hero-stats` keep their
-   existing (unprefixed) names because globals.css already has responsive
-   `!important` rules targeting those exact class names at the 480px
-   breakpoint (padding/margin-top). Renaming them here would silently orphan
-   that existing global CSS instead of completing it. */
+   Class names are prefixed `lp-`, with two exceptions: `.hero-section` and
+   `.hero-stats` keep their existing (unprefixed) names because globals.css
+   already has responsive `!important` rules targeting those exact class
+   names at the 480px breakpoint (padding/margin-top) — renaming them would
+   silently orphan that existing global CSS. */
 
 .lp-page {
   background: var(--bg-base);
   min-height: 100vh;
 }
 
-/* ── Nav ──────────────────────────────────────────────────────────────────
-   The nav needs a translucent, theme-aware background for the sticky-blur
-   effect. That can't be built from a straight var() reference to --bg-base
-   (it's a hex custom property, and rgba() can't consume a hex string), so
-   the light/dark rgb equivalents are restated here as their own variable. */
+/* ── Nav ─────────────────────────────────────────────────────────────── */
 .lp-nav {
   --lp-nav-bg: rgba(250, 250, 250, 0.82);
   position: sticky;
@@ -31,9 +29,8 @@
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
-[data-theme="dark"] .lp-nav {
-  --lp-nav-bg: rgba(12, 15, 13, 0.82);
-}
+[data-theme="dark"] .lp-nav { --lp-nav-bg: rgba(12, 15, 13, 0.82); }
+
 .lp-nav-inner {
   max-width: 1360px;
   margin: 0 auto;
@@ -44,12 +41,7 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.lp-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
+.lp-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .lp-logo-mark {
   width: 34px;
   height: 34px;
@@ -60,178 +52,206 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.lp-logo-word {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
+.lp-logo-word { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); white-space: nowrap; }
 .lp-logo-word span { color: var(--accent-light); }
 
-.lp-nav-links {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-}
-.lp-nav-links a {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
+.lp-nav-links { display: flex; align-items: center; gap: 30px; }
+.lp-nav-links a { font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); }
 .lp-nav-links a:hover { color: var(--accent); }
 
-.lp-nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.lp-nav-signin {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  padding: 9px 12px;
-  border-radius: var(--r-md);
-}
+.lp-nav-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.lp-nav-signin { font-size: 0.86rem; font-weight: 700; color: var(--text-secondary); padding: 9px 12px; border-radius: var(--r-md); }
 .lp-nav-signin:hover { color: var(--accent); background: var(--bg-hover); }
 
-@media (max-width: 900px) {
-  .lp-nav-links { display: none; }
-}
-@media (max-width: 480px) {
-  .lp-nav-inner { padding: 12px 16px; gap: 8px; }
-}
-@media (max-width: 360px) {
-  .lp-logo-word { font-size: 1rem; }
-  .lp-nav-signin { padding: 9px 8px; }
-}
+@media (max-width: 900px) { .lp-nav-links { display: none; } }
+@media (max-width: 480px) { .lp-nav-inner { padding: 12px 16px; gap: 8px; } }
+@media (max-width: 360px) { .lp-logo-word { font-size: 1rem; } .lp-nav-signin { padding: 9px 8px; } }
 
-/* ── Hero ─────────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .hero-section { padding: 64px 24px 48px; }
+/* ── Hero ────────────────────────────────────────────────────────────
+   Two columns (copy | product-preview mockup) instead of a centred block —
+   deliberately not the centred-hero-plus-badge template. */
+@media (max-width: 768px) { .hero-section { padding: 56px 24px 40px; } }
+
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  text-align: left;
+}
+@media (max-width: 900px) {
+  .lp-hero-grid { grid-template-columns: 1fr; gap: 44px; text-align: center; }
+  .lp-hero-copy { display: flex; flex-direction: column; align-items: center; }
 }
 
 .lp-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 16px;
-  border-radius: var(--r-full);
-  background: var(--accent-pale);
-  color: var(--accent);
-  border: 1.5px solid var(--border-strong);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
-  margin-bottom: 24px;
-  text-align: left;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  margin-bottom: 18px;
 }
-[data-theme="dark"] .lp-eyebrow { color: var(--accent-light); }
-
 .lp-hero-title {
-  font-size: clamp(2rem, 1rem + 4.4vw, 3.6rem);
+  font-size: clamp(1.9rem, 1rem + 2.9vw, 3.1rem);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 .lp-hero-sub {
-  font-size: clamp(1rem, 0.92rem + 0.3vw, 1.15rem);
-  max-width: 600px;
-  margin: 0 auto 34px;
+  font-size: clamp(1rem, 0.94rem + 0.2vw, 1.1rem);
+  max-width: 480px;
   line-height: 1.7;
   color: var(--text-secondary);
+  margin-bottom: 30px;
 }
-.lp-hero-microcopy {
-  margin-top: 14px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  font-weight: 600;
+@media (max-width: 900px) { .lp-hero-sub { max-width: 520px; } }
+
+.lp-hero-cta { display: flex; flex-direction: column; align-items: flex-start; }
+@media (max-width: 900px) { .lp-hero-cta { align-items: center; } }
+.lp-hero-microcopy { margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+
+/* Product-preview mockup: two layered cards built from real subject data
+   (icons + colours from subjects.js), not a literal screenshot claim — a
+   stylised example of the topic-confidence tracking feature. */
+.lp-hero-visual {
+  position: relative;
+  max-width: 320px;
+  margin: 0 0 40px auto;
+}
+@media (max-width: 900px) { .lp-hero-visual { margin: 0 auto 52px; } }
+
+.lp-preview-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+  padding: 22px;
+}
+.lp-preview-card--back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  width: 100%;
+  transform: rotate(5deg);
+  opacity: 0.9;
+  z-index: 1;
+}
+.lp-preview-card--front { position: relative; transform: rotate(-2deg); z-index: 2; }
+@media (max-width: 900px) {
+  .lp-preview-card--back { display: none; }
+  .lp-preview-card--front { transform: none; }
 }
 
-/* Hero stats — the grid this page was missing a finished responsive
-   implementation for. minmax(0,1fr) keeps a long label from stretching its
-   column wider than its share of the row (and thus wider than the card). */
+.lp-preview-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.lp-preview-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lp-preview-subject { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.lp-preview-topic { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; }
+.lp-preview-confidence { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.lp-preview-pct { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.lp-preview-trend { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--accent-light); font-weight: 700; }
+
+/* Shared thin progress-bar mini-component, reused by the hero preview card
+   and the Answer Marker feature mockup below. */
+.lp-mock-track { height: 6px; background: var(--bg-hover); border-radius: 99px; overflow: hidden; }
+.lp-mock-fill { height: 100%; background: var(--accent-light); border-radius: 99px; }
+
+/* Stats — lighter than a boxed card: a plain divided band under the hero,
+   not another bordered container. Still the required 4-col / 2-col grid
+   with minmax(0,1fr) both ways. */
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin: 52px auto 0;
-  padding: 20px;
-  border-radius: var(--r-xl);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  max-width: 560px;
+  gap: 20px;
+  margin: 0 auto;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  max-width: 920px;
 }
 @media (max-width: 480px) {
-  .hero-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 14px;
-  }
+  .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
 }
-.lp-stat {
-  text-align: center;
-  min-width: 0;
-}
-.lp-stat-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--accent-light);
-  line-height: 1.15;
-}
-.lp-stat-label {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
+.lp-stat { text-align: center; min-width: 0; }
+.lp-stat-value { font-size: 1.5rem; font-weight: 800; color: var(--accent-light); line-height: 1.15; }
+.lp-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
-/* ── Feature cards ────────────────────────────────────────────────────── */
-.lp-features-head {
-  text-align: center;
-  max-width: 520px;
-  margin: 0 auto 44px;
-}
-.lp-features-head h2 { margin-bottom: 10px; }
-.lp-feature-card {
+/* ── Subject strip ───────────────────────────────────────────────────── */
+.lp-subjects-section { padding: 0 24px 64px; max-width: 1000px; margin: 0 auto; }
+.lp-subjects-head { text-align: center; margin-bottom: 26px; }
+.lp-subjects-head h2 { margin-bottom: 8px; }
+.lp-subjects-head p { max-width: 500px; margin: 0 auto; }
+.lp-subjects-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.lp-subject-chip {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 16px 7px 7px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
 }
-.lp-feature-icon {
-  width: 40px;
-  height: 40px;
+.lp-subject-chip-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lp-subject-chip-name { font-weight: 700; font-size: 0.85rem; color: var(--text-primary); }
+
+/* ── Features: three tiers, not one repeated grid ────────────────────── */
+.lp-features-head { text-align: center; max-width: 520px; margin: 0 auto 40px; }
+.lp-features-head h2 { margin-bottom: 10px; }
+
+/* Tier 1 — single spotlight feature, split copy | mockup */
+.lp-feature-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+  padding: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  margin-bottom: 20px;
+}
+@media (max-width: 760px) { .lp-feature-hero { grid-template-columns: 1fr; padding: 24px; } }
+
+.lp-feature-hero-icon {
+  width: 42px;
+  height: 42px;
   border-radius: var(--r-sm);
   background: var(--accent-pale);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 16px;
 }
-.lp-feature-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-.lp-feature-desc {
-  font-size: 0.85rem;
-  line-height: 1.6;
-  color: var(--text-secondary);
-}
+.lp-feature-hero h3 { font-size: 1.2rem; margin-bottom: 10px; }
+.lp-feature-hero p { color: var(--text-secondary); line-height: 1.7; font-size: 0.92rem; }
 
-/* ── About / creator ──────────────────────────────────────────────────── */
-.lp-about-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-/* Solid fill, not --accent-pale: the avatar sits inside .accent-card, which
-   is already --accent-pale, so a pale-on-pale fill would nearly disappear
-   into its own container. Solid --accent (same combination .btn-primary
-   already uses in both themes) keeps it a distinct, legible focal point. */
+.lp-feature-hero-visual { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; }
+.lp-mock-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+.lp-mock-score { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
+.lp-mock-score-num { font-size: 2.1rem; font-weight: 800; color: var(--accent-light); line-height: 1; }
+.lp-mock-score-total { font-size: 0.98rem; color: var(--text-muted); font-weight: 600; }
+.lp-mock-bars { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.lp-mock-bar-row { display: grid; grid-template-columns: 30px 1fr 28px; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; }
+.lp-mock-note { font-size: 0.75rem; color: var(--text-muted); padding-top: 12px; border-top: 1px solid var(--border); line-height: 1.5; }
+
+/* Tier 2 — 3-column grid of "major" features (reuses global .card / .grid-3) */
+.lp-feature-card { display: flex; flex-direction: column; gap: 10px; }
+.lp-feature-icon { width: 38px; height: 38px; border-radius: var(--r-sm); background: var(--accent-pale); display: flex; align-items: center; justify-content: center; }
+.lp-feature-desc { font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary); }
+
+/* Tier 3 — compact divided list of "supporting" features, no boxes */
+.lp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; border-top: 1px solid var(--border); margin-top: 32px; }
+@media (max-width: 640px) { .lp-list { grid-template-columns: 1fr; } }
+.lp-list-item { display: flex; align-items: flex-start; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--border); }
+.lp-list-icon { color: var(--accent-light); flex-shrink: 0; margin-top: 2px; }
+.lp-list-title { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.lp-list-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55; }
+
+/* ── About ───────────────────────────────────────────────────────────── */
+.lp-about-grid { display: grid; grid-template-columns: 220px 1fr; gap: 44px; align-items: start; }
+@media (max-width: 640px) { .lp-about-grid { grid-template-columns: 1fr; gap: 24px; text-align: center; } }
+
 .lp-avatar {
   width: 52px;
   height: 52px;
@@ -243,126 +263,52 @@
   justify-content: center;
   font-size: 1.3rem;
   font-weight: 800;
-  flex-shrink: 0;
+  margin-bottom: 14px;
 }
+@media (max-width: 640px) { .lp-avatar { margin: 0 auto 14px; } }
+
+.lp-about-name { font-weight: 700; font-size: 1.02rem; margin-bottom: 3px; }
+.lp-about-role { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; }
+.lp-about-badges { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+@media (max-width: 640px) { .lp-about-badges { align-items: center; } }
 
 .lp-badge-accent {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 13px;
-  border-radius: var(--r-full);
-  background: var(--accent-pale);
-  color: var(--accent);
-  border: 1.5px solid var(--border-strong);
-  font-size: 0.75rem;
+  gap: 6px;
+  font-size: 0.78rem;
   font-weight: 600;
+  color: var(--text-secondary);
 }
-[data-theme="dark"] .lp-badge-accent { color: var(--accent-light); }
+.lp-badge-accent svg { color: var(--accent-light); flex-shrink: 0; }
 
-/* ── Trust / data section ─────────────────────────────────────────────── */
-.lp-trust-section {
-  padding: 56px 24px;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border);
-}
+.lp-about-copy { font-size: 1.02rem; line-height: 1.8; color: var(--text-secondary); }
+.lp-about-copy a { color: var(--accent-light); font-weight: 600; }
+
+/* ── Trust / data section ────────────────────────────────────────────── */
+.lp-trust-section { padding: 56px 24px; background: var(--bg-surface); border-top: 1px solid var(--border); }
 .lp-trust-inner { max-width: 900px; margin: 0 auto; }
-.lp-trust-head { text-align: center; margin-bottom: 32px; }
+.lp-trust-head { text-align: center; margin-bottom: 8px; }
 .lp-trust-head p { max-width: 560px; margin: 8px auto 0; }
+.lp-trust-foot { text-align: center; font-size: 0.82rem; color: var(--text-muted); margin-top: 8px; }
+@media (max-width: 640px) { .lp-trust-section { padding: 40px 20px; } }
 
-.lp-trust-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 28px;
-}
-.lp-trust-card {
-  padding: 18px;
-  background: var(--bg-card);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-}
-.lp-trust-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-sm);
-  background: var(--accent-pale);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-.lp-trust-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
-.lp-trust-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
-.lp-trust-foot { text-align: center; font-size: 0.82rem; color: var(--text-muted); }
-
-@media (max-width: 640px) {
-  .lp-trust-section { padding: 40px 20px; }
-}
-
-/* ── Final CTA band ───────────────────────────────────────────────────── */
-.lp-cta-band {
-  padding: 64px 24px;
-  text-align: center;
-  background: var(--accent);
-}
+/* ── Final CTA band ──────────────────────────────────────────────────── */
+.lp-cta-band { padding: 64px 24px; text-align: center; background: var(--accent); }
 .lp-cta-band h2 { color: var(--text-on-accent); margin-bottom: 10px; }
 .lp-cta-band p { color: var(--text-on-accent); opacity: 0.88; margin-bottom: 28px; }
+.lp-cta-btn { background: #fff; color: var(--accent); box-shadow: var(--shadow-md); }
+.lp-cta-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); background: #fff; }
+@media (max-width: 480px) { .lp-cta-band { padding: 48px 20px; } }
 
-/* White pill on a solid accent band — deliberately not var(--bg-card): the
-   band itself is always var(--accent) in both themes, so a fixed white
-   surface with accent-coloured text is what stays legible against it in
-   both light and dark mode, rather than a token that itself flips per theme. */
-.lp-cta-btn {
-  background: #fff;
-  color: var(--accent);
-  box-shadow: var(--shadow-md);
-}
-.lp-cta-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-  background: #fff;
-}
-
-@media (max-width: 480px) {
-  .lp-cta-band { padding: 48px 20px; }
-}
-
-/* ── Footer ───────────────────────────────────────────────────────────── */
+/* ── Footer ──────────────────────────────────────────────────────────── */
 .lp-footer { border-top: 1px solid var(--border); }
-.lp-footer-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 28px;
-}
-.lp-footer-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 16px;
-}
-.lp-footer-links {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
+.lp-footer-inner { max-width: 1200px; margin: 0 auto; padding: 32px 24px 28px; }
+.lp-footer-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.lp-footer-links { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .lp-footer-links a { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; }
 .lp-footer-links a:hover { color: var(--accent); }
-.lp-footer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
+.lp-footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: var(--text-muted); }
 @media (max-width: 480px) {
   .lp-footer-inner { padding: 24px 20px 20px; }
   .lp-footer-top { justify-content: center; text-align: center; }
