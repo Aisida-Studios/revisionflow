@@ -20,7 +20,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getTopicAdvice, generatePredictedQuestions } from '../utils/ai'
-import { getNotes, saveNote, deleteNote, getPaperAttempts, autoCompleteQuest } from '../utils/firestore'
+import { getNotes, saveNote, deleteNote, getPaperAttempts, autoCompleteQuest, awardXP } from '../utils/firestore'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { SUBJECT_COLOURS } from '../data/subjects'
 import AIOutput from '../components/AIOutput'
@@ -114,11 +114,21 @@ export default function TopicDetail() {
     if (!newSubtopic.trim()) return
     const next = [...(topic.subtopics || []), { id: uid(), text: newSubtopic.trim(), done: false }]
     await patchTopic({ subtopics: next })
+    await awardXP(user.uid, 5, 'Sub-topic added')
     setNewSubtopic('')
   }
   async function toggleSubtopic(id) {
-    const next = (topic.subtopics || []).map(s => s.id === id ? { ...s, done: !s.done } : s)
+    const target = (topic.subtopics || []).find(s => s.id === id)
+    if (!target) return
+    const completingFirstTime = !target.done && !target.xpAwarded
+    const next = (topic.subtopics || []).map(s => s.id === id
+      ? { ...s, done: !s.done, xpAwarded: s.xpAwarded || completingFirstTime }
+      : s)
     await patchTopic({ subtopics: next })
+    // Only the FIRST time a given sub-topic is checked off pays out — xpAwarded is a permanent
+    // flag on the item itself, so toggling it off and back on again never re-triggers it. A plain
+    // done/undone flag alone would let someone farm XP just by flicking a checkbox back and forth.
+    if (completingFirstTime) await awardXP(user.uid, 5, 'Sub-topic completed')
   }
   async function removeSubtopic(id) {
     const next = (topic.subtopics || []).filter(s => s.id !== id)
@@ -138,6 +148,7 @@ export default function TopicDetail() {
     const level = topic.qualification || 'GCSE'
     const res = await generatePredictedQuestions(topic.subjectId, board, level, topic.name, 6, qCount, user.uid)
     setQuestions(res.text || res.error || 'Could not generate questions — check your connection')
+    if (!res.error) await autoCompleteQuest(user.uid, 'use_ai')
     setLoadingQuestions(false)
   }
 
