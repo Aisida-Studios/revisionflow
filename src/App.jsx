@@ -97,6 +97,7 @@ const Signup        = lazy(() => import('./pages/Signup'))
 const Onboarding    = lazy(() => import('./pages/Onboarding'))
 const Dashboard     = lazy(() => import('./pages/Dashboard'))
 const Topics        = lazy(() => import('./pages/Topics'))
+const TopicDetail   = lazy(() => import('./pages/TopicDetail'))
 const Calendar      = lazy(() => import('./pages/Calendar'))
 const Timer         = lazy(() => import('./pages/Timer'))
 const Tasks         = lazy(() => import('./pages/Tasks'))
@@ -193,6 +194,7 @@ export default function App() {
                       <Route path="/exams"       element={<ExamDates />} />
                       <Route path="/papers"      element={<PastPapers />} />
                       <Route path="/topics"      element={<Topics />} />
+                      <Route path="/topics/:topicId" element={<TopicDetail />} />
                       <Route path="/study"       element={<Study />} />
                       <Route path="/tutor"       element={<Tutor />} />
                       <Route path="/mistakes"    element={<Mistakes />} />
