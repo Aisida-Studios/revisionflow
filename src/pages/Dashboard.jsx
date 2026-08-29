@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,
   Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
+  Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +15,8 @@ import EmergencyBanner from '../components/EmergencyBanner'
 import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
+import CellIllustration from '../components/illustrations/CellIllustration'
+import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
 
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
@@ -23,7 +26,7 @@ import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { computeSubjectPredictions, computeWeakTopics } from '../utils/gradeInsights'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
 import { gradeColour } from '../utils/calendar'
-import { LEVELS, levelFromXP } from '../data/subjects'
+import { LEVELS, levelFromXP, SUBJECT_COLOURS } from '../data/subjects'
 import { BADGE_MAP } from '../data/badges'
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -69,36 +72,36 @@ function greetingWord(hour) {
   return 'Good evening'
 }
 
-/* Simple two-flower line-art illustration, built from scratch for this
-   card — sage/green tones only, all colour comes from existing tokens. */
-function GrowthIllustration() {
+/* Which of the two real illustration components fits a given subject.
+   Mirrors TopicDetail.jsx's own isBiologyLike test exactly, so the same
+   subject always gets the same illustration everywhere in the app. As
+   more subject-specific illustrations land in components/illustrations/,
+   this is the one place that needs a new branch — Dashboard.jsx itself
+   doesn't need to change again. */
+function illustrationFor(subject) {
+  return /biology/i.test(subject || '') ? CellIllustration : SeedlingIllustration
+}
+
+/* Small subject-colour icon badge for list rows (Upcoming Exams, Subject
+   Overview). No per-topic icon set exists in the codebase yet — grepped
+   Topics.jsx/TopicDetail.jsx to confirm — so this is a deliberately light,
+   easily-swappable stand-in built from SUBJECT_COLOURS (real, existing
+   data) and lucide-react (already a dependency), not a second
+   illustration architecture. Swap the icon map for real per-topic
+   illustrations here, in one place, once they exist. */
+const SUBJECT_ICONS = {
+  Biology: Leaf, Chemistry: FlaskConical, Physics: Atom,
+  Mathematics: Calculator, 'Further Mathematics': Calculator, Statistics: Calculator,
+  'English Language': BookOpen, 'English Literature': BookOpen,
+  History: Landmark, Geography: Globe2, 'Computer Science': Cpu,
+}
+function SubjectBadge({ subject }) {
+  const Icon = SUBJECT_ICONS[subject] || GraduationCap
+  const colour = SUBJECT_COLOURS?.[subject] || 'var(--text-muted)'
   return (
-    <svg viewBox="0 0 180 130" className="growth-illustration" aria-hidden="true">
-      <path d="M8 116 H172" stroke="var(--border)" strokeWidth="1.5" />
-      <path d="M62 116 C59 92 66 74 63 46" stroke="var(--accent-light)" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M112 116 C114 96 101 80 106 54" stroke="var(--accent-light)" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M63 82 C51 79 49 68 59 65 C65 70 65 78 63 82Z" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1.4" />
-      <path d="M106 94 C97 92 94 83 101 79 C109 83 109 90 106 94Z" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1.4" />
-      <g transform="translate(63,42)">
-        <circle cx="0" cy="-9" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="-5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="-8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="0" cy="0" r="3.5" fill="var(--accent)" />
-      </g>
-      <g transform="translate(106,52) scale(0.82)">
-        <circle cx="0" cy="-9" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="-5.5" cy="7" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="-8.5" cy="-3" r="6.5" fill="var(--accent-pale)" stroke="var(--accent)" strokeWidth="1.4" />
-        <circle cx="0" cy="0" r="3.5" fill="var(--accent)" />
-      </g>
-      <circle cx="32" cy="58" r="2.5" fill="var(--border-strong)" />
-      <circle cx="148" cy="68" r="3.5" fill="var(--accent-pale)" stroke="var(--accent-light)" strokeWidth="1" />
-      <circle cx="153" cy="34" r="2" fill="var(--accent-light)" />
-    </svg>
+    <span className="subject-badge" style={{ color: colour, background: `${colour}1a` }}>
+      <Icon size={14} />
+    </span>
   )
 }
 
@@ -255,6 +258,24 @@ export default function Dashboard() {
     return Math.round((rated.reduce((sum, t) => sum + t.confidence, 0) / rated.length) * 20)
   }, [topics])
 
+  // Grouped by subjectId — the real raw field name on topic docs (confirmed
+  // via computeWeakTopics/getTopicsWithConfidence, which both read it
+  // directly), not the `.subject` field some older code assumed.
+  const subjectOverview = useMemo(() => {
+    const bySubject = {}
+    topics.forEach((t) => {
+      const key = t.subjectId
+      if (!key) return
+      if (!bySubject[key]) bySubject[key] = { subject: key, total: 0, sum: 0 }
+      if (t.confidence) { bySubject[key].total += 1; bySubject[key].sum += t.confidence }
+    })
+    return Object.values(bySubject)
+      .filter((s) => s.total > 0)
+      .map((s) => ({ subject: s.subject, percent: Math.round((s.sum / s.total) * 20) }))
+      .sort((a, b) => b.percent - a.percent)
+      .slice(0, 6)
+  }, [topics])
+
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
 
@@ -277,6 +298,7 @@ export default function Dashboard() {
       .sort((a, b) => a._date - b._date)
   }, [sessions])
   const nextSession = upcomingSessions[0] || null
+  const NextSessionIllustration = illustrationFor(nextSession?.subject)
 
   const last7Days = useMemo(() => {
     const days = []
@@ -388,7 +410,9 @@ export default function Dashboard() {
                 </Link>
               </div>
             )}
-            <GrowthIllustration />
+            <div className="growth-illustration">
+              <NextSessionIllustration size={150} />
+            </div>
           </div>
 
           <div className="dash-side-col">
@@ -505,23 +529,53 @@ export default function Dashboard() {
           removed. See the accompanying note for why this is here.
          ───────────────────────────────────────────────────────────────── */}
 
-      {upcomingExams.length > 0 && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <p className="card-eyebrow"><CalendarDays size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Upcoming exams</p>
-          <ul className="plain-list">
-            {upcomingExams.map((e) => (
-              <li key={e.id || `${e.subject}-${e.examDate}`} className="plain-row">
-                <div className="plain-row-main">
-                  <span className="plain-row-title">{e.subject}</span>
-                  <span className="plain-row-sub">{e.board}{e.qualification ? ` · ${e.qualification}` : ''}</span>
-                </div>
-                <span className="plain-row-meta">{countdownLabel(e.examDate)}</span>
-              </li>
-            ))}
-          </ul>
-          <Link to="/exams" className="card-footer-link">All exam dates <ArrowRight size={13} /></Link>
+      <div className="grid-2" style={{ marginTop: 16 }}>
+        {upcomingExams.length > 0 && (
+          <div className="card">
+            <p className="card-eyebrow">Upcoming exams</p>
+            <ul className="plain-list">
+              {upcomingExams.map((e) => (
+                <li key={e.id || `${e.subject}-${e.examDate}`} className="plain-row">
+                  <SubjectBadge subject={e.subject} />
+                  <div className="plain-row-main">
+                    <span className="plain-row-title">{e.subject}</span>
+                    <span className="plain-row-sub">{e.board}{e.qualification ? ` · ${e.qualification}` : ''}</span>
+                  </div>
+                  <span className="plain-row-meta">{countdownLabel(e.examDate)}</span>
+                </li>
+              ))}
+            </ul>
+            <Link to="/exams" className="card-footer-link">All exam dates <ArrowRight size={13} /></Link>
+          </div>
+        )}
+
+        <div className="card">
+          <p className="card-eyebrow">Subject overview</p>
+          {dataLoading ? <Skeleton height={130} /> : subjectOverview.length ? (
+            <ul className="plain-list">
+              {subjectOverview.map((s) => (
+                <li key={s.subject} className="progress-row">
+                  <div className="progress-row-top">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <SubjectBadge subject={s.subject} />{s.subject}
+                    </span>
+                    <span>{s.percent}%</span>
+                  </div>
+                  <div className="thin-progress">
+                    <div
+                      className="thin-progress-fill"
+                      style={{ width: `${s.percent}%`, background: SUBJECT_COLOURS?.[s.subject] || 'var(--accent)' }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyMini text="Rate your topic confidence to see subjects here." to="/topics" label="Go to Topics" />
+          )}
+          <Link to="/topics" className="card-footer-link">Manage subjects <ArrowRight size={13} /></Link>
         </div>
-      )}
+      </div>
 
       <div className="grid-2" style={{ marginTop: 16 }}>
         <div className="card">
