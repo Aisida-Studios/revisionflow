@@ -23,9 +23,8 @@ import { getTopicAdvice, generatePredictedQuestions } from '../utils/ai'
 import { getNotes, saveNote, deleteNote, getPaperAttempts, autoCompleteQuest, awardXP } from '../utils/firestore'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { SUBJECT_COLOURS } from '../data/subjects'
+import { componentForSubject } from '../data/illustrationThemes'
 import AIOutput from '../components/AIOutput'
-import CellIllustration from '../components/illustrations/CellIllustration'
-import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
 import toast from 'react-hot-toast'
 import {
   ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote,
@@ -198,7 +197,7 @@ export default function TopicDetail() {
   const subtopicsDone = subtopics.filter(s => s.done).length
   const category = parseCategory(topic.name)
   const displayName = category || topic.name
-  const isBiologyLike = /biology/i.test(topic.subjectId || '')
+  const TopicIllustration = componentForSubject(topic.subjectId)
   const { verified, hub, search } = resolveTopicResources(topic.subjectId, topic.name)
   const history = topic.confidenceHistory || []
 
@@ -326,7 +325,7 @@ export default function TopicDetail() {
 
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card" style={{ textAlign: 'center', background: 'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))' }}>
-              {isBiologyLike ? <CellIllustration size={120} style={{ margin: '0 auto' }} /> : <SeedlingIllustration size={120} style={{ margin: '0 auto' }} />}
+              <TopicIllustration size={120} style={{ margin: '0 auto' }} />
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 8 }}>
                 {subtopicsDone === subtopics.length && subtopics.length > 0 ? 'All sub-topics checked off — nice work.' : 'Keep chipping away at this one.'}
               </p>
