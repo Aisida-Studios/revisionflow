@@ -761,6 +761,11 @@ tr:hover td { background:var(--bg-hover); }
   background: var(--bg-hover); border: 1px solid transparent;
   color: var(--text-secondary); font-size: 0.78rem; font-weight: 700;
 }
+.subject-badge {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 26px; height: 26px; border-radius: var(--r-sm);
+  /* colour + background come from inline style (per-subject, from SUBJECT_COLOURS) */
+}
 .mini-empty { padding: 18px 4px; color: var(--text-secondary); font-size: 0.85rem; }
 .mini-empty p { margin: 0 0 8px; }
 
@@ -794,10 +799,15 @@ tr:hover td { background:var(--bg-hover); }
 .next-session-topic { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.92rem; max-width: 60%; }
 .next-session-cta { margin-top: 16px; display: inline-flex; }
 .next-session-empty { max-width: 60%; }
+/* Wrapper controls the visible size, not the size= prop passed to the
+   illustration component — CSS width/height on the svg element itself
+   overrides its width/height attributes, so this stays responsive without
+   needing a resize listener or touching the illustration component. */
 .growth-illustration {
-  position: absolute; right: 8px; bottom: 0; width: 170px; height: auto; pointer-events: none;
+  position: absolute; right: 8px; bottom: 0; width: 150px; height: 150px; pointer-events: none;
 }
-@media (max-width: 1024px) { .growth-illustration { width: 130px; opacity: 0.85; } }
+.growth-illustration svg { width: 100%; height: 100%; display: block; }
+@media (max-width: 1024px) { .growth-illustration { width: 120px; height: 120px; opacity: 0.85; } }
 
 /* ── Today / Streak cards ────────────────────────────────────────────────── */
 .today-stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
