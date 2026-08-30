@@ -1,17 +1,26 @@
 // src/components/Layout.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom'
+import { doc, updateDoc } from 'firebase/firestore'
 import {
   LayoutDashboard, CalendarDays, Award, ClipboardList, Target,
   BookOpen, Compass, GraduationCap, CheckSquare, Timer as TimerIcon,
   AlertCircle, BarChart3, Users, Trophy, User, Settings, HelpCircle,
   ChevronsLeft, ChevronsRight, LogOut, Menu, Zap, Crown, Lock, X,
-  Search, Bell,
+  Search, Bell, Layers, ArrowRight, Check,
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from './ProGate'
 import { resolveProfileIcon } from '../data/themes'
+import { db } from '../firebase'
+import { getPermissionState, requestNotificationPermission } from '../utils/notifications'
+import { getAllTopicsFlat } from '../data/topics'
+import { buildTopicId } from '../utils/topicId'
+import { SUBJECT_COLOURS } from '../data/subjects'
+import {
+  subscribeToNotifications, markNotificationRead, markAllNotificationsRead,
+} from '../utils/notificationFeed'
 
 /* Route list — every path here matches App.jsx exactly (canonical paths,
    not the legacy /exam-dates, /past-papers, /ai-advisor redirects). Nothing
@@ -84,28 +93,210 @@ function Avatar({ profile, user, size }) {
   )
 }
 
-// Quick-jump search over the same nav items already in the sidebar/drawer —
-// filters a flat list of real routes, nothing fetched, nothing invented.
-function QuickJump({ query, onNavigate }) {
-  const flat = useMemo(
-    () => NAV_GROUPS.flatMap((g) => g.items).filter((item) =>
-      item.label.toLowerCase().includes(query.trim().toLowerCase())
-    ),
-    [query]
-  )
+/* Search across real data only: nav pages, the subjects the user actually
+   takes (profile.subjects — already in memory, no fetch), and that
+   subject's syllabus topics (data/topics.js's getAllTopicsFlat — static,
+   synchronous, no Firestore read). Topic results link straight to
+   /topics/:topicId using the same buildTopicId() scheme TopicDetail.jsx
+   reads its Firestore doc by — same canonical ID everywhere, not a
+   second convention. */
+function useSearchResults(query, profileSubjects) {
+  const subjectTopics = useMemo(() => {
+    if (!profileSubjects?.length) return []
+    const out = []
+    profileSubjects.forEach((s) => {
+      if (!s?.subject) return
+      try {
+        const topics = getAllTopicsFlat(s.board, s.subject, s.qualification)
+        topics.forEach((t) => out.push({
+          name: t.name,
+          subject: s.subject,
+          topicId: buildTopicId(s.board, s.qualification, s.subject, t.name),
+        }))
+      } catch {
+        // Static syllabus data may not cover every board/subject/qualification
+        // combination yet — skip rather than let one bad combo break search.
+      }
+    })
+    return out
+  }, [profileSubjects])
+
+  return useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return { pages: [], subjects: [], topics: [] }
+    const pages = NAV_GROUPS.flatMap((g) => g.items).filter((i) => i.label.toLowerCase().includes(q))
+    const subjects = (profileSubjects || []).filter((s) => s.subject?.toLowerCase().includes(q))
+    const topics = subjectTopics.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 6)
+    return { pages, subjects, topics }
+  }, [query, profileSubjects, subjectTopics])
+}
+
+function QuickJump({ query, profile, onNavigate }) {
+  const { pages, subjects, topics } = useSearchResults(query, profile?.subjects)
+  const hasAny = pages.length || subjects.length || topics.length
   if (!query.trim()) return null
   return (
     <div className="quick-jump-panel">
-      {flat.length ? (
-        flat.slice(0, 8).map((item) => (
-          <Link key={item.to} to={item.to} className="quick-jump-item" onClick={onNavigate}>
-            <item.icon size={15} />
-            <span>{item.label}</span>
-          </Link>
-        ))
-      ) : (
-        <p className="quick-jump-empty">No pages match "{query}"</p>
+      {!hasAny && <p className="quick-jump-empty">Nothing matches "{query}"</p>}
+      {pages.length > 0 && (
+        <>
+          <p className="quick-jump-group-label">Pages</p>
+          {pages.slice(0, 4).map((item) => (
+            <Link key={item.to} to={item.to} className="quick-jump-item" onClick={onNavigate}>
+              <item.icon size={15} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </>
       )}
+      {subjects.length > 0 && (
+        <>
+          <p className="quick-jump-group-label">Subjects</p>
+          {subjects.slice(0, 4).map((s) => (
+            <Link key={s.subject} to="/topics" className="quick-jump-item" onClick={onNavigate}>
+              <span className="quick-jump-dot" style={{ background: SUBJECT_COLOURS?.[s.subject] || 'var(--text-muted)' }} />
+              <span>{s.subject}</span>
+            </Link>
+          ))}
+        </>
+      )}
+      {topics.length > 0 && (
+        <>
+          <p className="quick-jump-group-label">Topics</p>
+          {topics.map((t) => (
+            <Link key={t.topicId} to={`/topics/${t.topicId}`} className="quick-jump-item" onClick={onNavigate}>
+              <Layers size={14} />
+              <span>{t.name}</span>
+              <span className="quick-jump-item-meta">{t.subject}</span>
+            </Link>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+function timeAgo(date) {
+  if (!date) return ''
+  const mins = Math.round((Date.now() - date.getTime()) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.round(hrs / 24)}d ago`
+}
+
+/* Bell panel: a real, live-subscribed notification feed (empty until
+   something calls createNotification — see utils/notificationFeed.js —
+   no invented history) plus the real Web Push settings that were here
+   before. Two genuinely different things stacked in one panel: things
+   that already happened (feed) vs. whether you'll be told about things
+   that happen next (push toggles). */
+function NotificationPanel({ user, profile }) {
+  const [notifications, setNotifications] = useState([])
+  const [permission, setPermission] = useState(() => getPermissionState())
+  const [busy, setBusy] = useState(false)
+  const settings = profile?.notificationSettings || {}
+  const examRemindersOn = settings.examReminders !== false // defaults on, per usePushNotifications
+  const dailyReminderOn = !!settings.dailyReminder
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  useEffect(() => {
+    if (!user) return
+    return subscribeToNotifications(user.uid, setNotifications)
+  }, [user])
+
+  async function handleEnable() {
+    setBusy(true)
+    try {
+      await requestNotificationPermission()
+    } finally {
+      setPermission(getPermissionState())
+      setBusy(false)
+    }
+  }
+
+  async function toggle(key) {
+    if (!user) return
+    const next = { ...settings }
+    if (key === 'examReminders') next.examReminders = settings.examReminders === false
+    else next[key] = !settings[key]
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { notificationSettings: next })
+    } catch {
+      // Non-fatal — the checkbox will just reflect Firestore's last-known state.
+    }
+  }
+
+  function handleItemClick(n) {
+    if (!n.read) markNotificationRead(user.uid, n.id).catch(() => {})
+  }
+
+  return (
+    <div className="notif-panel">
+      <div className="notif-panel-head">
+        <p className="quick-jump-group-label" style={{ margin: 0 }}>Notifications</p>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            className="notif-mark-all"
+            onClick={() => markAllNotificationsRead(user.uid, notifications).catch(() => {})}
+          >
+            <Check size={12} /> Mark all read
+          </button>
+        )}
+      </div>
+
+      <div className="notif-feed">
+        {notifications.length === 0 ? (
+          <p className="notif-empty">You're all caught up — nothing here yet.</p>
+        ) : (
+          notifications.map((n) => {
+            const created = n.createdAt?.toDate ? n.createdAt.toDate() : null
+            const Row = n.link ? Link : 'div'
+            return (
+              <Row
+                key={n.id}
+                {...(n.link ? { to: n.link } : {})}
+                className={`notif-item ${n.read ? '' : 'notif-item--unread'}`}
+                onClick={() => handleItemClick(n)}
+              >
+                {!n.read && <span className="notif-unread-dot" />}
+                <div className="notif-item-main">
+                  <span className="notif-item-title">{n.title}</span>
+                  {n.body && <span className="notif-item-body">{n.body}</span>}
+                </div>
+                <span className="notif-item-time">{timeAgo(created)}</span>
+              </Row>
+            )
+          })
+        )}
+      </div>
+
+      <div className="notif-divider" />
+      <p className="quick-jump-group-label" style={{ margin: '0 0 8px' }}>Push settings</p>
+      {permission === 'granted' ? (
+        <div className="notif-toggles">
+          <label className="notif-toggle-row">
+            <span>Exam reminders</span>
+            <input type="checkbox" checked={examRemindersOn} onChange={() => toggle('examReminders')} />
+          </label>
+          <label className="notif-toggle-row">
+            <span>Daily study reminder</span>
+            <input type="checkbox" checked={dailyReminderOn} onChange={() => toggle('dailyReminder')} />
+          </label>
+        </div>
+      ) : permission === 'denied' ? (
+        <p className="notif-blocked-text">Blocked in your browser settings — enable them there to turn this on.</p>
+      ) : (
+        <div className="notif-enable">
+          <p>Turn on notifications for exam countdowns and daily study reminders.</p>
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleEnable} disabled={busy}>
+            {busy ? 'Requesting…' : 'Enable notifications'}
+          </button>
+        </div>
+      )}
+      <Link to="/settings" className="card-footer-link">All settings <ArrowRight size={13} /></Link>
     </div>
   )
 }
@@ -124,7 +315,9 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [notifOpen, setNotifOpen] = useState(false)
   const searchRef = useRef(null)
+  const notifRef = useRef(null)
 
   // Same 768px threshold the app already uses elsewhere (globals.css's
   // --sidebar-w breakpoints and .mobile-bottom-nav both key off it too) —
@@ -142,16 +335,16 @@ export default function Layout() {
     setMobileOpen(false)
     setSearchOpen(false)
     setSearchQuery('')
+    setNotifOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
     function onClickOutside(e) {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setSearchOpen(false)
-      }
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false)
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false)
     }
     function onEscape(e) {
-      if (e.key === 'Escape') setSearchOpen(false)
+      if (e.key === 'Escape') { setSearchOpen(false); setNotifOpen(false) }
     }
     document.addEventListener('mousedown', onClickOutside)
     document.addEventListener('keydown', onEscape)
@@ -265,7 +458,7 @@ export default function Layout() {
                 type="button"
                 className="utility-icon-btn"
                 onClick={() => setSearchOpen((v) => !v)}
-                aria-label="Search pages"
+                aria-label="Search pages, subjects, topics"
                 aria-expanded={searchOpen}
               >
                 <Search size={17} />
@@ -275,17 +468,31 @@ export default function Layout() {
                   <input
                     autoFocus
                     className="quick-jump-input"
-                    placeholder="Jump to a page…"
+                    placeholder="Search pages, subjects, topics…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  <QuickJump query={searchQuery} onNavigate={() => setSearchOpen(false)} />
+                  <QuickJump query={searchQuery} profile={profile} onNavigate={() => setSearchOpen(false)} />
                 </div>
               )}
             </div>
-            <Link to="/settings" className="utility-icon-btn" aria-label="Notification settings">
-              <Bell size={17} />
-            </Link>
+            <div className="quick-jump" ref={notifRef}>
+              <button
+                type="button"
+                className="utility-icon-btn"
+                onClick={() => setNotifOpen((v) => !v)}
+                aria-label="Notifications"
+                aria-expanded={notifOpen}
+              >
+                <Bell size={17} />
+                {getPermissionState() !== 'granted' && <span className="utility-dot" aria-hidden="true" />}
+              </button>
+              {notifOpen && (
+                <div className="quick-jump-dropdown quick-jump-dropdown--notif">
+                  <NotificationPanel user={user} profile={profile} />
+                </div>
+              )}
+            </div>
             <Link to="/profile" aria-label="Your profile">
               <Avatar profile={profile} user={user} size="sm" />
             </Link>
