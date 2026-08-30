@@ -1,0 +1,155 @@
+/* src/pages/Study.css
+   Page-scoped styles for the Study redesign. Reads all colour/radius/shadow/type tokens
+   from styles/globals.css (including the runtime theme overrides in data/themes.js) —
+   nothing here redefines a shared primitive. Classes are prefixed rf- to avoid any
+   collision with existing global class names. */
+
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+.rf-study-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.rf-study-head h2 { margin-bottom: 2px; }
+.rf-study-subtitle { color: var(--text-muted); font-size: 0.875rem; }
+
+.rf-tabs-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 -2px; padding: 0 2px; }
+.rf-tabs-scroll::-webkit-scrollbar { display: none; }
+.rf-tabs-scroll .tabs { flex-wrap: nowrap; }
+.rf-tabs-scroll .tab { white-space: nowrap; }
+
+/* ── Session shell (mode-select / flip / learn / write / spell / match / test) ── */
+.rf-session-shell { max-width: 640px; margin: 0 auto; }
+.rf-session-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; flex-wrap: wrap; }
+.rf-session-title { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-session-topbar-actions { display: flex; gap: 5px; }
+
+.rf-mode-hero {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 18px 20px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl);
+}
+.rf-mode-hero-text { flex: 1; min-width: 0; }
+.rf-mode-hero-text h3 { margin-bottom: 4px; }
+.rf-mode-hero-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.rf-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rf-mode-card {
+  display: flex; flex-direction: column; gap: 10px; padding: 16px 14px; border-radius: var(--radius-xl);
+  border: 1.5px solid var(--border); background: var(--bg-card); cursor: pointer; text-align: left;
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
+}
+.rf-mode-card:hover { border-color: var(--accent); background: var(--accent-bg); }
+.rf-mode-card:active { transform: scale(0.98); }
+.rf-mode-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--accent-pale); color: var(--accent); flex-shrink: 0; }
+.rf-mode-card-label { font-weight: 700; font-size: 0.9rem; }
+.rf-mode-card-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+
+/* ── Progress ───────────────────────────────────────────────────────────── */
+.rf-progress-row { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 5px; }
+.rf-progress-track { height: 6px; background: var(--bg-hover); border-radius: 3px; overflow: hidden; }
+.rf-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-light)); border-radius: 3px; transition: width .3s ease; }
+
+/* ── Flip card ──────────────────────────────────────────────────────────── */
+.rf-flip-wrap { width: 100%; max-width: 560px; margin: 0 auto; }
+.rf-flip-card { cursor: pointer; perspective: 1400px; width: 100%; height: 270px; user-select: none; margin-bottom: 16px; }
+.rf-flip-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+.rf-flip-inner.is-flipped { transform: rotateY(180deg); }
+.rf-flip-face {
+  position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--radius-xl);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px 32px; gap: 14px; border: 1.5px solid var(--border); background: var(--bg-card); box-shadow: var(--shadow-sm);
+}
+.rf-flip-face.is-back { transform: rotateY(180deg); background: var(--accent-bg); border-color: var(--accent-pale); }
+.rf-flip-eyebrow { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.rf-flip-face.is-back .rf-flip-eyebrow { color: var(--success); }
+.rf-flip-q { font-size: 1.1rem; font-weight: 700; text-align: center; line-height: 1.55; }
+.rf-flip-a { font-size: 1rem; text-align: center; line-height: 1.65; color: var(--text-primary); }
+.rf-flip-hint { font-size: 0.7rem; color: var(--text-muted); }
+
+.rf-rate-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.rf-rate-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 0.82rem; cursor: pointer; border: 1.5px solid; transition: transform .1s ease; flex: 1; min-width: 100px; }
+.rf-rate-btn:active { transform: scale(0.96); }
+.rf-rate-btn.is-bad  { color: var(--danger);  border-color: var(--danger-border);  background: var(--danger-pale); }
+.rf-rate-btn.is-mid  { color: var(--warning); border-color: var(--warning-border); background: var(--warning-pale); }
+.rf-rate-btn.is-good { color: var(--success); border-color: var(--success-border); background: var(--success-pale); }
+
+/* ── Question card shell (Learn / Write / Spell / Test) ────────────────── */
+.rf-q-card { padding: 20px 22px; border-radius: var(--radius-xl); background: var(--bg-card); border: 1.5px solid var(--border); margin-bottom: 14px; }
+.rf-q-eyebrow-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+.rf-q-eyebrow { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); }
+.rf-q-text { font-size: 1.05rem; font-weight: 600; line-height: 1.55; }
+
+/* ── Hero timer — large (session start / focus centrepiece) ───────────── */
+.rf-hero-timer { position: relative; width: 168px; height: 168px; margin: 0 auto; }
+.rf-hero-timer svg { transform: rotate(-90deg); width: 168px; height: 168px; }
+.rf-hero-timer-bg { fill: none; stroke: var(--bg-hover); stroke-width: 8; }
+.rf-hero-timer-fg { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .2s ease; }
+.rf-hero-timer-fg.is-urgent { stroke: var(--danger); }
+.rf-hero-timer-mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.rf-hero-timer-num { font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rf-hero-timer-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── Multiple choice ────────────────────────────────────────────────────── */
+.rf-mc-list { display: flex; flex-direction: column; gap: 8px; }
+.rf-mc-opt {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border); background: var(--bg-hover); text-align: left; font-size: 0.88rem;
+  line-height: 1.4; font-weight: 500; cursor: pointer; transition: all .15s ease; width: 100%; color: var(--text-primary);
+}
+.rf-mc-opt-letter { flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); }
+.rf-mc-opt.is-selected { border-color: var(--accent); background: var(--accent-bg); font-weight: 700; }
+.rf-mc-opt.is-selected .rf-mc-opt-letter { border-color: var(--accent); color: var(--accent); }
+.rf-mc-opt.is-correct { border-color: var(--success-border); background: var(--success-pale); color: var(--success); }
+.rf-mc-opt.is-correct .rf-mc-opt-letter { border-color: var(--success); color: var(--success); background: var(--bg-card); }
+.rf-mc-opt.is-wrong { border-color: var(--danger-border); background: var(--danger-pale); color: var(--danger); }
+.rf-mc-opt.is-wrong .rf-mc-opt-letter { border-color: var(--danger); color: var(--danger); background: var(--bg-card); }
+.rf-mc-opt.is-checked { cursor: default; }
+
+/* ── Results ────────────────────────────────────────────────────────────── */
+.rf-results-badge { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+.rf-results-score { font-size: 2rem; font-weight: 800; color: var(--accent); margin: 10px 0; }
+.rf-results-stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.rf-results-stat { text-align: center; padding: 8px 16px; background: var(--bg-card); border-radius: 10px; border: 1.5px solid var(--border); min-width: 76px; }
+.rf-results-stat-num { font-size: 1.4rem; font-weight: 800; }
+.rf-results-stat-label { font-size: 0.68rem; color: var(--text-muted); }
+.rf-reinforce-card { padding: 10px 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--danger-border); }
+
+/* ── Generic hero icon (replaces oversized decorative emoji) ───────────── */
+.rf-hero-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; flex-shrink: 0; }
+
+/* ── Config cards / pickers shared across tabs ─────────────────────────── */
+.rf-pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.rf-pill-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); cursor: pointer; font-weight: 600; font-size: 0.82rem; }
+.rf-pill-btn.is-active { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+.rf-option-card { flex: 1; min-width: 130px; padding: 10px 12px; border-radius: var(--radius-lg); border: 1.5px solid var(--border); background: var(--bg-surface); cursor: pointer; text-align: left; }
+.rf-option-card.is-active { border-color: var(--accent); background: var(--accent-bg); }
+.rf-option-card-label { font-weight: 700; font-size: 0.85rem; }
+.rf-option-card-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+.rf-set-row { padding: 12px 16px; border-radius: var(--radius-lg); border: 1.5px solid var(--border); background: var(--bg-surface); cursor: pointer; text-align: left; transition: all .15s ease; width: 100%; }
+.rf-set-row.is-selected { border-color: var(--accent); background: var(--accent-bg); }
+.rf-set-row-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rf-set-row-title { font-weight: 700; font-size: 0.9rem; }
+.rf-set-row-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Exam questions ─────────────────────────────────────────────────────── */
+.rf-eq-card { border-left: 3px solid var(--accent); padding: 0; overflow: hidden; }
+.rf-eq-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; }
+.rf-eq-head.is-open { background: var(--bg-surface); }
+.rf-eq-num { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; }
+.rf-eq-body { padding: 0 18px 18px; }
+.rf-eq-question-box { padding: 14px 16px; background: var(--bg-hover); border-radius: var(--radius-lg); margin: 6px 0 12px; }
+.rf-eq-section-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
+.rf-eq-attempt-box { padding: 14px 16px; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); margin-bottom: 12px; }
+.rf-eq-mark-result { padding: 12px 14px; border-radius: var(--radius-lg); background: var(--accent-bg); border: 1px solid var(--accent-pale); margin-top: 10px; }
+.rf-eq-tip-box { margin-top: 10px; padding: 10px 14px; border-radius: var(--radius-lg); background: var(--warning-pale); border: 1px solid var(--warning-border); }
+
+/* ── Illustration mount ─────────────────────────────────────────────────── */
+.rf-illustration-mount { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .rf-mode-hero { flex-direction: column; text-align: center; padding: 16px; }
+  .rf-hero-timer { width: 140px; height: 140px; }
+  .rf-hero-timer svg { width: 140px; height: 140px; }
+  .rf-hero-timer-num { font-size: 1.55rem; }
+  .rf-q-card { padding: 16px; }
+  .rf-flip-card { height: 240px; }
+}
