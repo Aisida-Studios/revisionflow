@@ -295,7 +295,14 @@ export default function Topics() {
       </div>
 
       {/* Subject picker */}
-      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
+      <style>{`
+        @media (max-width: 640px) {
+          .topics-subject-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+          .topics-subject-picker::-webkit-scrollbar { display: none; }
+          .topics-subject-picker > button { flex: 0 0 auto; }
+        }
+      `}</style>
+      <div className="topics-subject-picker" style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
         <button className={`btn btn-sm ${selSubj==='All'?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelSubj('All');setSelected([])}}>All Subjects</button>
         {subjects.map(s=><button key={s} className={`btn btn-sm ${selSubj===s?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelSubj(s);setSelected([])}}>{s}</button>)}
       </div>
