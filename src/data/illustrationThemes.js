@@ -7,13 +7,13 @@
 // images, not a shortcut.
 //
 // Two registries:
-//  - THEME_COMPONENTS: themes with a real coded SVG component (built the same way
-//    as CellIllustration/SeedlingIllustration — { size, style } props, CSS-variable
-//    colours so they adapt to dark mode). Import and use these directly.
-//  - THEME_ASSETS: themes still waiting on a real generated image. Drop a file at
-//    public/illustrations/<theme>.png and set its path here once you have one —
-//    SubjectIllustration below falls back to the generic seedling until then, so
-//    nothing ever renders blank.
+//  - THEME_COMPONENTS: every theme's real coded SVG component (built the same way
+//    — { size, style } props, CSS-variable colours so they adapt to dark mode).
+//    All 23 themes are covered.
+//  - THEME_ASSETS: swap any theme over to a real generated image later by dropping
+//    a file at public/illustrations/<theme>.png and setting its path here —
+//    componentForSubject() below prefers a coded component only because none of
+//    these are filled in yet; assetForSubject() is ready whenever they are.
 import CellIllustration from '../components/illustrations/CellIllustration'
 import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
 import ChemistryIllustration from '../components/illustrations/ChemistryIllustration'
@@ -24,6 +24,19 @@ import HistoryIllustration from '../components/illustrations/HistoryIllustration
 import GeographyIllustration from '../components/illustrations/GeographyIllustration'
 import ComputerScienceIllustration from '../components/illustrations/ComputerScienceIllustration'
 import LanguagesIllustration from '../components/illustrations/LanguagesIllustration'
+import ArtIllustration from '../components/illustrations/ArtIllustration'
+import MusicIllustration from '../components/illustrations/MusicIllustration'
+import DramaIllustration from '../components/illustrations/DramaIllustration'
+import PEIllustration from '../components/illustrations/PEIllustration'
+import ReligionPhilosophyIllustration from '../components/illustrations/ReligionPhilosophyIllustration'
+import PsychologyIllustration from '../components/illustrations/PsychologyIllustration'
+import BusinessIllustration from '../components/illustrations/BusinessIllustration'
+import LawPoliticsIllustration from '../components/illustrations/LawPoliticsIllustration'
+import MediaIllustration from '../components/illustrations/MediaIllustration'
+import DesignTechIllustration from '../components/illustrations/DesignTechIllustration'
+import FoodNutritionIllustration from '../components/illustrations/FoodNutritionIllustration'
+import EnvironmentalScienceIllustration from '../components/illustrations/EnvironmentalScienceIllustration'
+import HealthIllustration from '../components/illustrations/HealthIllustration'
 
 export const THEMES = [
   'biology', 'chemistry', 'physics', 'maths', 'english', 'history', 'geography',
@@ -32,8 +45,7 @@ export const THEMES = [
   'designTech', 'foodNutrition', 'environmentalScience', 'health', 'generic',
 ]
 
-// Themes with a real coded illustration component. 13 of 23 done so far —
-// the rest render the generic seedling until they're built or a real asset lands.
+// All 23 themes have a real coded component now.
 export const THEME_COMPONENTS = {
   biology: CellIllustration,
   chemistry: ChemistryIllustration,
@@ -44,11 +56,27 @@ export const THEME_COMPONENTS = {
   geography: GeographyIllustration,
   computerScience: ComputerScienceIllustration,
   languages: LanguagesIllustration,
+  art: ArtIllustration,
+  music: MusicIllustration,
+  drama: DramaIllustration,
+  pe: PEIllustration,
+  religionPhilosophy: ReligionPhilosophyIllustration,
+  psychology: PsychologyIllustration,
+  business: BusinessIllustration,
+  lawPolitics: LawPoliticsIllustration,
+  media: MediaIllustration,
+  designTech: DesignTechIllustration,
+  foodNutrition: FoodNutritionIllustration,
+  environmentalScience: EnvironmentalScienceIllustration,
+  health: HealthIllustration,
   generic: SeedlingIllustration,
 }
 
-// Register a real generated asset here once you have one — e.g. art: '/illustrations/art.png'
+// Register a real generated asset here to replace any coded component with
+// something nicer later — e.g. biology: '/illustrations/biology.png'
 export const THEME_ASSETS = {
+  biology: null, chemistry: null, physics: null, maths: null, english: null,
+  history: null, geography: null, computerScience: null, languages: null,
   art: null, music: null, drama: null, pe: null, religionPhilosophy: null,
   psychology: null, business: null, lawPolitics: null, media: null,
   designTech: null, foodNutrition: null, environmentalScience: null, health: null,
