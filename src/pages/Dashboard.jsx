@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,
-  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
+  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target, Snowflake,
   Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,
 } from 'lucide-react'
 
@@ -309,19 +309,26 @@ export default function Dashboard() {
   const nextSession = upcomingSessions[0] || null
   const NextSessionIllustration = illustrationFor(nextSession?.subject)
 
+  // Was checking the sessions collection for a same-day completed session —
+  // but recordActivityStreak() (firestore.js) counts ANY logged activity
+  // (session, paper, quiz, task, mistake, note), not just sessions, and
+  // only stores lastActivityDate + a running count, not a per-day history.
+  // So this derives the filled days from the same authoritative fields the
+  // streak number itself comes from, rather than a different, narrower
+  // data source that will disagree with it.
   const last7Days = useMemo(() => {
+    const lastActivityStr = profile?.lastActivityDate || null
+    const lastActivity = lastActivityStr ? new Date(lastActivityStr) : null
+    const streakCount = profile?.streak || 0
     const days = []
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today); d.setDate(today.getDate() - i)
-      const done = sessions.some((s) => {
-        if (!s.completed) return false
-        const sd = toJsDate(s.date)
-        return sd && sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate()
-      })
+      const daysBeforeLastActivity = lastActivity ? Math.round((lastActivity - d) / 86400000) : null
+      const done = daysBeforeLastActivity != null && daysBeforeLastActivity >= 0 && daysBeforeLastActivity < streakCount
       days.push({ key: d.toISOString(), label: WEEKDAY_NARROW[d.getDay()], done, isToday: i === 0 })
     }
     return days
-  }, [sessions])
+  }, [profile?.lastActivityDate, profile?.streak])
 
   const recentActivity = useMemo(() => {
     const fromSessions = sessions.filter((s) => s.completed).map((s) => ({
@@ -351,6 +358,19 @@ export default function Dashboard() {
   const xpForNext = nextLevel ? nextLevel.xpRequired - (thisLevel?.xpRequired || 0) : 0
   const xpPercent = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpForNext) * 100)) : 100
   const streak = profile?.streak || 0
+
+  // Mirrors recordActivityStreak()'s own fresh-week check (firestore.js):
+  // a week is "fresh" once 7+ days have passed since freezeWeekStart, at
+  // which point the stored freezesUsedThisWeek is stale and should read
+  // as 0 even before the backend next writes the reset.
+  const freezeAllowance = isPro ? 3 : 1
+  const freezeWeekStart = profile?.freezeWeekStart || null
+  const daysSinceFreezeWeekStart = freezeWeekStart
+    ? Math.round((today - new Date(freezeWeekStart)) / 86400000)
+    : null
+  const freshFreezeWeek = daysSinceFreezeWeekStart == null || daysSinceFreezeWeekStart >= 7
+  const freezesUsed = freshFreezeWeek ? 0 : Math.min(profile?.freezesUsedThisWeek || 0, freezeAllowance)
+  const freezesLeft = freezeAllowance - freezesUsed
 
   const visiblePredictions = isPro ? predictions : predictions.slice(0, 1)
   const hiddenPredictionCount = Math.max(0, predictions.length - visiblePredictions.length)
@@ -459,6 +479,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                 ))}
+              </div>
+              <div className="streak-freeze-row">
+                <Snowflake size={13} />
+                <span>{freezesLeft} of {freezeAllowance} freeze{freezeAllowance === 1 ? '' : 's'} left this week</span>
               </div>
             </div>
           </div>
