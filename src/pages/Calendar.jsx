@@ -293,9 +293,14 @@ export default function Calendar() {
       </div>
 
       {/* Navigator */}
-      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+      <style>{`
+        @media (max-width: 480px) {
+          .cal-nav-title { min-width: 150px !important; font-size: 1rem !important; }
+        }
+      `}</style>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14,flexWrap:'wrap'}}>
         <button className="btn btn-ghost btn-icon" onClick={()=>navigate(-1)}><ChevronLeft size={18}/></button>
-        <h3 style={{minWidth:220,textAlign:'center'}}>
+        <h3 className="cal-nav-title" style={{minWidth:220,textAlign:'center'}}>
           {view === 'month'
             ? format(current, 'MMMM yyyy')
             : `${format(days[0].date,'d MMM')} – ${format(days[6].date,'d MMM yyyy')}`}
