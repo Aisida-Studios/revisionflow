@@ -9,7 +9,8 @@ import {
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
-import { getSubjectQualification } from '../data/subjects'
+import { getSubjectQualification, subjectColour } from '../data/subjects'
+import { getSubjectIcon, isBiologyLike } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
 import AIOutput from '../components/AIOutput'
@@ -17,13 +18,28 @@ import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
+import CellIllustration from '../components/illustrations/CellIllustration'
+import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
   RotateCcw, Copy, Check, Download, Shuffle, X, Plus,
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
   Users, ChevronDown, Repeat, BarChart2,
+  Layers, PenLine, SpellCheck, Grid3x3, ListChecks,
+  Trophy, PartyPopper, Flame, FileText, Timer, CheckCircle2,
+  Maximize2, Minimize2,
 } from 'lucide-react'
+import './Study.css'
+
+// Subject-aware hero illustration — reuses the two existing illustration components
+// exactly the way TopicDetail.jsx already does (biology -> cell, everything else ->
+// seedling) rather than inventing a new illustration style for Study.
+function SubjectIllustration({ subject, size = 64 }) {
+  return isBiologyLike(subject)
+    ? <CellIllustration size={size} />
+    : <SeedlingIllustration size={size} />
+}
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
@@ -31,18 +47,19 @@ import {
 function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggling }) {
   const [flipped, setFlipped] = useState(false)
   useEffect(() => setFlipped(false), [index])
+  const accent = subjectColour(subject)
   return (
-    <div style={{ width:'100%', maxWidth:560 }}>
-      <div onClick={() => setFlipped(f => !f)} style={{ cursor:'pointer', perspective:1200, width:'100%', height:260, userSelect:'none', marginBottom:16 }}>
-        <div style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform 0.42s cubic-bezier(0.4,0,0.2,1)', transform:flipped?'rotateY(180deg)':'rotateY(0deg)' }}>
-          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:16, background:'linear-gradient(135deg,rgba(20,83,45,0.15),rgba(34,197,94,0.06))', border:'1px solid rgba(20,83,45,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
-            <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Card {index+1} of {total}</div>
-            <div style={{ fontSize:'1.1rem', fontWeight:600, color:'var(--text-primary)', textAlign:'center', lineHeight:1.55 }}>{card.q}</div>
-            <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:6 }}>Tap to flip</div>
+    <div className="rf-flip-wrap">
+      <div className="rf-flip-card" onClick={() => setFlipped(f => !f)}>
+        <div className={`rf-flip-inner${flipped ? ' is-flipped' : ''}`}>
+          <div className="rf-flip-face" style={{ borderColor: accent + '4d' }}>
+            <div className="rf-flip-eyebrow" style={{ color: accent }}>Card {index+1} of {total}</div>
+            <div className="rf-flip-q">{card.q}</div>
+            <div className="rf-flip-hint">Tap to flip</div>
           </div>
-          <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', transform:'rotateY(180deg)', borderRadius:16, background:'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.04))', border:'1px solid rgba(16,185,129,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 32px', gap:14 }}>
-            <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--success)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Answer</div>
-            <div style={{ fontSize:'1rem', color:'var(--text-primary)', textAlign:'center', lineHeight:1.65 }}>{card.a}</div>
+          <div className="rf-flip-face is-back">
+            <div className="rf-flip-eyebrow">Answer</div>
+            <div className="rf-flip-a">{card.a}</div>
           </div>
         </div>
       </div>
@@ -52,13 +69,10 @@ function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggli
         </div>
       )}
       {showRate && flipped && onRate && (
-        <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
-          {[{label:"Didn't know",c:'var(--danger)',v:1},{label:'Partially',c:'var(--warning)',v:2},{label:'Got it!',c:'var(--success)',v:3}].map(b => (
-            <button key={b.v} onClick={() => onRate(b.v)}
-              style={{ padding:'8px 18px', borderRadius:999, border:`1px solid ${b.c}`, background:b.c+'22', color:b.c, fontWeight:700, cursor:'pointer', fontSize:'0.82rem' }}>
-              {b.label}
-            </button>
-          ))}
+        <div className="rf-rate-row">
+          <button className="rf-rate-btn is-bad" onClick={() => onRate(1)}>Didn't know</button>
+          <button className="rf-rate-btn is-mid" onClick={() => onRate(2)}>Partially</button>
+          <button className="rf-rate-btn is-good" onClick={() => onRate(3)}>Got it!</button>
         </div>
       )}
     </div>
@@ -92,30 +106,30 @@ function LearnMode({ cards, onDone }) {
   return (
     <div>
       <div style={{ marginBottom:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+        <div className="rf-progress-row">
           <span>{mastered.size}/{cards.length} mastered</span><span>{queue.length} remaining</span>
         </div>
-        <div style={{ height:6, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:Math.round(mastered.size/cards.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.4s' }} />
+        <div className="rf-progress-track">
+          <div className="rf-progress-fill" style={{ width:Math.round(mastered.size/cards.length*100)+'%' }} />
         </div>
       </div>
-      <div style={{ padding:'24px 28px', borderRadius:16, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14, minHeight:160 }}>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:12 }}>
-          {card.attempts>0?`Revisiting (seen ${card.attempts}x)`:'Term'}
+      <div className="rf-q-card" style={{ minHeight:160 }}>
+        <div className="rf-q-eyebrow-row">
+          <span className="rf-q-eyebrow">{card.attempts>0?`Revisiting (seen ${card.attempts}x)`:'Term'}</span>
         </div>
-        <div style={{ fontSize:'1.1rem', fontWeight:600, lineHeight:1.55, marginBottom:shown?16:0 }}>{card.q}</div>
+        <div className="rf-q-text" style={{ marginBottom:shown?16:0 }}>{card.q}</div>
         {shown && <div style={{ borderTop:'1px solid var(--border)', paddingTop:14, marginTop:4 }}>
-          <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--success)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Definition</div>
+          <div className="rf-q-eyebrow" style={{ color:'var(--success)', marginBottom:8 }}>Definition</div>
           <div style={{ fontSize:'0.95rem', lineHeight:1.6 }}>{card.a}</div>
         </div>}
       </div>
       {!shown ? (
         <button className="btn btn-primary" style={{ width:'100%' }} onClick={()=>setShown(true)}>Show answer</button>
       ) : (
-        <div style={{ display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' }}>
-          {[{label:"Didn't know",c:'var(--danger)',v:1},{label:'Almost',c:'var(--warning)',v:2},{label:'Got it!',c:'var(--success)',v:3}].map(b=>(
-            <button key={b.v} onClick={()=>rate(b.v)} style={{ flex:1, minWidth:100, padding:'10px 14px', borderRadius:12, border:`1px solid ${b.c}`, background:b.c+'18', color:b.c, fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>{b.label}</button>
-          ))}
+        <div className="rf-rate-row">
+          <button className="rf-rate-btn is-bad" onClick={()=>rate(1)}>Didn't know</button>
+          <button className="rf-rate-btn is-mid" onClick={()=>rate(2)}>Almost</button>
+          <button className="rf-rate-btn is-good" onClick={()=>rate(3)}>Got it!</button>
         </div>
       )}
     </div>
@@ -188,7 +202,7 @@ FEEDBACK: One sentence.`
 
   if (!result && !loading) return (
     <button className="btn btn-secondary btn-sm" onClick={mark} style={{ display:'flex', alignItems:'center', gap:6 }}>
-      <Zap size={13} /> AI Mark
+      <Edit3 size={13} /> Mark answer
     </button>
   )
   if (loading) return <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>Marking…</span>
@@ -197,17 +211,17 @@ FEEDBACK: One sentence.`
   return (
     <div style={{ marginTop:10 }}>
       <div style={{ padding:'10px 14px', borderRadius:10,
-        background: final.correct?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.08)',
-        border:`1px solid ${final.correct?'rgba(16,185,129,0.3)':'rgba(239,68,68,0.25)'}`,
+        background: final.correct?'var(--success-pale)':'var(--danger-pale)',
+        border:`1px solid ${final.correct?'var(--success-border)':'var(--danger-border)'}`,
         marginBottom:8 }}>
-        <div style={{ fontWeight:700, color:final.correct?'var(--success)':'var(--danger)', fontSize:'0.85rem', marginBottom:4 }}>
-          {final.correct ? '✓ Correct' : '✗ Incorrect'}
+        <div style={{ fontWeight:700, color:final.correct?'var(--success)':'var(--danger)', fontSize:'0.85rem', marginBottom:4, display:'flex', alignItems:'center', gap:5 }}>
+          {final.correct ? <CheckCircle2 size={14}/> : <X size={14}/>} {final.correct ? 'Correct' : 'Incorrect'}
         </div>
         <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)' }}>{final.feedback}</div>
       </div>
       {!disputeResult && !final.correct && !disputed && (
         <button className="btn btn-ghost btn-sm" onClick={() => setDisputed(true)} style={{ fontSize:'0.78rem' }}>
-          ⚖️ Dispute this mark
+          Dispute this mark
         </button>
       )}
       {disputed && !disputeResult && (
@@ -258,16 +272,16 @@ function WriteMode({ cards, onDone, uid }) {
   return (
     <div>
       <div style={{ marginBottom:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+        <div className="rf-progress-row">
           <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
         </div>
-        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3, transition:'width 0.3s' }} />
+        <div className="rf-progress-track">
+          <div className="rf-progress-fill" style={{ width:Math.round(idx/deck.length*100)+'%' }} />
         </div>
       </div>
-      <div style={{ padding:'20px 24px', borderRadius:16, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14 }}>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Write the definition</div>
-        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:16 }}>{card.q}</div>
+      <div className="rf-q-card">
+        <div className="rf-q-eyebrow-row"><span className="rf-q-eyebrow">Write the definition</span></div>
+        <div className="rf-q-text" style={{ marginBottom:16 }}>{card.q}</div>
         <textarea ref={inputRef} className="textarea"
           style={{ minHeight:80, fontSize:'0.9rem', borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
           value={input} onChange={e=>setInput(e.target.value)}
@@ -295,8 +309,8 @@ function WriteMode({ cards, onDone, uid }) {
         </div>
       )}
       {checked === 'idk' && (
-        <div style={{ marginTop: 10, padding: '12px 16px', borderRadius: 18,
-          background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 10 }}>
+        <div style={{ marginTop: 10, padding: '12px 16px', borderRadius: 'var(--radius-lg)',
+          background: 'var(--warning-pale)', border: '1px solid var(--warning-border)', marginBottom: 10 }}>
           <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 6, fontSize: '0.85rem' }}>
             Answer revealed
           </div>
@@ -352,17 +366,17 @@ function MatchMode({ cards, onDone }) {
         {tiles.map(tile=>{
           const isM=matched.has(tile.id),isW=wrong.has(tile.id),isS=selected?.id===tile.id
           return <button key={tile.id} onClick={()=>!isM&&select(tile)}
-            style={{ padding:'14px 12px', borderRadius:12, border:'none', cursor:isM?'default':'pointer',
+            style={{ padding:'14px 12px', borderRadius:'var(--radius-lg)', cursor:isM?'default':'pointer',
               fontWeight:600, fontSize:'0.82rem', lineHeight:1.4, textAlign:'center', transition:'all 0.2s',
-              background:isM?'rgba(16,185,129,0.15)':isW?'rgba(239,68,68,0.12)':isS?'rgba(20,83,45,0.2)':'var(--bg-surface)',
-              border:`2px solid ${isM?'rgba(16,185,129,0.5)':isW?'rgba(239,68,68,0.5)':isS?'var(--accent)':'var(--border)'}`,
+              background:isM?'var(--success-pale)':isW?'var(--danger-pale)':isS?'var(--accent-pale)':'var(--bg-surface)',
+              border:`2px solid ${isM?'var(--success-border)':isW?'var(--danger-border)':isS?'var(--accent)':'var(--border)'}`,
               color:isM?'var(--success)':isW?'var(--danger)':isS?'var(--accent-light)':'var(--text-primary)',
               transform:isS?'scale(1.03)':'scale(1)', opacity:isM?.6:1 }}>
             {tile.text}
           </button>
         })}
       </div>
-      {done&&<div style={{ marginTop:16, padding:'14px 18px', borderRadius:12, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', textAlign:'center' }}>
+      {done&&<div style={{ marginTop:16, padding:'14px 18px', borderRadius:'var(--radius-lg)', background:'var(--success-pale)', border:'1px solid var(--success-border)', textAlign:'center' }}>
         <span style={{ fontWeight:700, color:'var(--success)' }}>All matched in {Math.floor(elapsed/60)}:{pad2(elapsed%60)} with {moves} moves!</span>
       </div>}
     </div>
@@ -384,23 +398,23 @@ function SpellMode({ cards, onDone }) {
   return (
     <div>
       <div style={{ marginBottom:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:5 }}>
+        <div className="rf-progress-row">
           <span>{idx+1}/{deck.length}</span><span style={{color:'var(--success)'}}>{scores.filter(Boolean).length} correct</span>
         </div>
-        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:Math.round(idx/deck.length*100)+'%', background:'var(--accent)', borderRadius:3 }} />
+        <div className="rf-progress-track">
+          <div className="rf-progress-fill" style={{ width:Math.round(idx/deck.length*100)+'%' }} />
         </div>
       </div>
-      <div style={{ padding:'20px 24px', borderRadius:14, background:'var(--bg-card)', border:'2px solid var(--border)', marginBottom:14 }}>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--accent-light)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Spell the definition</div>
-        <div style={{ fontSize:'1.05rem', fontWeight:600, lineHeight:1.55, marginBottom:12 }}>{card.q}</div>
+      <div className="rf-q-card">
+        <div className="rf-q-eyebrow-row"><span className="rf-q-eyebrow">Spell the definition</span></div>
+        <div className="rf-q-text" style={{ marginBottom:12 }}>{card.q}</div>
         <div style={{ fontFamily:'monospace', fontSize:'1rem', color:'var(--text-muted)', letterSpacing:'0.15em', marginBottom:14, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:8 }}>{hint}</div>
         <input ref={inputRef} className="input"
           style={{ borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if((e.key==='Enter'||e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
           placeholder="Spell out the full definition… (Enter to check)" disabled={!!checked} />
-        {checked==='wrong'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--danger)', padding:'8px 12px', background:'rgba(239,68,68,0.08)', borderRadius:8, border:'1px solid rgba(239,68,68,0.2)' }}>
+        {checked==='wrong'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--danger)', padding:'8px 12px', background:'var(--danger-pale)', borderRadius:8, border:'1px solid var(--danger-border)' }}>
           Correct spelling: <strong>{card.a}</strong>
         </div>}
         {checked==='correct'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--success)' }}>Correct!</div>}
@@ -541,41 +555,59 @@ ${questions}`
   if (finished) return null
 
   const q = qs[idx]
+  const answeredCount = qs.filter(x => x.checked !== null).length
+  const correctCount  = qs.filter(x => x.checked === 'correct').length
+  const accuracyPct   = answeredCount ? Math.round(correctCount / answeredCount * 100) : 0
+  const RING_R = 80, RING_CIRC = 2 * Math.PI * RING_R
+  const ringPct = timePerQuestion ? Math.max(0, timeLeft / timePerQuestion) : (qs.length ? idx / qs.length : 0)
+  const ringUrgent = timePerQuestion && q.checked === null && timeLeft <= 5
+
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 5 }}>
-          <span>Q{idx+1}/{qs.length}</span>
-          {timePerQuestion && q.checked === null && (
-            <span style={{ fontWeight: 800, color: timeLeft <= 5 ? 'var(--danger)' : 'var(--text-muted)' }}>⏱ {timeLeft}s</span>
-          )}
-          <span>{qs.filter(q => q.checked === 'correct').length} correct</span>
-        </div>
-        <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: Math.round(idx/qs.length*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
+      {/* Hero ring — counts down per-question when Timed Challenge is on, otherwise shows question progress */}
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <div className="rf-hero-timer">
+          <svg viewBox="0 0 168 168">
+            <circle className="rf-hero-timer-bg" cx="84" cy="84" r={RING_R} />
+            <circle className={`rf-hero-timer-fg${ringUrgent ? ' is-urgent' : ''}`} cx="84" cy="84" r={RING_R}
+              strokeDasharray={RING_CIRC} strokeDashoffset={RING_CIRC * (1 - ringPct)} />
+          </svg>
+          <div className="rf-hero-timer-mid">
+            <div className="rf-hero-timer-num">{timePerQuestion ? Math.max(0, timeLeft) : idx + 1}</div>
+            <div className="rf-hero-timer-sub">{timePerQuestion ? 'seconds left' : `of ${qs.length}`}</div>
+          </div>
         </div>
       </div>
-      <div style={{ padding: '18px 22px', borderRadius: 14, background: 'var(--bg-card)', border: '2px solid var(--border)', marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-light)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            {q.type === 'mc' ? 'Multiple choice' : 'Written answer'}
-          </div>
-          {q.type === 'mc' && q.aiOpts && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>✨ AI options</span>}
+
+      <div className="rf-results-stats">
+        <div className="rf-results-stat">
+          <div className="rf-results-stat-num">{answeredCount}/{qs.length}</div>
+          <div className="rf-results-stat-label">Answered</div>
         </div>
-        <div style={{ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.55, marginBottom: 16 }}>{q.card.q}</div>
+        <div className="rf-results-stat">
+          <div className="rf-results-stat-num" style={{ color: 'var(--accent)' }}>{accuracyPct}%</div>
+          <div className="rf-results-stat-label">Accuracy</div>
+        </div>
+      </div>
+
+      <div className="rf-q-card">
+        <div className="rf-q-eyebrow-row">
+          <span className="rf-q-eyebrow">{q.type === 'mc' ? 'Multiple choice' : 'Written answer'}</span>
+          {q.type === 'mc' && q.aiOpts && <span className="badge badge-grey" style={{ fontSize: '0.64rem' }}>AI-generated options</span>}
+          {q.checked === 'timeout' && <span className="badge badge-red" style={{ fontSize: '0.64rem' }}>Time's up</span>}
+        </div>
+        <div className="rf-q-text" style={{ marginBottom: 16 }}>{q.card.q}</div>
         {q.type === 'mc' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="rf-mc-list">
             {q.opts.map((opt, i) => {
               const isC = opt.a === q.card.a, isSel = q.selected?.a === opt.a, ch = q.checked !== null
               return (
-                <button key={i} onClick={() => selectMC(opt)}
-                  style={{ padding: '10px 16px', borderRadius: 16, border: 'none', cursor: ch ? 'default' : 'pointer',
-                    textAlign: 'left', fontSize: '0.88rem', lineHeight: 1.4, fontWeight: isSel ? 700 : 500, transition: 'all 0.2s',
-                    background: !ch ? (isSel ? 'rgba(20,83,45,0.15)' : 'var(--bg-hover)') : isC ? 'rgba(16,185,129,0.15)' : isSel ? 'rgba(239,68,68,0.12)' : 'var(--bg-hover)',
-                    border: `1.5px solid ${!ch ? (isSel ? 'var(--accent)' : 'var(--border)') : isC ? 'rgba(16,185,129,0.5)' : isSel ? 'rgba(239,68,68,0.5)' : 'var(--border)'}`,
-                    color: !ch ? 'var(--text-primary)' : isC ? 'var(--success)' : isSel ? 'var(--danger)' : 'var(--text-muted)' }}>
-                  <span style={{ marginRight: 8, opacity: .6 }}>{['A','B','C','D'][i]}.</span>{opt.a}
-                  {ch && isC && ' ✓'}{ch && isSel && !isC && ' ✗'}
+                <button key={i} onClick={() => selectMC(opt)} disabled={ch}
+                  className={`rf-mc-opt${ch ? ' is-checked' : ''}${ch && isC ? ' is-correct' : ''}${ch && isSel && !isC ? ' is-wrong' : ''}${!ch && isSel ? ' is-selected' : ''}`}>
+                  <span className="rf-mc-opt-letter">{['A','B','C','D'][i]}</span>
+                  <span style={{ flex: 1 }}>{opt.a}</span>
+                  {ch && isC && <CheckCircle2 size={16} style={{ flexShrink: 0 }} />}
+                  {ch && isSel && !isC && <X size={16} style={{ flexShrink: 0 }} />}
                 </button>
               )
             })}
@@ -595,16 +627,16 @@ ${questions}`
               </div>
             )}
             {q.checked === 'idk' && (
-              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 16,
-                background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
+              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 'var(--radius-lg)',
+                background: 'var(--warning-pale)', border: '1px solid var(--warning-border)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.82rem' }}>Answer</div>
                 <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
               </div>
             )}
             {q.checked === 'timeout' && (
-              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 16,
-                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 4, fontSize: '0.82rem' }}>⏱ Time's up — the answer was:</div>
+              <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 'var(--radius-lg)',
+                background: 'var(--danger-pale)', border: '1px solid var(--danger-border)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 4, fontSize: '0.82rem' }}>Time's up — the answer was:</div>
                 <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
               </div>
             )}
@@ -741,21 +773,21 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   }
 
   const MODES=[
-    {id:'flash', label:'Flash',  icon:'🃏', desc:'Flip cards, rate yourself'},
-    {id:'learn', label:'Learn',  icon:'🧠', desc:'Active recall until mastered'},
-    {id:'write', label:'Write',  icon:'✍️', desc:'Type the definition'},
-    {id:'spell', label:'Spell',  icon:'🔤', desc:'Spell out the answer'},
-    {id:'match', label:'Match',  icon:'🎯', desc:'Match terms to definitions'},
-    {id:'test',  label:'Test',   icon:'📝', desc:'Mixed quiz with score'},
+    {id:'flash', label:'Flash',  Icon:Layers,     desc:'Flip cards, rate yourself'},
+    {id:'learn', label:'Learn',  Icon:Brain,      desc:'Active recall until mastered'},
+    {id:'write', label:'Write',  Icon:PenLine,    desc:'Type the definition'},
+    {id:'spell', label:'Spell',  Icon:SpellCheck, desc:'Spell out the answer'},
+    {id:'match', label:'Match',  Icon:Grid3x3,    desc:'Match terms to definitions'},
+    {id:'test',  label:'Test',   Icon:ListChecks, desc:'Mixed quiz with score'},
   ]
 
   const TopBar = () => (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:8 }}>
+    <div className="rf-session-topbar">
       <button className="btn btn-ghost btn-sm" onClick={mode==='select'?onClose:()=>setMode('select')}>
         <ChevronLeft size={15}/> {mode==='select'?'Back':'Modes'}
       </button>
-      <span style={{ fontSize:'0.82rem', color:'var(--text-muted)', fontWeight:600, maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</span>
-      <div style={{ display:'flex', gap:5 }}>
+      <span className="rf-session-title">{title}</span>
+      <div className="rf-session-topbar-actions">
         {mode==='flash'&&<button className="btn btn-ghost btn-sm" onClick={shuffle}><Shuffle size={14}/></button>}
         <button className="btn btn-ghost btn-sm" onClick={quizletCopy}>{copied?<Check size={14}/>:<Copy size={14}/>}</button>
         <button className="btn btn-ghost btn-sm" onClick={downloadCSV}><Download size={14}/></button>
@@ -764,30 +796,33 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   )
 
   if (mode==='select') return (
-    <div style={{ maxWidth:560, margin:'0 auto' }}>
+    <div className="rf-session-shell">
       <TopBar />
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18, flexWrap:'wrap', gap:8 }}>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          <span className="badge badge-accent">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
-          {subject&&<span className="badge badge-grey">{subject}</span>}
+      <div className="rf-mode-hero">
+        <div className="rf-illustration-mount"><SubjectIllustration subject={subject} size={58} /></div>
+        <div className="rf-mode-hero-text">
+          <h3>{title}</h3>
+          <div className="rf-mode-hero-meta">
+            <span className="badge badge-accent">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
+            {subject&&<span className="badge badge-grey">{subject}</span>}
+          </div>
         </div>
         {setId && (
-          <select className="select" style={{ width:'auto', fontSize:'0.8rem' }} value={masteryFilter} onChange={e=>{ setMasteryFilter(e.target.value); setIdx(0); setScores([]) }}>
+          <select className="select" style={{ width:'auto', fontSize:'0.8rem', flexShrink:0 }} value={masteryFilter} onChange={e=>{ setMasteryFilter(e.target.value); setIdx(0); setScores([]) }}>
             <option value="all">All cards ({cards.length})</option>
             <option value="unmastered">Unmastered ({cards.filter(c=>(cardMastery[c.q]||0)<3).length})</option>
             <option value="mastered">Mastered ({cards.filter(c=>(cardMastery[c.q]||0)>=3).length})</option>
           </select>
         )}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+      <div className="rf-mode-grid">
         {MODES.map(m=>(
-          <button key={m.id} onClick={()=>setMode(m.id)}
-            style={{ padding:'16px 14px', borderRadius:14, border:'2px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', textAlign:'left', transition:'all 0.18s' }}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='rgba(20,83,45,0.05)'}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg-surface)'}}>
-            <div style={{ fontSize:'1.5rem', marginBottom:6 }}>{m.icon}</div>
-            <div style={{ fontWeight:700, fontSize:'0.9rem', marginBottom:3 }}>{m.label}</div>
-            <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', lineHeight:1.4 }}>{m.desc}</div>
+          <button key={m.id} className="rf-mode-card" onClick={()=>setMode(m.id)}>
+            <div className="rf-mode-icon"><m.Icon size={19}/></div>
+            <div>
+              <div className="rf-mode-card-label">{m.label}</div>
+              <div className="rf-mode-card-desc">{m.desc}</div>
+            </div>
           </button>
         ))}
       </div>
@@ -796,24 +831,27 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
 
   if (mode==='results'&&results) {
     const pct=Math.round(results.got/results.total*100)
-    const emoji=pct>=90?'🏆':pct>=70?'🎉':pct>=50?'💪':'📚'
+    const tier = pct>=90?{Icon:Trophy,bg:'var(--success-pale)',c:'var(--success)'}
+      : pct>=70?{Icon:PartyPopper,bg:'var(--success-pale)',c:'var(--success)'}
+      : pct>=50?{Icon:Flame,bg:'var(--warning-pale)',c:'var(--warning)'}
+      : {Icon:BookOpen,bg:'var(--accent-pale)',c:'var(--accent)'}
     return (
       <div style={{ maxWidth:520, margin:'0 auto' }}>
         <TopBar />
         <div className="card" style={{ textAlign:'center', padding:'28px 24px' }}>
-          <div style={{ fontSize:'3rem', marginBottom:10 }}>{emoji}</div>
+          <div className="rf-results-badge" style={{ background:tier.bg, color:tier.c }}><tier.Icon size={30}/></div>
           <h3 style={{ marginBottom:4 }}>Session complete!</h3>
-          <div style={{ fontSize:'2rem', fontWeight:800, color:'var(--accent)', margin:'12px 0' }}>
+          <div className="rf-results-score">
             {results.got}/{results.total} <span style={{ fontSize:'1rem', fontWeight:600, color:'var(--text-muted)' }}>{pct}%</span>
           </div>
           {results.scores&&(
-            <div style={{ display:'flex', gap:10, justifyContent:'center', marginBottom:20 }}>
+            <div className="rf-results-stats">
               {[{label:'Got it',count:results.scores.filter(v=>v===3).length,c:'var(--success)'},
                 {label:'Partial',count:results.scores.filter(v=>v===2).length,c:'var(--warning)'},
                 {label:'Missed',count:results.scores.filter(v=>v===1).length,c:'var(--danger)'}].map(s=>(
-                <div key={s.label} style={{ textAlign:'center', padding:'8px 16px', background:'var(--bg-card)', borderRadius:10, border:'2px solid var(--border)' }}>
-                  <div style={{ fontSize:'1.4rem', fontWeight:800, color:s.c }}>{s.count}</div>
-                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{s.label}</div>
+                <div key={s.label} className="rf-results-stat">
+                  <div className="rf-results-stat-num" style={{ color:s.c }}>{s.count}</div>
+                  <div className="rf-results-stat-label">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -830,7 +868,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <h4 style={{ marginBottom:10, fontSize:'0.9rem' }}>Cards to reinforce ({results.missed.length})</h4>
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {results.missed.map((c,i)=>(
-                <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-card)', border:'1px solid rgba(239,68,68,0.3)' }}>
+                <div key={i} className="rf-reinforce-card">
                   <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
                   <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
                   <MemoryAidButton front={c.q} back={c.a} subject={subject} uid={uid} compact />
@@ -845,7 +883,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {cards.map((c,i)=>(
                 <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-card)',
-                  border:`1px solid ${results.scores[i]===3?'rgba(16,185,129,0.4)':results.scores[i]===1?'rgba(239,68,68,0.4)':'var(--border)'}` }}>
+                  border:`1px solid ${results.scores[i]===3?'var(--success-border)':results.scores[i]===1?'var(--danger-border)':'var(--border)'}` }}>
                   <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
                   <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
                 </div>
@@ -858,14 +896,14 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   }
 
   if (mode==='flash') return (
-    <div style={{ maxWidth:560, margin:'0 auto' }}>
+    <div className="rf-session-shell">
       <TopBar />
       <div style={{ marginBottom:12 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', color:'var(--text-muted)', marginBottom:4 }}>
+        <div className="rf-progress-row">
           <span>{idx+1}/{filteredCards.length}</span><span>{Math.round(idx/filteredCards.length*100)}%</span>
         </div>
-        <div style={{ height:5, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden' }}>
-          <div style={{ height:'100%', width:((idx+1)/cards.length*100)+'%', background:'linear-gradient(90deg,var(--accent),var(--accent-light))', borderRadius:3, transition:'width 0.3s' }} />
+        <div className="rf-progress-track">
+          <div className="rf-progress-fill" style={{ width:((idx+1)/cards.length*100)+'%' }} />
         </div>
       </div>
       <FlipCard card={filteredCards[idx]} index={idx} total={filteredCards.length} showRate onRate={handleFlashRate}
@@ -879,11 +917,11 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
     </div>
   )
 
-  if (mode==='learn') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><LearnMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='write') return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><WriteMode cards={cards} onDone={handleSubDone} uid={uid} /></div>
-  if (mode==='spell') return <div style={{maxWidth:520,margin:'0 auto'}}><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='match') return <div style={{maxWidth:600,margin:'0 auto'}}><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='test')  return <div style={{maxWidth:560,margin:'0 auto'}}><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} /></div>
+  if (mode==='learn') return <div className="rf-session-shell"><TopBar /><LearnMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='write') return <div className="rf-session-shell"><TopBar /><WriteMode cards={cards} onDone={handleSubDone} uid={uid} /></div>
+  if (mode==='spell') return <div className="rf-session-shell"><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='match') return <div className="rf-session-shell"><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
+  if (mode==='test')  return <div className="rf-session-shell"><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} /></div>
   return null
 }
 
@@ -1129,12 +1167,12 @@ function PasteImportModal({ subjects, onImport, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 680, maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">📋 Import flashcards</span>
+          <span className="modal-title"><ClipboardList size={17} style={{ verticalAlign: -3, marginRight: 6 }}/>Import flashcards</span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <button className={'btn btn-sm ' + (mode === 'paste' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('paste')}>📋 Paste text</button>
-          <button className={'btn btn-sm ' + (mode === 'ai' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('ai')}>✨ AI from notes</button>
+          <button className={'btn btn-sm ' + (mode === 'paste' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('paste')}><ClipboardList size={13}/> Paste text</button>
+          <button className={'btn btn-sm ' + (mode === 'ai' ? 'btn-primary' : 'btn-secondary')} onClick={() => setMode('ai')}><Zap size={13}/> From notes</button>
         </div>
 
         {mode === 'paste' && (
@@ -1168,7 +1206,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
                 value={aiNotes} onChange={e => setAiNotes(e.target.value)} />
             </div>
             <button className="btn btn-primary" onClick={handleAIConvert} disabled={aiLoading || !aiNotes.trim()}>
-              {aiLoading ? 'Converting…' : '✨ Convert to flashcards'}
+              {aiLoading ? 'Converting…' : <><Zap size={14}/> Convert to flashcards</>}
             </button>
           </div>
         )}
@@ -1278,12 +1316,15 @@ function QuizTab({ mySets, uid, profile }) {
       <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
         {(() => {
           const pct = Math.round(results.got / results.total * 100)
-          const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚'
+          const tier = pct>=90?{Icon:Trophy,bg:'var(--success-pale)',c:'var(--success)'}
+            : pct>=70?{Icon:PartyPopper,bg:'var(--success-pale)',c:'var(--success)'}
+            : pct>=50?{Icon:Flame,bg:'var(--warning-pale)',c:'var(--warning)'}
+            : {Icon:BookOpen,bg:'var(--accent-pale)',c:'var(--accent)'}
           return (
             <>
-              <div style={{ fontSize: '3rem', marginBottom: 10 }}>{emoji}</div>
+              <div className="rf-results-badge" style={{ background:tier.bg, color:tier.c }}><tier.Icon size={30}/></div>
               <h3 style={{ marginBottom: 4 }}>Quiz complete!</h3>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent)', margin: '12px 0' }}>
+              <div className="rf-results-score">
                 {results.got}/{results.total}
                 <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>{pct}%</span>
               </div>
@@ -1307,7 +1348,7 @@ function QuizTab({ mySets, uid, profile }) {
           <h4 style={{ marginBottom: 10, fontSize: '0.9rem' }}>Cards to reinforce ({results.missed.length})</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {results.missed.map((c, i) => (
-              <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <div key={i} className="rf-reinforce-card">
                 <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{c.q}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{c.a}</div>
                 <MemoryAidButton front={c.q} back={c.a} subject={selectedSet?.subject} uid={uid} compact />
@@ -1322,12 +1363,12 @@ function QuizTab({ mySets, uid, profile }) {
   if (started && selectedSet) {
     const quizCards = [...selectedSet.cards].sort(() => Math.random() - 0.5).slice(0, questionCount)
     return (
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="rf-session-shell">
+        <div className="rf-session-topbar">
           <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}>
             <ChevronLeft size={15} /> Back
           </button>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{selectedSet.title}</span>
+          <span className="rf-session-title">{selectedSet.title}</span>
           <span className="badge badge-accent">{quizCards.length} questions</span>
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
@@ -1413,17 +1454,21 @@ function QuizTab({ mySets, uid, profile }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {mySets.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
-                  style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
-                    background: selectedSet?.id === set.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
-                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {set.subject} · {set.cards?.length || 0} cards
+                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
+                  <div className="rf-set-row-top">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="rf-set-row-title">{set.title}</div>
+                        <div className="rf-set-row-meta">
+                          {set.subject} · {set.cards?.length || 0} cards
+                        </div>
                       </div>
                     </div>
-                    {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
+                    {selectedSet?.id === set.id && <CheckCircle2 size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
                   </div>
                 </button>
               ))}
@@ -1441,17 +1486,21 @@ function QuizTab({ mySets, uid, profile }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {publicSets.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
-                  style={{ padding: '12px 16px', borderRadius: 16, border: `1.5px solid ${selectedSet?.id === set.id ? 'var(--accent)' : 'var(--border)'}`,
-                    background: selectedSet?.id === set.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
-                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {set.subject} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
+                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
+                  <div className="rf-set-row-top">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="rf-set-row-title">{set.title}</div>
+                        <div className="rf-set-row-meta">
+                          {set.subject} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
+                        </div>
                       </div>
                     </div>
-                    {selectedSet?.id === set.id && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>}
+                    {selectedSet?.id === set.id && <CheckCircle2 size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
                   </div>
                 </button>
               ))}
@@ -1474,26 +1523,18 @@ function QuizTab({ mySets, uid, profile }) {
                   { id: 'mixed', label: 'Mixed',           desc: 'Both formats' },
                 ].map(m => (
                   <button key={m.id} onClick={() => setQuizMode(m.id)}
-                    style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 16,
-                      border: `1.5px solid ${quizMode === m.id ? 'var(--accent)' : 'var(--border)'}`,
-                      background: quizMode === m.id ? 'rgba(20,83,45,0.06)' : 'var(--bg-surface)',
-                      cursor: 'pointer', textAlign: 'left' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{m.label}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+                    className={`rf-option-card${quizMode === m.id ? ' is-active' : ''}`}>
+                    <div className="rf-option-card-label">{m.label}</div>
+                    <div className="rf-option-card-desc">{m.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
             <div>
               <label className="label">Number of questions</label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className="rf-pill-row">
                 {[5, 10, 15, 20, selectedSet.cards?.length].filter((n, i, a) => n && a.indexOf(n) === i && n <= (selectedSet.cards?.length || 0)).map(n => (
-                  <button key={n} onClick={() => setQCount(n)}
-                    style={{ padding: '6px 14px', borderRadius: 20,
-                      border: `1px solid ${questionCount === n ? 'var(--accent)' : 'var(--border)'}`,
-                      background: questionCount === n ? 'var(--accent)' : 'var(--bg-card)',
-                      color: questionCount === n ? 'white' : 'var(--text-primary)',
-                      cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                  <button key={n} onClick={() => setQCount(n)} className={`rf-pill-btn${questionCount === n ? ' is-active' : ''}`}>
                     {n === selectedSet.cards?.length ? `All (${n})` : n}
                   </button>
                 ))}
@@ -1504,23 +1545,18 @@ function QuizTab({ mySets, uid, profile }) {
                 {(isPro || isBeta) ? (
                   <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input type="checkbox" checked={timedChallenge} onChange={e => setTimedChallenge(e.target.checked)} />
-                    🏆 Timed challenge — answer before the clock runs out
+                    <Timer size={14} style={{ color: 'var(--accent)' }} /> Timed challenge — answer before the clock runs out
                   </label>
                 ) : (
                   <Link to="/pro" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     <Lock size={13} />
-                    🏆 Timed challenge <span style={{ color: 'var(--accent)', fontWeight: 700 }}>— Pro</span>
+                    <Timer size={14} /> Timed challenge <ProBadge />
                   </Link>
                 )}
                 {timedChallenge && (isPro || isBeta) && (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <div className="rf-pill-row" style={{ marginTop: 8 }}>
                     {[10, 15, 20, 30].map(s => (
-                      <button key={s} onClick={() => setTimePerQ(s)}
-                        style={{ padding: '5px 12px', borderRadius: 20,
-                          border: `1px solid ${timePerQ === s ? 'var(--accent)' : 'var(--border)'}`,
-                          background: timePerQ === s ? 'var(--accent)' : 'var(--bg-card)',
-                          color: timePerQ === s ? 'white' : 'var(--text-primary)',
-                          cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>
+                      <button key={s} onClick={() => setTimePerQ(s)} className={`rf-pill-btn${timePerQ === s ? ' is-active' : ''}`}>
                         {s}s
                       </button>
                     ))}
@@ -1615,14 +1651,16 @@ function PracticeTab({ mySets, uid }) {
     return (
       <div style={{ maxWidth: 520, margin: '0 auto' }}>
         <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: 10 }}>{missed === 0 ? '🏆' : '💪'}</div>
+          <div className="rf-results-badge" style={{ background: missed===0?'var(--success-pale)':'var(--warning-pale)', color: missed===0?'var(--success)':'var(--warning)' }}>
+            {missed === 0 ? <Trophy size={30}/> : <Flame size={30}/>}
+          </div>
           <h3 style={{ marginBottom: 4 }}>Practice complete!</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.85rem' }}>{sessionResults.length} cards reviewed</p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+          <div className="rf-results-stats">
             {[{label:'Got it',count:gotIt,c:'var(--success)'},{label:'Partial',count:partial,c:'var(--warning)'},{label:'Missed',count:missed,c:'var(--danger)'}].map(s=>(
-              <div key={s.label} style={{ textAlign: 'center', padding: '8px 16px', background: 'var(--bg-card)', borderRadius: 10, border: '2px solid var(--border)' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.c }}>{s.count}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{s.label}</div>
+              <div key={s.label} className="rf-results-stat">
+                <div className="rf-results-stat-num" style={{ color: s.c }}>{s.count}</div>
+                <div className="rf-results-stat-label">{s.label}</div>
               </div>
             ))}
           </div>
@@ -1636,7 +1674,7 @@ function PracticeTab({ mySets, uid }) {
             <h4 style={{ marginBottom: 10, fontSize: '0.9rem' }}>Cards to reinforce ({missed})</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sessionResults.filter(r => r.rating === 1).map((r, i) => (
-                <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                <div key={i} className="rf-reinforce-card">
                   <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{r.card.q}</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{r.card.a}</div>
                   <MemoryAidButton front={r.card.q} back={r.card.a} subject={r.subject} uid={uid} compact />
@@ -1653,17 +1691,17 @@ function PracticeTab({ mySets, uid }) {
     const item = queue[idx]
     const struggling = (getProgress(item.setId).mastery[item.card.q] || 0) === 1
     return (
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      <div className="rf-session-shell">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}><ChevronLeft size={15} /> Back</button>
           <span className="badge badge-grey" style={{ fontSize: '0.72rem' }}>{item.setTitle}</span>
         </div>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          <div className="rf-progress-row">
             <span>{idx + 1}/{queue.length}</span><span>{Math.round(idx / queue.length * 100)}%</span>
           </div>
-          <div style={{ height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: (idx / queue.length * 100) + '%', background: 'linear-gradient(90deg,var(--accent),var(--accent-light))', borderRadius: 3, transition: 'width 0.3s' }} />
+          <div className="rf-progress-track">
+            <div className="rf-progress-fill" style={{ width: (idx / queue.length * 100) + '%' }} />
           </div>
         </div>
         <FlipCard card={item.card} index={idx} total={queue.length} showRate onRate={handleRate}
@@ -1682,7 +1720,7 @@ function PracticeTab({ mySets, uid }) {
       <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
         {queue.length === 0 ? (
           <>
-            <div style={{ fontSize: '2.6rem', marginBottom: 10 }}>✨</div>
+            <div className="rf-hero-icon" style={{ background: 'var(--success-pale)', color: 'var(--success)' }}><CheckCircle2 size={26}/></div>
             <h3 style={{ marginBottom: 6 }}>All caught up!</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Nothing is due for review right now. Cards come back here once their spacing interval is up.</p>
           </>
@@ -1718,15 +1756,15 @@ function MarkSchemeReveal({ text }) {
       <button
         onClick={() => setShown(s => !s)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-          background: 'rgba(16,185,129,0.07)', borderRadius: 7,
-          border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer',
+          background: 'var(--success-pale)', borderRadius: 7,
+          border: '1px solid var(--success-border)', cursor: 'pointer',
           fontSize: '0.8rem', fontWeight: 700, color: 'var(--success)', width: '100%' }}>
-        <span style={{ transition: 'transform 0.2s', display: 'inline-block', transform: shown ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+        <ChevronRight size={14} style={{ transition: 'transform 0.2s', transform: shown ? 'rotate(90deg)' : 'rotate(0deg)' }} />
         {shown ? 'Hide mark scheme' : 'Reveal mark scheme'}
       </button>
       {shown && (
-        <div style={{ marginTop: 8, padding: '10px 14px', background: 'rgba(16,185,129,0.05)',
-          borderRadius: 14, border: '1px solid rgba(16,185,129,0.15)' }}>
+        <div style={{ marginTop: 8, padding: '10px 14px', background: 'var(--success-pale)',
+          borderRadius: 'var(--radius-lg)', border: '1px solid var(--success-border)' }}>
           <AIOutput text={text} label="Mark scheme" compact />
         </div>
       )}
@@ -1895,7 +1933,7 @@ function TopicNotesTab({ profile, uid }) {
                   <button key={i} onClick={() => { setTopic(t); loadNote(t) }}
                     style={{
                       width: '100%', textAlign: 'left', padding: '10px 14px',
-                      background: topic === t ? 'rgba(20,83,45,0.1)' : 'transparent',
+                      background: topic === t ? 'var(--accent-bg)' : 'transparent',
                       border: 'none', borderBottom: '1px solid var(--border)',
                       cursor: 'pointer', fontSize: '0.82rem', lineHeight: 1.4,
                       color: topic === t ? 'var(--accent-light)' : 'var(--text-primary)',
@@ -1923,14 +1961,14 @@ function TopicNotesTab({ profile, uid }) {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(e => !e)}
                     style={{ fontSize: '0.75rem' }} title={expanded ? 'Collapse panel' : 'Expand to full width'}>
-                    {expanded ? '⊠ Collapse' : '⛶ Expand'}
+                    {expanded ? <><Minimize2 size={13}/> Collapse</> : <><Maximize2 size={13}/> Expand</>}
                   </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => loadNote(topic, true)} disabled={loading}
                     style={{ fontSize: '0.75rem' }}>
-                    {loading ? '...' : '↺ Regenerate'}
+                    <RotateCcw size={13}/> {loading ? '...' : 'Regenerate'}
                   </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => { setNote(null); setExpanded(false) }} style={{ fontSize: '0.75rem' }}>
-                    ✕ Close
+                    <X size={13}/> Close
                   </button>
                 </div>
               </div>
@@ -1989,13 +2027,13 @@ function ExamMarkScheme({ text }) {
       {!revealed ? (
         <button
           className="btn btn-secondary btn-sm"
-          style={{ width: '100%', padding: '10px', fontSize: '0.85rem', letterSpacing: '0.01em' }}
+          style={{ width: '100%', padding: '10px', fontSize: '0.85rem', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           onClick={() => setRevealed(true)}>
-          <span style={{ marginRight: 6 }}>🔒</span> Reveal mark scheme
+          <Lock size={13} /> Reveal mark scheme
         </button>
       ) : (
-        <div style={{ padding: '14px 16px', borderRadius: 16,
-          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
+          background: 'var(--success-pale)', border: '1px solid var(--success-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
               letterSpacing: '0.08em', textTransform: 'uppercase' }}>Mark scheme</div>
@@ -2092,30 +2130,32 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   // ── Result display
   function ResultCard({ r }) {
     if (!r) return null
-    const colour = r.pct >= 70 ? 'var(--success)' : r.pct >= 50 ? 'var(--warning)' : 'var(--danger)'
+    const tier   = r.pct >= 70 ? 'success' : r.pct >= 50 ? 'warning' : 'danger'
+    const colour = `var(--${tier})`
+    const pale   = `var(--${tier}-pale)`
     const grade  = r.pct >= 90 ? 'A*' : r.pct >= 80 ? 'A' : r.pct >= 70 ? 'B' : r.pct >= 60 ? 'C' : r.pct >= 50 ? 'D' : 'U'
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Score hero */}
         <div style={{ padding: '20px 24px', borderRadius: 14,
           background: 'var(--bg-card)', border: '2px solid var(--border)', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', fontWeight: 800, color, lineHeight: 1 }}>
+          <div style={{ fontSize: '3rem', fontWeight: 800, color: colour, lineHeight: 1 }}>
             {r.awarded != null ? r.awarded : '?'}<span style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-muted)' }}>/{r.outOf}</span>
           </div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color, marginTop: 4 }}>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: colour, marginTop: 4 }}>
             {r.pct != null ? r.pct + '%' : ''}{r.level ? ' · ' + r.level : ''}
           </div>
           <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 999, background: colour + '18',
-            fontSize: '0.8rem', fontWeight: 700, color }}>
+            padding: '3px 12px', borderRadius: 999, background: pale,
+            fontSize: '0.8rem', fontWeight: 700, color: colour }}>
             Estimated grade: {grade}
           </div>
         </div>
 
         {/* Credited points */}
         {r.credited && (
-          <div style={{ padding: '14px 16px', borderRadius: 18,
-            background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
+            background: 'var(--success-pale)', border: '1px solid var(--success-border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--success)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Credited points
@@ -2126,8 +2166,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Points not credited */}
         {r.notCredited && (
-          <div style={{ padding: '14px 16px', borderRadius: 18,
-            background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
+            background: 'var(--danger-pale)', border: '1px solid var(--danger-border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--danger)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Not credited
@@ -2138,7 +2178,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Annotation */}
         {r.annotation && (
-          <div style={{ padding: '14px 16px', borderRadius: 18,
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -2150,7 +2190,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* AO breakdown */}
         {r.aoBreakdown && (
-          <div style={{ padding: '14px 16px', borderRadius: 18,
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
             background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -2162,8 +2202,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* How to improve */}
         {r.improvements && (
-          <div style={{ padding: '14px 16px', borderRadius: 18,
-            background: 'rgba(20,83,45,0.06)', border: '1px solid rgba(20,83,45,0.2)' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-xl)',
+            background: 'var(--accent-bg)', border: '1px solid var(--accent-pale)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
               letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               To reach the next mark band
@@ -2174,8 +2214,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 
         {/* Examiner note */}
         {r.examinerNote && (
-          <div style={{ padding: '12px 16px', borderRadius: 16,
-            background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
+          <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-lg)',
+            background: 'var(--warning-pale)', border: '1px solid var(--warning-border)',
             fontSize: '0.84rem', fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             <span style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--warning)' }}>Examiner: </span>
             {r.examinerNote}
@@ -2321,7 +2361,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
           )}
           {!mkLoading && !mkResult && (
             <div className="card empty-state" style={{ padding: '48px 24px' }}>
-              <div style={{ fontSize: '3rem', marginBottom: 12 }}>✍️</div>
+              <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><PenLine size={26}/></div>
               <h4>Your marked result appears here</h4>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: 280, textAlign: 'center' }}>
                 Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve.
@@ -2376,18 +2416,14 @@ export default function Study() {
   const [eqParsed, setEqParsed] = useState([])
   const [eqResult, setEqResult] = useState('')
   const [eqExpanded, setEqExpanded] = useState(null)
+  // eqAttempts: { [questionIndex]: { answer, marking: text|null, loading } } — lets a student
+  // write their own answer to a generated question and get it AI-marked before (or instead
+  // of) revealing the model mark scheme, using the same markAnswer() the Answer Marker tab
+  // already uses. Not persisted — these are scratch attempts against AI-generated practice
+  // questions, not saved past-paper data.
+  const [eqAttempts, setEqAttempts] = useState({})
 
-  // Answer marker
-  const [mkSubject, setMkSubject] = useState('')
-  const [mkBoard, setMkBoard] = useState('AQA')
-  const [mkLevel, setMkLevel] = useState('GCSE')
-  const [mkPaper, setMkPaper] = useState('')
-  const [mkQuestion, setMkQuestion] = useState('')
-  const [mkMarks, setMkMarks] = useState('')
-  const [mkAnswer, setMkAnswer] = useState('')
-  const [mkResult, setMkResult] = useState('')
-  const [mkLoading, setMkLoading] = useState(false)
-  const [mkHistory, setMkHistory] = useState([])
+  // Answer marker tab delegates entirely to <AnswerMarkerTab> below, which owns its own state.
 
   const subjects = profile?.subjects?.map(s => s.name) || []
 
@@ -2438,7 +2474,7 @@ export default function Study() {
         saveFlashcardSetToCache(board, level, fcSubject, fcTopic, fcCount, parsed).catch(() => {})
       }
       setStudyCards(parsed)
-      setStudyTitle(fcSubject + (fcTopic ? ' — ' + fcTopic : '') + ' (AI)')
+      setStudyTitle(fcSubject + (fcTopic ? ' — ' + fcTopic : ''))
       setStudySubj(fcSubject)
       setStudyTopic(fcTopic)
       await checkAndAwardBadge(user.uid, 'flashcard_gen')
@@ -2511,7 +2547,7 @@ export default function Study() {
 
   async function handleGenEQ() {
     if (!eqSubject || !eqTopic) { toast.error('Fill in subject and topic'); return }
-    setEqLoading(true); setEqResult(''); setEqParsed([]); setEqExpanded(null)
+    setEqLoading(true); setEqResult(''); setEqParsed([]); setEqExpanded(null); setEqAttempts({})
     try {
       const subj = profile?.subjects?.find(s => s.name === eqSubject)
       const board = eqBoard || subj?.board || 'AQA'
@@ -2526,18 +2562,26 @@ export default function Study() {
     finally { setEqLoading(false) }
   }
 
-  async function handleMark() {
-    if (!mkSubject || !mkQuestion.trim() || !mkAnswer.trim() || !mkMarks) return
-    setMkLoading(true); setMkResult('')
+  function setEqAttemptAnswer(qId, answer) {
+    setEqAttempts(a => ({ ...a, [qId]: { ...(a[qId] || {}), answer } }))
+  }
+
+  async function markEqAttempt(qId, questionText, marksTotal) {
+    const attempt = eqAttempts[qId]
+    if (!attempt?.answer?.trim()) return
+    setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: true } }))
     try {
-      const res = await markAnswer(mkSubject, mkBoard, mkLevel, mkPaper || null, mkQuestion.trim(), parseInt(mkMarks) || 6, mkAnswer.trim(), user?.uid)
-      if (res.error) { toast.error(res.error); return }
-      const text = res.text || 'Could not mark answer.'
-      setMkResult(text)
-      setMkHistory(h => [{ question: mkQuestion.slice(0, 80) + (mkQuestion.length > 80 ? '…' : ''), subject: mkSubject, marks: mkMarks, result: text, time: new Date().toLocaleTimeString() }, ...h].slice(0, 10))
+      const subj = profile?.subjects?.find(s => s.name === eqSubject)
+      const board = eqBoard || subj?.board || 'AQA'
+      const marksNum = parseInt(marksTotal) || undefined
+      const res = await markAnswer(eqSubject, board, eqLevel, null, questionText, marksNum || 6, attempt.answer.trim(), user?.uid)
+      if (res.error) { toast.error(res.error); setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false } })); return }
+      setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false, marking: res.text || 'Could not mark answer.' } }))
       await autoCompleteQuest(user.uid, 'use_ai')
-    } catch (e) { toast.error('Error: ' + e.message) }
-    finally { setMkLoading(false) }
+    } catch (e) {
+      toast.error('Marking failed: ' + e.message)
+      setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false } }))
+    }
   }
 
   // If studying a set
@@ -2558,24 +2602,26 @@ export default function Study() {
       {showEdit   && <EditSetModal set={showEdit} subjects={subjects} onSave={handleEditSet} onClose={() => setShowEdit(null)} />}
       {showPaste  && <PasteImportModal subjects={subjects} onImport={handlePasteImport} onClose={() => setShowPaste(false)} />}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+      <div className="rf-study-head">
         <div>
           <h2>Study Tools</h2>
-          <p style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: '0.875rem' }}>Flashcards, exam questions, and answer marking</p>
+          <p className="rf-study-subtitle">Flashcards, exam questions, and answer marking</p>
         </div>
       </div>
 
       {/* Main tabs */}
-      <div className="tabs" style={{ marginBottom: 24, padding: 4, flexWrap: 'wrap' }}>
-        <button className={'tab' + (tab === 'notes' ? ' active' : '')} onClick={() => setTab('notes')}><BookOpen size={15} /> Topic Notes</button>
-        <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><BookOpen size={15} /> Flashcards</button>
-        <button className={'tab' + (tab === 'practice' ? ' active' : '')} onClick={() => setTab('practice')}>
-          <Repeat size={15} /> Practice
-          {practiceDueCount > 0 && <span className="badge badge-accent" style={{ marginLeft: 6, fontSize: '0.65rem', padding: '1px 6px' }}>{practiceDueCount}</span>}
-        </button>
-        <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ClipboardList size={15} /> Quiz</button>
-        <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
-        <button className={'tab' + (tab === 'marker' ? ' active' : '')} onClick={() => setTab('marker')}><Brain size={15} /> Answer Marker</button>
+      <div className="rf-tabs-scroll">
+        <div className="tabs" style={{ marginBottom: 24, padding: 4 }}>
+          <button className={'tab' + (tab === 'notes' ? ' active' : '')} onClick={() => setTab('notes')}><FileText size={15} /> Topic Notes</button>
+          <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><Layers size={15} /> Flashcards</button>
+          <button className={'tab' + (tab === 'practice' ? ' active' : '')} onClick={() => setTab('practice')}>
+            <Repeat size={15} /> Practice
+            {practiceDueCount > 0 && <span className="badge badge-accent" style={{ marginLeft: 6, fontSize: '0.65rem', padding: '1px 6px' }}>{practiceDueCount}</span>}
+          </button>
+          <button className={'tab' + (tab === 'quiz' ? ' active' : '')} onClick={() => setTab('quiz')}><ListChecks size={15} /> Quiz</button>
+          <button className={'tab' + (tab === 'examqs' ? ' active' : '')} onClick={() => setTab('examqs')}><ClipboardList size={15} /> Exam Questions</button>
+          <button className={'tab' + (tab === 'marker' ? ' active' : '')} onClick={() => setTab('marker')}><Brain size={15} /> Answer Marker</button>
+        </div>
       </div>
 
       {/* ── FLASHCARDS ── */}
@@ -2588,7 +2634,7 @@ export default function Study() {
               ))}
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={14} /> Create set</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}><ClipboardList size={14}/> Import</button>
           </div>
 
           {flashTab === 'generate' && (
@@ -2623,17 +2669,17 @@ export default function Study() {
                 <input className="input" placeholder="Search my sets..." value={mySearch}
                   onChange={e => setMySearch(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
                 <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={13} /> Create</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>
               </div>
               {setsLoad ? <div className="loading-center"><div className="spinner" /></div>
                 : filteredMy.length === 0 ? (
                   <div className="empty-state">
-                    <div style={{ fontSize: '2.5rem' }}>📚</div>
+                    <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><Layers size={26}/></div>
                     <p>No saved sets yet</p>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-primary btn-sm" onClick={() => setFlashTab('generate')}>Generate with AI</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setShowCreate(true)}>Create manually</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}>📋 Import</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>
                     </div>
                   </div>
                 ) : (
@@ -2641,9 +2687,15 @@ export default function Study() {
                     {filteredMy.map(set => (
                       <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, overflow: 'hidden' }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                              {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                            </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                             <button className="btn btn-ghost btn-icon btn-sm" title="Edit set" onClick={() => setShowEdit(set)}><Edit3 size={13} /></button>
@@ -2653,7 +2705,7 @@ export default function Study() {
                             <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteSet(set)}><Trash2 size={13} /></button>
                           </div>
                         </div>
-                        {set.isPublic && <span className="badge badge-accent" style={{ alignSelf: 'flex-start', fontSize: '0.68rem' }}>🌐 Public</span>}
+                        {set.isPublic && <span className="badge badge-accent" style={{ alignSelf: 'flex-start', fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Globe size={10}/> Public</span>}
                         <button className="btn btn-primary btn-sm" onClick={() => studySet(set)}>Study this set →</button>
                       </div>
                     ))}
@@ -2819,15 +2871,11 @@ export default function Study() {
                   const qText   = msIdx > 0 ? q.text.slice(0, msIdx).trim() : q.text
                   const msText  = msIdx > 0 ? (tipIdx > msIdx ? q.text.slice(msIdx, tipIdx).trim() : q.text.slice(msIdx).trim()) : null
                   const tipText = tipIdx > 0 ? q.text.slice(tipIdx).trim() : null
+                  const attempt = eqAttempts[q.id] || {}
                   return (
-                    <div key={q.id} className="card" style={{ borderLeft: '3px solid var(--accent)', padding: 0, overflow: 'hidden' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
-                        cursor: 'pointer', background: isOpen ? 'var(--bg-surface)' : 'transparent' }}
-                        onClick={() => setEqExpanded(isOpen ? null : i)}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                          background: 'var(--accent)', color: '#fff',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.78rem', fontWeight: 800 }}>{i + 1}</div>
+                    <div key={q.id} className="card rf-eq-card">
+                      <div className={`rf-eq-head${isOpen ? ' is-open' : ''}`} onClick={() => setEqExpanded(isOpen ? null : i)}>
+                        <div className="rf-eq-num">{i + 1}</div>
                         <div style={{ flex: 1 }}>
                           <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Question {i + 1}</span>
                           {q.marks !== '?' && (
@@ -2835,24 +2883,43 @@ export default function Study() {
                               [{q.marks} mark{q.marks !== '1' ? 's' : ''}]
                             </span>
                           )}
+                          {attempt.marking && <CheckCircle2 size={14} style={{ marginLeft: 8, color: 'var(--success)', verticalAlign: -2 }} />}
                         </div>
                         <ChevronDown size={16} style={{ color: 'var(--text-muted)', flexShrink: 0,
                           transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                       </div>
                       {isOpen && (
-                        <div style={{ padding: '0 18px 18px' }}>
-                          <div style={{ padding: '14px 16px', background: 'var(--bg-hover)',
-                            borderRadius: 16, marginBottom: 12, marginTop: 6 }}>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
-                              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Question</div>
+                        <div className="rf-eq-body">
+                          <div className="rf-eq-question-box">
+                            <div className="rf-eq-section-label" style={{ color: 'var(--accent-light)' }}>Question</div>
                             <AIOutput text={qText} compact />
                           </div>
+
+                          {/* Attempt it yourself before checking the mark scheme */}
+                          <div className="rf-eq-attempt-box">
+                            <div className="rf-eq-section-label" style={{ color: 'var(--text-muted)' }}>Your answer</div>
+                            <textarea className="textarea" style={{ minHeight: 70, fontSize: '0.85rem' }}
+                              placeholder="Try answering before you check the mark scheme…"
+                              value={attempt.answer || ''}
+                              onChange={e => setEqAttemptAnswer(q.id, e.target.value)} />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                              <button className="btn btn-secondary btn-sm"
+                                onClick={() => markEqAttempt(q.id, qText, q.marks)}
+                                disabled={!attempt.answer?.trim() || attempt.loading}>
+                                <Edit3 size={13} /> {attempt.loading ? 'Marking…' : 'Mark my answer'}
+                              </button>
+                            </div>
+                            {attempt.marking && (
+                              <div className="rf-eq-mark-result">
+                                <AIOutput text={attempt.marking} label="Your marked answer" compact />
+                              </div>
+                            )}
+                          </div>
+
                           {msText && <ExamMarkScheme text={msText} />}
                           {tipText && (
-                            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 14,
-                              background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--warning)',
-                                letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                            <div className="rf-eq-tip-box">
+                              <div className="rf-eq-section-label" style={{ color: 'var(--warning)', marginBottom: 6 }}>
                                 Examiner tip
                               </div>
                               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
@@ -2874,10 +2941,10 @@ export default function Study() {
 
           {!eqResult && !eqLoading && (
             <div className="empty-state">
-              <div style={{ fontSize: '2.5rem' }}>📝</div>
+              <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><ClipboardList size={26}/></div>
               <h4>Generate exam-style questions</h4>
               <p style={{ maxWidth: 360, textAlign: 'center', fontSize: '0.875rem' }}>
-                Select your subject, board, and topic above. Mark schemes are hidden until you reveal them.
+                Select your subject, board, and topic above. Try answering each one yourself, then reveal the mark scheme when you're ready.
               </p>
             </div>
           )}
