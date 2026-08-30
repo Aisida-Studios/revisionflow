@@ -1,7 +1,7 @@
 // src/pages/PrivacyPolicy.jsx
 // GDPR-compliant privacy policy for RevisionFlow
 // Data controller: Aisida Studios (trading name of Oluwafemi Aisida), England, United Kingdom
-// Last updated: July 2026
+// Last updated: August 2026
 
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Zap } from 'lucide-react'
@@ -32,11 +32,11 @@ export default function PrivacyPolicy() {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <h1 style={{ marginBottom: '0.4rem' }}>Privacy Policy</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Last updated: 20 July 2026 · Effective date: 20 July 2026
+          Last updated: 30 August 2026 · Effective date: 30 August 2026
         </p>
 
         <div style={{ padding:'14px 18px', background:'rgba(34,197,94,0.08)', border:'1px solid var(--accent)', borderRadius:'var(--radius-md)', marginBottom:'2rem', fontSize:'0.875rem', lineHeight:1.7 }}>
-          This Privacy Policy explains how <strong>RevisionFlow</strong> ("we", "us", "our") collects, uses, stores and protects your personal data when you use our revision tracking application at <strong>revisionflow.netlify.app</strong>. This policy complies with the <strong>UK General Data Protection Regulation (UK GDPR)</strong> and the <strong>Data Protection Act 2018</strong>.
+          This Privacy Policy explains how <strong>RevisionFlow</strong> ("we", "us", "our") collects, uses, stores and protects your personal data when you use our revision tracking application at <strong>revisionflow.co.uk</strong>. This policy complies with the <strong>UK General Data Protection Regulation (UK GDPR)</strong> and the <strong>Data Protection Act 2018</strong>.
         </div>
 
         <section style={SECTION_STYLE}>
@@ -69,10 +69,11 @@ export default function PrivacyPolicy() {
             <li>Subjects, exam board, qualification level and target grades</li>
             <li>Revision sessions: subject, date, duration, session type, completion status, notes</li>
             <li>Past paper attempts: subject, paper, year, score, percentage, grade, boundaries</li>
-            <li>Topic confidence ratings (1–5) per specification topic</li>
+            <li>Topic confidence ratings (1–5) per specification topic, plus a timestamped history of rating changes so you can see your progress on a topic over time</li>
+            <li>Sub-topic checklists: an optional, self-authored breakdown of a topic into your own checklist items and their completion status</li>
             <li>Logged mistakes: subject, topic, description, resolution status</li>
             <li>Tasks: title, due date, priority, completion status</li>
-            <li>Notes: subject, content, created date</li>
+            <li>Notes: subject, content, created date, and optionally the specific topic a note is attached to</li>
             <li>Exam dates: subject, board, date</li>
             <li>Flashcard sets: title, subject, topic, cards (front/back), visibility (private/public)</li>
             <li>Quiz results: set title, score, time taken, mode (saved to your quiz history)</li>
