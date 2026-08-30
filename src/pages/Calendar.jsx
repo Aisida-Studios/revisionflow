@@ -6,16 +6,35 @@ import { completeSession, completeTask, updateSession, deleteSession } from '../
 import { collection, getDocs, deleteDoc, doc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV } from '../utils/calendar'
+import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
+import { getSubjectIcon } from '../utils/subjectIcons'
 import CalendarGenerator from '../components/CalendarGenerator'
 import toast from 'react-hot-toast'
 import { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'
 import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
-  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye
+  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye,
+  CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,
 } from 'lucide-react'
-import { SUBJECT_COLOURS } from '../data/subjects'
+import { subjectColour } from '../data/subjects'
+import './Calendar.css'
 
 const SESSION_TYPES = ['Content Revision', 'Exam Practice', 'Emergency Revision']
+
+// Local YYYY-MM-DD for "today" — never new Date().toISOString() (that's UTC and can be
+// a day off from the user's actual local date near midnight). Every session/task/exam
+// date in this app is already a local "YYYY-MM-DD" string, so comparisons stay in that
+// same local, lexicographically-sortable format throughout.
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+
+// "YYYY-MM-DD" -> local Date at midnight. Never new Date(dateString) — that parses as
+// UTC and can land on the wrong local day near a midnight boundary.
+function parseLocalDate(dateStr) {
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 
 export default function Calendar() {
   const { user, profile } = useAuth()
@@ -67,7 +86,7 @@ export default function Calendar() {
             isMultiDay: start !== end,
             taskStartDate: start, taskEndDate: end,
             date: current.toISOString().slice(0, 10),
-            title: `📋 ${data.title}`,
+            title: data.title,
             type: 'Task',
             taskColor: data.priority === 'high' ? 'var(--danger)' : data.priority === 'medium' ? 'var(--warning)' : 'var(--success)',
           })
@@ -263,16 +282,54 @@ export default function Calendar() {
   const dayNames         = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const selectedSessions = selected ? sessionsForDay(sessions, selected) : []
 
+  // ── Upcoming feed for the sidebar — real exam dates (profile.examDates, the same
+  // source Dashboard's "Upcoming exams" card reads via examUtils) merged with this
+  // user's own upcoming, not-yet-completed sessions/tasks. Nothing here is invented —
+  // it's the calendar finally surfacing data the rest of the app already has.
+  const todayStr = localDateStr(new Date())
+  // Full history (not just "upcoming") so a past exam date doesn't vanish from the grid
+  // once it's done — only the sidebar's "Upcoming" list is future-only.
+  const examsByDate = {}
+  for (const e of profile?.examDates || []) {
+    if (!e.examDate) continue
+    ;(examsByDate[e.examDate] ||= []).push(e)
+  }
+  const upcomingExams = filterUpcomingExams(profile?.examDates || [])
+    .sort((a, b) => (a.examDate || '').localeCompare(b.examDate || ''))
+    .map(e => ({
+      kind: 'exam',
+      id: 'exam-' + (e.id || e.subject + e.examDate),
+      date: e.examDate,
+      subject: e.subject,
+      title: e.subject,
+      meta: `Paper ${e.paper}${e.paperName ? ' · ' + e.paperName : ''}`,
+      raw: e,
+    }))
+  const upcomingLogged = sessions
+    .filter(s => !s.completed && s.date && s.date >= todayStr)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.start || '').localeCompare(b.start || ''))
+    .map(s => ({
+      kind: s.isTask ? 'task' : 'session',
+      id: s._docId || s.id,
+      date: s.date,
+      subject: s.subject,
+      title: s.title || s.subject || (s.isTask ? 'Task' : 'Study session'),
+      meta: s.isTask ? 'Task' : (s.start ? `${s.start} · ${s.type || 'Session'}` : (s.type || 'Session')),
+      raw: s,
+    }))
+  const upcomingItems = [...upcomingExams, ...upcomingLogged]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 8)
+
   return (
     <div className="fade-in">
       {/* Header */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:10}}>
-        <h2>Revision Calendar</h2>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-          <div className="tabs" style={{padding:3}}>
-            <button className={`tab${view==='month'?' active':''}`} onClick={()=>setView('month')}>Month</button>
-            <button className={`tab${view==='week'?' active':''}`} onClick={()=>setView('week')}>Week</button>
-          </div>
+      <div className="rf-cal-head">
+        <div>
+          <h2>Calendar</h2>
+          <p className="rf-cal-subtitle">Your revision sessions, tasks and exam dates in one place</p>
+        </div>
+        <div className="rf-cal-actions">
           <button className="btn btn-secondary btn-sm" onClick={()=>fileRef.current.click()} disabled={importing}>
             <Upload size={14}/> {importing ? 'Reading…' : 'Import'}
           </button>
@@ -286,93 +343,153 @@ export default function Calendar() {
           <button className="btn btn-secondary btn-sm" onClick={()=>setShowGen(true)}>
             <Zap size={14}/> Generate
           </button>
-          <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>
-            <Plus size={14}/> Add
+          <button className="btn btn-primary btn-sm" onClick={()=>{ setSelected(selected||new Date()); setShowAdd(true) }}>
+            <Plus size={14}/> Add event
           </button>
         </div>
       </div>
 
-      {/* Navigator */}
-      <style>{`
-        @media (max-width: 480px) {
-          .cal-nav-title { min-width: 150px !important; font-size: 1rem !important; }
-        }
-      `}</style>
-      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14,flexWrap:'wrap'}}>
-        <button className="btn btn-ghost btn-icon" onClick={()=>navigate(-1)}><ChevronLeft size={18}/></button>
-        <h3 className="cal-nav-title" style={{minWidth:220,textAlign:'center'}}>
+      {/* Toolbar: month/week nav + view toggle */}
+      <div className="rf-cal-toolbar">
+        <div className="rf-cal-nav-group">
+          <button className="btn btn-ghost btn-icon" onClick={()=>navigate(-1)} aria-label="Previous"><ChevronLeft size={18}/></button>
+          <button className="btn btn-ghost btn-icon" onClick={()=>navigate(1)} aria-label="Next"><ChevronRight size={18}/></button>
+        </div>
+        <span className="rf-cal-toolbar-title">
           {view === 'month'
             ? format(current, 'MMMM yyyy')
             : `${format(days[0].date,'d MMM')} – ${format(days[6].date,'d MMM yyyy')}`}
-        </h3>
-        <button className="btn btn-ghost btn-icon" onClick={()=>navigate(1)}><ChevronRight size={18}/></button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>setCurrent(new Date())}>Today</button>
-        <span style={{fontSize:'0.75rem',color:'var(--text-muted)',marginLeft:'auto'}}>
+        </span>
+        <button className="btn btn-ghost btn-sm rf-cal-today-btn" onClick={()=>setCurrent(new Date())}>Today</button>
+        <div className="tabs rf-cal-view-toggle" style={{padding:3}}>
+          <button className={`tab${view==='month'?' active':''}`} onClick={()=>setView('month')}>Month</button>
+          <button className={`tab${view==='week'?' active':''}`} onClick={()=>setView('week')}>Week</button>
+        </div>
+        <span className="rf-cal-count">
           {loading ? <Skeleton width={60} height={14} /> : `${sessions.length} session${sessions.length!==1?'s':''}`}
         </span>
       </div>
 
-      <div className="grid-2" style={{gap:16,alignItems:'start'}}>
+      <div className="rf-cal-layout">
         {/* Calendar grid */}
-        <div className="card" style={{padding:14}}>
-          <div className="cal-grid" style={{marginBottom:3}}>
-            {dayNames.map(d=>(
-              <div key={d} style={{textAlign:'center',fontSize:'0.68rem',fontWeight:600,color:'var(--text-muted)',padding:'3px 0'}}>{d}</div>
-            ))}
+        <div className="card rf-cal-grid-card">
+          <div className="rf-cal-weekdays">
+            {dayNames.map(d => <div key={d} className="rf-cal-weekday">{d}</div>)}
           </div>
-          <div className="cal-grid">
+          <div className={`rf-cal-grid${view==='week'?' is-week':''}`}>
             {days.map(({date,otherMonth},i)=>{
-              const ds    = sessionsForDay(sessions, date)
-              const isSel = selected && isSameDay(date, selected)
+              const dateStr  = format(date,'yyyy-MM-dd')
+              const ds       = sessionsForDay(sessions, date)
+              const dayExams = examsByDate[dateStr] || []
+              const isSel    = selected && isSameDay(date, selected)
+              const totalDots = dayExams.length + ds.length
               return (
                 <div key={i}
-                  className={`cal-day${isToday(date)?' today':''}${otherMonth?' other-month':''}${ds.length>0?' has-session':''}${ds.some(s=>s.completed)?' completed':''}`}
-                  style={{background:isSel?'rgba(34,197,94,0.25)':undefined,border:isSel?'1px solid var(--accent)':undefined}}
+                  className={`rf-cal-cell${isToday(date)?' is-today':''}${otherMonth?' is-other-month':''}${isSel?' is-selected':''}`}
                   onClick={()=>setSelected(date)}>
-                  <span style={{fontWeight:isToday(date)?700:400,fontSize:'0.8rem'}}>{format(date,'d')}</span>
-                  {ds.length>0&&(
-                    <div style={{display:'flex',gap:2,flexWrap:'wrap',justifyContent:'center',marginTop:2}}>
-                      {ds.slice(0,3).map((s,si)=>(
-                        <div key={si} style={{width:4,height:4,borderRadius:'50%',
-                          background:s.completed?'var(--success)':s.isEmergency?'var(--danger)':SUBJECT_COLOURS[s.subject]||'var(--accent)'}}/>
+                  <span className="rf-cal-date">{format(date,'d')}</span>
+
+                  {dayExams.length > 0 && (
+                    <div className="rf-cal-chips">
+                      {dayExams.slice(0,2).map((e,ei)=>(
+                        <span key={ei} className="rf-cal-chip is-exam" style={{background:subjectColour(e.subject)}}>
+                          <GraduationCap size={8}/> {e.subject}
+                        </span>
                       ))}
-                      {ds.length>3&&<div style={{width:4,height:4,borderRadius:'50%',background:'var(--text-muted)'}}/>}
+                      {dayExams.length>2 && <span className="rf-cal-chip is-exam" style={{background:'var(--text-muted)'}}>+{dayExams.length-2} more</span>}
+                    </div>
+                  )}
+
+                  {totalDots > 0 && (
+                    <div className="rf-cal-dots">
+                      {dayExams.slice(0,2).map((e,ei)=>(
+                        <div key={'e'+ei} className="rf-cal-dot is-exam"
+                          style={{background:subjectColour(e.subject), color:subjectColour(e.subject)}}
+                          title={`${e.subject} exam`}/>
+                      ))}
+                      {ds.slice(0,3).map((s,si)=>(
+                        <div key={si} className={`rf-cal-dot${s.isTask?' is-task':''}`}
+                          style={{background:s.isTask ? s.taskColor : subjectColour(s.subject), opacity:s.completed?0.4:1}}
+                          title={s.title}/>
+                      ))}
+                      {totalDots>5 && <span className="rf-cal-more">+{totalDots-5}</span>}
+                    </div>
+                  )}
+
+                  {view==='week' && totalDots>0 && (
+                    <div className="rf-cal-week-agenda">
+                      {dayExams.slice(0,1).map((e,ei)=>(
+                        <div key={'we'+ei} className="rf-cal-week-item" style={{borderLeftColor:subjectColour(e.subject)}}>
+                          <span className="t">Exam</span><span className="s">{e.subject} · Paper {e.paper}</span>
+                        </div>
+                      ))}
+                      {ds.slice(0,2).map((s,si)=>(
+                        <div key={si} className="rf-cal-week-item" style={{borderLeftColor:s.isTask?s.taskColor:subjectColour(s.subject)}}>
+                          <span className="t">{s.isTask ? 'Task' : (s.start || s.type || 'Session')}</span>
+                          <span className="s">{s.title || s.subject}</span>
+                        </div>
+                      ))}
+                      {(dayExams.length+ds.length) > 3 && <span className="rf-cal-more">+{(dayExams.length+ds.length)-3} more</span>}
                     </div>
                   )}
                 </div>
               )
             })}
           </div>
-          <div style={{display:'flex',gap:12,marginTop:10,fontSize:'0.68rem',color:'var(--text-muted)',justifyContent:'center',flexWrap:'wrap'}}>
-            {[['var(--accent)','Scheduled'],['var(--success)','Completed'],['var(--danger)','Emergency']].map(([c,l])=>(
-              <span key={l} style={{display:'flex',alignItems:'center',gap:3}}>
-                <div style={{width:6,height:6,borderRadius:'50%',background:c}}/>{l}
-              </span>
-            ))}
+          <div className="rf-cal-legend">
+            <span className="rf-cal-legend-item">
+              <span className="rf-cal-legend-swatch"><span style={{width:7,height:7,borderRadius:'50%',background:'currentColor',display:'block'}}/></span>
+              Revision session
+            </span>
+            <span className="rf-cal-legend-item">
+              <span className="rf-cal-legend-swatch"><span style={{width:7,height:7,borderRadius:2,background:'currentColor',display:'block'}}/></span>
+              Task
+            </span>
+            <span className="rf-cal-legend-item">
+              <span className="rf-cal-legend-swatch"><GraduationCap size={12}/></span>
+              Exam
+            </span>
+            <span className="rf-cal-legend-item">
+              <span className="rf-cal-legend-swatch"><span style={{width:7,height:7,borderRadius:'50%',background:'currentColor',display:'block',opacity:0.4}}/></span>
+              Completed
+            </span>
           </div>
         </div>
 
-        {/* Day detail */}
-        <div className="card">
+        {/* Sidebar — "Upcoming" by default, a specific day's detail once one is selected */}
+        <div className="card rf-side-card">
           {selected ? (
             <>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-                <h4>{format(selected,'EEEE, d MMMM')}</h4>
+              <div className="rf-side-head">
+                <button className="rf-side-back" onClick={()=>setSelected(null)}>
+                  <ArrowLeft size={14}/> Upcoming
+                </button>
                 <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>
                   <Plus size={13}/> Add
                 </button>
               </div>
+              <h4 style={{marginBottom:12}}>{format(selected,'EEEE, d MMMM')}</h4>
               {loading ? (
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   {[1,2,3].map(i => <Skeleton key={i} height={60} />)}
                 </div>
-              ) : selectedSessions.length===0 ? (
+              ) : (selectedSessions.length===0 && (examsByDate[format(selected,'yyyy-MM-dd')]||[]).length===0) ? (
                 <div className="empty-state" style={{padding:'28px 0'}}>
-                  <p style={{fontSize:'0.875rem'}}>No sessions on this day</p>
+                  <CalendarX2 size={28} style={{opacity:0.35}}/>
+                  <p style={{fontSize:'0.875rem'}}>Nothing scheduled on this day</p>
                   <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>Add session</button>
                 </div>
               ) : (
-                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                <div className="rf-day-list">
+                  {(examsByDate[format(selected,'yyyy-MM-dd')]||[]).map(e=>(
+                    <div key={'exam-'+(e.id||e.subject)} className="rf-upcoming-item">
+                      <div className="rf-upcoming-icon" style={{background:subjectColour(e.subject)}}><GraduationCap size={15}/></div>
+                      <div className="rf-upcoming-main">
+                        <div className="rf-upcoming-title">{e.subject} exam</div>
+                        <div className="rf-upcoming-meta">Paper {e.paper}{e.paperName?` · ${e.paperName}`:''}</div>
+                      </div>
+                    </div>
+                  ))}
                   {selectedSessions.map(s=>(
                     <SessionCard key={s._docId||s.id} session={s}
                       onEdit={()=>setShowEdit(s)}
@@ -383,7 +500,50 @@ export default function Calendar() {
               )}
             </>
           ) : (
-            <div className="empty-state"><p>Select a day to view sessions</p></div>
+            <>
+              <div className="rf-side-head">
+                <h4><CalendarDays size={16} color="var(--accent)"/> Upcoming</h4>
+              </div>
+              {loading ? (
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  {[1,2,3].map(i => <Skeleton key={i} height={54} />)}
+                </div>
+              ) : upcomingItems.length === 0 ? (
+                <div className="empty-state" style={{padding:'28px 0'}}>
+                  <CalendarDays size={28} style={{opacity:0.35}}/>
+                  <p style={{fontSize:'0.875rem'}}>Nothing coming up yet</p>
+                  <p style={{fontSize:'0.78rem'}}>Add a session, or set your exam dates so they show up here.</p>
+                </div>
+              ) : (
+                <div className="rf-upcoming-list">
+                  {upcomingItems.map(item => {
+                    const ItemIcon = item.kind==='exam' ? GraduationCap : item.kind==='task' ? ListTodo : getSubjectIcon(item.subject)
+                    const urgency  = item.kind==='exam' ? countdownUrgency(item.date) : null
+                    return (
+                      <button key={item.id} className="rf-upcoming-item"
+                        style={{cursor:'pointer', width:'100%', textAlign:'left', font:'inherit'}}
+                        onClick={()=>setSelected(parseLocalDate(item.date))}>
+                        <div className="rf-upcoming-icon" style={{background: item.subject ? subjectColour(item.subject) : 'var(--text-muted)'}}>
+                          <ItemIcon size={15}/>
+                        </div>
+                        <div className="rf-upcoming-main">
+                          <div className="rf-upcoming-title">{item.title}</div>
+                          <div className="rf-upcoming-meta">{item.meta}</div>
+                        </div>
+                        <span className={`rf-upcoming-when${urgency==='urgent'?' is-urgent':urgency==='soon'?' is-soon':''}`}>
+                          {item.kind==='exam' ? countdownLabel(item.date) : format(parseLocalDate(item.date), 'd MMM')}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="rf-side-footer">
+                <button className="btn btn-primary" onClick={()=>{ setSelected(new Date()); setShowAdd(true) }}>
+                  <Plus size={15}/> Add event
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -440,36 +600,46 @@ export default function Calendar() {
 
 // ── Session Card ──────────────────────────────────────────────────────────────
 function SessionCard({ session:s, onComplete, onDelete, onEdit }) {
+  const Icon   = s.isTask ? ListTodo : getSubjectIcon(s.subject)
+  const accent = s.isTask ? (s.taskColor || 'var(--text-muted)') : subjectColour(s.subject)
   return (
-    <div style={{padding:12,borderRadius:'var(--radius-md)',background:'var(--bg-surface)',
-      border:`1px solid ${s.completed?'var(--success)':s.isEmergency?'var(--danger)':'var(--border)'}`}}>
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:600,fontSize:'0.85rem',marginBottom:5,
+    <div style={{display:'flex',gap:10,padding:12,borderRadius:'var(--radius-md)',background:'var(--bg-surface)',
+      border:`1px solid ${s.completed?'var(--success)':s.isEmergency?'var(--danger)':'var(--border)'}`,
+      opacity:s.completed?0.72:1}}>
+      <div style={{width:32,height:32,borderRadius:9,background:accent,flexShrink:0,
+        display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
+        <Icon size={15}/>
+      </div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+          <div style={{fontWeight:700,fontSize:'0.85rem',marginBottom:5,
             color:s.isEmergency?'var(--danger)':'var(--text-primary)'}}>
             {s.title||s.subject}
           </div>
-          <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-            {s.start&&<span className="badge badge-grey"><Clock size={9}/> {s.start}</span>}
-            {s.duration&&<span className="badge badge-grey">{s.duration}min</span>}
-            {s.type&&<span className={`badge badge-${s.isEmergency?'red':s.type.includes('Exam')?'blue':'purple'}`}>{s.type}</span>}
+          {s.completed && <CheckCircle2 size={15} style={{color:'var(--success)',flexShrink:0}}/>}
+        </div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:s.completed?0:8}}>
+          {s.start&&<span className="badge badge-grey"><Clock size={9}/> {s.start}</span>}
+          {s.duration&&<span className="badge badge-grey">{s.duration}min</span>}
+          {s.type&&<span className={`badge badge-${s.isEmergency?'red':s.type.includes('Exam')?'blue':'purple'}`}>{s.type}</span>}
+        </div>
+        {!s.completed&&(
+          <div style={{display:'flex',gap:6}}>
+            <button className="btn btn-secondary btn-sm" onClick={onEdit}>Edit</button>
+            <button className="btn btn-secondary btn-sm" onClick={onComplete}>
+              <CheckCircle2 size={13}/> Done
+            </button>
+            <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)',marginLeft:'auto'}} onClick={onDelete}>
+              <Trash2 size={13}/>
+            </button>
           </div>
-        </div>
-        <div style={{display:'flex',gap:5,flexShrink:0,alignItems:'flex-start'}}>
-          {!s.completed&&(
-            <>
-              <button className="btn btn-secondary btn-sm" onClick={onEdit} style={{padding:'4px 8px'}}>Edit</button>
-              <button className="btn btn-secondary btn-sm" onClick={onComplete}>
-                <CheckCircle2 size={13}/> Done
-              </button>
-            </>
-          )}
-          {s.completed&&<span style={{color:'var(--success)',fontSize:'0.75rem',fontWeight:600}}>✓</span>}
-          <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={onDelete}>
-            <Trash2 size={13}/>
-          </button>
-        </div>
+        )}
       </div>
+      {s.completed && (
+        <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)',flexShrink:0,alignSelf:'flex-start'}} onClick={onDelete}>
+          <Trash2 size={13}/>
+        </button>
+      )}
     </div>
   )
 }
@@ -668,7 +838,7 @@ function ImportReviewModal({ parsed, profile, existingCount, onClose, onConfirm 
               <button key={opt.val} onClick={()=>setMode(opt.val)}
                 style={{padding:'9px 14px',borderRadius:'var(--radius-md)',cursor:'pointer',textAlign:'left',width:'100%',
                   border:`2px solid ${mode===opt.val?'var(--accent)':'var(--border)'}`,
-                  background:mode===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)'}}>
+                  background:mode===opt.val?'var(--accent-pale)':'var(--bg-surface)'}}>
                 <span style={{fontWeight:600,fontSize:'0.875rem'}}>{opt.label}</span>
                 <span style={{fontSize:'0.78rem',color:'var(--text-muted)',marginLeft:8}}>{opt.desc}</span>
               </button>
