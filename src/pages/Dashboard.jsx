@@ -72,14 +72,22 @@ function greetingWord(hour) {
   return 'Good evening'
 }
 
-/* Which of the two real illustration components fits a given subject.
-   Mirrors TopicDetail.jsx's own isBiologyLike test exactly, so the same
-   subject always gets the same illustration everywhere in the app. As
-   more subject-specific illustrations land in components/illustrations/,
-   this is the one place that needs a new branch — Dashboard.jsx itself
-   doesn't need to change again. */
+/* Which of the real illustration components fits a given subject. This is
+   the ONE place that needs a new line when another subject-specific
+   illustration lands in components/illustrations/ — nothing else in this
+   file changes. Not literally auto-detecting new files on disk (Vite
+   doesn't do that safely without a build-time glob, which is more
+   fragile than it's worth for two components) — but adding one becomes a
+   single import + a single array entry, not new branching logic. First
+   matching rule wins, so put more specific subjects above general ones. */
+const ILLUSTRATION_RULES = [
+  { test: (s) => /biology/i.test(s || ''), Component: CellIllustration },
+  // { test: (s) => /chemistry/i.test(s || ''), Component: ChemistryIllustration },
+  // { test: (s) => /physics/i.test(s || ''), Component: PhysicsIllustration },
+]
 function illustrationFor(subject) {
-  return /biology/i.test(subject || '') ? CellIllustration : SeedlingIllustration
+  const rule = ILLUSTRATION_RULES.find((r) => r.test(subject))
+  return rule ? rule.Component : SeedlingIllustration
 }
 
 /* Small subject-colour icon badge for list rows (Upcoming Exams, Subject
@@ -182,11 +190,12 @@ function BadgeShowcase({ earnedIds }) {
   }
   return (
     <div className="badge-showcase">
-      {earned.slice(0, 12).map((b) => (
-        <span key={b.id} className="mini-tag" title={b.description || b.name}>
-          {b.icon} {b.name}
+      {earned.slice(0, 8).map((b) => (
+        <span key={b.id} className="badge-icon" title={`${b.name}${b.description ? ` — ${b.description}` : ''}`}>
+          {b.icon}
         </span>
       ))}
+      {earned.length > 8 && <span className="badge-icon badge-icon--more">+{earned.length - 8}</span>}
     </div>
   )
 }
@@ -395,7 +404,9 @@ export default function Dashboard() {
               <>
                 <h2 className="next-session-subject">{nextSession.subject || 'Study session'}</h2>
                 <p className="next-session-topic">{nextSession.title || 'Revision session'}</p>
-                {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
+                <div className="next-session-meta">
+                  {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
+                </div>
                 <Link to="/timer" className="btn btn-primary next-session-cta">
                   Start session <ArrowRight size={16} />
                 </Link>
@@ -631,16 +642,19 @@ export default function Dashboard() {
 
         <div className="card">
           <p className="card-eyebrow"><Trophy size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Achievements</p>
-          <div className="streak-row" style={{ marginBottom: 10 }}>
-            <span className="stat-num" style={{ fontSize: '1.4rem' }}>Level {level}</span>
-            <span className="stat-cap">{thisLevel?.title || ''}</span>
+          <div className="achievement-level-row">
+            <div>
+              <span className="stat-num" style={{ fontSize: '1.3rem' }}>Level {level}</span>
+              <span className="stat-cap" style={{ display: 'block' }}>{thisLevel?.title || ''}</span>
+            </div>
+            <span className="plain-row-meta">{xpIntoLevel} / {xpForNext || '—'} XP</span>
           </div>
-          <div className="thin-progress" style={{ marginBottom: 4 }}>
+          <div className="thin-progress" style={{ marginBottom: 18 }}>
             <div className="thin-progress-fill" style={{ width: `${xpPercent}%` }} />
           </div>
-          <p className="card-sub-line" style={{ marginBottom: 14 }}>{xpIntoLevel} / {xpForNext || '—'} XP to level {level + 1}</p>
+          <p className="card-sub-line" style={{ margin: '0 0 8px' }}>Badges</p>
           <BadgeShowcase earnedIds={profile.badges} />
-          <Link to="/profile" className="card-footer-link" style={{ marginTop: 12 }}>All badges <ArrowRight size={13} /></Link>
+          <Link to="/profile" className="card-footer-link">All badges <ArrowRight size={13} /></Link>
         </div>
       </div>
 
