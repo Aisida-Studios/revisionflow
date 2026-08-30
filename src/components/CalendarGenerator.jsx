@@ -229,7 +229,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
 
             {hasExamDates ? (
               <div>
-                <div style={{padding:12,background:'rgba(34,197,94,0.1)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'var(--radius-md)',display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+                <div style={{padding:12,background:'var(--success-pale)',border:'1px solid var(--success-border)',borderRadius:'var(--radius-md)',display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
                   <Check size={16} color="var(--success)"/>
                   <span style={{fontSize:'0.875rem',fontWeight:600}}>
                     {examDates.length} exam date{examDates.length!==1?'s':''} found — emergency sessions will be added automatically.
@@ -513,7 +513,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 {val:'add',label:'Add to existing calendar',desc:'All current sessions are kept — new ones are added on top'},
               ].map(opt=>(
                 <button key={opt.val} onClick={()=>setReplaceChoice(opt.val)}
-                  style={{padding:'10px 14px',borderRadius:'var(--radius-md)',border:`2px solid ${replaceChoice===opt.val?'var(--accent)':'var(--border)'}`,background:replaceChoice===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)',textAlign:'left',cursor:'pointer',width:'100%'}}>
+                  style={{padding:'10px 14px',borderRadius:'var(--radius-md)',border:`2px solid ${replaceChoice===opt.val?'var(--accent)':'var(--border)'}`,background:replaceChoice===opt.val?'var(--accent-pale)':'var(--bg-surface)',textAlign:'left',cursor:'pointer',width:'100%'}}>
                   <div style={{fontWeight:600,fontSize:'0.875rem',marginBottom:2}}>{opt.label}</div>
                   <div style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{opt.desc}</div>
                 </button>
