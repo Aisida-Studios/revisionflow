@@ -30,6 +30,7 @@ import { BADGE_MAP } from '../data/badges'
 import { getDailyQuests } from '../data/badges'
 import { levelFromXP } from '../data/subjects'
 import { buildTopicId, isLegacyTopicId } from './topicId'
+import { createNotification } from './notificationFeed'
 
 export { auth, db }
 
@@ -184,6 +185,17 @@ export async function recordActivityStreak(uid) {
   if (freezeUsed && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('streak-freeze-used', { detail: { streak: newStreak } }))
   }
+  // The event above only reaches someone who's in the app at that moment —
+  // this persists the same information so it's still visible in the feed
+  // if they check later.
+  if (freezeUsed) {
+    createNotification(uid, {
+      type: 'streak',
+      title: 'Streak freeze used',
+      body: `You missed a day, but a freeze kept your ${newStreak}-day streak going.`,
+      link: '/dashboard',
+    }).catch(() => {})
+  }
 
   if (newStreak === 3)   await checkAndAwardBadge(uid, 'streak_3')
   if (newStreak === 7)   await checkAndAwardBadge(uid, 'streak_7')
@@ -245,6 +257,16 @@ export const checkAndAwardBadge = async (uid, badgeId) => {
     badges: [...earned, badgeId],
     xp:     increment(badge.xp || 0),
   })
+
+  // Single choke point for every badge source (streak milestones, quest
+  // completion, first session, first paper, etc.) — one call here covers
+  // all of them rather than a notification call at each award site.
+  createNotification(uid, {
+    type: 'badge',
+    title: `Badge earned: ${badge.name}`,
+    body: badge.description || '',
+    link: '/profile',
+  }).catch(() => {}) // best-effort — a failed notification write shouldn't undo the badge award above
 }
 
 /* =========================
