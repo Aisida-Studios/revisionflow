@@ -100,18 +100,27 @@ function Avatar({ profile, user, size }) {
    /topics/:topicId using the same buildTopicId() scheme TopicDetail.jsx
    reads its Firestore doc by — same canonical ID everywhere, not a
    second convention. */
+/* profile.subjects entries store the subject name under .name, not
+   .subject — confirmed directly against where Settings.jsx constructs
+   them ({ ...newSubj, qualification, targetGrade, id } where newSubj
+   starts as { name, board, tier, ... }). This was read as s.subject
+   everywhere below, which is always undefined on the real data — that's
+   the actual bug: the subjects filter always returned nothing, and the
+   topics loop's guard (if (!s?.subject) return) exited before ever
+   calling getAllTopicsFlat, for every subject, every time. Both search
+   categories broke from the same one wrong field name. */
 function useSearchResults(query, profileSubjects) {
   const subjectTopics = useMemo(() => {
     if (!profileSubjects?.length) return []
     const out = []
     profileSubjects.forEach((s) => {
-      if (!s?.subject) return
+      if (!s?.name) return
       try {
-        const topics = getAllTopicsFlat(s.board, s.subject, s.qualification)
+        const topics = getAllTopicsFlat(s.board, s.name, s.qualification)
         topics.forEach((t) => out.push({
           name: t.name,
-          subject: s.subject,
-          topicId: buildTopicId(s.board, s.qualification, s.subject, t.name),
+          subject: s.name,
+          topicId: buildTopicId(s.board, s.qualification, s.name, t.name),
         }))
       } catch {
         // Static syllabus data may not cover every board/subject/qualification
@@ -125,7 +134,7 @@ function useSearchResults(query, profileSubjects) {
     const q = query.trim().toLowerCase()
     if (!q) return { pages: [], subjects: [], topics: [] }
     const pages = NAV_GROUPS.flatMap((g) => g.items).filter((i) => i.label.toLowerCase().includes(q))
-    const subjects = (profileSubjects || []).filter((s) => s.subject?.toLowerCase().includes(q))
+    const subjects = (profileSubjects || []).filter((s) => s.name?.toLowerCase().includes(q))
     const topics = subjectTopics.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 6)
     return { pages, subjects, topics }
   }, [query, profileSubjects, subjectTopics])
@@ -153,9 +162,9 @@ function QuickJump({ query, profile, onNavigate }) {
         <>
           <p className="quick-jump-group-label">Subjects</p>
           {subjects.slice(0, 4).map((s) => (
-            <Link key={s.subject} to="/topics" className="quick-jump-item" onClick={onNavigate}>
-              <span className="quick-jump-dot" style={{ background: SUBJECT_COLOURS?.[s.subject] || 'var(--text-muted)' }} />
-              <span>{s.subject}</span>
+            <Link key={s.name} to="/topics" className="quick-jump-item" onClick={onNavigate}>
+              <span className="quick-jump-dot" style={{ background: SUBJECT_COLOURS?.[s.name] || 'var(--text-muted)' }} />
+              <span>{s.name}</span>
             </Link>
           ))}
         </>
@@ -170,6 +179,7 @@ function QuickJump({ query, profile, onNavigate }) {
               <span className="quick-jump-item-meta">{t.subject}</span>
             </Link>
           ))}
+
         </>
       )}
     </div>
