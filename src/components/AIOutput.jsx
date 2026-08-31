@@ -147,18 +147,18 @@ export default function AIOutput({ text, label, compact }) {
             onClick={handleSummarise}
             style={{
               fontSize: '0.75rem', fontWeight: 600,
-              color: 'var(--accent-light)', background: 'rgba(34,197,94,0.08)',
-              border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6,
+              color: 'var(--accent-light)', background: 'var(--accent-bg)',
+              border: '1px solid var(--accent-pale)', borderRadius: 6,
               padding: '3px 10px', cursor: 'pointer',
             }}
           >
-            {showSummary ? '✦ Hide summary' : '✦ Summarise'}
+            {showSummary ? 'Hide summary' : 'Summarise'}
           </button>
         </div>
       )}
 
       {showSummary && (
-        <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(34,197,94,0.06)', borderRadius: 8, border: '1px solid rgba(34,197,94,0.15)', fontSize: '0.83rem' }}>
+        <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 8, border: '1px solid var(--accent-pale)', fontSize: '0.83rem' }}>
           {sumLoading ? 'Summarising…' : renderMarkdown(summary)}
         </div>
       )}
