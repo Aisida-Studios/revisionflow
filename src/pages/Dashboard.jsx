@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,
-  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
+  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target, Snowflake,
   Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,
 } from 'lucide-react'
 
@@ -15,7 +15,9 @@ import EmergencyBanner from '../components/EmergencyBanner'
 import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
+import CellIllustration from '../components/illustrations/CellIllustration'
 import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
+
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
   filterToCurrentQualification,
@@ -70,48 +72,22 @@ function greetingWord(hour) {
   return 'Good evening'
 }
 
-/* Auto-detects every {Subject}Illustration.jsx already sitting in
-   components/illustrations/ via Vite's import.meta.glob — a real,
-   supported Vite build-time feature, not filesystem-watching, so this is
-   genuine auto-detection: drop PhysicsIllustration.jsx in that folder and
-   it's picked up with no code change here. Filename (minus
-   "Illustration.jsx") becomes the match key, case-insensitive,
-   substring-matched against the subject name.
-
-   Correction from last time: I called a glob-based approach "more
-   fragile than it's worth" and shipped a manual array instead. That was
-   the wrong call for what you're actually building toward — this is the
-   right tool for it, and it's why Physics fell back to the flower even
-   though a Physics illustration exists: the manual array never had a
-   Physics entry, because I never added one.
-
-   One real exception: CellIllustration.jsx is Biology's illustration,
-   but it's named for its subject matter (cells), not the subject itself
-   — same as TopicDetail.jsx's own isBiologyLike convention, which this
-   mirrors. That needs an explicit override; everything named directly
-   after its subject (PhysicsIllustration.jsx, ChemistryIllustration.jsx,
-   etc.) doesn't need one. SeedlingIllustration is excluded from the scan
-   and used only as the explicit fallback, so it can't accidentally win a
-   match. */
-const SUBJECT_OVERRIDES = { biology: 'cell' }
-
-const illustrationModules = import.meta.glob('../components/illustrations/*Illustration.jsx', { eager: true })
-const ILLUSTRATIONS_BY_KEY = {}
-Object.entries(illustrationModules).forEach(([path, mod]) => {
-  const key = path.match(/([A-Za-z]+)Illustration\.jsx$/)?.[1]?.toLowerCase()
-  if (key && key !== 'seedling' && mod?.default) ILLUSTRATIONS_BY_KEY[key] = mod.default
-})
-
+/* Which of the real illustration components fits a given subject. This is
+   the ONE place that needs a new line when another subject-specific
+   illustration lands in components/illustrations/ — nothing else in this
+   file changes. Not literally auto-detecting new files on disk (Vite
+   doesn't do that safely without a build-time glob, which is more
+   fragile than it's worth for two components) — but adding one becomes a
+   single import + a single array entry, not new branching logic. First
+   matching rule wins, so put more specific subjects above general ones. */
+const ILLUSTRATION_RULES = [
+  { test: (s) => /biology/i.test(s || ''), Component: CellIllustration },
+  // { test: (s) => /chemistry/i.test(s || ''), Component: ChemistryIllustration },
+  // { test: (s) => /physics/i.test(s || ''), Component: PhysicsIllustration },
+]
 function illustrationFor(subject) {
-  if (!subject) return SeedlingIllustration
-  const s = subject.toLowerCase()
-  const overrideSubject = Object.keys(SUBJECT_OVERRIDES).find((subj) => s.includes(subj))
-  if (overrideSubject) {
-    const mapped = ILLUSTRATIONS_BY_KEY[SUBJECT_OVERRIDES[overrideSubject]]
-    if (mapped) return mapped
-  }
-  const directKey = Object.keys(ILLUSTRATIONS_BY_KEY).find((key) => s.includes(key))
-  return directKey ? ILLUSTRATIONS_BY_KEY[directKey] : SeedlingIllustration
+  const rule = ILLUSTRATION_RULES.find((r) => r.test(subject))
+  return rule ? rule.Component : SeedlingIllustration
 }
 
 /* Small subject-colour icon badge for list rows (Upcoming Exams, Subject
@@ -489,14 +465,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="card">
-              <div className="streak-card-head">
-                <p className="card-eyebrow" style={{ margin: 0 }}>Streak</p>
-                {freezeAllowance > 0 && (
-                  <span className="mini-tag" title="Freezes cover a missed day without breaking your streak">
-                    {freezesLeft}/{freezeAllowance} freeze{freezeAllowance === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
+              <p className="card-eyebrow">Streak</p>
               <div className="streak-row">
                 <span className="stat-num">{streak}</span>
                 <span className="stat-cap">days</span>
@@ -510,6 +479,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                 ))}
+              </div>
+              <div className="streak-freeze-row">
+                <Snowflake size={13} />
+                <span>{freezesLeft} of {freezeAllowance} freeze{freezeAllowance === 1 ? '' : 's'} left this week</span>
               </div>
             </div>
           </div>
@@ -611,7 +584,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="card">
+        <div className="card" style={upcomingExams.length === 0 ? { gridColumn: '1 / -1' } : undefined}>
           <p className="card-eyebrow">Subject overview</p>
           {dataLoading ? <Skeleton height={130} /> : subjectOverview.length ? (
             <ul className="plain-list">
