@@ -501,16 +501,16 @@ export default function Topics() {
                 const conf = t.confidence||3
                 return (
                   <div key={t.id} className="card" style={{borderLeft:`3px solid ${CONF_COLOURS[conf]}`}}>
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
-                      <div style={{display:'flex',gap:8,alignItems:'flex-start',flex:1}}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                      <div style={{display:'flex',gap:8,alignItems:'flex-start',flex:'1 1 200px',minWidth:0}}>
                         <input type="checkbox" checked={selected.includes(t.id)} onChange={()=>toggleSelect(t.id)}
                           style={{width:15,height:15,accentColor:'var(--accent)',marginTop:3,flexShrink:0}}/>
-                        <div style={{flex:1}}>
+                        <div style={{flex:1,minWidth:0}}>
                           <Link to={`/topics/${t.id}`} style={{fontWeight:600,marginBottom:6,display:'block',color:'inherit',textDecoration:'none'}}
                             onMouseEnter={e=>e.currentTarget.style.color='var(--accent-light)'} onMouseLeave={e=>e.currentTarget.style.color='inherit'}>
                             {t.name}
                           </Link>
-                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                             <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Confidence:</span>
                             <div className="conf-dots">
                               {[1,2,3,4,5].map(n=>(
@@ -522,7 +522,7 @@ export default function Topics() {
                           {t.notes&&<p style={{fontSize:'0.8rem',marginTop:4}}>{t.notes}</p>}
                         </div>
                       </div>
-                      <div style={{display:'flex',gap:6,flexShrink:0}}>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                         <button className="btn btn-ghost btn-sm" style={{fontSize:'0.75rem'}}
                           onClick={()=>navigate('/study?tab=notes&topic='+encodeURIComponent(t.name)+'&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
                           <BookOpen size={12}/> Guide
