@@ -341,12 +341,12 @@ export default function AIAdvisor() {
         <div className="card">
           <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Target size={18} color="var(--accent-light)"/> Grade Predictor</h4>
           <p style={{marginBottom:16,fontSize:'0.875rem'}}>Based on your paper scores, topic confidence, and revision patterns.</p>
-          <div style={{display:'flex',gap:8,marginBottom:16}}>
-            <select className="select" value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
+          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+            <select className="select" style={{flex:1,minWidth:180}} value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
               <option value="">Select subject…</option>
               {subjects.map(s=><option key={s} value={s}>{s}</option>)}
             </select>
-            <button className="btn btn-primary" onClick={handleGradePredict} disabled={gradeLoad||!gradeSubj}>
+            <button className="btn btn-primary" style={{minWidth:140}} onClick={handleGradePredict} disabled={gradeLoad||!gradeSubj}>
               {gradeLoad?'Predicting…':'Predict grade'}
             </button>
           </div>
@@ -360,12 +360,12 @@ export default function AIAdvisor() {
         <div className="card">
           <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> What Should I Revise Next?</h4>
           <p style={{marginBottom:16,fontSize:'0.875rem'}}>AI picks your highest-priority topic based on confidence ratings, exam proximity, and recent mistakes.</p>
-          <div style={{display:'flex',gap:8,marginBottom:16}}>
-            <select className="select" value={nextSubj} onChange={e=>setNextSubj(e.target.value)}>
+          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+            <select className="select" style={{flex:1,minWidth:180}} value={nextSubj} onChange={e=>setNextSubj(e.target.value)}>
               <option value="">Select subject…</option>
               {subjects.map(s=><option key={s} value={s}>{s}</option>)}
             </select>
-            <button className="btn btn-primary" onClick={handleNextTopic} disabled={nextLoad||!nextSubj}>
+            <button className="btn btn-primary" style={{minWidth:140}} onClick={handleNextTopic} disabled={nextLoad||!nextSubj}>
               {nextLoad?'Thinking…':'Suggest topic'}
             </button>
           </div>
