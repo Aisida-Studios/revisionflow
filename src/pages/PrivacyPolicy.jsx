@@ -45,7 +45,7 @@ export default function PrivacyPolicy() {
           <p style={P_STYLE}>
             <strong>Aisida Studios</strong><br/>
             England, United Kingdom<br/>
-            Contact: <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a>
+            Contact: <a href="mailto:admin@revisionflow.co.uk" style={{ color:'var(--accent-light)' }}>admin@revisionflow.co.uk</a>
           </p>
           <p style={P_STYLE}>
             RevisionFlow is built and operated by Aisida Studios, the trading name of an independent UK developer. It is not a registered company. If you have any questions about how your data is handled, please contact us at the email address above.
@@ -184,7 +184,7 @@ export default function PrivacyPolicy() {
             <li><strong>Right to withdraw consent:</strong> Where processing is based on consent (e.g. leaderboard visibility), you can withdraw it at any time in Settings</li>
           </ul>
           <p style={P_STYLE}>
-            To exercise any of these rights, contact us at <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a>. We will respond within <strong>30 days</strong>. You also have the right to lodge a complaint with the <strong>Information Commissioner's Office (ICO)</strong> at <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{ color:'var(--accent-light)' }}>ico.org.uk</a> or by phone on 0303 123 1113.
+            To exercise any of these rights, contact us at <a href="mailto:admin@revisionflow.co.uk" style={{ color:'var(--accent-light)' }}>admin@revisionflow.co.uk</a>. We will respond within <strong>30 days</strong>. You also have the right to lodge a complaint with the <strong>Information Commissioner's Office (ICO)</strong> at <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{ color:'var(--accent-light)' }}>ico.org.uk</a> or by phone on 0303 123 1113.
           </p>
         </section>
 
@@ -215,7 +215,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>9. Children and Age Requirements</h2>
           <p style={P_STYLE}>RevisionFlow is designed for GCSE, AS-Level and A-Level students. Under UK GDPR and the Children and Families Act, special rules apply to users under 13. <strong>Users under 13 must not create an account without verifiable parental consent.</strong></p>
           <p style={P_STYLE}>We recommend the service for users aged <strong>13 and over</strong>. If we become aware that a child under 13 has registered without parental consent, we will delete their account and associated data promptly.</p>
-          <p style={P_STYLE}>Parents or guardians who believe their child has registered may contact us at <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a> to request deletion.</p>
+          <p style={P_STYLE}>Parents or guardians who believe their child has registered may contact us at <a href="mailto:admin@revisionflow.co.uk" style={{ color:'var(--accent-light)' }}>admin@revisionflow.co.uk</a> to request deletion.</p>
         </section>
 
         <section style={SECTION_STYLE}>
@@ -247,7 +247,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>13. Contact and Complaints</h2>
           <p style={P_STYLE}>For any privacy-related questions, requests or complaints:</p>
           <p style={P_STYLE}>
-            <strong>Email:</strong> <a href="mailto:aisidastudios@gmail.com" style={{ color:'var(--accent-light)' }}>aisidastudios@gmail.com</a><br/>
+            <strong>Email:</strong> <a href="mailto:admin@revisionflow.co.uk" style={{ color:'var(--accent-light)' }}>admin@revisionflow.co.uk</a><br/>
             <strong>Response time:</strong> Within 30 days of receipt
           </p>
           <p style={P_STYLE}>If you are not satisfied with our response, you have the right to complain to the <strong>Information Commissioner's Office (ICO)</strong>:</p>
