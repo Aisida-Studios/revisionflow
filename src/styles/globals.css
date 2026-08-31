@@ -762,11 +762,6 @@ tr:hover td { background:var(--bg-hover); }
   background: var(--bg-hover); border: 1px solid transparent;
   color: var(--text-secondary); font-size: 0.78rem; font-weight: 700;
 }
-.subject-badge {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 26px; height: 26px; border-radius: var(--r-sm);
-  /* colour + background come from inline style (per-subject, from SUBJECT_COLOURS) */
-}
 .mini-empty { padding: 18px 4px; color: var(--text-secondary); font-size: 0.85rem; }
 .mini-empty p { margin: 0 0 8px; }
 
@@ -790,14 +785,6 @@ tr:hover td { background:var(--bg-hover); }
 
 .checklist-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0; }
 .badge-showcase { display: flex; flex-wrap: wrap; gap: 8px; }
-.badge-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--bg-hover); border: 1.5px solid var(--border);
-  font-size: 1rem; line-height: 1;
-}
-.badge-icon--more { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); }
-.achievement-level-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 
 /* ── Top row: next session (dominant) + Today / Streak ──────────────────── */
 .dash-top-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
@@ -805,19 +792,13 @@ tr:hover td { background:var(--bg-hover); }
 
 .next-session-card { position: relative; overflow: hidden; min-height: 200px; }
 .next-session-subject { margin: 2px 0 2px; font-size: 1.7rem; font-weight: 800; letter-spacing: -0.01em; max-width: 60%; }
-.next-session-topic { margin: 0 0 12px; color: var(--text-secondary); font-size: 0.92rem; max-width: 60%; }
-.next-session-meta { margin-bottom: 14px; }
-.next-session-cta { margin-top: 0; display: flex; width: fit-content; }
+.next-session-topic { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.92rem; max-width: 60%; }
+.next-session-cta { margin-top: 16px; display: inline-flex; }
 .next-session-empty { max-width: 60%; }
-/* Wrapper controls the visible size, not the size= prop passed to the
-   illustration component — CSS width/height on the svg element itself
-   overrides its width/height attributes, so this stays responsive without
-   needing a resize listener or touching the illustration component. */
 .growth-illustration {
-  position: absolute; right: 8px; bottom: 0; width: 150px; height: 150px; pointer-events: none;
+  position: absolute; right: 8px; bottom: 0; width: 170px; height: auto; pointer-events: none;
 }
-.growth-illustration svg { width: 100%; height: 100%; display: block; }
-@media (max-width: 1024px) { .growth-illustration { width: 120px; height: 120px; opacity: 0.85; } }
+@media (max-width: 1024px) { .growth-illustration { width: 130px; opacity: 0.85; } }
 
 /* ── Today / Streak cards ────────────────────────────────────────────────── */
 .today-stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
@@ -835,7 +816,6 @@ tr:hover td { background:var(--bg-hover); }
 }
 .week-dot--done { background: var(--accent); border-color: var(--accent); color: #fff; }
 .week-dot--today { border-color: var(--accent); border-style: dashed; }
-.streak-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
 
 /* ── Three-column row: Upcoming / Needs attention / Recent activity ─────── */
 .dash-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
@@ -858,6 +838,10 @@ tr:hover td { background:var(--bg-hover); }
 @media (max-width: 480px) {
   .next-session-subject, .next-session-topic { max-width: 100%; }
   .growth-illustration { display: none; }
+  /* Three cards × 4 two-line rows each was ~800px of pure scroll before any
+     other dashboard content — trimming to 3 rows on phones keeps every card
+     genuinely useful without needing a scroll-and-a-half just to get past it. */
+  .dash-trio .plain-list > li:nth-child(n+4) { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -969,59 +953,10 @@ tr:hover td { background:var(--bg-hover); }
   padding: 8px 10px; font-size: 0.85rem; font-family: var(--font);
   margin-bottom: 6px; background: var(--bg-base); color: var(--text-primary);
 }
-.quick-jump-panel { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
-.quick-jump-group-label { margin: 10px 4px 4px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
-.quick-jump-group-label:first-child { margin-top: 2px; }
+.quick-jump-panel { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
 .quick-jump-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--r-sm); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .quick-jump-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-.quick-jump-item-meta { margin-left: auto; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
-.quick-jump-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .quick-jump-empty { font-size: 0.82rem; color: var(--text-muted); padding: 8px; margin: 0; }
-
-.utility-dot {
-  position: absolute; top: 6px; right: 7px; width: 7px; height: 7px;
-  border-radius: 50%; background: var(--danger); border: 1.5px solid var(--bg-card);
-}
-.utility-icon-btn { position: relative; }
-
-.notif-panel { width: 100%; }
-.quick-jump-dropdown--notif { width: 300px; }
-.notif-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.notif-mark-all {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 0.72rem; font-weight: 700; color: var(--accent); border: none; background: none; padding: 0;
-}
-.notif-feed { display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; margin-bottom: 10px; }
-.notif-empty { font-size: 0.82rem; color: var(--text-muted); padding: 14px 4px; margin: 0; text-align: center; }
-.notif-item {
-  display: flex; align-items: flex-start; gap: 8px; padding: 8px 6px; border-radius: var(--r-sm);
-  text-align: left; width: 100%; cursor: default;
-}
-a.notif-item { cursor: pointer; }
-.notif-item:hover { background: var(--bg-hover); }
-.notif-item--unread { background: var(--accent-pale); }
-.notif-item--unread:hover { background: var(--accent-pale); }
-.notif-unread-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
-.notif-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.notif-item-title { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
-.notif-item-body { font-size: 0.76rem; color: var(--text-muted); }
-.notif-item-time { font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; margin-top: 1px; }
-.notif-divider { height: 1px; background: var(--border); margin: 4px 0 12px; }
-.notif-enable p, .notif-blocked-text { margin: 0 0 10px; font-size: 0.82rem; color: var(--text-secondary); }
-.notif-toggles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
-.notif-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.85rem; font-weight: 600; }
-.notif-toggle-row input[type='checkbox'] {
-  appearance: none; -webkit-appearance: none; position: relative; cursor: pointer; flex-shrink: 0;
-  width: 36px; height: 20px; border-radius: var(--r-full); background: var(--border-strong);
-  transition: background var(--dur) var(--ease);
-}
-.notif-toggle-row input[type='checkbox']::before {
-  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
-  border-radius: 50%; background: #fff; box-shadow: var(--shadow-xs);
-  transition: transform var(--dur) var(--ease);
-}
-.notif-toggle-row input[type='checkbox']:checked { background: var(--accent); }
-.notif-toggle-row input[type='checkbox']:checked::before { transform: translateX(16px); }
 
 /* ── Mobile topbar ───────────────────────────────────────────────────────── */
 .topbar {
