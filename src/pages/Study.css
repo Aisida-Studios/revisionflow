@@ -114,6 +114,7 @@
 .rf-hero-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; flex-shrink: 0; }
 
 /* ── Config cards / pickers shared across tabs ─────────────────────────── */
+.rf-config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .rf-pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .rf-pill-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); cursor: pointer; font-weight: 600; font-size: 0.82rem; }
 .rf-pill-btn.is-active { border-color: var(--accent); background: var(--accent); color: #fff; }
@@ -151,5 +152,6 @@
   .rf-hero-timer svg { width: 140px; height: 140px; }
   .rf-hero-timer-num { font-size: 1.55rem; }
   .rf-q-card { padding: 16px; }
+  .rf-config-grid { grid-template-columns: 1fr 1fr; }
   .rf-flip-card { height: 240px; }
 }
