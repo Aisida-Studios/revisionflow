@@ -1,13 +1,20 @@
 // src/pages/Calendar.jsx
 import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
-import { completeSession, completeTask, updateSession, deleteSession } from '../utils/firestore'
+import {
+  completeSession, completeTask, updateSession, deleteSession,
+  addTask, updateTask, deleteTask,
+  getTopicsWithConfidence, getMistakes, resolveMistake,
+  updateUserProfile,
+} from '../utils/firestore'
 import { collection, getDocs, deleteDoc, doc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV } from '../utils/calendar'
 import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
 import { getSubjectIcon } from '../utils/subjectIcons'
+import { computeTopicRecommendations } from '../utils/recommendations'
 import CalendarGenerator from '../components/CalendarGenerator'
 import toast from 'react-hot-toast'
 import { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'
@@ -15,11 +22,17 @@ import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
   CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye,
   CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,
+  Lightbulb, AlertCircle, Info, BookOpen,
 } from 'lucide-react'
 import { subjectColour } from '../data/subjects'
 import './Calendar.css'
 
-const SESSION_TYPES = ['Content Revision', 'Exam Practice', 'Emergency Revision']
+// 'Flashcard Session' and 'Past Paper Practice' added per the calendar-as-planning-engine
+// brief ("eventually support: past papers, flashcard sessions..."). They're plain labelled
+// session types for now — not yet deep-linked to a specific set/paper the way "Start
+// session" launches a real study session elsewhere in the app. See the delivery notes.
+const SESSION_TYPES = ['Content Revision', 'Exam Practice', 'Flashcard Session', 'Past Paper Practice', 'Emergency Revision']
+const TASK_PRIORITIES = ['high', 'medium', 'low']
 
 // Local YYYY-MM-DD for "today" — never new Date().toISOString() (that's UTC and can be
 // a day off from the user's actual local date near midnight). Every session/task/exam
@@ -41,8 +54,12 @@ export default function Calendar() {
   const [view,         setView]         = useState('month')
   const [current,      setCurrent]      = useState(new Date())
   const [sessions,     setSessions]     = useState([])
+  const [backlogTasks, setBacklogTasks] = useState([])   // tasks with no date at all
+  const [mistakes,     setMistakes]     = useState([])
+  const [topics,       setTopics]       = useState([])
   const [selected,     setSelected]     = useState(null)
   const [showAdd,      setShowAdd]      = useState(false)
+  const [addPrefill,   setAddPrefill]   = useState(null)
   const [showEdit,     setShowEdit]     = useState(null)
   const [showComplete, setShowComplete] = useState(null)
   const [showGen,      setShowGen]      = useState(false)
@@ -52,9 +69,14 @@ export default function Calendar() {
   const [importing,    setImporting]    = useState(false)
   const [clearing,     setClearing]     = useState(false)
   const [loading,      setLoading]      = useState(true)
+  // Recommendations default ON (matches the brief's checked "Include recommendations") but
+  // are fully controllable — persisted to the profile so the choice survives across devices,
+  // same as any other setting. Never auto-schedules anything; see the "Schedule" action below.
+  const [recsEnabled,  setRecsEnabled]  = useState(profile?.calendarRecsEnabled !== false)
   const fileRef = useRef()
 
   useEffect(() => { loadSessions() }, [user])
+  useEffect(() => { setRecsEnabled(profile?.calendarRecsEnabled !== false) }, [profile?.calendarRecsEnabled])
 
   async function loadSessions() {
     if (!user) return
@@ -68,13 +90,15 @@ export default function Calendar() {
       }))
       
       const tSnap = await getDocs(collection(db, 'users', user.uid, 'tasks'))
+      const allTasks = tSnap.docs.filter(d => !d.data().completed)
       // Expand multi-day tasks into an entry for each day in the range
       const tasksData = []
-      tSnap.docs.filter(d => !d.data().completed).forEach(d => {
+      const undated = []
+      allTasks.forEach(d => {
         const data = d.data()
         const start = data.startDate || data.dueDate
         const end   = data.dueDate || data.startDate
-        if (!start) return
+        if (!start) { undated.push({ _docId: d.id, ...data, id: d.id, isTask: true }); return }
         const startDate = new Date(start)
         const endDate   = new Date(end)
         // Create one entry per day in the task range
@@ -95,11 +119,47 @@ export default function Calendar() {
       })
       
       setSessions([...sessionsData, ...tasksData])
+      setBacklogTasks(undated)
+
+      // Best-effort — recommendations degrade gracefully to "nothing to show" if either of
+      // these fails, they're not load-bearing for the calendar's core session/task features.
+      try {
+        const [t, m] = await Promise.all([
+          getTopicsWithConfidence(user.uid, profile?.subjects || []),
+          getMistakes(user.uid),
+        ])
+        setTopics(t || [])
+        setMistakes(m || [])
+      } catch (e) { /* recommendations just won't have data this load */ }
     } catch (err) {
       console.error('Failed to load sessions:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleToggleRecs(enabled) {
+    setRecsEnabled(enabled)
+    if (user) updateUserProfile(user.uid, { calendarRecsEnabled: enabled }).catch(() => {})
+  }
+
+  async function handleResolveMistakeFromCalendar(id) {
+    if (!user) return
+    await resolveMistake(user.uid, id)
+    setMistakes(ms => ms.map(m => m.id === id ? { ...m, resolved: true } : m))
+    toast.success('Marked resolved +20 XP')
+  }
+
+  async function handleCompleteBacklogTask(task) {
+    await completeTask(user.uid, task.id, true)
+    setBacklogTasks(ts => ts.filter(t => t.id !== task.id))
+    toast.success('Task completed!')
+  }
+
+  async function handleDeleteBacklogTask(task) {
+    await deleteTask(user.uid, task.id)
+    setBacklogTasks(ts => ts.filter(t => t.id !== task.id))
+    toast.success('Task deleted')
   }
 
   async function handleComplete(session, notes) {
@@ -321,6 +381,11 @@ export default function Calendar() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
 
+  const recommendations = recsEnabled
+    ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
+    : []
+  const unresolvedMistakes = mistakes.filter(m => !m.resolved)
+
   return (
     <div className="fade-in">
       {/* Header */}
@@ -343,7 +408,7 @@ export default function Calendar() {
           <button className="btn btn-secondary btn-sm" onClick={()=>setShowGen(true)}>
             <Zap size={14}/> Generate
           </button>
-          <button className="btn btn-primary btn-sm" onClick={()=>{ setSelected(selected||new Date()); setShowAdd(true) }}>
+          <button className="btn btn-primary btn-sm" onClick={()=>{ setSelected(selected||new Date()); setAddPrefill(null); setShowAdd(true) }}>
             <Plus size={14}/> Add event
           </button>
         </div>
@@ -464,7 +529,7 @@ export default function Calendar() {
                 <button className="rf-side-back" onClick={()=>setSelected(null)}>
                   <ArrowLeft size={14}/> Upcoming
                 </button>
-                <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>
+                <button className="btn btn-primary btn-sm" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>
                   <Plus size={13}/> Add
                 </button>
               </div>
@@ -477,7 +542,7 @@ export default function Calendar() {
                 <div className="empty-state" style={{padding:'28px 0'}}>
                   <CalendarX2 size={28} style={{opacity:0.35}}/>
                   <p style={{fontSize:'0.875rem'}}>Nothing scheduled on this day</p>
-                  <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>Add session</button>
+                  <button className="btn btn-primary btn-sm" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>Add session</button>
                 </div>
               ) : (
                 <div className="rf-day-list">
@@ -539,7 +604,7 @@ export default function Calendar() {
                 </div>
               )}
               <div className="rf-side-footer">
-                <button className="btn btn-primary" onClick={()=>{ setSelected(new Date()); setShowAdd(true) }}>
+                <button className="btn btn-primary" onClick={()=>{ setSelected(new Date()); setAddPrefill(null); setShowAdd(true) }}>
                   <Plus size={15}/> Add event
                 </button>
               </div>
@@ -548,27 +613,149 @@ export default function Calendar() {
         </div>
       </div>
 
+      {/* Recommended topics — optional and controllable; a suggestion is only ever added to
+          the calendar when the student explicitly clicks "Schedule" and confirms the modal. */}
+      <div className="card rf-recs-panel">
+        <div className="rf-recs-head">
+          <h4><Lightbulb size={16} color="var(--accent)"/> Recommended topics</h4>
+          <label className="rf-recs-toggle">
+            <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+            Show recommendations
+          </label>
+        </div>
+        {recsEnabled && (
+          <>
+            <p className="rf-recs-sub">Based on your confidence ratings, exam dates and logged mistakes — nothing here is added to your calendar unless you choose to.</p>
+            {loading ? (
+              <div className="rf-recs-grid">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>
+            ) : recommendations.length === 0 ? (
+              <div className="empty-state" style={{padding:'18px 0'}}>
+                <CheckCircle2 size={26} style={{opacity:0.35}}/>
+                <p style={{fontSize:'0.85rem'}}>Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.</p>
+              </div>
+            ) : (
+              <div className="rf-recs-grid">
+                {recommendations.map(rec=>(
+                  <div key={rec.id} className="rf-rec-card">
+                    <div className="rf-rec-card-top">
+                      <div className="rf-rec-icon" style={{background:subjectColour(rec.subject)}}>
+                        {React.createElement(getSubjectIcon(rec.subject), {size:15})}
+                      </div>
+                      <div style={{minWidth:0}}>
+                        <div className="rf-rec-title">{rec.topic}</div>
+                        <div className="rf-rec-subject">{rec.subject}</div>
+                      </div>
+                    </div>
+                    <div className="rf-rec-reasons">
+                      {rec.reasons.map((r,i)=>(
+                        <div key={i} className="rf-rec-reason"><Info size={11}/> <span>{r}</span></div>
+                      ))}
+                    </div>
+                    <button className="btn btn-secondary btn-sm" onClick={()=>{
+                      setAddPrefill({ kind:'session', subject:rec.subject, topic:rec.topic, type:'Content Revision' })
+                      setShowAdd(true)
+                    }}>
+                      <Plus size={13}/> Schedule this
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Backlog — tasks with no date, and unresolved mistakes, absorbed from Tasks.jsx /
+          Mistakes.jsx so they're manageable here without needing a separate page. */}
+      <div className="rf-backlog-panel">
+        <div className="card rf-backlog-card">
+          <div className="rf-backlog-head">
+            <h4><ListTodo size={15} color="var(--accent)"/> Tasks without a date</h4>
+            <button className="btn btn-ghost btn-sm" onClick={()=>{ setAddPrefill({ kind:'task' }); setShowAdd(true) }}>
+              <Plus size={13}/> Add task
+            </button>
+          </div>
+          {loading ? <Skeleton height={70}/> : backlogTasks.length === 0 ? (
+            <p style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>Nothing undated — any task without a due date will show up here.</p>
+          ) : (
+            <div className="rf-backlog-list">
+              {backlogTasks.map(t=>(
+                <div key={t.id} className="rf-backlog-item">
+                  <button className="rf-backlog-check" onClick={()=>handleCompleteBacklogTask(t)} title="Mark complete">
+                    <Check size={12} style={{color:'var(--text-muted)'}}/>
+                  </button>
+                  <span className="rf-backlog-title">{t.title}</span>
+                  {t.subject && <span className="badge badge-grey" style={{fontSize:'0.65rem',flexShrink:0}}>{t.subject}</span>}
+                  <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)',flexShrink:0}} onClick={()=>handleDeleteBacklogTask(t)}>
+                    <Trash2 size={12}/>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card rf-backlog-card">
+          <div className="rf-backlog-head">
+            <h4><AlertCircle size={15} color="var(--warning)"/> Unresolved mistakes</h4>
+            <Link to="/mistakes" className="btn btn-ghost btn-sm">Log one <ChevronRight size={13}/></Link>
+          </div>
+          {loading ? <Skeleton height={70}/> : unresolvedMistakes.length === 0 ? (
+            <p style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>Nothing unresolved — nice work staying on top of things.</p>
+          ) : (
+            <div className="rf-backlog-list">
+              {unresolvedMistakes.slice(0, 6).map(m=>(
+                <div key={m.id} className="rf-backlog-item">
+                  <div style={{width:7,height:7,borderRadius:'50%',background:subjectColour(m.subject),flexShrink:0}}/>
+                  <span className="rf-backlog-title">{m.topic ? `${m.subject} — ${m.topic}` : m.subject}</span>
+                  <button className="btn btn-ghost btn-sm" style={{flexShrink:0,fontSize:'0.72rem'}} onClick={()=>handleResolveMistakeFromCalendar(m.id)}>
+                    Resolve
+                  </button>
+                </div>
+              ))}
+              {unresolvedMistakes.length > 6 && (
+                <Link to="/mistakes" className="rf-backlog-meta" style={{textAlign:'center',padding:'4px 0'}}>
+                  +{unresolvedMistakes.length - 6} more in Mistake Log
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Modals */}
       {showAdd&&(
-        <AddSessionModal user={user} profile={profile} selectedDate={selected}
-          onClose={()=>setShowAdd(false)}
-          onSave={async s=>{
+        <AddEventModal user={user} profile={profile} selectedDate={selected} prefill={addPrefill}
+          onClose={()=>{setShowAdd(false);setAddPrefill(null)}}
+          onSaveSession={async s=>{
             await addDoc(collection(db,'users',user.uid,'sessions'),{
               ...s, completed:false, source:'manual', createdAt:serverTimestamp()
             })
             await loadSessions()
-            setShowAdd(false)
+            setShowAdd(false); setAddPrefill(null)
             toast.success('Session added')
+          }}
+          onSaveTask={async t=>{
+            await addTask(user.uid, t)
+            await loadSessions()
+            setShowAdd(false); setAddPrefill(null)
+            toast.success('Task added')
           }}/>
       )}
       {showEdit&&(
         <EditSessionModal user={user} profile={profile} session={showEdit}
           onClose={()=>setShowEdit(null)}
-          onSave={async data=>{
+          onSaveSession={async data=>{
             await updateSession(user.uid, showEdit.id, data)
             await loadSessions()
             setShowEdit(null)
             toast.success('Session updated')
+          }}
+          onSaveTask={async data=>{
+            await updateTask(user.uid, showEdit.id, data)
+            await loadSessions()
+            setShowEdit(null)
+            toast.success('Task updated')
           }}/>
       )}
       {showComplete&&(
@@ -644,9 +831,10 @@ function SessionCard({ session:s, onComplete, onDelete, onEdit }) {
   )
 }
 
-// ── Edit Session Modal ────────────────────────────────────────────────────────
-function EditSessionModal({ user, profile, session, onClose, onSave }) {
+// ── Edit Session/Task Modal ────────────────────────────────────────────────────────
+function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSaveTask }) {
   const subjects = profile?.subjects?.map(s=>s.name)||[]
+  const isTask = !!session.isTask
   const [form,setForm] = useState({
     subject: session.subject||'',
     type: session.type  || 'Content Revision',
@@ -656,11 +844,19 @@ function EditSessionModal({ user, profile, session, onClose, onSave }) {
     paper: session.paper||'',
     notes: session.notes||'',
   })
+  const [taskForm,setTaskForm] = useState({
+    title: session.title || '',
+    subject: session.subject || '',
+    startDate: session.taskStartDate || '',
+    dueDate: session.taskEndDate || session.date || '',
+    priority: session.priority || 'medium',
+    notes: session.notes || '',
+  })
 
   async function handleSubmit(e) {
     e.preventDefault()
     const startDt = new Date(`${form.date}T${form.start}`)
-    await onSave({
+    await onSaveSession({
       ...form,
       duration: parseInt(form.duration),
       title: `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`,
@@ -668,40 +864,72 @@ function EditSessionModal({ user, profile, session, onClose, onSave }) {
       endTime: new Date(startDt.getTime()+parseInt(form.duration)*60000).toISOString(),
     })
   }
+  async function handleTaskSubmit(e) {
+    e.preventDefault()
+    if (!taskForm.title.trim()) return
+    await onSaveTask(taskForm)
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Edit Session</span>
+          <span className="modal-title">{isTask ? 'Edit task' : 'Edit session'}</span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
         </div>
-        <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:12}}>
-          <div className="grid-2" style={{gap:10}}>
-            <div><label className="label">Subject</label>
-              <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
-                <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
-              </select></div>
-            <div><label className="label">Type</label>
-              <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
-                {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-              </select></div>
-            <div><label className="label">Paper</label>
-              <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}/></div>
-            <div><label className="label">Date</label>
-              <input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} required/></div>
-            <div><label className="label">Start time</label>
-              <input className="input" type="time" value={form.start} onChange={e=>setForm(f=>({...f,start:e.target.value}))} required/></div>
-            <div><label className="label">Duration (min)</label>
-              <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
-          </div>
-          <div><label className="label">Notes</label>
-            <textarea className="textarea" style={{minHeight:55}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save changes</button>
-          </div>
-        </form>
+        {isTask ? (
+          <form onSubmit={handleTaskSubmit} style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div><label className="label">Title</label>
+              <input className="input" value={taskForm.title} onChange={e=>setTaskForm(f=>({...f,title:e.target.value}))} required autoFocus/></div>
+            <div className="grid-2" style={{gap:10}}>
+              <div><label className="label">Subject (optional)</label>
+                <select className="select" value={taskForm.subject} onChange={e=>setTaskForm(f=>({...f,subject:e.target.value}))}>
+                  <option value="">None</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
+                </select></div>
+              <div><label className="label">Priority</label>
+                <select className="select" value={taskForm.priority} onChange={e=>setTaskForm(f=>({...f,priority:e.target.value}))}>
+                  {TASK_PRIORITIES.map(p=><option key={p} value={p}>{p[0].toUpperCase()+p.slice(1)}</option>)}
+                </select></div>
+              <div><label className="label">Start date</label>
+                <input className="input" type="date" value={taskForm.startDate} onChange={e=>setTaskForm(f=>({...f,startDate:e.target.value}))}/></div>
+              <div><label className="label">Due date</label>
+                <input className="input" type="date" value={taskForm.dueDate} onChange={e=>setTaskForm(f=>({...f,dueDate:e.target.value}))}/></div>
+            </div>
+            <div><label className="label">Notes</label>
+              <textarea className="textarea" style={{minHeight:55}} value={taskForm.notes} onChange={e=>setTaskForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div className="grid-2" style={{gap:10}}>
+              <div><label className="label">Subject</label>
+                <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
+                  <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
+                </select></div>
+              <div><label className="label">Type</label>
+                <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+                  {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                </select></div>
+              <div><label className="label">Paper</label>
+                <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}/></div>
+              <div><label className="label">Date</label>
+                <input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} required/></div>
+              <div><label className="label">Start time</label>
+                <input className="input" type="time" value={form.start} onChange={e=>setForm(f=>({...f,start:e.target.value}))} required/></div>
+              <div><label className="label">Duration (min)</label>
+                <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
+            </div>
+            <div><label className="label">Notes</label>
+              <textarea className="textarea" style={{minHeight:55}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )
@@ -858,54 +1086,102 @@ function ImportReviewModal({ parsed, profile, existingCount, onClose, onConfirm 
 }
 
 // ── Add Session Modal ─────────────────────────────────────────────────────────
-function AddSessionModal({ user, profile, selectedDate, onClose, onSave }) {
+function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSession, onSaveTask }) {
   const subjects = profile?.subjects?.map(s=>s.name)||[]
+  const [kind,setKind] = useState(prefill?.kind==='task' ? 'task' : 'session')
+  const dateStr = selectedDate?format(selectedDate,'yyyy-MM-dd'):format(new Date(),'yyyy-MM-dd')
   const [form,setForm] = useState({
-    subject:subjects[0]||'',type:'Content Revision',
-    date:selectedDate?format(selectedDate,'yyyy-MM-dd'):format(new Date(),'yyyy-MM-dd'),
-    start:'17:00',duration:45,paper:'',notes:'',
+    subject: prefill?.subject || subjects[0]||'', type: prefill?.type || 'Content Revision',
+    topic: prefill?.topic || '',
+    date:dateStr, start:'17:00',duration:45,paper:'',notes:'',
   })
-  async function submit(e) {
+  const [taskForm,setTaskForm] = useState({
+    title: prefill?.topic ? `Revise ${prefill.topic}` : '', subject: prefill?.subject || '',
+    startDate:'', dueDate:selectedDate?dateStr:'', priority:'medium', notes:'',
+  })
+  async function submitSession(e) {
     e.preventDefault()
     const startDt = new Date(`${form.date}T${form.start}`)
-    await onSave({
+    await onSaveSession({
       ...form,
       duration:  parseInt(form.duration),
-      title:     `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`,
+      title:     form.topic ? `${form.subject} — ${form.topic}` : `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`,
       startTime: startDt.toISOString(),
       endTime:   new Date(startDt.getTime()+parseInt(form.duration)*60000).toISOString(),
     })
   }
+  async function submitTask(e) {
+    e.preventDefault()
+    if (!taskForm.title.trim()) return
+    await onSaveTask(taskForm)
+  }
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-header"><span className="modal-title">Add session</span><button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button></div>
-        <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:12}}>
-          <div className="grid-2" style={{gap:10}}>
-            <div><label className="label">Subject</label>
-              <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
-                <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
-              </select></div>
-            <div><label className="label">Type</label>
-              <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
-                {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-              </select></div>
-            <div><label className="label">Paper</label>
-              <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}/></div>
-            <div><label className="label">Date</label>
-              <input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} required/></div>
-            <div><label className="label">Start time</label>
-              <input className="input" type="time" value={form.start} onChange={e=>setForm(f=>({...f,start:e.target.value}))} required/></div>
-            <div><label className="label">Duration (min)</label>
-              <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
-          </div>
-          <div><label className="label">Notes</label>
-            <textarea className="textarea" style={{minHeight:55}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Add</button>
-          </div>
-        </form>
+        <div className="modal-header"><span className="modal-title">Add to calendar</span><button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button></div>
+        <div className="rf-kind-toggle">
+          <button type="button" className={`rf-kind-btn${kind==='session'?' is-active':''}`} onClick={()=>setKind('session')}>
+            <BookOpen size={15}/> Revision session
+          </button>
+          <button type="button" className={`rf-kind-btn${kind==='task'?' is-active':''}`} onClick={()=>setKind('task')}>
+            <ListTodo size={15}/> Task / deadline
+          </button>
+        </div>
+        {kind==='session' ? (
+          <form onSubmit={submitSession} style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div className="grid-2" style={{gap:10}}>
+              <div><label className="label">Subject</label>
+                <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
+                  <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
+                </select></div>
+              <div><label className="label">Type</label>
+                <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+                  {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                </select></div>
+              <div><label className="label">Topic (optional)</label>
+                <input className="input" placeholder="e.g. Photosynthesis" value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}/></div>
+              <div><label className="label">Paper</label>
+                <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}/></div>
+              <div><label className="label">Date</label>
+                <input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} required/></div>
+              <div><label className="label">Start time</label>
+                <input className="input" type="time" value={form.start} onChange={e=>setForm(f=>({...f,start:e.target.value}))} required/></div>
+              <div><label className="label">Duration (min)</label>
+                <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
+            </div>
+            <div><label className="label">Notes</label>
+              <textarea className="textarea" style={{minHeight:55}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Add session</button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={submitTask} style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div><label className="label">Title</label>
+              <input className="input" value={taskForm.title} onChange={e=>setTaskForm(f=>({...f,title:e.target.value}))} required autoFocus/></div>
+            <div className="grid-2" style={{gap:10}}>
+              <div><label className="label">Subject (optional)</label>
+                <select className="select" value={taskForm.subject} onChange={e=>setTaskForm(f=>({...f,subject:e.target.value}))}>
+                  <option value="">None</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
+                </select></div>
+              <div><label className="label">Priority</label>
+                <select className="select" value={taskForm.priority} onChange={e=>setTaskForm(f=>({...f,priority:e.target.value}))}>
+                  {TASK_PRIORITIES.map(p=><option key={p} value={p}>{p[0].toUpperCase()+p.slice(1)}</option>)}
+                </select></div>
+              <div><label className="label">Start date (optional)</label>
+                <input className="input" type="date" value={taskForm.startDate} onChange={e=>setTaskForm(f=>({...f,startDate:e.target.value}))}/></div>
+              <div><label className="label">Due date (optional)</label>
+                <input className="input" type="date" value={taskForm.dueDate} onChange={e=>setTaskForm(f=>({...f,dueDate:e.target.value}))}/></div>
+            </div>
+            <div><label className="label">Notes</label>
+              <textarea className="textarea" style={{minHeight:55}} value={taskForm.notes} onChange={e=>setTaskForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Add task</button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )
