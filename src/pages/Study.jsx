@@ -41,6 +41,17 @@ function SubjectIllustration({ subject, size = 64 }) {
     : <SeedlingIllustration size={size} />
 }
 
+// Flashcard sets only carry board+level when they're official/admin-generated
+// (saveOfficialFlashcardSet stamps both) — a regular user's own saveFlashcardSet call
+// never captures them (see firestore.js), so for "my sets" the only honest source is the
+// board/qualification already on that subject's entry in the student's own profile. This
+// mirrors exactly how TopicNotesTab already resolves board/level per subject.
+function deriveSetBoardLevel(set, profile) {
+  if (set.board && set.level) return { board: set.board, level: set.level }
+  const subjMeta = profile?.subjects?.find(s => s.name === set.subject)
+  return { board: subjMeta?.board || null, level: subjMeta ? getSubjectQualification(subjMeta, profile) : null }
+}
+
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
 /* ── Flip card ─────────────────────────────────────────────────────────────── */
@@ -1258,11 +1269,35 @@ function QuizTab({ mySets, uid, profile }) {
   const [publicSets,  setPublicSets]  = useState([])
   const [publicLoading, setPublicLoading] = useState(false)
   const [publicSubject, setPublicSubject] = useState('')
+  const [publicBoard,   setPublicBoard]   = useState('')
+  const [publicLevel,   setPublicLevel]   = useState('')
+
+  // "My sets" filters — subject/board/level, same pattern as Topic Notes' selector
+  const [mySubjectFilter, setMySubjectFilter] = useState('')
+  const [myBoardFilter,   setMyBoardFilter]   = useState('')
+  const [myLevelFilter,   setMyLevelFilter]   = useState('')
 
   const [showHistory, setShowHistory] = useState(false)
   const [history,     setHistory]     = useState(null) // null = not loaded yet
 
   const subjects = profile?.subjects?.map(s => s.name) || []
+
+  const filteredMine = mySets.filter(set => {
+    if (mySubjectFilter && set.subject !== mySubjectFilter) return false
+    const { board, level } = deriveSetBoardLevel(set, profile)
+    if (myBoardFilter && board !== myBoardFilter) return false
+    if (myLevelFilter && level !== myLevelFilter) return false
+    return true
+  })
+  // Subject is already filtered server-side (getPublicFlashcardSets query below) — board/level
+  // filtered client-side here rather than adding where() clauses, to avoid needing a new
+  // Firestore composite index for this collection.
+  const filteredPublic = publicSets.filter(set => {
+    const { board, level } = deriveSetBoardLevel(set, profile)
+    if (publicBoard && board !== publicBoard) return false
+    if (publicLevel && level !== publicLevel) return false
+    return true
+  })
 
   useEffect(() => {
     if (setSource !== 'public') return
@@ -1438,10 +1473,37 @@ function QuizTab({ mySets, uid, profile }) {
         </div>
 
         {setSource === 'public' && (
-          <select className="select" style={{ marginBottom: 12 }} value={publicSubject} onChange={e => setPublicSubject(e.target.value)}>
-            <option value="">All subjects</option>
-            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <div className="rf-config-grid" style={{ marginBottom: 12 }}>
+            <select className="select" value={publicSubject} onChange={e => setPublicSubject(e.target.value)}>
+              <option value="">All subjects</option>
+              {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select className="select" value={publicBoard} onChange={e => setPublicBoard(e.target.value)}>
+              <option value="">All boards</option>
+              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <select className="select" value={publicLevel} onChange={e => setPublicLevel(e.target.value)}>
+              <option value="">All levels</option>
+              {['GCSE','AS-Level','A-Level'].map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+        )}
+
+        {setSource === 'mine' && mySets.length > 0 && (
+          <div className="rf-config-grid" style={{ marginBottom: 12 }}>
+            <select className="select" value={mySubjectFilter} onChange={e => setMySubjectFilter(e.target.value)}>
+              <option value="">All subjects</option>
+              {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select className="select" value={myBoardFilter} onChange={e => setMyBoardFilter(e.target.value)}>
+              <option value="">All boards</option>
+              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <select className="select" value={myLevelFilter} onChange={e => setMyLevelFilter(e.target.value)}>
+              <option value="">All levels</option>
+              {['GCSE','AS-Level','A-Level'].map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
         )}
 
         {setSource === 'mine' ? (
@@ -1450,9 +1512,14 @@ function QuizTab({ mySets, uid, profile }) {
               <BookOpen size={32} style={{ opacity: 0.3 }} />
               <p>No saved sets yet — generate or create flashcards first</p>
             </div>
+          ) : filteredMine.length === 0 ? (
+            <div className="empty-state" style={{ padding: '16px 0' }}>
+              <p>No sets match those filters</p>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setMySubjectFilter(''); setMyBoardFilter(''); setMyLevelFilter('') }}>Clear filters</button>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {mySets.map(set => (
+              {filteredMine.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
                   className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
                   <div className="rf-set-row-top">
@@ -1464,7 +1531,7 @@ function QuizTab({ mySets, uid, profile }) {
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
-                          {set.subject} · {set.cards?.length || 0} cards
+                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${deriveSetBoardLevel(set, profile).board}` : ''} · {set.cards?.length || 0} cards
                         </div>
                       </div>
                     </div>
@@ -1482,9 +1549,14 @@ function QuizTab({ mySets, uid, profile }) {
               <Users size={32} style={{ opacity: 0.3 }} />
               <p>No public sets for this subject yet</p>
             </div>
+          ) : filteredPublic.length === 0 ? (
+            <div className="empty-state" style={{ padding: '16px 0' }}>
+              <p>No sets match those filters</p>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setPublicBoard(''); setPublicLevel('') }}>Clear board/level filters</button>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {publicSets.map(set => (
+              {filteredPublic.map(set => (
                 <button key={set.id} onClick={() => setSelectedSet(set)}
                   className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
                   <div className="rf-set-row-top">
@@ -1496,7 +1568,7 @@ function QuizTab({ mySets, uid, profile }) {
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
-                          {set.subject} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
+                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${deriveSetBoardLevel(set, profile).board}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
                         </div>
                       </div>
                     </div>
@@ -2403,6 +2475,9 @@ export default function Study() {
   const [setsLoad, setSetsLoad] = useState(false)
   const [searchQ,   setSearchQ]   = useState('')
   const [mySearch,  setMySearch]   = useState('')
+  const [myFcSubjectFilter, setMyFcSubjectFilter] = useState('')
+  const [myFcBoardFilter,   setMyFcBoardFilter]   = useState('')
+  const [myFcLevelFilter,   setMyFcLevelFilter]   = useState('')
   const practiceDueCount = buildDueQueue(mySets).length
 
   // Exam questions
@@ -2592,7 +2667,16 @@ export default function Study() {
     </div>
   )
 
-  const filteredMy = mySets.filter(s => !mySearch || s.title?.toLowerCase().includes(mySearch.toLowerCase()) || s.subject?.toLowerCase().includes(mySearch.toLowerCase()) || s.topic?.toLowerCase().includes(mySearch.toLowerCase()))
+  const filteredMy = mySets
+    .filter(s => !mySearch || s.title?.toLowerCase().includes(mySearch.toLowerCase()) || s.subject?.toLowerCase().includes(mySearch.toLowerCase()) || s.topic?.toLowerCase().includes(mySearch.toLowerCase()))
+    .filter(s => !myFcSubjectFilter || s.subject === myFcSubjectFilter)
+    .filter(s => {
+      if (!myFcBoardFilter && !myFcLevelFilter) return true
+      const { board, level } = deriveSetBoardLevel(s, profile)
+      if (myFcBoardFilter && board !== myFcBoardFilter) return false
+      if (myFcLevelFilter && level !== myFcLevelFilter) return false
+      return true
+    })
   const filteredPub = pubSets.filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()) || s.subject?.toLowerCase().includes(searchQ.toLowerCase()))
 
   return (
@@ -2665,6 +2749,22 @@ export default function Study() {
 
           {flashTab === 'my-sets' && (
             <div>
+              {mySets.length > 0 && (
+                <div className="rf-config-grid" style={{ marginBottom: 10 }}>
+                  <select className="select" value={myFcSubjectFilter} onChange={e => setMyFcSubjectFilter(e.target.value)}>
+                    <option value="">All subjects</option>
+                    {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <select className="select" value={myFcBoardFilter} onChange={e => setMyFcBoardFilter(e.target.value)}>
+                    <option value="">All boards</option>
+                    {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                  <select className="select" value={myFcLevelFilter} onChange={e => setMyFcLevelFilter(e.target.value)}>
+                    <option value="">All levels</option>
+                    {['GCSE','AS-Level','A-Level'].map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input className="input" placeholder="Search my sets..." value={mySearch}
                   onChange={e => setMySearch(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
@@ -2672,7 +2772,12 @@ export default function Study() {
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>
               </div>
               {setsLoad ? <div className="loading-center"><div className="spinner" /></div>
-                : filteredMy.length === 0 ? (
+                : mySets.length > 0 && filteredMy.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No sets match those filters</p>
+                    <button className="btn btn-secondary btn-sm" onClick={() => { setMyFcSubjectFilter(''); setMyFcBoardFilter(''); setMyFcLevelFilter(''); setMySearch('') }}>Clear filters</button>
+                  </div>
+                ) : filteredMy.length === 0 ? (
                   <div className="empty-state">
                     <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><Layers size={26}/></div>
                     <p>No saved sets yet</p>
@@ -2694,7 +2799,7 @@ export default function Study() {
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + deriveSetBoardLevel(set, profile).board : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
