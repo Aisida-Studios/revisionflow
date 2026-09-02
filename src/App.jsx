@@ -100,7 +100,6 @@ const Topics        = lazy(() => import('./pages/Topics'))
 const TopicDetail   = lazy(() => import('./pages/TopicDetail'))
 const Calendar      = lazy(() => import('./pages/Calendar'))
 const Timer         = lazy(() => import('./pages/Timer'))
-const Tasks         = lazy(() => import('./pages/Tasks'))
 const Mistakes      = lazy(() => import('./pages/Mistakes'))
 const PastPapers    = lazy(() => import('./pages/PastPapers'))
 const Analytics     = lazy(() => import('./pages/Analytics'))
@@ -198,7 +197,6 @@ export default function App() {
                       <Route path="/study"       element={<Study />} />
                       <Route path="/tutor"       element={<Tutor />} />
                       <Route path="/mistakes"    element={<Mistakes />} />
-                      <Route path="/tasks"       element={<Tasks />} />
                       <Route path="/timer"       element={<Timer />} />
                       <Route path="/analytics"   element={<Analytics />} />
                       <Route path="/ai"          element={<AIAdvisor />} />
@@ -218,6 +216,7 @@ export default function App() {
                     <Route path="/exam-dates"    element={<Navigate to="/exams" replace />} />
                     <Route path="/topic-mastery" element={<Navigate to="/mastery" replace />} />
                     <Route path="/ai-advisor"    element={<Navigate to="/ai" replace />} />
+                    <Route path="/tasks"         element={<Navigate to="/calendar" replace />} />
 
                     {/* Catch-all */}
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
