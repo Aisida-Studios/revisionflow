@@ -22,18 +22,18 @@ import { useAuth } from '../context/AuthContext'
 import { getTopicAdvice, generatePredictedQuestions } from '../utils/ai'
 import { getNotes, saveNote, deleteNote, getPaperAttempts, autoCompleteQuest, awardXP } from '../utils/firestore'
 import { resolveTopicResources } from '../data/resourceLinks'
-import { SUBJECT_COLOURS } from '../data/subjects'
+import { subjectColour } from '../data/subjects'
 import { componentForSubject } from '../data/illustrationThemes'
+import { CONF_LABELS, CONF_COLOURS, parseCategory } from '../utils/topicDisplay'
 import AIOutput from '../components/AIOutput'
 import toast from 'react-hot-toast'
 import {
-  ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote,
-  ClipboardList, TrendingUp, Layers, CheckCircle2, Circle,
+  ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote, Pencil,
+  ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import './Topics.css'
 
-const CONF_LABELS  = ['', 'Struggling', 'Needs work', 'Getting there', 'Good', 'Strong']
-const CONF_COLOURS = ['', 'var(--danger)', '#f97316', 'var(--warning)', '#84cc16', 'var(--success)']
 const TABS = [
   { id: 'overview', label: 'Overview',    icon: Layers },
   { id: 'notes',    label: 'Notes',       icon: StickyNote },
@@ -42,18 +42,28 @@ const TABS = [
   { id: 'progress', label: 'Progress',    icon: TrendingUp },
 ]
 
-// 'B1 – Cell Structure: Eukaryotic and Prokaryotic Cells' -> 'Cell Structure'.
-// Many (not all) topic names follow this "unit – category: specific" convention
-// from src/data/topics.js. Falls back to the full name when it doesn't apply.
-function parseCategory(name) {
-  if (!name) return null
-  const afterDash = name.includes(' – ') ? name.split(' – ')[1] : name
-  if (!afterDash?.includes(':')) return null
-  return afterDash.split(':')[0].trim() || null
-}
-
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+}
+
+// Real week-over-week trend from confidenceHistory (never invented): compares the latest
+// rating to the most recent one at least 6 days older, falling back to the earliest known
+// rating if nothing's that old yet. Returns null when there isn't enough real history to
+// say anything honest.
+function computeTrend(history) {
+  if (!history || history.length < 2) return null
+  const latest = history[history.length - 1]
+  const latestDate = new Date(latest.date)
+  let reference = null
+  for (let i = history.length - 2; i >= 0; i--) {
+    const d = new Date(history[i].date)
+    if ((latestDate - d) / 86400000 >= 6) { reference = history[i]; break }
+  }
+  if (!reference) reference = history[0]
+  if (reference === latest) return null
+  const diff = latest.value - reference.value
+  if (diff === 0) return null
+  return { dir: diff > 0 ? 'up' : 'down', diff: Math.abs(diff) }
 }
 
 export default function TopicDetail() {
@@ -198,8 +208,10 @@ export default function TopicDetail() {
   const category = parseCategory(topic.name)
   const displayName = category || topic.name
   const TopicIllustration = componentForSubject(topic.subjectId)
+  const subjColour = subjectColour(topic.subjectId)
   const { verified, hub, search } = resolveTopicResources(topic.subjectId, topic.name)
   const history = topic.confidenceHistory || []
+  const trend = computeTrend(history)
 
   // Best-effort cross-reference: past-paper questions the student tagged with a
   // topic string that overlaps this one. Free-text tagging means this is fuzzy,
@@ -215,24 +227,65 @@ export default function TopicDetail() {
     })
     .filter(Boolean)
 
+  const resourceRows = [
+    ...verified.map(l => ({ ...l, tag: 'Verified' })),
+    ...hub.slice(0, 2).map(l => ({ ...l, tag: 'Subject hub' })),
+    ...search.slice(0, 2).map(s => ({ name: s.site, url: s.url, tag: 'Search' })),
+  ].slice(0, 6)
+
   return (
     <div className="fade-in">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 14, flexWrap: 'wrap' }}>
-        <Link to="/topics" style={{ color: 'inherit', textDecoration: 'none' }}>Topics</Link>
-        <span>/</span>
-        <span>{topic.subjectId}</span>
-        <span>/</span>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{displayName}</span>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <h2 style={{ marginBottom: category ? 4 : 0 }}>{displayName}</h2>
-          {category && <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>{topic.name}</p>}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+          <Link to="/topics" style={{ color: 'inherit', textDecoration: 'none' }}>Topics</Link>
+          <span>/</span>
+          <Link to={`/topics?subject=${encodeURIComponent(topic.subjectId)}`} style={{ color: 'inherit', textDecoration: 'none' }}>{topic.subjectId}</Link>
+          <span>/</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{displayName}</span>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => navigate('/topics')}>
           <ChevronLeft size={14} /> Back to topics
         </button>
+      </div>
+
+      {/* Hero */}
+      <div className="card topic-hero" style={{ marginBottom: 18 }}>
+        <div className="topic-hero-illustration"><TopicIllustration size={84} /></div>
+        <div className="topic-hero-info">
+          <h2 style={{ marginBottom: 0 }}>{displayName}</h2>
+          {category && <p className="topic-hero-raw-name">{topic.name}</p>}
+          <div className="topic-hero-tags">
+            <span className="badge" style={{ background: `${subjColour}1a`, color: subjColour, borderColor: 'transparent' }}>{topic.subjectId}</span>
+            <span className="badge badge-grey">{topic.board || 'AQA'} · {topic.qualification || 'GCSE'}</span>
+            {topic.paper != null && topic.paper !== '' && <span className="badge badge-grey">Paper {topic.paper}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Stat row — visible on every tab, not just Overview */}
+      <div className="topic-stat-row" style={{ marginBottom: 20 }}>
+        <div className="card topic-stat-card">
+          <div className="topic-stat-val" style={{ color: CONF_COLOURS[conf] }}>{conf * 20}%</div>
+          <div className="topic-stat-label">Confidence</div>
+          {trend && (
+            <div className="topic-stat-trend" style={{ color: trend.dir === 'up' ? 'var(--success)' : 'var(--danger)' }}>
+              {trend.dir === 'up' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+              {trend.dir === 'up' ? 'improving' : 'dipped'}
+            </div>
+          )}
+        </div>
+        <div className="card topic-stat-card">
+          <div className="topic-stat-val" style={{ color: 'var(--info)' }}>{subtopics.length ? `${subtopicsDone}/${subtopics.length}` : '—'}</div>
+          <div className="topic-stat-label">Sub-topics</div>
+        </div>
+        <div className="card topic-stat-card">
+          <div className="topic-stat-val" style={{ color: 'var(--accent-light)' }}>{notes.length}</div>
+          <div className="topic-stat-label">Notes</div>
+        </div>
+        <div className="card topic-stat-card">
+          <div className="topic-stat-val" style={{ color: 'var(--warning)' }}>{matched.length}</div>
+          <div className="topic-stat-label">Past papers</div>
+        </div>
       </div>
 
       <div className="tabs" style={{ marginBottom: 20, flexWrap: 'wrap' }}>
@@ -245,26 +298,7 @@ export default function TopicDetail() {
 
       {tab === 'overview' && (
         <div className="topic-overview-grid">
-          <style>{`
-            .topic-overview-grid { display:grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap:16px; }
-            @media (max-width: 720px) { .topic-overview-grid { grid-template-columns: 1fr; } }
-          `}</style>
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Stat row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))', gap: 10 }}>
-              {[
-                { label: 'Confidence',   val: `${conf * 20}%`,                          col: CONF_COLOURS[conf] },
-                { label: 'Sub-topics',   val: subtopics.length ? `${subtopicsDone}/${subtopics.length}` : '—', col: 'var(--info)' },
-                { label: 'Notes',        val: notes.length,                              col: 'var(--accent-light)' },
-                { label: 'Past papers',  val: matched.length,                            col: 'var(--warning)' },
-              ].map(s => (
-                <div key={s.label} className="card" style={{ padding: '12px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.col }}>{s.val}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-
             {/* Confidence */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
@@ -273,7 +307,7 @@ export default function TopicDetail() {
               </div>
               <div className="conf-dots" style={{ gap: 8, marginBottom: 12 }}>
                 {[1, 2, 3, 4, 5].map(n => (
-                  <div key={n} className={`conf-dot${conf >= n ? ` filled-${n}` : ''}`} style={{ width: 22, height: 22, cursor: 'pointer' }}
+                  <div key={n} className={`conf-dot${conf >= n ? ` active-${n}` : ''}`} style={{ width: 22, height: 22, cursor: 'pointer' }}
                     onClick={() => updateConf(n)} title={CONF_LABELS[n]} />
                 ))}
               </div>
@@ -282,29 +316,29 @@ export default function TopicDetail() {
               </button>
               {advice && (
                 <div style={{ marginTop: 12 }}>
-                  <AIOutput
-                    text={advice}
-                    label={`Advice — ${displayName}`}
-                    onSummarise={async (text) => {
-                      const res = await getTopicAdvice(topic.subjectId, topic.name, 3, ['SUMMARY_MODE'], user.uid)
-                      return res.text || res.error
-                    }}
-                  />
+                  <AIOutput text={advice} label={`Advice — ${displayName}`} />
                 </div>
               )}
             </div>
 
             {/* Sub-topics */}
             <div className="card">
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', display: 'block', marginBottom: 10 }}>Break it down</span>
-              {subtopics.length === 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: subtopics.length ? 8 : 10, gap: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Break it down</span>
+              </div>
+              {subtopics.length === 0 ? (
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
                   Split this topic into your own checklist — sections, past-paper areas, anything you want to track separately.
                 </p>
+              ) : (
+                <div className="subtopic-progress-line">
+                  <CheckCircle2 size={13} style={{ color: subtopicsDone === subtopics.length ? 'var(--success)' : 'var(--text-muted)', flexShrink: 0 }} />
+                  {subtopicsDone === subtopics.length ? 'All sub-topics checked off — nice work.' : `${subtopicsDone} of ${subtopics.length} checked off — keep going.`}
+                </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                 {subtopics.map(s => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 10, background: 'var(--bg-surface)' }}>
+                  <div key={s.id} className="subtopic-row">
                     <button onClick={() => toggleSubtopic(s.id)} className="btn-ghost btn-icon" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: s.done ? 'var(--success)' : 'var(--text-muted)', display: 'flex' }}>
                       {s.done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
                     </button>
@@ -324,25 +358,23 @@ export default function TopicDetail() {
           </div>
 
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card" style={{ textAlign: 'center', background: 'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))' }}>
-              <TopicIllustration size={120} style={{ margin: '0 auto' }} />
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 8 }}>
-                {subtopicsDone === subtopics.length && subtopics.length > 0 ? 'All sub-topics checked off — nice work.' : 'Keep chipping away at this one.'}
-              </p>
-            </div>
-
             <div className="card">
               <span style={{ fontWeight: 700, fontSize: '0.9rem', display: 'block', marginBottom: 10 }}>Resources</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[...verified.map(l => ({ ...l, tag: 'Verified' })), ...hub.slice(0, 2), ...search.slice(0, 2).map(s => ({ name: s.site, url: s.url }))]
-                  .slice(0, 6).map((l, i) => (
-                    <a key={i} href={l.url} target="_blank" rel="noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 10px', borderRadius: 10, background: 'var(--bg-surface)', textDecoration: 'none', color: 'inherit', fontSize: '0.8rem', fontWeight: 600 }}>
+              {resourceRows.length === 0 ? (
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No resources found for this topic yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {resourceRows.map((l, i) => (
+                    <a key={i} href={l.url} target="_blank" rel="noreferrer" className="resource-row">
                       <span>{l.name}</span>
-                      <ExternalLink size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="resource-row-tag">{l.tag}</span>
+                        <ExternalLink size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+                      </span>
                     </a>
                   ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -378,7 +410,7 @@ export default function TopicDetail() {
                       {n.createdAt && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>{format(new Date(n.createdAt), 'd MMM yyyy')}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setEditingNote(n); setNoteForm({ title: n.title, content: n.content }) }}><StickyNote size={12} /></button>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setEditingNote(n); setNoteForm({ title: n.title, content: n.content }) }}><Pencil size={12} /></button>
                       <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteNote(n.id)}><Trash2 size={12} /></button>
                     </div>
                   </div>
@@ -448,7 +480,7 @@ export default function TopicDetail() {
 
       {tab === 'progress' && (
         <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', fontWeight: 800, color: CONF_COLOURS[conf] }}>{conf * 20}%</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Current confidence</div>
@@ -464,10 +496,10 @@ export default function TopicDetail() {
               Your trend builds up here each time you re-rate this topic's confidence — check back after a few study sessions.
             </p>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 80 }}>
+            <div className="confidence-trend-chart">
               {history.slice(-14).map((h, i) => (
                 <div key={i} title={`${h.value}/5 — ${format(new Date(h.date), 'd MMM')}`}
-                  style={{ flex: 1, height: `${h.value * 20}%`, minHeight: 6, borderRadius: 4, background: CONF_COLOURS[h.value] }} />
+                  className="confidence-trend-bar" style={{ height: `${h.value * 20}%`, background: CONF_COLOURS[h.value] }} />
               ))}
             </div>
           )}
