@@ -1,27 +1,29 @@
 // src/pages/Topics.jsx
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
-import { awardXP, autoCompleteQuest } from '../utils/firestore'
+import { awardXP, autoCompleteQuest, migrateLegacyTopicDocs, saveNote, getNotes, deleteNote } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { resolveTopicResources } from '../data/resourceLinks'
-import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
+import { subjectColour, getSubjectQualification } from '../data/subjects'
+import { componentForSubject } from '../data/illustrationThemes'
+import { getSubjectIcon } from '../utils/subjectIcons'
 import { buildTopicId } from '../utils/topicId'
-import { migrateLegacyTopicDocs } from '../utils/firestore'
+import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'
 import toast from 'react-hot-toast'
-import { Plus, X, Brain, Zap, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen, StickyNote, Layers, Link2 } from 'lucide-react'
-import { saveNote, getNotes, deleteNote } from '../utils/firestore'
+import {
+  Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,
+  StickyNote, Layers, Link2, Search, GraduationCap, CheckCircle2, Pencil,
+} from 'lucide-react'
 import { format } from 'date-fns'
+import './Topics.css'
 
-const CONF_LABELS = ['','Struggling','Needs work','Getting there','Good','Strong']
-const CONF_COLOURS = ['','var(--danger)','#f97316','var(--warning)','#84cc16','var(--success)']
-
-// Evidence-based revision resource links per subject
+// Evidence-based revision resource links per subject (unchanged real curated data)
 const SUBJECT_RESOURCES = {
   'Mathematics': [
     { name:'Corbettmaths', url:'https://corbettmaths.com', desc:'Videos and practice questions for every GCSE maths topic' },
@@ -144,9 +146,10 @@ const SUBJECT_RESOURCES = {
 export default function Topics() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [topics, setTopics] = useState([])
   const [allTopics, setAllTopics] = useState([])
-  const [selSubj, setSelSubj] = useState('All')
+  const [selSubj, setSelSubj] = useState(() => searchParams.get('subject') || 'All')
   const [showAdd, setShowAdd] = useState(false)
   const [aiAdvice, setAiAdvice] = useState({})
   const [loadingAI, setLoadingAI] = useState(null)
@@ -159,6 +162,9 @@ export default function Topics() {
   const [noteForm, setNoteForm] = useState({ title:'', content:'' })
   const [editingNote, setEditingNote] = useState(null)
   const [noteSaving, setNoteSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [confFilter, setConfFilter] = useState(null) // 'weak' | 'mid' | 'strong' | null
+  const [specTotals, setSpecTotals] = useState({})   // { [subjectName]: total spec topic count }
 
   const subjects   = profile?.subjects?.map(s=>s.name) || []
   const selSubjObj  = profile?.subjects?.find(s => s.name === selSubj)
@@ -169,7 +175,33 @@ export default function Topics() {
     if (!user) return
     loadTopics()
     if (selSubj && selSubj !== 'All') loadNotes()
+    setSearch('')
+    setConfFilter(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, selSubj])
+
+  // One-off fetch of each enrolled subject's total spec-topic count (getMergedTopicsFlat is
+  // overrides-aware — never swap for the static-only getAllTopicsFlat), so the "All Subjects"
+  // summary cards and the per-subject header can show a real "X of Y tracked" instead of just
+  // a raw count with nothing to compare it to.
+  useEffect(() => {
+    if (!user || !profile?.subjects?.length) return
+    let cancelled = false
+    ;(async () => {
+      const entries = await Promise.all(profile.subjects.map(async (s) => {
+        const level = getSubjectQualification(s, profile)
+        try {
+          const list = await getMergedTopicsFlat(s.board || 'AQA', s.name, level)
+          return [s.name, list.length]
+        } catch (e) {
+          return [s.name, null]
+        }
+      }))
+      if (!cancelled) setSpecTotals(Object.fromEntries(entries))
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, JSON.stringify((profile?.subjects || []).map(s => [s.name, s.board, getSubjectQualification(s, profile)]))])
 
   async function loadTopics() {
     const snap = await getDocs(collection(db,'users',user.uid,'topics'))
@@ -218,7 +250,7 @@ export default function Topics() {
   }
 
   async function handleSeedTopics() {
-    if (!selSubj) return
+    if (!selSubj || selSubj === 'All') return
     setLoading(true)
     const subj = profile?.subjects?.find(s=>s.name===selSubj)
     const subjQual = getSubjectQualification(subj, profile)
@@ -237,7 +269,7 @@ export default function Topics() {
   }
 
   async function addTopic() {
-    if (!newTopic.name || !selSubj) return
+    if (!newTopic.name || !selSubj || selSubj === 'All') return
     const id = buildTopicId(selBoard, selLevel, selSubj, newTopic.name)
     await setDoc(doc(db,'users',user.uid,'topics',id), {
       ...newTopic, subjectId:selSubj, board:selBoard, qualification:selLevel, createdAt:serverTimestamp(), updatedAt:serverTimestamp()
@@ -253,309 +285,377 @@ export default function Topics() {
     await updateDoc(doc(db,'users',user.uid,'topics',topicId), { confidence:conf, updatedAt:serverTimestamp() })
     setTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
     setAllTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
-    // rate_topics was defined in DAILY_QUEST_POOL with an XP value but nothing ever called
-    // autoCompleteQuest for it, same underlying issue as timer_25 (see firestore.js).
     await autoCompleteQuest(user.uid, 'rate_topics')
   }
 
   async function handleDelete(id) {
     await deleteDoc(doc(db,'users',user.uid,'topics',id))
     setTopics(ts=>ts.filter(t=>t.id!==id))
+    setAllTopics(ts=>ts.filter(t=>t.id!==id))
   }
 
   async function handleBulkDelete() {
     await Promise.all(selected.map(id=>deleteDoc(doc(db,'users',user.uid,'topics',id))))
     setTopics(ts=>ts.filter(t=>!selected.includes(t.id)))
+    setAllTopics(ts=>ts.filter(t=>!selected.includes(t.id)))
     setSelected([])
     toast.success(`Deleted ${selected.length} topics`)
   }
 
   async function getAIAdvice(topic) {
     setLoadingAI(topic.id)
-    const res = await getTopicAdvice(selSubj, topic.name, topic.confidence||3, [])
+    const res = await getTopicAdvice(selSubj, topic.name, topic.confidence||3, [], user.uid)
     setAiAdvice(a=>({...a,[topic.id]:res.text||res.error||'Could not load advice — check your connection'}))
     setLoadingAI(null)
   }
   function toggleSelect(id) { setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]) }
 
-  const sorted = [...topics].sort((a,b)=>(a.confidence||3)-(b.confidence||3))
-  const weak   = sorted.filter(t=>(t.confidence||3)<=2)
-  const mid    = sorted.filter(t=>(t.confidence||3)===3)
-  const strong = sorted.filter(t=>(t.confidence||3)>=4)
+  // Same current-qualification rule loadTopics() already applies for a single selected subject,
+  // applied consistently for every subject here too — otherwise a switched subject's old- and
+  // new-qualification topic docs would blend together in the "All Subjects" summary cards.
+  function topicsForSubject(name) {
+    const subj = profile?.subjects?.find(s => s.name === name)
+    const level = getSubjectQualification(subj, profile)
+    return allTopics.filter(t => t.subjectId === name && (t.qualification||level) === level)
+  }
+
+  const searching = search.trim().length > 0
+  const searchLower = search.trim().toLowerCase()
+
+  const subjectSummaries = subjects.map(name => {
+    const docs = topicsForSubject(name)
+    const pct = docs.length ? Math.round(docs.reduce((s,t)=>s+(t.confidence||3),0)/docs.length*20) : 0
+    return { name, count: docs.length, total: specTotals[name], pct, subj: profile?.subjects?.find(s=>s.name===name) }
+  })
+  const visibleSubjectSummaries = searching
+    ? subjectSummaries.filter(s => s.name.toLowerCase().includes(searchLower))
+    : subjectSummaries
+
+  const weak   = topics.filter(t=>(t.confidence||3)<=2)
+  const mid    = topics.filter(t=>(t.confidence||3)===3)
+  const strong = topics.filter(t=>(t.confidence||3)>=4)
+
+  let filteredTopics = topics
+  if (searching) filteredTopics = filteredTopics.filter(t => t.name.toLowerCase().includes(searchLower) || displayTopicName(t.name).toLowerCase().includes(searchLower))
+  if (confFilter === 'weak')   filteredTopics = filteredTopics.filter(t=>(t.confidence||3)<=2)
+  if (confFilter === 'mid')    filteredTopics = filteredTopics.filter(t=>(t.confidence||3)===3)
+  if (confFilter === 'strong') filteredTopics = filteredTopics.filter(t=>(t.confidence||3)>=4)
+  const sortedFiltered = [...filteredTopics].sort((a,b)=>(a.confidence||3)-(b.confidence||3))
+  const paperGroups = groupTopicsByPaper(sortedFiltered)
+  const showPaperHeaders = paperGroups.length > 1
+
+  const SubjectIllustration = selSubj !== 'All' ? componentForSubject(selSubj) : null
+  const selSpecTotal = specTotals[selSubj]
 
   return (
     <div className="fade-in">
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
-        <h2>Topic Tracker</h2>
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
+        <div>
+          <h2 style={{marginBottom:2}}>Topics</h2>
+          <p style={{color:'var(--text-muted)',fontSize:'0.85rem',margin:0}}>Track your confidence, topic by topic.</p>
+        </div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           {selected.length>0&&<button className="btn btn-danger btn-sm" onClick={handleBulkDelete}><Trash2 size={14}/> Delete {selected.length}</button>}
-          {selSubj&&<button className="btn btn-secondary btn-sm" onClick={handleSeedTopics} disabled={loading}>{loading?'Loading…':'Reload spec topics'}</button>}
-          {selSubj&&<button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}><Plus size={14}/> Add topic</button>}
+          {selSubj!=='All'&&<button className="btn btn-secondary btn-sm" onClick={handleSeedTopics} disabled={loading}>{loading?'Loading…':'Reload spec topics'}</button>}
+          {selSubj!=='All'&&<button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}><Plus size={14}/> Add topic</button>}
         </div>
       </div>
 
-      {/* Subject picker */}
-      <style>{`
-        @media (max-width: 640px) {
-          .topics-subject-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
-          .topics-subject-picker::-webkit-scrollbar { display: none; }
-          .topics-subject-picker > button { flex: 0 0 auto; }
-        }
-      `}</style>
-      <div className="topics-subject-picker" style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
-        <button className={`btn btn-sm ${selSubj==='All'?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelSubj('All');setSelected([])}}>All Subjects</button>
-        {subjects.map(s=><button key={s} className={`btn btn-sm ${selSubj===s?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelSubj(s);setSelected([])}}>{s}</button>)}
-      </div>
-
-      {!selSubj ? (
-        <div className="empty-state"><div className="empty-icon">📚</div><p>Select a subject to view topics</p></div>
+      {subjects.length === 0 ? (
+        <div className="empty-state">
+          <GraduationCap size={40} className="topics-empty-illustration" style={{opacity:0.35}} />
+          <p>Add your subjects to start tracking topics</p>
+          <button className="btn btn-primary" onClick={()=>navigate('/settings')}>Go to settings</button>
+        </div>
       ) : (
         <>
-          {/* Stats + view toggle */}
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:12}}>
-            <div style={{display:'flex',gap:10}}>
-              {[{l:'Struggling',c:weak.length,col:'var(--danger)'},{l:'Building',c:mid.length,col:'var(--warning)'},{l:'Strong',c:strong.length,col:'var(--success)'}].map(s=>(
-                <div key={s.l} style={{textAlign:'center',padding:'6px 12px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)'}}>
-                  <div style={{fontWeight:800,color:s.col,fontSize:'1.3rem'}}>{s.c}</div>
-                  <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-            <div className="tabs" style={{padding:3}}>
-              <button className={`tab${view==='list'?' active':''}`} onClick={()=>setView('list')}><BarChart2 size={14}/> List</button>
-              <button className={`tab${view==='heat'?' active':''}`} onClick={()=>setView('heat')}><Grid size={14}/> Heatmap</button>
-              <button className={`tab${view==='priority'?' active':''}`} onClick={()=>setView('priority')}><Star size={14} style={{marginLeft: 4}}/> Priority</button>
-              <button className={`tab${view==='resources'?' active':''}`} onClick={()=>setView('resources')}><ExternalLink size={14}/> Resources</button>
-              <button className={`tab${view==='notes'?' active':''}`} onClick={()=>setView('notes')}><StickyNote size={14}/> Notes</button>
-              <button className={`tab${view==='mastery'?' active':''}`} onClick={()=>setView('mastery')}><Layers size={14}/> Mastery</button>
-            </div>
-          </div>
-
-          {topics.length===0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🧠</div>
-              <p>No topics yet for {selSubj}</p>
-              <div style={{display:'flex',gap:8}}>
-                <button className="btn btn-primary" onClick={handleSeedTopics} disabled={loading}>{loading?'Loading…':'Load spec topics'}</button>
-                <button className="btn btn-secondary" onClick={()=>setShowAdd(true)}>Add manually</button>
+          {/* Toolbar: search + subject rail */}
+          <div className="topics-toolbar">
+            <div className="topics-searchbar">
+              <div className="topics-search-input-wrap">
+                <Search size={16}/>
+                <input
+                  className="input"
+                  placeholder={selSubj==='All' ? 'Search subjects…' : `Search ${selSubj} topics…`}
+                  value={search}
+                  onChange={e=>setSearch(e.target.value)}
+                />
+                {search && <button className="topics-search-clear" onClick={()=>setSearch('')} aria-label="Clear search"><X size={14}/></button>}
               </div>
             </div>
-          ) : view==='priority' ? (
-            // ── Priority view ──
-            <PriorityList topics={topics} profile={profile} />
-          ) : view==='resources' ? (
-            // ── Resources view ──
-            <div>
-              {selSubj && (
-                <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-                  <div>
-                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides for {selSubj}</div>
-                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Worked examples, mark scheme language and exam technique per topic</div>
-                  </div>
-                  <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
-                    <BookOpen size={13}/> Open guides
-                  </button>
-                </div>
-              )}
-              <ResourcesPanel subject={selSubj} allSubjects={subjects}/>
-            </div>
-          ) : view==='notes' ? (
-            // ── Notes view ──
-            <div>
-              {/* Link to Study Tools revision guide */}
-              {selSubj && (
-                <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-                  <div>
-                    <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides available</div>
-                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Browse spec-accurate revision guides for {selSubj} topics</div>
-                  </div>
-                  <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
-                    <BookOpen size={13}/> Browse guides
-                  </button>
-                </div>
-              )}
-              <div style={{marginBottom:16}}>
-                <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
-                  <input className="input" placeholder="Note title…" value={noteForm.title} onChange={e=>setNoteForm(f=>({...f,title:e.target.value}))}/>
-                  <textarea className="textarea" style={{minHeight:100}} placeholder="Write your revision notes here…" value={noteForm.content} onChange={e=>setNoteForm(f=>({...f,content:e.target.value}))}/>
-                  <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-                    {editingNote&&<button className="btn btn-ghost btn-sm" onClick={()=>{setEditingNote(null);setNoteForm({title:'',content:''})}}>Cancel</button>}
-                    <button className="btn btn-primary btn-sm" onClick={handleSaveNote} disabled={noteSaving||!noteForm.title}>
-                      <BookOpen size={13}/> {noteSaving?'Saving…':editingNote?'Update note':'Save note'}
-                    </button>
-                  </div>
-                </div>
-                {notes.length===0?(
-                  <div className="empty-state" style={{padding:'20px 0'}}>
-                    <StickyNote size={28} style={{opacity:0.3}}/>
-                    <p style={{fontSize:'0.875rem'}}>No notes yet for {selSubj}</p>
-                  </div>
-                ):(
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {notes.map(n=>(
-                      <div key={n.id} className="card">
-                        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
-                          <div style={{flex:1}}>
-                            <div style={{fontWeight:700,fontSize:'0.88rem',marginBottom:4}}>{n.title}</div>
-                            <div style={{fontSize:'0.82rem',color:'var(--text-secondary)',whiteSpace:'pre-wrap',lineHeight:1.6}}>{n.content}</div>
-                            {n.createdAt&&<div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:6}}>{format(new Date(n.createdAt),'d MMM yyyy')}</div>}
-                          </div>
-                          <div style={{display:'flex',gap:5,flexShrink:0}}>
-                            <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setEditingNote(n);setNoteForm({title:n.title,content:n.content})}}><Zap size={12}/></button>
-                            <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDeleteNote(n.id)}><Trash2 size={12}/></button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : view==='mastery' ? (
-            // ── Mastery view — cross-topic summary ──
-            <div>
-              {(() => {
-                const total = topics.length
-                const mastered = topics.filter(t=>(t.confidence||3)>=4).length
-                const pct = total>0?Math.round((mastered/total)*100):0
+            <div className="subject-rail">
+              <button className={`subject-pill${selSubj==='All'?' active':''}`} onClick={()=>{setSelSubj('All');setSelected([])}}>
+                <span className="subject-pill-all-icon"><Layers size={12}/></span> All Subjects
+              </button>
+              {subjects.map(s=>{
+                const Icon = getSubjectIcon(s)
+                const colour = subjectColour(s)
                 return (
-                  <div>
-                    <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))',borderRadius:12,border:'1px solid var(--border-strong)'}}>
-                      <div style={{textAlign:'center',minWidth:70}}>
-                        <div style={{fontSize:'2rem',fontWeight:800,color:'var(--accent-light)'}}>{pct}%</div>
-                        <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>Mastered</div>
-                      </div>
-                      <div style={{flex:1}}>
-                        <div style={{height:8,background:'var(--bg-hover)',borderRadius:4,overflow:'hidden'}}>
-                          <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,var(--accent),var(--accent-light))',borderRadius:4,transition:'width 0.5s ease'}}/>
-                        </div>
-                        <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:'0.72rem',color:'var(--text-muted)'}}>
-                          <span>{mastered} strong (4-5)</span><span>{total-mastered} to improve</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:6}}>
-                      {[5,4,3,2,1].map(conf=>{
-                        const confTopics = topics.filter(t=>(t.confidence||3)===conf)
-                        if(!confTopics.length) return null
-                        const confCols={5:'var(--success)',4:'#84cc16',3:'var(--warning)',2:'#f97316',1:'var(--danger)'}
-                        return confTopics.map(t=>(
-                          <div key={t.id} style={{padding:'8px 10px',borderRadius:8,background:`${confCols[conf]}15`,border:`1px solid ${confCols[conf]}40`,cursor:'pointer'}}
-                            onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={`${t.name} — click to increase confidence`}>
-                            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:4,marginBottom:3}}>
-                              <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3}}>{t.name}</div>
-                              <Link to={`/topics/${t.id}`} onClick={e=>e.stopPropagation()} title="Open topic"
-                                style={{flexShrink:0,color:'var(--text-muted)',display:'flex',marginTop:1}}>
-                                <ExternalLink size={11}/>
-                              </Link>
-                            </div>
-                            <div style={{display:'flex',gap:2}}>{[1,2,3,4,5].map(n=>(
-                              <div key={n} style={{width:7,height:7,borderRadius:2,background:conf>=n?confCols[conf]:'var(--bg-hover)'}}/>
-                            ))}</div>
-                          </div>
-                        ))
-                      })}
-                    </div>
-                  </div>
-                )
-              })()}
-            </div>
-          ) : view==='heat' ? (
-            // ── Heatmap view ──
-            <div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:6}}>
-                {sorted.map(t=>{
-                  const conf = t.confidence||3
-                  const bg = conf===1?'rgba(239,68,68,0.25)':conf===2?'rgba(249,115,22,0.2)':conf===3?'rgba(245,158,11,0.15)':conf===4?'rgba(132,204,22,0.15)':'rgba(34,197,94,0.2)'
-                  const border = conf===1?'rgba(239,68,68,0.5)':conf===2?'rgba(249,115,22,0.4)':conf===3?'rgba(245,158,11,0.3)':conf===4?'rgba(132,204,22,0.3)':'rgba(34,197,94,0.4)'
-                  return (
-                    <div key={t.id} style={{padding:'8px 10px',borderRadius:'var(--radius-md)',background:bg,border:`1px solid ${border}`,cursor:'pointer',position:'relative'}}
-                      title={`${t.name} — ${CONF_LABELS[conf]}`}>
-                      <Link to={`/topics/${t.id}`} style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4,display:'block',color:'inherit',textDecoration:'none'}}
-                        onMouseEnter={e=>e.currentTarget.style.color='var(--accent-light)'} onMouseLeave={e=>e.currentTarget.style.color='inherit'}>
-                        {t.name}
-                      </Link>
-                      <div className="conf-dots" style={{gap:3}}>
-                        {[1,2,3,4,5].map(n=>(
-                          <div key={n} className={`conf-dot${conf>=n?` filled-${n}`:''}`} style={{width:8,height:8}}
-                            onClick={()=>updateConf(t.id,n)}/>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <div style={{display:'flex',gap:16,marginTop:16,fontSize:'0.78rem',color:'var(--text-muted)'}}>
-                {[[1,'Struggling','var(--danger)'],[2,'Needs work','#f97316'],[3,'Getting there','var(--warning)'],[4,'Good','#84cc16'],[5,'Strong','var(--success)']].map(([n,l,c])=>(
-                  <div key={n} style={{display:'flex',alignItems:'center',gap:4}}>
-                    <div style={{width:10,height:10,borderRadius:2,background:c,opacity:0.7}}/>
-                    {l}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // ── List view ──
-            <div style={{display:'flex',flexDirection:'column',gap:8}}>
-              {sorted.map(t=>{
-                const conf = t.confidence||3
-                return (
-                  <div key={t.id} className="card" style={{borderLeft:`3px solid ${CONF_COLOURS[conf]}`}}>
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-                      <div style={{display:'flex',gap:8,alignItems:'flex-start',flex:'1 1 200px',minWidth:0}}>
-                        <input type="checkbox" checked={selected.includes(t.id)} onChange={()=>toggleSelect(t.id)}
-                          style={{width:15,height:15,accentColor:'var(--accent)',marginTop:3,flexShrink:0}}/>
-                        <div style={{flex:1,minWidth:0}}>
-                          <Link to={`/topics/${t.id}`} style={{fontWeight:600,marginBottom:6,display:'block',color:'inherit',textDecoration:'none'}}
-                            onMouseEnter={e=>e.currentTarget.style.color='var(--accent-light)'} onMouseLeave={e=>e.currentTarget.style.color='inherit'}>
-                            {t.name}
-                          </Link>
-                          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                            <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Confidence:</span>
-                            <div className="conf-dots">
-                              {[1,2,3,4,5].map(n=>(
-                                <div key={n} className={`conf-dot${conf>=n?` filled-${n}`:''}`} onClick={()=>updateConf(t.id,n)} title={CONF_LABELS[n]}/>
-                              ))}
-                            </div>
-                            <span style={{fontSize:'0.78rem',color:CONF_COLOURS[conf],fontWeight:600}}>{CONF_LABELS[conf]}</span>
-                          </div>
-                          {t.notes&&<p style={{fontSize:'0.8rem',marginTop:4}}>{t.notes}</p>}
-                        </div>
-                      </div>
-                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        <button className="btn btn-ghost btn-sm" style={{fontSize:'0.75rem'}}
-                          onClick={()=>navigate('/study?tab=notes&topic='+encodeURIComponent(t.name)+'&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
-                          <BookOpen size={12}/> Guide
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={()=>getAIAdvice(t)} disabled={loadingAI===t.id}>
-                          {loadingAI===t.id?'…':<><Brain size={12}/> Advice</>}
-                        </button>
-                        <button className="btn btn-ghost btn-sm" style={{fontSize:'0.75rem'}}
-                          onClick={()=>setOpenResources(openResources===t.id?null:t.id)}>
-                          <Link2 size={12}/> Resources
-                        </button>
-                        <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDelete(t.id)}><Trash2 size={13}/></button>
-                      </div>
-                    </div>
-                    {aiAdvice[t.id]&&(
-                      <div style={{marginTop:10}}>
-                        <AIOutput
-                          text={aiAdvice[t.id]}
-                          label={`AI Advice — ${t.name}`}
-                          onSummarise={async (text) => {
-                            const res = await getTopicAdvice(selSubj, t.name, 3, ['SUMMARY_MODE'])
-                            return res.text || res.error
-                          }}
-                        />
-                      </div>
-                    )}
-                    {openResources===t.id && (
-                      <TopicResourcesPanel subject={selSubj} topicName={t.name} />
-                    )}
-                  </div>
+                  <button key={s} className={`subject-pill${selSubj===s?' active':''}`} onClick={()=>{setSelSubj(s);setSelected([])}}>
+                    <span className="subject-pill-icon" style={{background:`${colour}1f`,color:colour}}><Icon size={12}/></span>
+                    {s}
+                  </button>
                 )
               })}
             </div>
+          </div>
+
+          {selSubj === 'All' ? (
+            // ── All Subjects — summary cards ──
+            visibleSubjectSummaries.length === 0 ? (
+              <div className="empty-state">
+                <Search size={28} style={{opacity:0.3}}/>
+                <p>No subjects match "{search}"</p>
+              </div>
+            ) : (
+              <div className="subject-summary-grid">
+                {visibleSubjectSummaries.map(s => {
+                  const Illustration = componentForSubject(s.name)
+                  const colour = subjectColour(s.name)
+                  const band = s.count ? CONF_COLOURS[Math.max(1,Math.min(5,Math.round(s.pct/20)))] : 'var(--text-muted)'
+                  return (
+                    <button key={s.name} className="card card-interactive subject-summary-card" onClick={()=>{setSelSubj(s.name);setSelected([]);setSearch('')}}>
+                      <div className="subject-summary-top">
+                        <div className="subject-summary-illustration" style={{background:`${colour}14`}}>
+                          <Illustration size={38}/>
+                        </div>
+                        <div className="subject-summary-text">
+                          <div className="subject-summary-name">{s.name}</div>
+                          <div className="subject-summary-meta">{s.subj?.board||'AQA'} · {getSubjectQualification(s.subj, profile)}</div>
+                        </div>
+                        <div className="subject-summary-pct" style={{color:band}}>{s.count ? `${s.pct}%` : '—'}</div>
+                      </div>
+                      <div className="thin-progress"><div className="thin-progress-fill" style={{width:`${s.pct}%`,background:colour}}/></div>
+                      <div className="subject-summary-foot">
+                        {s.total!=null ? `${Math.min(s.count,s.total)} of ${s.total} spec topics tracked` : `${s.count} topic${s.count!==1?'s':''} tracked`}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          ) : (
+            <>
+              {/* Subject header */}
+              <div className="card topic-subject-header" style={{marginBottom:18}}>
+                <div className="topic-subject-illustration">
+                  {SubjectIllustration && <SubjectIllustration size={42}/>}
+                </div>
+                <div className="topic-subject-header-info">
+                  <h3 style={{marginBottom:0}}>{selSubj}</h3>
+                  <div className="topic-subject-header-meta">
+                    {selBoard} · {selLevel}{selSpecTotal!=null?` · ${Math.min(topics.length,selSpecTotal)} of ${selSpecTotal} spec topics tracked`:''}
+                  </div>
+                </div>
+              </div>
+
+              {topics.length===0 ? (
+                <div className="empty-state">
+                  {SubjectIllustration
+                    ? <SubjectIllustration size={64} className="topics-empty-illustration" style={{opacity:0.4}}/>
+                    : <Layers size={36} className="topics-empty-illustration" style={{opacity:0.3}}/>}
+                  <p>No topics yet for {selSubj}</p>
+                  <div style={{display:'flex',gap:8}}>
+                    <button className="btn btn-primary" onClick={handleSeedTopics} disabled={loading}>{loading?'Loading…':'Load spec topics'}</button>
+                    <button className="btn btn-secondary" onClick={()=>setShowAdd(true)}>Add manually</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Confidence filter chips + view toggle */}
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:12}}>
+                    <div className="conf-filter-row">
+                      {[{k:'weak',l:'Struggling',c:weak.length,col:'var(--danger)'},{k:'mid',l:'Building',c:mid.length,col:'var(--warning)'},{k:'strong',l:'Strong',c:strong.length,col:'var(--success)'}].map(s=>(
+                        <button key={s.k} className={`conf-filter-chip${confFilter===s.k?' active':''}`} style={{color:s.col}} onClick={()=>setConfFilter(f=>f===s.k?null:s.k)} title={`Show only ${s.l.toLowerCase()} topics`}>
+                          <span className="conf-filter-chip-num">{s.c}</span>
+                          <span className="conf-filter-chip-label">{s.l}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="tabs" style={{padding:3}}>
+                      <button className={`tab${view==='list'?' active':''}`} onClick={()=>setView('list')}><BarChart2 size={14}/> List</button>
+                      <button className={`tab${view==='heat'?' active':''}`} onClick={()=>setView('heat')}><Grid size={14}/> Heatmap</button>
+                      <button className={`tab${view==='priority'?' active':''}`} onClick={()=>setView('priority')}><Star size={14}/> Priority</button>
+                      <button className={`tab${view==='resources'?' active':''}`} onClick={()=>setView('resources')}><ExternalLink size={14}/> Resources</button>
+                      <button className={`tab${view==='notes'?' active':''}`} onClick={()=>setView('notes')}><StickyNote size={14}/> Notes</button>
+                      <button className={`tab${view==='mastery'?' active':''}`} onClick={()=>setView('mastery')}><Layers size={14}/> Mastery</button>
+                    </div>
+                  </div>
+
+                  {view==='priority' ? (
+                    <PriorityList topics={topics} profile={profile} />
+                  ) : view==='resources' ? (
+                    <div>
+                      <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                        <div>
+                          <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides for {selSubj}</div>
+                          <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Worked examples, mark scheme language and exam technique per topic</div>
+                        </div>
+                        <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
+                          <BookOpen size={13}/> Open guides
+                        </button>
+                      </div>
+                      <ResourcesPanel subject={selSubj} allSubjects={subjects}/>
+                    </div>
+                  ) : view==='notes' ? (
+                    <div>
+                      <div style={{marginBottom:16}}>
+                        <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+                          <input className="input" placeholder="Note title…" value={noteForm.title} onChange={e=>setNoteForm(f=>({...f,title:e.target.value}))}/>
+                          <textarea className="textarea" style={{minHeight:100}} placeholder="Write your revision notes here…" value={noteForm.content} onChange={e=>setNoteForm(f=>({...f,content:e.target.value}))}/>
+                          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+                            {editingNote&&<button className="btn btn-ghost btn-sm" onClick={()=>{setEditingNote(null);setNoteForm({title:'',content:''})}}>Cancel</button>}
+                            <button className="btn btn-primary btn-sm" onClick={handleSaveNote} disabled={noteSaving||!noteForm.title}>
+                              <BookOpen size={13}/> {noteSaving?'Saving…':editingNote?'Update note':'Save note'}
+                            </button>
+                          </div>
+                        </div>
+                        {notes.length===0?(
+                          <div className="empty-state" style={{padding:'20px 0'}}>
+                            <StickyNote size={28} style={{opacity:0.3}}/>
+                            <p style={{fontSize:'0.875rem'}}>No notes yet for {selSubj}</p>
+                          </div>
+                        ):(
+                          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                            {notes.map(n=>(
+                              <div key={n.id} className="card">
+                                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
+                                  <div style={{flex:1}}>
+                                    <div style={{fontWeight:700,fontSize:'0.88rem',marginBottom:4}}>{n.title}</div>
+                                    <div style={{fontSize:'0.82rem',color:'var(--text-secondary)',whiteSpace:'pre-wrap',lineHeight:1.6}}>{n.content}</div>
+                                    {n.createdAt&&<div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:6}}>{format(new Date(n.createdAt),'d MMM yyyy')}</div>}
+                                  </div>
+                                  <div style={{display:'flex',gap:5,flexShrink:0}}>
+                                    <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setEditingNote(n);setNoteForm({title:n.title,content:n.content})}}><Pencil size={12}/></button>
+                                    <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDeleteNote(n.id)}><Trash2 size={12}/></button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : view==='mastery' ? (
+                    <div>
+                      {(() => {
+                        const total = filteredTopics.length
+                        const mastered = filteredTopics.filter(t=>(t.confidence||3)>=4).length
+                        const pct = total>0?Math.round((mastered/total)*100):0
+                        return (
+                          <div>
+                            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))',borderRadius:12,border:'1px solid var(--border-strong)'}}>
+                              <div style={{textAlign:'center',minWidth:70}}>
+                                <div style={{fontSize:'2rem',fontWeight:800,color:'var(--accent-light)'}}>{pct}%</div>
+                                <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>Mastered</div>
+                              </div>
+                              <div style={{flex:1}}>
+                                <div style={{height:8,background:'var(--bg-hover)',borderRadius:4,overflow:'hidden'}}>
+                                  <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,var(--accent),var(--accent-light))',borderRadius:4,transition:'width 0.5s ease'}}/>
+                                </div>
+                                <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:'0.72rem',color:'var(--text-muted)'}}>
+                                  <span>{mastered} strong (4-5)</span><span>{total-mastered} to improve</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:6}}>
+                              {[5,4,3,2,1].map(conf=>{
+                                const confTopics = filteredTopics.filter(t=>(t.confidence||3)===conf)
+                                if(!confTopics.length) return null
+                                const confCols={5:'var(--success)',4:'#84cc16',3:'var(--warning)',2:'#f97316',1:'var(--danger)'}
+                                return confTopics.map(t=>(
+                                  <div key={t.id} style={{padding:'8px 10px',borderRadius:8,background:`${confCols[conf]}15`,border:`1px solid ${confCols[conf]}40`,cursor:'pointer'}}
+                                    onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={`${displayTopicName(t.name)} — click to increase confidence`}>
+                                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:4,marginBottom:3}}>
+                                      <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3}}>{displayTopicName(t.name)}</div>
+                                      <Link to={`/topics/${t.id}`} onClick={e=>e.stopPropagation()} title="Open topic"
+                                        style={{flexShrink:0,color:'var(--text-muted)',display:'flex',marginTop:1}}>
+                                        <ExternalLink size={11}/>
+                                      </Link>
+                                    </div>
+                                    <div style={{display:'flex',gap:2}}>{[1,2,3,4,5].map(n=>(
+                                      <div key={n} style={{width:7,height:7,borderRadius:2,background:conf>=n?confCols[conf]:'var(--bg-hover)'}}/>
+                                    ))}</div>
+                                  </div>
+                                ))
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  ) : view==='heat' ? (
+                    <div>
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:6}}>
+                        {sortedFiltered.map(t=>{
+                          const conf = t.confidence||3
+                          const bg = conf===1?'rgba(239,68,68,0.25)':conf===2?'rgba(249,115,22,0.2)':conf===3?'rgba(245,158,11,0.15)':conf===4?'rgba(132,204,22,0.15)':'rgba(34,197,94,0.2)'
+                          const border = conf===1?'rgba(239,68,68,0.5)':conf===2?'rgba(249,115,22,0.4)':conf===3?'rgba(245,158,11,0.3)':conf===4?'rgba(132,204,22,0.3)':'rgba(34,197,94,0.4)'
+                          return (
+                            <div key={t.id} style={{padding:'8px 10px',borderRadius:'var(--radius-md)',background:bg,border:`1px solid ${border}`,cursor:'pointer',position:'relative'}}
+                              title={`${displayTopicName(t.name)} — ${CONF_LABELS[conf]}`}>
+                              <Link to={`/topics/${t.id}`} style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4,display:'block',color:'inherit',textDecoration:'none'}}>
+                                {displayTopicName(t.name)}
+                              </Link>
+                              <div className="conf-dots" style={{gap:3}}>
+                                {[1,2,3,4,5].map(n=>(
+                                  <div key={n} className={`conf-dot${conf>=n?` active-${n}`:''}`} style={{width:8,height:8}}
+                                    onClick={()=>updateConf(t.id,n)}/>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div style={{display:'flex',gap:16,marginTop:16,flexWrap:'wrap',fontSize:'0.78rem',color:'var(--text-muted)'}}>
+                        {[[1,'Struggling','var(--danger)'],[2,'Needs work','#f97316'],[3,'Getting there','var(--warning)'],[4,'Good','#84cc16'],[5,'Strong','var(--success)']].map(([n,l,c])=>(
+                          <div key={n} style={{display:'flex',alignItems:'center',gap:4}}>
+                            <div style={{width:10,height:10,borderRadius:2,background:c,opacity:0.7}}/>
+                            {l}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    // ── List view ──
+                    sortedFiltered.length===0 ? (
+                      <div className="empty-state">
+                        <Search size={28} style={{opacity:0.3}}/>
+                        <p>No topics match your search or filter</p>
+                      </div>
+                    ) : (
+                      <div>
+                        {paperGroups.map(group => (
+                          <div key={group.key}>
+                            {showPaperHeaders && <div className="paper-group-label">{group.label}</div>}
+                            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                              {group.topics.map(t => (
+                                <TopicRow
+                                  key={t.id}
+                                  topic={t}
+                                  subject={selSubj}
+                                  board={selBoard}
+                                  level={selLevel}
+                                  selected={selected.includes(t.id)}
+                                  onToggleSelect={()=>toggleSelect(t.id)}
+                                  onSetConfidence={n=>updateConf(t.id,n)}
+                                  onOpenAdvice={()=>getAIAdvice(t)}
+                                  loadingAdvice={loadingAI===t.id}
+                                  advice={aiAdvice[t.id]}
+                                  onToggleResources={()=>setOpenResources(openResources===t.id?null:t.id)}
+                                  resourcesOpen={openResources===t.id}
+                                  onDelete={()=>handleDelete(t.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}
@@ -570,7 +670,7 @@ export default function Topics() {
                 <label className="label">Confidence</label>
                 <div className="conf-dots" style={{gap:8}}>
                   {[1,2,3,4,5].map(n=>(
-                    <div key={n} className={`conf-dot${newTopic.confidence>=n?` filled-${n}`:''}`} style={{width:20,height:20,cursor:'pointer'}} onClick={()=>setNewTopic(t=>({...t,confidence:n}))} title={CONF_LABELS[n]}/>
+                    <div key={n} className={`conf-dot${newTopic.confidence>=n?` active-${n}`:''}`} style={{width:20,height:20,cursor:'pointer'}} onClick={()=>setNewTopic(t=>({...t,confidence:n}))} title={CONF_LABELS[n]}/>
                   ))}
                 </div>
                 <span style={{fontSize:'0.78rem',color:CONF_COLOURS[newTopic.confidence],marginTop:4,display:'block'}}>{CONF_LABELS[newTopic.confidence]}</span>
@@ -588,65 +688,61 @@ export default function Topics() {
   )
 }
 
-// ── Topic Advice Renderer ─────────────────────────────────────────────────────
-// Renders AI markdown with bold, bullets, headings, and clickable resource links
-function TopicAdviceRenderer({ text }) {
-  if (!text) return null
-
-  // Parse [label](url) markdown links
-  function parseLinks(line) {
-    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g
-    const parts = []
-    let last = 0
-    let match
-    while ((match = linkRegex.exec(line)) !== null) {
-      if (match.index > last) parts.push(line.slice(last, match.index))
-      parts.push(
-        <a key={match.index} href={match[2]} target="_blank" rel="noreferrer"
-          style={{ color:'var(--accent-light)', fontWeight:600, textDecoration:'underline' }}
-          onClick={e => e.stopPropagation()}>
-          {match[1]}
-        </a>
-      )
-      last = match.index + match[0].length
-    }
-    if (last < line.length) parts.push(line.slice(last))
-    return parts
-  }
-
-  function inlineFmt(line) {
-    // Bold **text**
-    const parts = line.split(/(\*\*[^*]+\*\*)/)
-    return parts.map((p, i) => {
-      if (p.startsWith('**') && p.endsWith('**')) {
-        return <strong key={i}>{parseLinks(p.slice(2,-2))}</strong>
-      }
-      return <span key={i}>{parseLinks(p)}</span>
-    })
-  }
+// ── Topic row (List view) ───────────────────────────────────────────────────
+function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSetConfidence, onOpenAdvice, loadingAdvice, advice, onToggleResources, resourcesOpen, onDelete }) {
+  const navigate = useNavigate()
+  const conf = topic.confidence || 3
+  const cleanName = displayTopicName(topic.name)
+  const showRaw = cleanName !== topic.name
+  const Icon = getSubjectIcon(subject)
+  const colour = subjectColour(subject)
+  const subDone = (topic.subtopics||[]).filter(s=>s.done).length
+  const subTotal = (topic.subtopics||[]).length
 
   return (
-    <div>
-      {text.split('\n').map((line, i) => {
-        if (!line.trim()) return <div key={i} style={{height:4}}/>
-        // Heading
-        if (line.startsWith('## ') || line.startsWith('**') && line.endsWith('**'))
-          return <div key={i} style={{fontWeight:700,color:'var(--text-primary)',marginTop:8,marginBottom:3,fontSize:'0.85rem'}}>{inlineFmt(line.replace(/^#+\s*/,''))}</div>
-        // Bullet
-        const bullet = line.match(/^[-•*]\s+(.+)/)
-        if (bullet) return (
-          <div key={i} style={{display:'flex',gap:6,marginTop:2}}>
-            <span style={{color:'var(--accent-light)',flexShrink:0}}>•</span>
-            <span>{inlineFmt(bullet[1])}</span>
+    <div className="card topic-row" style={{borderLeft:`3px solid ${CONF_COLOURS[conf]}`}}>
+      <input type="checkbox" className="topic-row-select" checked={selected} onChange={onToggleSelect} aria-label={`Select ${cleanName}`}/>
+      <div className="topic-row-icon" style={{background:`${colour}1a`,color:colour}}><Icon size={16}/></div>
+      <div className="topic-row-main">
+        <Link to={`/topics/${topic.id}`} className="topic-row-title">{cleanName}</Link>
+        {showRaw && <div className="topic-row-sub" title={topic.name}>{topic.name}</div>}
+        {subTotal>0 && <div className="topic-row-subprogress"><CheckCircle2 size={11}/> {subDone}/{subTotal} sub-topics</div>}
+      </div>
+      <div className="topic-row-right">
+        <div className="topic-row-conf">
+          <span className="confidence-pct" style={{color:CONF_COLOURS[conf]}}>{conf*20}%</span>
+          <div className="conf-dots">
+            {[1,2,3,4,5].map(n=>(
+              <div key={n} className={`conf-dot${conf>=n?` active-${n}`:''}`} onClick={()=>onSetConfidence(n)} title={CONF_LABELS[n]}/>
+            ))}
           </div>
-        )
-        return <div key={i} style={{marginTop:2}}>{inlineFmt(line)}</div>
-      })}
+        </div>
+        <div className="topic-row-actions">
+          <button className="btn btn-ghost btn-icon btn-sm" title="Study guide"
+            onClick={()=>navigate('/study?tab=notes&topic='+encodeURIComponent(topic.name)+'&subject='+encodeURIComponent(subject)+'&board='+encodeURIComponent(board)+'&level='+encodeURIComponent(level||'GCSE'))}>
+            <BookOpen size={13}/>
+          </button>
+          <button className="btn btn-ghost btn-icon btn-sm" title="AI advice" onClick={onOpenAdvice} disabled={loadingAdvice}>
+            {loadingAdvice ? '…' : <Brain size={13}/>}
+          </button>
+          <button className="btn btn-ghost btn-icon btn-sm" title="Resources" onClick={onToggleResources}><Link2 size={13}/></button>
+          <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} title="Delete" onClick={onDelete}><Trash2 size={13}/></button>
+        </div>
+      </div>
+      {advice && (
+        <div style={{marginTop:10,width:'100%'}}>
+          <AIOutput text={advice} label={`AI Advice — ${cleanName}`} />
+        </div>
+      )}
+      {resourcesOpen && (
+        <div style={{width:'100%'}}>
+          <TopicResourcesPanel subject={subject} topicName={topic.name} />
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Resources Panel ───────────────────────────────────────────────────────────
 // ── Per-topic resources panel — shows tiered links for one specific topic ──────
 function TopicResourcesPanel({ subject, topicName }) {
   const { verified, hub, search } = resolveTopicResources(subject, topicName)
@@ -661,7 +757,7 @@ function TopicResourcesPanel({ subject, topicName }) {
       background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--accent-light)',
         letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-        Resources for "{topicName}"
+        Resources for "{displayTopicName(topicName)}"
       </div>
 
       {verified.length > 0 && (
@@ -714,7 +810,7 @@ function TopicResourcesPanel({ subject, topicName }) {
 }
 
 function ResourcesPanel({ subject, allSubjects }) {
-  const [selSubj, setSelSubj] = React.useState(subject || allSubjects[0] || '')
+  const [selSubj, setSelSubj] = useState(subject || allSubjects[0] || '')
   const resources = SUBJECT_RESOURCES[selSubj] || []
 
   // Generic resources available for all subjects
@@ -749,7 +845,7 @@ function ResourcesPanel({ subject, allSubjects }) {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
             {resources.map(r => (
               <a key={r.name} href={r.url} target="_blank" rel="noreferrer"
-                style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)',textDecoration:'none',color:'inherit',transition:'border-color 0.15s'}}>
+                style={{display:'flex',flexDirection:'column',gap:4,padding:'12px 14px',background:'var(--bg-card)',borderRadius:'var(--radius-md)',border:'2px solid var(--border)',textDecoration:'none',color:'inherit'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                   <span style={{fontWeight:700,fontSize:'0.875rem',color:'var(--text-primary)'}}>{r.name}</span>
                   <ExternalLink size={13} style={{flexShrink:0,color:'var(--text-muted)'}}/>
