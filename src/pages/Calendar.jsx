@@ -22,7 +22,7 @@ import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
   CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye,
   CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,
-  Lightbulb, AlertCircle, Info, BookOpen,
+  Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,
 } from 'lucide-react'
 import { subjectColour } from '../data/subjects'
 import './Calendar.css'
@@ -73,10 +73,12 @@ export default function Calendar() {
   // are fully controllable — persisted to the profile so the choice survives across devices,
   // same as any other setting. Never auto-schedules anything; see the "Schedule" action below.
   const [recsEnabled,  setRecsEnabled]  = useState(profile?.calendarRecsEnabled !== false)
+  const [recsOnGrid,   setRecsOnGrid]   = useState(profile?.calendarRecsOnGrid !== false)
   const fileRef = useRef()
 
   useEffect(() => { loadSessions() }, [user])
   useEffect(() => { setRecsEnabled(profile?.calendarRecsEnabled !== false) }, [profile?.calendarRecsEnabled])
+  useEffect(() => { setRecsOnGrid(profile?.calendarRecsOnGrid !== false) }, [profile?.calendarRecsOnGrid])
 
   async function loadSessions() {
     if (!user) return
@@ -141,6 +143,11 @@ export default function Calendar() {
   async function handleToggleRecs(enabled) {
     setRecsEnabled(enabled)
     if (user) updateUserProfile(user.uid, { calendarRecsEnabled: enabled }).catch(() => {})
+  }
+
+  async function handleToggleRecsOnGrid(enabled) {
+    setRecsOnGrid(enabled)
+    if (user) updateUserProfile(user.uid, { calendarRecsOnGrid: enabled }).catch(() => {})
   }
 
   async function handleResolveMistakeFromCalendar(id) {
@@ -465,6 +472,22 @@ export default function Calendar() {
                     </div>
                   )}
 
+                  {/* Recommended topics, projected only onto today — dynamic (recomputed
+                      from live data every render, nothing cached/stored) and fully optional
+                      via the two toggles above. Clicking opens the Add modal pre-filled;
+                      nothing is ever written to the calendar without that explicit step. */}
+                  {isToday(date) && recsEnabled && recsOnGrid && recommendations.length > 0 && (
+                    <div className="rf-cal-chips">
+                      {recommendations.slice(0,2).map((rec,ri)=>(
+                        <span key={'rec'+ri} className="rf-cal-chip is-suggested"
+                          onClick={(ev)=>{ ev.stopPropagation(); setAddPrefill({kind:'session', subject:rec.subject, topic:rec.topic, type:'Content Revision'}); setShowAdd(true) }}
+                          title={rec.reasons[0]}>
+                          <Lightbulb size={8}/> {rec.topic}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {totalDots > 0 && (
                     <div className="rf-cal-dots">
                       {dayExams.slice(0,2).map((e,ei)=>(
@@ -518,6 +541,12 @@ export default function Calendar() {
               <span className="rf-cal-legend-swatch"><span style={{width:7,height:7,borderRadius:'50%',background:'currentColor',display:'block',opacity:0.4}}/></span>
               Completed
             </span>
+            {recsEnabled && recsOnGrid && (
+              <span className="rf-cal-legend-item">
+                <span className="rf-cal-legend-swatch"><Lightbulb size={12}/></span>
+                Suggested (today only)
+              </span>
+            )}
           </div>
         </div>
 
@@ -618,14 +647,22 @@ export default function Calendar() {
       <div className="card rf-recs-panel">
         <div className="rf-recs-head">
           <h4><Lightbulb size={16} color="var(--accent)"/> Recommended topics</h4>
-          <label className="rf-recs-toggle">
-            <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
-            Show recommendations
-          </label>
+          <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+            <label className="rf-recs-toggle">
+              <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+              Show recommendations
+            </label>
+            {recsEnabled && (
+              <label className="rf-recs-toggle">
+                <input type="checkbox" checked={recsOnGrid} onChange={e=>handleToggleRecsOnGrid(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+                Show on today's date
+              </label>
+            )}
+          </div>
         </div>
         {recsEnabled && (
           <>
-            <p className="rf-recs-sub">Based on your confidence ratings, exam dates and logged mistakes — nothing here is added to your calendar unless you choose to.</p>
+            <p className="rf-recs-sub">Based on your confidence ratings, exam dates and logged mistakes — recalculated live, and nothing is added to your calendar unless you choose to. {recsOnGrid && "Today's top picks also show as dashed suggestions on the calendar itself."}</p>
             {loading ? (
               <div className="rf-recs-grid">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>
             ) : recommendations.length === 0 ? (
@@ -1099,6 +1136,37 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
     title: prefill?.topic ? `Revise ${prefill.topic}` : '', subject: prefill?.subject || '',
     startDate:'', dueDate:selectedDate?dateStr:'', priority:'medium', notes:'',
   })
+  // Paper section — subject + a specific real paper number + (optionally) which topics on
+  // that paper to focus on. Topics come from topics.js's own per-paper breakdown (the same
+  // data Topic Notes already reads), not an invented "Section A/B" structure — this app's
+  // paper data doesn't have formal sections, so grounding this in real per-paper topics is
+  // the honest version of "paper sections".
+  const [paperForm,setPaperForm] = useState({
+    subject: prefill?.subject || subjects[0]||'', paperNum:'', topics:[],
+    date:dateStr, start:'17:00', duration:60, notes:'',
+  })
+  const [paperTopicsByPaper, setPaperTopicsByPaper] = useState({})
+  const [paperTopicsLoading, setPaperTopicsLoading] = useState(false)
+
+  useEffect(() => {
+    if (kind!=='paper' || !paperForm.subject) { setPaperTopicsByPaper({}); return }
+    setPaperTopicsLoading(true)
+    const subjMeta = profile?.subjects?.find(s=>s.name===paperForm.subject)
+    import('../data/topics').then(({ getTopicsForSubject }) => {
+      const sb = subjMeta?.board || 'AQA'
+      const lv = subjMeta?.qualification || 'GCSE'
+      const papers = getTopicsForSubject(sb, paperForm.subject, lv) || {}
+      setPaperTopicsByPaper(papers)
+      setPaperTopicsLoading(false)
+      const firstPaper = Object.keys(papers)[0]
+      if (firstPaper) setPaperForm(f=>f.paperNum ? f : ({...f, paperNum:firstPaper}))
+    })
+  }, [kind, paperForm.subject])
+
+  function togglePaperTopic(t) {
+    setPaperForm(f => ({...f, topics: f.topics.includes(t) ? f.topics.filter(x=>x!==t) : [...f.topics, t]}))
+  }
+
   async function submitSession(e) {
     e.preventDefault()
     const startDt = new Date(`${form.date}T${form.start}`)
@@ -1115,19 +1183,39 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
     if (!taskForm.title.trim()) return
     await onSaveTask(taskForm)
   }
+  async function submitPaper(e) {
+    e.preventDefault()
+    if (!paperForm.subject || !paperForm.paperNum) return
+    const startDt = new Date(`${paperForm.date}T${paperForm.start}`)
+    const topicCount = paperForm.topics.length
+    await onSaveSession({
+      subject: paperForm.subject,
+      type: 'Past Paper Practice',
+      paper: paperForm.paperNum,
+      topics: paperForm.topics,
+      notes: paperForm.notes,
+      title: `${paperForm.subject} Paper ${paperForm.paperNum}${topicCount ? ` — ${topicCount} topic${topicCount>1?'s':''}` : ' — full paper'}`,
+      duration: parseInt(paperForm.duration),
+      startTime: startDt.toISOString(),
+      endTime: new Date(startDt.getTime()+parseInt(paperForm.duration)*60000).toISOString(),
+    })
+  }
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header"><span className="modal-title">Add to calendar</span><button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button></div>
         <div className="rf-kind-toggle">
           <button type="button" className={`rf-kind-btn${kind==='session'?' is-active':''}`} onClick={()=>setKind('session')}>
-            <BookOpen size={15}/> Revision session
+            <BookOpen size={15}/> Session
+          </button>
+          <button type="button" className={`rf-kind-btn${kind==='paper'?' is-active':''}`} onClick={()=>setKind('paper')}>
+            <ClipboardCheck size={15}/> Paper section
           </button>
           <button type="button" className={`rf-kind-btn${kind==='task'?' is-active':''}`} onClick={()=>setKind('task')}>
-            <ListTodo size={15}/> Task / deadline
+            <ListTodo size={15}/> Task
           </button>
         </div>
-        {kind==='session' ? (
+        {kind==='session' && (
           <form onSubmit={submitSession} style={{display:'flex',flexDirection:'column',gap:12}}>
             <div className="grid-2" style={{gap:10}}>
               <div><label className="label">Subject</label>
@@ -1156,7 +1244,51 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
               <button type="submit" className="btn btn-primary">Add session</button>
             </div>
           </form>
-        ) : (
+        )}
+        {kind==='paper' && (
+          <form onSubmit={submitPaper} style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div className="grid-2" style={{gap:10}}>
+              <div><label className="label">Subject</label>
+                <select className="select" value={paperForm.subject}
+                  onChange={e=>setPaperForm(f=>({...f,subject:e.target.value,paperNum:'',topics:[]}))} required>
+                  <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
+                </select></div>
+              <div><label className="label">Paper</label>
+                <select className="select" value={paperForm.paperNum} disabled={!Object.keys(paperTopicsByPaper).length}
+                  onChange={e=>setPaperForm(f=>({...f,paperNum:e.target.value,topics:[]}))}>
+                  <option value="">{paperTopicsLoading?'Loading…':Object.keys(paperTopicsByPaper).length?'Select…':'No paper data'}</option>
+                  {Object.keys(paperTopicsByPaper).map(p=><option key={p} value={p}>Paper {p}</option>)}
+                </select></div>
+              <div><label className="label">Date</label>
+                <input className="input" type="date" value={paperForm.date} onChange={e=>setPaperForm(f=>({...f,date:e.target.value}))} required/></div>
+              <div><label className="label">Start time</label>
+                <input className="input" type="time" value={paperForm.start} onChange={e=>setPaperForm(f=>({...f,start:e.target.value}))} required/></div>
+              <div><label className="label">Duration (min)</label>
+                <input className="input" type="number" min={15} max={300} value={paperForm.duration} onChange={e=>setPaperForm(f=>({...f,duration:e.target.value}))} required/></div>
+            </div>
+            {paperForm.paperNum && paperTopicsByPaper[paperForm.paperNum]?.length > 0 && (
+              <div>
+                <label className="label">Focus topics (optional — leave blank to cover the whole paper)</label>
+                <div style={{maxHeight:170,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:9,display:'flex',flexDirection:'column',gap:5,background:'var(--bg-surface)'}}>
+                  {paperTopicsByPaper[paperForm.paperNum].map(t=>(
+                    <label key={t} style={{display:'flex',alignItems:'flex-start',gap:7,fontSize:'0.78rem',cursor:'pointer',lineHeight:1.4}}>
+                      <input type="checkbox" checked={paperForm.topics.includes(t)} onChange={()=>togglePaperTopic(t)} style={{marginTop:2,flexShrink:0}}/>
+                      <span>{t}</span>
+                    </label>
+                  ))}
+                </div>
+                {paperForm.topics.length>0 && <p style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:5}}>{paperForm.topics.length} topic{paperForm.topics.length>1?'s':''} selected</p>}
+              </div>
+            )}
+            <div><label className="label">Notes</label>
+              <textarea className="textarea" style={{minHeight:55}} value={paperForm.notes} onChange={e=>setPaperForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={!paperForm.subject||!paperForm.paperNum}>Add paper section</button>
+            </div>
+          </form>
+        )}
+        {kind==='task' && (
           <form onSubmit={submitTask} style={{display:'flex',flexDirection:'column',gap:12}}>
             <div><label className="label">Title</label>
               <input className="input" value={taskForm.title} onChange={e=>setTaskForm(f=>({...f,title:e.target.value}))} required autoFocus/></div>
