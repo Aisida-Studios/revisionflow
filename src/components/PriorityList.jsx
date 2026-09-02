@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react'
 import { usePriority } from '../context/PriorityContext'
 import { subjectColour } from '../data/subjects'
+import { Flame, GripVertical, Star as StarIcon, TrendingDown } from 'lucide-react'
 
 function StarRating({ value = 3, onChange }) {
   const [hover, setHover] = useState(0)
@@ -76,8 +77,8 @@ export default function PriorityList({ topics = [], profile }) {
       {prioritised.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-            <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 700 }}>
-              🔥 Your Top Priorities
+            <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Flame size={16} style={{ color: 'var(--warning)' }} /> Your Top Priorities
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Drag to reorder</span>
           </div>
@@ -92,14 +93,14 @@ export default function PriorityList({ topics = [], profile }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.6rem 0.9rem',
-                  background: dragIdx === idx ? 'var(--accent)20' : 'var(--surface)',
+                  background: dragIdx === idx ? 'var(--accent-pale)' : 'var(--bg-surface)',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
                   cursor: 'grab',
                   transition: 'background 0.15s',
                 }}
               >
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', minWidth: 20 }}>⠿</span>
+                <span style={{ color: 'var(--text-muted)', minWidth: 20, display: 'flex' }}><GripVertical size={15} /></span>
                 <span style={{
                   width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
                   background: subjectColour(t.subjectId),
@@ -121,11 +122,14 @@ export default function PriorityList({ topics = [], profile }) {
         {['all','high','low'].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
             padding: '0.3rem 0.75rem', borderRadius: 6, border: 'none', cursor: 'pointer',
-            background: filter === f ? 'var(--accent)' : 'var(--surface)',
+            background: filter === f ? 'var(--accent)' : 'var(--bg-surface)',
             color: filter === f ? 'white' : 'var(--text-secondary)',
             fontSize: '0.8rem', fontWeight: 600,
+            display: 'inline-flex', alignItems: 'center', gap: 5,
           }}>
-            {f === 'all' ? 'All Topics' : f === 'high' ? '⭐ High Priority' : '📉 Needs Work'}
+            {f === 'high' && <StarIcon size={12} />}
+            {f === 'low' && <TrendingDown size={12} />}
+            {f === 'all' ? 'All Topics' : f === 'high' ? 'High Priority' : 'Needs Work'}
           </button>
         ))}
         <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -144,7 +148,7 @@ export default function PriorityList({ topics = [], profile }) {
           <div key={t.id} style={{
             display: 'flex', alignItems: 'center', gap: '0.75rem',
             padding: '0.5rem 0.9rem',
-            background: 'var(--surface)', borderRadius: 8,
+            background: 'var(--bg-surface)', borderRadius: 8,
             border: '1px solid var(--border)',
           }}>
             <span style={{
