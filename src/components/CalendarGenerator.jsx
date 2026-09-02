@@ -147,7 +147,13 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
         const snap = await getDocs(
           query(collection(db,'users',user.uid,'sessions'), where('source','==','generated'))
         )
-        const toDelete = snap.docs
+        // Only within this generation's date range — not every generated session ever
+        // created. Filtered client-side (rather than a date range where() clause) to avoid
+        // needing a new composite index on source+date for this collection.
+        const toDelete = snap.docs.filter(d => {
+          const date = d.data().date
+          return date && date >= startDate && date <= endDate
+        })
         for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
           const delBatch = writeBatch(db)
           toDelete.slice(i, i + BATCH_SIZE).forEach(d => delBatch.delete(doc(db,'users',user.uid,'sessions',d.id)))
@@ -509,7 +515,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
             <label className="label">What should happen to your existing calendar?</label>
             <div style={{display:'flex',flexDirection:'column',gap:7}}>
               {[
-                {val:'replace',label:'Replace existing generated sessions',desc:'Removes previous auto-generated sessions, keeps manually added ones'},
+                {val:'replace',label:'Replace existing generated sessions',desc:`Removes previous auto-generated sessions between ${startDate} and ${endDate} only — manually added sessions and anything outside this range are kept`},
                 {val:'add',label:'Add to existing calendar',desc:'All current sessions are kept — new ones are added on top'},
               ].map(opt=>(
                 <button key={opt.val} onClick={()=>setReplaceChoice(opt.val)}
