@@ -66,6 +66,11 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rf-cal-chip.is-exam { display: flex; align-items: center; gap: 3px; }
+.rf-cal-chip.is-suggested {
+  display: flex; align-items: center; gap: 3px; cursor: pointer;
+  background: transparent; border: 1px dashed var(--accent); color: var(--accent-light);
+}
+.rf-cal-chip.is-suggested:hover { background: var(--accent-bg); }
 
 .rf-cal-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: auto; align-items: center; }
 .rf-cal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
