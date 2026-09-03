@@ -5,7 +5,7 @@ import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
-import { awardXP, autoCompleteQuest, migrateLegacyTopicDocs, saveNote, getNotes, deleteNote } from '../utils/firestore'
+import { awardXP, autoCompleteQuest, migrateLegacyTopicDocs, saveNote, getNotes, deleteNote, runBadgeAudit } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
 import { getMergedTopicsFlat } from '../data/overrides'
@@ -14,6 +14,7 @@ import { subjectColour, getSubjectQualification } from '../data/subjects'
 import { componentForSubject } from '../data/illustrationThemes'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { buildTopicId } from '../utils/topicId'
+import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'
 import toast from 'react-hot-toast'
 import {
@@ -286,6 +287,7 @@ export default function Topics() {
     setTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
     setAllTopics(ts=>ts.map(t=>t.id===topicId?{...t,confidence:conf}:t))
     await autoCompleteQuest(user.uid, 'rate_topics')
+    runBadgeAudit(user.uid).catch(()=>{})
   }
 
   async function handleDelete(id) {
@@ -341,7 +343,10 @@ export default function Topics() {
   if (confFilter === 'mid')    filteredTopics = filteredTopics.filter(t=>(t.confidence||3)===3)
   if (confFilter === 'strong') filteredTopics = filteredTopics.filter(t=>(t.confidence||3)>=4)
   const sortedFiltered = [...filteredTopics].sort((a,b)=>(a.confidence||3)-(b.confidence||3))
-  const paperGroups = groupTopicsByPaper(sortedFiltered)
+  const paperGroups = groupTopicsByPaper(sortedFiltered).map(g => {
+    const realName = /^\d+$/.test(g.key) ? paperName(selBoard, selLevel, selSubj, g.key) : null
+    return realName ? { ...g, label: `${g.label} — ${realName}` } : g
+  })
   const showPaperHeaders = paperGroups.length > 1
 
   const SubjectIllustration = selSubj !== 'All' ? componentForSubject(selSubj) : null
@@ -597,10 +602,10 @@ export default function Topics() {
                               <Link to={`/topics/${t.id}`} style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4,display:'block',color:'inherit',textDecoration:'none'}}>
                                 {displayTopicName(t.name)}
                               </Link>
-                              <div className="conf-dots" style={{gap:3}}>
+                              <div className="conf-dots" style={{gap:3}} role="radiogroup" aria-label="Confidence rating">
                                 {[1,2,3,4,5].map(n=>(
-                                  <div key={n} className={`conf-dot${conf>=n?` active-${n}`:''}`} style={{width:8,height:8}}
-                                    onClick={()=>updateConf(t.id,n)}/>
+                                  <button key={n} type="button" className={`conf-dot${conf>=n?` active-${n}`:''}`} style={{width:8,height:8}}
+                                    onClick={()=>updateConf(t.id,n)} aria-label={CONF_LABELS[n]} aria-pressed={conf>=n}/>
                                 ))}
                               </div>
                             </div>
@@ -668,9 +673,10 @@ export default function Topics() {
               <div><label className="label">Topic name</label><input className="input" placeholder="e.g. Quadratic equations" value={newTopic.name} onChange={e=>setNewTopic(t=>({...t,name:e.target.value}))}/></div>
               <div>
                 <label className="label">Confidence</label>
-                <div className="conf-dots" style={{gap:8}}>
+                <div className="conf-dots" style={{gap:8}} role="radiogroup" aria-label="Confidence rating">
                   {[1,2,3,4,5].map(n=>(
-                    <div key={n} className={`conf-dot${newTopic.confidence>=n?` active-${n}`:''}`} style={{width:20,height:20,cursor:'pointer'}} onClick={()=>setNewTopic(t=>({...t,confidence:n}))} title={CONF_LABELS[n]}/>
+                    <button key={n} type="button" className={`conf-dot${newTopic.confidence>=n?` active-${n}`:''}`} style={{width:20,height:20,cursor:'pointer'}}
+                      onClick={()=>setNewTopic(t=>({...t,confidence:n}))} title={CONF_LABELS[n]} aria-label={CONF_LABELS[n]} aria-pressed={newTopic.confidence>=n}/>
                   ))}
                 </div>
                 <span style={{fontSize:'0.78rem',color:CONF_COLOURS[newTopic.confidence],marginTop:4,display:'block'}}>{CONF_LABELS[newTopic.confidence]}</span>
@@ -711,9 +717,10 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
       <div className="topic-row-right">
         <div className="topic-row-conf">
           <span className="confidence-pct" style={{color:CONF_COLOURS[conf]}}>{conf*20}%</span>
-          <div className="conf-dots">
+          <div className="conf-dots" role="radiogroup" aria-label="Confidence rating">
             {[1,2,3,4,5].map(n=>(
-              <div key={n} className={`conf-dot${conf>=n?` active-${n}`:''}`} onClick={()=>onSetConfidence(n)} title={CONF_LABELS[n]}/>
+              <button key={n} type="button" className={`conf-dot${conf>=n?` active-${n}`:''}`}
+                onClick={()=>onSetConfidence(n)} title={CONF_LABELS[n]} aria-label={CONF_LABELS[n]} aria-pressed={conf>=n}/>
             ))}
           </div>
         </div>
@@ -736,7 +743,7 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
       )}
       {resourcesOpen && (
         <div style={{width:'100%'}}>
-          <TopicResourcesPanel subject={subject} topicName={topic.name} />
+          <TopicResourcesPanel subject={subject} topicName={topic.name} board={board} level={level} />
         </div>
       )}
     </div>
@@ -744,8 +751,8 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
 }
 
 // ── Per-topic resources panel — shows tiered links for one specific topic ──────
-function TopicResourcesPanel({ subject, topicName }) {
-  const { verified, hub, search } = resolveTopicResources(subject, topicName)
+function TopicResourcesPanel({ subject, topicName, board, level }) {
+  const { verified, hub, search } = resolveTopicResources(subject, topicName, board, level)
   const linkStyle = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
     padding: '9px 12px', borderRadius: 14, background: 'var(--bg-card)',
