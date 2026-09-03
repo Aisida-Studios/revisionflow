@@ -140,7 +140,7 @@ export default function TooltipTour({ onComplete, profile }) {
           {TOUR_STEPS.map((_, i) => (
             <div key={i} style={{
               width: i === step ? 20 : 8, height: 8, borderRadius: 4,
-              background: i === step ? 'var(--accent)' : i < step ? 'var(--accent)60' : 'var(--border)',
+              background: i === step ? 'var(--accent)' : i < step ? 'var(--accent-pale)' : 'var(--border)',
               transition: 'all 0.3s',
             }} />
           ))}
