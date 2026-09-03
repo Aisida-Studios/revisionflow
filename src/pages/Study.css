@@ -28,7 +28,7 @@
 .rf-mode-hero-text h3 { margin-bottom: 4px; }
 .rf-mode-hero-meta { display: flex; gap: 6px; flex-wrap: wrap; }
 
-.rf-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rf-mode-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
 .rf-mode-card {
   display: flex; flex-direction: column; gap: 10px; padding: 16px 14px; border-radius: var(--radius-xl);
   border: 1.5px solid var(--border); background: var(--bg-card); cursor: pointer; text-align: left;
@@ -152,6 +152,6 @@
   .rf-hero-timer svg { width: 140px; height: 140px; }
   .rf-hero-timer-num { font-size: 1.55rem; }
   .rf-q-card { padding: 16px; }
-  .rf-config-grid { grid-template-columns: 1fr 1fr; }
+  .rf-config-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
   .rf-flip-card { height: 240px; }
 }
