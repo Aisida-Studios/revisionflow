@@ -108,7 +108,7 @@ function renderMarkdown(text) {
   return elements
 }
 
-export default function AIOutput({ text, label, compact }) {
+export default function AIOutput({ text, label, compact, onSummarise }) {
   const [showSummary, setShowSummary] = useState(false)
   const [summary,     setSummary]     = useState('')
   const [sumLoading,  setSumLoading]  = useState(false)
@@ -118,15 +118,20 @@ export default function AIOutput({ text, label, compact }) {
     setSumLoading(true)
     setShowSummary(true)
     try {
-      const res = await fetch('/api/tutor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'Summarise this in 3 bullet points:\n\n' + text }],
-        }),
-      })
-      const data = await res.json()
-      setSummary(data.text || 'Could not summarise.')
+      if (onSummarise) {
+        const result = await onSummarise(text)
+        setSummary(result || 'Could not summarise.')
+      } else {
+        const res = await fetch('/api/tutor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: 'Summarise this in 3 bullet points:\n\n' + text }],
+          }),
+        })
+        const data = await res.json()
+        setSummary(data.text || 'Could not summarise.')
+      }
     } catch {
       setSummary('Could not summarise.')
     }
