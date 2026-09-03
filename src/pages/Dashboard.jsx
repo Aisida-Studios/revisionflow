@@ -15,7 +15,7 @@ import EmergencyBanner from '../components/EmergencyBanner'
 import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
-import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
+import { componentForSubject } from '../data/illustrationThemes'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
   filterToCurrentQualification,
@@ -70,89 +70,15 @@ function greetingWord(hour) {
   return 'Good evening'
 }
 
-/* Auto-detects every {Subject}Illustration.jsx already sitting in
-   components/illustrations/ via Vite's import.meta.glob — a real,
-   supported Vite build-time feature, not filesystem-watching, so this is
-   genuine auto-detection: drop {Subject}Illustration.jsx in that folder
-   and it's picked up with no code change here.
-
-   Matching is on the NORMALIZED subject name (lowercased, spaces/
-   punctuation stripped) against the same normalization of the filename,
-   because plenty of real subject names are multi-word ("Computer
-   Science") while filenames are typically written as one concatenated
-   word ("ComputerScienceIllustration.jsx") — a plain .includes() check
-   without normalizing fails on the space, which is exactly why this
-   needed fixing rather than just adding files: 22 illustrations landed,
-   several with names that don't literally appear inside their subject's
-   real name even after normalizing (checked each one against the actual
-   SUBJECT_COLOURS list in data/subjects.js, not guessed):
-     - "Mathematics" / "Further Mathematics" / "Statistics" → Maths
-     - "Physical Education" → PE
-     - "Food Preparation & Nutrition" → FoodNutrition (skips "Preparation")
-     - "Religious Studies" / "Philosophy" → ReligionPhilosophy
-     - "Design & Technology" / "Technology and Design" → DesignTech
-     - "Law" / "Politics" → LawPolitics
-     - individual languages (French, German, Spanish, ...) → Languages,
-       a shared illustration for the language-subject family rather than
-       one each
-     - Biology → Cell, named for its subject matter, not the subject —
-       this one already existed (TopicDetail.jsx's isBiologyLike mirrors
-       it)
-   Everything else (Physics, Chemistry, Geography, History, Music,
-   Psychology, Drama, English*, Business*, Art & Design, Media Studies)
-   matches directly after normalizing, no override needed.
-
-   HealthIllustration.jsx doesn't correspond to anything in the current
-   SUBJECT_COLOURS list — left unmapped rather than guessed at; it'll
-   just sit unused until there's a real subject to attach it to.
-
-   SeedlingIllustration is excluded from the scan and used only as the
-   explicit fallback, so it can't accidentally win a match. */
-function normalize(str) {
-  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-}
-
-const SUBJECT_OVERRIDES = {
-  biology: 'cell',
-  mathematics: 'maths',
-  furthermathematics: 'maths',
-  statistics: 'maths',
-  physicaleducation: 'pe',
-  foodpreparationnutrition: 'foodnutrition',
-  religiousstudies: 'religionphilosophy',
-  philosophy: 'religionphilosophy',
-  designtechnology: 'designtech',
-  technologyanddesign: 'designtech',
-  law: 'lawpolitics',
-  politics: 'lawpolitics',
-  french: 'languages',
-  german: 'languages',
-  spanish: 'languages',
-  mandarinchinese: 'languages',
-  arabic: 'languages',
-  polish: 'languages',
-  urdu: 'languages',
-  latin: 'languages',
-  classicalgreek: 'languages',
-}
-
-const illustrationModules = import.meta.glob('../components/illustrations/*Illustration.jsx', { eager: true })
-const ILLUSTRATIONS_BY_KEY = {}
-Object.entries(illustrationModules).forEach(([path, mod]) => {
-  const key = normalize(path.match(/([A-Za-z]+)Illustration\.jsx$/)?.[1])
-  if (key && key !== 'seedling' && mod?.default) ILLUSTRATIONS_BY_KEY[key] = mod.default
-})
-
+/* Resolves a subject name to its illustration component via the shared
+   illustrationThemes.js map — the same resolver Topics.jsx and TopicDetail.jsx use, so a
+   given subject renders identically everywhere in the app. This used to be a self-contained
+   import.meta.glob matcher here; diffing it against the shared resolver across every real
+   subject in src/data/subjects.js turned up disagreements on about 40% of them (including a
+   real bug: normalizing "Children and Young People's Workforce" left a stray "pe" substring
+   that matched the Physical Education illustration). Delegating removes that drift. */
 function illustrationFor(subject) {
-  if (!subject) return SeedlingIllustration
-  const s = normalize(subject)
-  const overrideSubject = Object.keys(SUBJECT_OVERRIDES).find((subj) => s.includes(subj))
-  if (overrideSubject) {
-    const mapped = ILLUSTRATIONS_BY_KEY[SUBJECT_OVERRIDES[overrideSubject]]
-    if (mapped) return mapped
-  }
-  const directKey = Object.keys(ILLUSTRATIONS_BY_KEY).find((key) => s.includes(key))
-  return directKey ? ILLUSTRATIONS_BY_KEY[directKey] : SeedlingIllustration
+  return componentForSubject(subject)
 }
 
 /* Small subject-colour icon badge for list rows (Upcoming Exams, Subject
