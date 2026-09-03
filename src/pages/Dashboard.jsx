@@ -652,7 +652,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="card">
+        <div className="card" style={upcomingExams.length === 0 ? { gridColumn: '1 / -1' } : undefined}>
           <p className="card-eyebrow">Subject overview</p>
           {dataLoading ? <Skeleton height={130} /> : subjectOverview.length ? (
             <ul className="plain-list">
