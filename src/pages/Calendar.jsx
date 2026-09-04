@@ -872,6 +872,7 @@ function SessionCard({ session:s, onComplete, onDelete, onEdit }) {
 function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSaveTask }) {
   const subjects = profile?.subjects?.map(s=>s.name)||[]
   const isTask = !!session.isTask
+  const isPaperSection = !isTask && session.type === 'Past Paper Practice' && !!session.paper
   const [form,setForm] = useState({
     subject: session.subject||'',
     type: session.type  || 'Content Revision',
@@ -879,6 +880,7 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     start: session.start|| '17:00',
     duration: session.duration||45,
     paper: session.paper||'',
+    topics: session.topics || [],
     notes: session.notes||'',
   })
   const [taskForm,setTaskForm] = useState({
@@ -889,14 +891,47 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     priority: session.priority || 'medium',
     notes: session.notes || '',
   })
+  // Only fetched for paper-section sessions, to let the topic checklist be re-picked —
+  // same source (topics.js + real confidence) the Add modal's paper-section form uses.
+  const [paperTopics, setPaperTopics] = useState([])
+  const [paperTopicConfidence, setPaperTopicConfidence] = useState({})
+  const [paperTopicsLoading, setPaperTopicsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isPaperSection) return
+    setPaperTopicsLoading(true)
+    const subjMeta = profile?.subjects?.find(s=>s.name===form.subject)
+    const sb = subjMeta?.board || 'AQA', lv = subjMeta?.qualification || 'GCSE'
+    Promise.all([
+      import('../data/topics').then(({ getTopicsForSubject }) => (getTopicsForSubject(sb, form.subject, lv) || {})[form.paper] || []),
+      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile?.subjects || [])).catch(() => []),
+    ]).then(([topics, confTopics]) => {
+      setPaperTopics(topics)
+      const confMap = {}
+      confTopics.filter(t => t.subjectId === form.subject).forEach(t => { confMap[t.name] = t.confidence })
+      setPaperTopicConfidence(confMap)
+      setPaperTopicsLoading(false)
+    })
+  }, [isPaperSection])
+
+  function toggleFormTopic(t) {
+    setForm(f => ({ ...f, topics: f.topics.includes(t) ? f.topics.filter(x=>x!==t) : [...f.topics, t] }))
+  }
+  function selectWeakestFormTopics() {
+    const weak = paperTopics.filter(t => (paperTopicConfidence[t]||0) > 0 && paperTopicConfidence[t] <= 2)
+    setForm(f => ({ ...f, topics: weak }))
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     const startDt = new Date(`${form.date}T${form.start}`)
+    const title = isPaperSection
+      ? `${form.subject} Paper ${form.paper}${form.topics.length ? ` — ${form.topics.length} topic${form.topics.length>1?'s':''}` : ' — full paper'}`
+      : `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`
     await onSaveSession({
       ...form,
       duration: parseInt(form.duration),
-      title: `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`,
+      title,
       startTime: startDt.toISOString(),
       endTime: new Date(startDt.getTime()+parseInt(form.duration)*60000).toISOString(),
     })
@@ -911,7 +946,7 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">{isTask ? 'Edit task' : 'Edit session'}</span>
+          <span className="modal-title">{isTask ? 'Edit task' : isPaperSection ? 'Edit paper section' : 'Edit session'}</span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
         </div>
         {isTask ? (
@@ -943,15 +978,17 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
           <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:12}}>
             <div className="grid-2" style={{gap:10}}>
               <div><label className="label">Subject</label>
-                <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
+                <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required disabled={isPaperSection}>
                   <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
                 </select></div>
-              <div><label className="label">Type</label>
-                <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
-                  {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-                </select></div>
+              {!isPaperSection && (
+                <div><label className="label">Type</label>
+                  <select className="select" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+                    {SESSION_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
+              )}
               <div><label className="label">Paper</label>
-                <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))}/></div>
+                <input className="input" placeholder="1, 2…" value={form.paper} onChange={e=>setForm(f=>({...f,paper:e.target.value}))} disabled={isPaperSection}/></div>
               <div><label className="label">Date</label>
                 <input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} required/></div>
               <div><label className="label">Start time</label>
@@ -959,6 +996,34 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
               <div><label className="label">Duration (min)</label>
                 <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
             </div>
+            {isPaperSection && (
+              <div>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                  <label className="label" style={{marginBottom:0}}>Focus topics (optional)</label>
+                  {Object.keys(paperTopicConfidence).length > 0 && (
+                    <button type="button" className="btn btn-ghost btn-sm" style={{fontSize:'0.72rem',padding:'2px 8px'}} onClick={selectWeakestFormTopics}>
+                      Select weakest
+                    </button>
+                  )}
+                </div>
+                {paperTopicsLoading ? <p style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Loading topics…</p> : (
+                  <div style={{maxHeight:190,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:9,display:'flex',flexDirection:'column',gap:5,background:'var(--bg-surface)'}}>
+                    {[...paperTopics].sort((a,b)=>(paperTopicConfidence[a]||3)-(paperTopicConfidence[b]||3)).map(t=>{
+                      const conf = paperTopicConfidence[t]
+                      const confColour = !conf ? 'var(--text-muted)' : conf<=2 ? 'var(--danger)' : conf===3 ? 'var(--warning)' : 'var(--success)'
+                      return (
+                        <label key={t} style={{display:'flex',alignItems:'flex-start',gap:7,fontSize:'0.78rem',cursor:'pointer',lineHeight:1.4}}>
+                          <input type="checkbox" checked={form.topics.includes(t)} onChange={()=>toggleFormTopic(t)} style={{marginTop:2,flexShrink:0}}/>
+                          <span style={{flex:1}}>{t}</span>
+                          {conf ? <span style={{fontSize:'0.68rem',fontWeight:700,color:confColour,flexShrink:0}}>{conf*20}%</span>
+                            : <span style={{fontSize:'0.68rem',color:'var(--text-muted)',flexShrink:0}}>—</span>}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div><label className="label">Notes</label>
               <textarea className="textarea" style={{minHeight:55}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
             <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
@@ -1147,21 +1212,46 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
   })
   const [paperTopicsByPaper, setPaperTopicsByPaper] = useState({})
   const [paperTopicsLoading, setPaperTopicsLoading] = useState(false)
+  const [paperTopicConfidence, setPaperTopicConfidence] = useState({}) // { topicName: confidence 1-5 }
+  const [paperSpec, setPaperSpec] = useState(null) // { maxMarks, duration } from the real paper database, when known
 
   useEffect(() => {
-    if (kind!=='paper' || !paperForm.subject) { setPaperTopicsByPaper({}); return }
+    if (kind!=='paper' || !paperForm.subject) { setPaperTopicsByPaper({}); setPaperTopicConfidence({}); return }
     setPaperTopicsLoading(true)
     const subjMeta = profile?.subjects?.find(s=>s.name===paperForm.subject)
-    import('../data/topics').then(({ getTopicsForSubject }) => {
-      const sb = subjMeta?.board || 'AQA'
-      const lv = subjMeta?.qualification || 'GCSE'
-      const papers = getTopicsForSubject(sb, paperForm.subject, lv) || {}
+    const sb = subjMeta?.board || 'AQA'
+    const lv = subjMeta?.qualification || 'GCSE'
+    Promise.all([
+      import('../data/topics').then(({ getTopicsForSubject }) => getTopicsForSubject(sb, paperForm.subject, lv) || {}),
+      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile?.subjects || [])).catch(() => []),
+    ]).then(([papers, confTopics]) => {
       setPaperTopicsByPaper(papers)
+      const confMap = {}
+      confTopics.filter(t => t.subjectId === paperForm.subject).forEach(t => { confMap[t.name] = t.confidence })
+      setPaperTopicConfidence(confMap)
       setPaperTopicsLoading(false)
       const firstPaper = Object.keys(papers)[0]
       if (firstPaper) setPaperForm(f=>f.paperNum ? f : ({...f, paperNum:firstPaper}))
     })
   }, [kind, paperForm.subject])
+
+  // Real marks/duration for the selected paper, when the board+subject+tier+paper
+  // combination is in the actual paper database — shown as helpful context, never guessed.
+  useEffect(() => {
+    if (kind!=='paper' || !paperForm.subject || !paperForm.paperNum) { setPaperSpec(null); return }
+    const subjMeta = profile?.subjects?.find(s=>s.name===paperForm.subject)
+    import('../data/paperDatabase').then(({ getPaperSpec }) => {
+      const spec = getPaperSpec(subjMeta?.board || 'AQA', paperForm.subject, subjMeta?.tier, paperForm.paperNum, subjMeta?.qualification || 'GCSE')
+      setPaperSpec(spec || null)
+      if (spec?.duration) setPaperForm(f => ({ ...f, duration: spec.duration }))
+    })
+  }, [kind, paperForm.subject, paperForm.paperNum])
+
+  function selectWeakestTopics() {
+    const paperTopics = paperTopicsByPaper[paperForm.paperNum] || []
+    const weak = paperTopics.filter(t => (paperTopicConfidence[t] || 0) > 0 && paperTopicConfidence[t] <= 2)
+    setPaperForm(f => ({ ...f, topics: weak }))
+  }
 
   function togglePaperTopic(t) {
     setPaperForm(f => ({...f, topics: f.topics.includes(t) ? f.topics.filter(x=>x!==t) : [...f.topics, t]}))
@@ -1266,16 +1356,36 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
               <div><label className="label">Duration (min)</label>
                 <input className="input" type="number" min={15} max={300} value={paperForm.duration} onChange={e=>setPaperForm(f=>({...f,duration:e.target.value}))} required/></div>
             </div>
+            {paperSpec && (
+              <p style={{fontSize:'0.74rem',color:'var(--text-muted)',margin:0,display:'flex',alignItems:'center',gap:5}}>
+                <Info size={12}/> Real paper: {paperSpec.maxMarks} marks{paperSpec.duration ? `, ${paperSpec.duration} minutes` : ''} — duration pre-filled above
+              </p>
+            )}
             {paperForm.paperNum && paperTopicsByPaper[paperForm.paperNum]?.length > 0 && (
               <div>
-                <label className="label">Focus topics (optional — leave blank to cover the whole paper)</label>
-                <div style={{maxHeight:170,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:9,display:'flex',flexDirection:'column',gap:5,background:'var(--bg-surface)'}}>
-                  {paperTopicsByPaper[paperForm.paperNum].map(t=>(
-                    <label key={t} style={{display:'flex',alignItems:'flex-start',gap:7,fontSize:'0.78rem',cursor:'pointer',lineHeight:1.4}}>
-                      <input type="checkbox" checked={paperForm.topics.includes(t)} onChange={()=>togglePaperTopic(t)} style={{marginTop:2,flexShrink:0}}/>
-                      <span>{t}</span>
-                    </label>
-                  ))}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                  <label className="label" style={{marginBottom:0}}>Focus topics (optional — leave blank to cover the whole paper)</label>
+                  {Object.keys(paperTopicConfidence).length > 0 && (
+                    <button type="button" className="btn btn-ghost btn-sm" style={{fontSize:'0.72rem',padding:'2px 8px'}} onClick={selectWeakestTopics}>
+                      Select weakest
+                    </button>
+                  )}
+                </div>
+                <div style={{maxHeight:190,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:9,display:'flex',flexDirection:'column',gap:5,background:'var(--bg-surface)'}}>
+                  {[...paperTopicsByPaper[paperForm.paperNum]]
+                    .sort((a,b)=>(paperTopicConfidence[a]||3)-(paperTopicConfidence[b]||3))
+                    .map(t=>{
+                      const conf = paperTopicConfidence[t]
+                      const confColour = !conf ? 'var(--text-muted)' : conf<=2 ? 'var(--danger)' : conf===3 ? 'var(--warning)' : 'var(--success)'
+                      return (
+                        <label key={t} style={{display:'flex',alignItems:'flex-start',gap:7,fontSize:'0.78rem',cursor:'pointer',lineHeight:1.4}}>
+                          <input type="checkbox" checked={paperForm.topics.includes(t)} onChange={()=>togglePaperTopic(t)} style={{marginTop:2,flexShrink:0}}/>
+                          <span style={{flex:1}}>{t}</span>
+                          {conf ? <span style={{fontSize:'0.68rem',fontWeight:700,color:confColour,flexShrink:0}}>{conf*20}%</span>
+                            : <span style={{fontSize:'0.68rem',color:'var(--text-muted)',flexShrink:0}}>—</span>}
+                        </label>
+                      )
+                    })}
                 </div>
                 {paperForm.topics.length>0 && <p style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:5}}>{paperForm.topics.length} topic{paperForm.topics.length>1?'s':''} selected</p>}
               </div>
