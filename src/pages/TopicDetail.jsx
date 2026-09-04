@@ -327,10 +327,10 @@ export default function TopicDetail() {
     .filter(Boolean)
 
   const resourceRows = [
-    ...verified.map(l => ({ ...l, tag: 'Verified' })),
-    ...hub.slice(0, 3).map(l => ({ ...l, tag: 'Hub' })),
+    ...verified.map(l => ({ ...l, tag: l.site || 'Verified' })),
+    ...hub.slice(0, 4).map(l => ({ ...l, tag: l.site || 'Hub' })),
     ...search.slice(0, 2).map(s => ({ name: s.site, url: s.url, tag: 'Search' })),
-  ].slice(0, 7)
+  ].slice(0, 8)
 
   const questionBlocks = questions ? parseQuestionBlocks(questions) : []
 
