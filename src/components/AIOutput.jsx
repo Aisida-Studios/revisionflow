@@ -142,12 +142,8 @@ export default function AIOutput({ text, label, compact, onSummarise }) {
 
   return (
     <div>
-      <div style={{ fontSize: compact ? '0.85rem' : '0.9rem', lineHeight: 1.7 }}>
-        {renderMarkdown(text)}
-      </div>
-
       {!compact && (
-        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             onClick={handleSummarise}
             style={{
@@ -163,10 +159,17 @@ export default function AIOutput({ text, label, compact, onSummarise }) {
       )}
 
       {showSummary && (
-        <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 8, border: '1px solid var(--accent-pale)', fontSize: '0.83rem' }}>
+        <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 8, border: '1px solid var(--accent-pale)', fontSize: '0.83rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>
+            Summary
+          </div>
           {sumLoading ? 'Summarising…' : renderMarkdown(summary)}
         </div>
       )}
+
+      <div style={{ fontSize: compact ? '0.85rem' : '0.9rem', lineHeight: 1.7 }}>
+        {renderMarkdown(text)}
+      </div>
     </div>
   )
 }
