@@ -59,6 +59,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
   const [emergencySessions, setEmergency]     = useState(true)
   const [dayCap,          setDayCap]          = useState('none') // 'none' | day name
   const [dayCapCount,     setDayCapCount]     = useState(1)
+  const [useTopicFocus,   setUseTopicFocus]   = useState(true)
   const [holidays, setHolidays] = useState([])
   const [newHol,   setNewHol]   = useState({ start:'', end:'', label:'' })
 
@@ -91,6 +92,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
           if (d.emergencySessions !== undefined) setEmergency(d.emergencySessions)
           if (d.dayCap !== undefined) setDayCap(d.dayCap)
           if (d.dayCapCount !== undefined) setDayCapCount(d.dayCapCount)
+          if (d.useTopicFocus !== undefined) setUseTopicFocus(d.useTopicFocus)
           if (d.subjectRatios) setSubjectRatios(d.subjectRatios)
           if (d.subjectRatioValues) setSubjectRatioValues(d.subjectRatioValues)
           if (d.prioritySubjects) setPrioritySubjects(d.prioritySubjects)
@@ -109,7 +111,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
     setNewHol({ start:'', end:'', label:'' })
   }
 
-  function generate() {
+  async function generate() {
     const builtSubjects = buildSubjectsFromProfile(profile).map(s => ({
       ...s,
       ratio: subjectRatios[s.name] === 'global' ? [contentRatio, examRatio] : subjectRatioValues[s.name],
@@ -117,6 +119,30 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
     }))
 
     if (!builtSubjects.length) { toast.error('Add subjects first'); return }
+
+    setLoading(true)
+    let topicFocus = {}
+    if (useTopicFocus) {
+      try {
+        const { getTopicsWithConfidence } = await import('../utils/firestore')
+        const { getTopicsForSubject } = await import('../data/topics')
+        const confTopics = await getTopicsWithConfidence(user.uid, profile?.subjects || [])
+        for (const s of builtSubjects) {
+          const papers = getTopicsForSubject(s.board || 'AQA', s.name, s.qualification || 'GCSE') || {}
+          for (const paperNum of s.papers) {
+            const paperTopics = papers[paperNum] || papers[String(paperNum)]
+            if (!paperTopics?.length) continue
+            // Weakest real topic on this specific paper — same "confidence<=2, ignore the
+            // unrated default of 3" rule computeWeakTopics/Recommendations already use, so
+            // this can't surface a topic nobody has actually rated as if it were evidence.
+            const rated = confTopics
+              .filter(t => t.subjectId === s.name && paperTopics.includes(t.name) && t.confidence > 0 && t.confidence <= 2)
+              .sort((a, b) => a.confidence - b.confidence)
+            if (rated.length) topicFocus[`${s.name}-${paperNum}`] = rated[0].name
+          }
+        }
+      } catch (e) { /* graceful degradation — generation still works without topic focus */ }
+    }
 
     const sessions = generateSchedule({
       subjects: builtSubjects,
@@ -128,12 +154,13 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
       examRatio,
       contentDuration,
       sessionGap,
-      tuesdayCap:         dayCap !== 'none',
       cappedDay:          dayCap,
       cappedDayMax:       dayCapCount,
       extendedFromDate:   extendedDate ? new Date(extendedDate) : null,
       includeEmergency:   emergencySessions,
+      topicFocus,
     })
+    setLoading(false)
     setPreview(sessions)
     setStep(6)
   }
@@ -175,7 +202,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
 
       try {
         await setDoc(doc(db, 'users', user.uid, 'settings', 'calendarPrefs'), {
-          contentRatio, examRatio, contentDuration, sessionGap, emergencySessions, dayCap, dayCapCount,
+          contentRatio, examRatio, contentDuration, sessionGap, emergencySessions, dayCap, dayCapCount, useTopicFocus,
           subjectRatios, subjectRatioValues, prioritySubjects: prioritySubjects || []
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
@@ -438,6 +465,22 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 </div>
               </label>
             </div>
+
+            {/* Topic focus */}
+            <div>
+              <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+                <input type="checkbox" checked={useTopicFocus} onChange={e=>setUseTopicFocus(e.target.checked)}
+                  style={{width:16,height:16,accentColor:'var(--accent)'}}/>
+                <div>
+                  <span style={{fontWeight:600,fontSize:'0.875rem'}}>Focus content sessions on your weakest topics</span>
+                  <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:0}}>
+                    Where a paper has topics you've rated low confidence on, names that session after the
+                    specific topic instead of a generic "Content Revision" block. Falls back to generic
+                    when there's no confidence data for a paper.
+                  </p>
+                </div>
+              </label>
+            </div>
           </div>
         )}
 
@@ -502,6 +545,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 ['Session gap', `${sessionGap} minutes`],
                 ['Day cap', dayCap==='none'?'None':`${dayCap} max ${dayCapCount} session${dayCapCount!==1?'s':''}`],
                 ['Emergency sessions', emergencySessions?`Yes (${examDates.length} exams)`:'No'],
+                ['Topic focus', useTopicFocus?'On — uses your weakest topics':'Off — generic titles'],
                 ['Holidays', holidays.length?holidays.map(h=>h.label||'Holiday').join(', '):'None'],
               ].map(([label, val])=>(
                 <div key={label} style={{display:'flex',justifyContent:'space-between',padding:'6px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
@@ -579,8 +623,8 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 Continue <ChevronRight size={15}/>
               </button>
             ) : (
-              <button className="btn btn-primary" onClick={generate} disabled={!replaceChoice}>
-                <Clock size={15}/> Generate schedule
+              <button className="btn btn-primary" onClick={generate} disabled={!replaceChoice || loading}>
+                {loading ? 'Generating…' : <><Clock size={15}/> Generate schedule</>}
               </button>
             )}
           </div>
