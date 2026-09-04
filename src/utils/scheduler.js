@@ -11,11 +11,12 @@
 // - Sunday emergency-only sessions
 
 import { addDays, format, startOfWeek, isSameDay, differenceInDays } from 'date-fns'
+import { getPaperSpec } from '../data/paperDatabase'
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-const GAP_MINUTES = 30       // minimum gap between sessions
-const CONTENT_DUR = 45  // content sessions always 45 min
-
+// Fallback only — getExamDuration checks the real per-board/tier paper database
+// (paperDatabase.js's getPaperSpec) first. This table only kicks in when that
+// specific board/tier/paper combination isn't in the database.
 const EXAM_DURATIONS = {
   'Mathematics':      { default: 90 },
   'Further Mathematics': { default: 105 },
@@ -35,22 +36,30 @@ const EXAM_DURATIONS = {
   'Religious Studies':{ default: 90 },
 }
 
-function getExamDuration(subject, paper) {
+function getExamDuration(subject, paper, board, tier, level = 'GCSE') {
+  if (board) {
+    const spec = getPaperSpec(board, subject, tier, paper, level)
+    if (spec?.duration) return spec.duration
+  }
   const d = EXAM_DURATIONS[subject]
   if (!d) return 75
   return d[paper] ?? d.default ?? 75
 }
 
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+
 // ── SESSION NAMING ────────────────────────────────────────────────────────────
 const EXAM_YEARS = [2024, 2023, 2022, 2021, 2019, 2018, 2017, 2016]
 
-function getSessionName(subject, paper, stype, counters) {
+function getSessionName(subject, paper, stype, counters, focusTopic) {
   const key = `${subject}-${paper}-${stype}`
   if (!counters[key]) counters[key] = 0
   const idx = counters[key]++
 
   if (stype === 'content') {
-    return `${subject} Paper ${paper} – Content Revision`
+    return focusTopic
+      ? `${subject} Paper ${paper} – ${focusTopic}`
+      : `${subject} Paper ${paper} – Content Revision`
   } else {
     const yr = EXAM_YEARS[idx % EXAM_YEARS.length]
     return `${subject} Paper ${paper} – Exam Practice: ${yr} Paper`
@@ -60,7 +69,7 @@ function getSessionName(subject, paper, stype, counters) {
 // ── TIME HELPERS ──────────────────────────────────────────────────────────────
 function dayStartMin(date, availability) {
   const dow = date.getDay() // 0=Sun
-  const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dow]
+  const dayName = DAY_NAMES[dow]
   const avail = availability[dayName]
   if (!avail || !avail.enabled) return null
 
@@ -77,7 +86,7 @@ function dayStartMin(date, availability) {
 
 function dayEndMin(date, availability, useExtended) {
   const dow = date.getDay()
-  const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dow]
+  const dayName = DAY_NAMES[dow]
   const avail = availability[dayName]
   if (avail?.endTime) {
     const [h, m] = avail.endTime.split(':').map(Number)
@@ -111,14 +120,18 @@ export function generateSchedule(options) {
     holidays = [],     // [{ start, end }]
     contentRatio = 2,  // default content sessions per exam session
     examRatio = 1,
-    contentDuration = 45, // NEW: configurable content session length
-    sessionGap = 30,   // NEW: configurable gap
-    tuesdayCap = true,
+    contentDuration = 45,
+    sessionGap = 30,
+    cappedDay = 'none',    // day name (e.g. 'Tuesday') or 'none' — was hardcoded to Tuesday
+    cappedDayMax = 1,      // was hardcoded to 1 regardless of what the UI showed
+    includeEmergency = true, // was always on regardless of this flag
     extendedFromDate = null, // Date from which end time extends to 22:00
+    topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } — optional, from real confidence data
   } = options
 
   const CONTENT_DUR = contentDuration || 45
-
+  const GAP_MINUTES  = sessionGap ?? 30
+  const capDayIndex  = cappedDay !== 'none' ? DAY_NAMES.indexOf(cappedDay) : -1
 
   const sessions    = []
   const counters    = {}  // session name counters
@@ -150,16 +163,19 @@ export function generateSchedule(options) {
     })
   })
 
-  // Emergency sessions map: prevDay -> [{subj, paper}]
+  // Emergency sessions map: prevDay -> [{subj, paper}]. Gated behind includeEmergency —
+  // left empty when the toggle is off, which naturally makes both the "emergency first"
+  // block below and Sunday's emergency-only handling no-ops (nothing to place).
   const emergencyMap = {}
-  Object.entries(examDateMap).forEach(([key, edate]) => {
-    const [subj, paper] = key.split('-')
-    let prev = addDays(edate, -1)
-    // If Sunday, use Saturday for non-emergency, but Sunday IS ok for emergency
-    const ds = format(prev, 'yyyy-MM-dd')
-    if (!emergencyMap[ds]) emergencyMap[ds] = []
-    emergencyMap[ds].push({ subj, paper: parseInt(paper) })
-  })
+  if (includeEmergency) {
+    Object.entries(examDateMap).forEach(([key, edate]) => {
+      const [subj, paper] = key.split('-')
+      let prev = addDays(edate, -1)
+      const ds = format(prev, 'yyyy-MM-dd')
+      if (!emergencyMap[ds]) emergencyMap[ds] = []
+      emergencyMap[ds].push({ subj, paper: parseInt(paper) })
+    })
+  }
 
   // Exams tomorrow map
   const examsTomorrow = {}
@@ -229,10 +245,15 @@ export function generateSchedule(options) {
     return typePtr[subjName] % total < ratio[0] ? 'content' : 'exam'
   }
 
+  function subjMeta(subjName) {
+    return subjects.find(x => x.name === subjName)
+  }
+
   function placeSession(date, currentMin, endMin, subjName, paper, stype, isEmergency = false) {
+    const meta = subjMeta(subjName)
     const dur = isEmergency ? CONTENT_DUR
       : stype === 'content' ? CONTENT_DUR
-      : getExamDuration(subjName, paper)
+      : getExamDuration(subjName, paper, meta?.board, meta?.tier, meta?.qualification)
 
     if (currentMin + dur > endMin) {
       // Try content if exam doesn't fit
@@ -244,8 +265,8 @@ export function generateSchedule(options) {
     }
 
     const name = isEmergency
-      ? `⚠ EMERGENCY: ${subjName} Paper ${paper} – Final Revision`
-      : getSessionName(subjName, paper, stype, counters)
+      ? `EMERGENCY: ${subjName} Paper ${paper} – Final Revision`
+      : getSessionName(subjName, paper, stype, counters, topicFocus[`${subjName}-${paper}`])
 
     const session = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -305,10 +326,11 @@ export function generateSchedule(options) {
     const endMin = dayEndMin(current, availability,
       extendedFromDate && current >= new Date(extendedFromDate))
 
-    // Tuesday cap before extended date
-    const isTuesdayCapped = tuesdayCap && dow === 2 &&
+    // Day cap before extended date — was hardcoded to Tuesday, always capped at exactly 1
+    // session, regardless of what the UI let the user pick. Now honours cappedDay/cappedDayMax.
+    const isDayCapped = capDayIndex >= 0 && dow === capDayIndex &&
       (!extendedFromDate || current < new Date(extendedFromDate))
-    const holidayTuesdayCapped = tuesdayCap && dow === 2 &&
+    const holidayDayCapped = capDayIndex >= 0 && dow === capDayIndex &&
       isHoliday(current, holidays) &&
       (!extendedFromDate || current < new Date(extendedFromDate))
 
@@ -318,7 +340,7 @@ export function generateSchedule(options) {
     // Emergency sessions first
     const emergencies = emergencyMap[dateStr] || []
     emergencies.forEach(({ subj, paper }) => {
-      if (isTuesdayCapped && !holidayTuesdayCapped && slotsUsed >= 1) return
+      if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) return
       if (curMin >= endMin) return
       const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
       if (result) { sessions.push(result.session); curMin = result.newMin; slotsUsed++ }
@@ -341,15 +363,15 @@ export function generateSchedule(options) {
     if (preExamSubjs.length > 0) {
       let i = 0
       while (curMin + CONTENT_DUR <= endMin) {
-        if (isTuesdayCapped && !holidayTuesdayCapped && slotsUsed >= 1) break
-        if (holidayTuesdayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
+        if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) break
+        if (holidayDayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
         const subj = preExamSubjs[i % preExamSubjs.length]
         const ap = activePapers(subj).filter(p => preExamPapersMap[subj]?.includes(p))
         if (!ap.length) { i++; if (i > preExamSubjs.length * 3) break; continue }
         const stype = nextSessionType(subj)
         const paper = pickPaper(subj, stype, current, ap)
         if (!paper) { i++; continue }
-        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj, paper)
+        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj, paper, subjMeta(subj)?.board, subjMeta(subj)?.tier, subjMeta(subj)?.qualification)
         if (curMin + dur > endMin) {
           if (curMin + CONTENT_DUR <= endMin) {
             const result = placeSession(current, curMin, endMin, subj, paper, 'content')
@@ -389,8 +411,8 @@ export function generateSchedule(options) {
 
       for (const subj of ordered) {
         if (curMin + CONTENT_DUR > endMin) break
-        if (isTuesdayCapped && !holidayTuesdayCapped && slotsUsed >= 1) break
-        if (holidayTuesdayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
+        if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) break
+        if (holidayDayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
 
         const ap = activePapers(subj.name)
         if (!ap.length) continue
@@ -406,7 +428,7 @@ export function generateSchedule(options) {
           paper = alts[(stype === 'content' ? contentPtr[subj.name] : examPtr[subj.name]) % alts.length]
         }
 
-        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj.name, paper)
+        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj.name, paper, subj.board, subj.tier, subj.qualification)
         if (curMin + dur > endMin) {
           if (stype === 'exam' && curMin + CONTENT_DUR <= endMin) stype = 'content'
           else continue
@@ -434,8 +456,10 @@ export function generateSchedule(options) {
 export const SCHEDULE_DEFAULTS = {
   contentRatio: 2,
   examRatio: 1,
-  tuesdayCap: true,
+  cappedDay: 'none',
+  cappedDayMax: 1,
   sessionGap: 30,
+  includeEmergency: true,
   holidays: [],
 }
 
@@ -460,6 +484,7 @@ export function buildSubjectsFromProfile(profile) {
       name: s.name,
       board: s.board,
       tier: s.tier,
+      qualification: s.qualification || 'GCSE',
       papers: papers.length ? papers : [1, 2],
       ratio,
       examDates,
