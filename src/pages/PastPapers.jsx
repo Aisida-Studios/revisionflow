@@ -1,647 +1,807 @@
 // src/pages/PastPapers.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { savePaperAttempt, getPaperAttempts, getPaperStructures, submitPaperStructure, deletePaperAttempt, updatePaperAttempt, filterToCurrentQualification } from '../utils/firestore'
-import { collection } from 'firebase/firestore'
+import {
+  savePaperAttempt, getPaperAttempts, deletePaperAttempt, updatePaperAttempt, filterToCurrentQualification,
+} from '../utils/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
-import { calculateGradeFromBoundaries, AVAILABLE_YEARS, GRADE_BOUNDARIES } from '../data/paperDatabase'
-import { getMergedPaperSpec, getMergedBoundaries } from '../data/overrides'
+import { calculateGradeFromBoundaries, AVAILABLE_YEARS, getPastPaperSourceUrl } from '../data/paperDatabase'
+import { getMergedPaperSpec, getMergedBoundaries, saveBoundaryOverride } from '../data/overrides'
 import { isTiered } from '../data/examDates2026'
+import { paperName } from '../data/paperNames'
+import { getAllTopicsFlat } from '../data/topics'
+import { displayTopicName } from '../utils/topicDisplay'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
+import Skeleton from '../components/Skeleton'
+import AIOutput from '../components/AIOutput'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Plus, X, Brain, TrendingUp, FileText, Trash2, Edit2, Check } from 'lucide-react'
+import {
+  Plus, X, Brain, TrendingUp, TrendingDown, FileText, Trash2, Edit2, Check, Search,
+  ExternalLink, AlertCircle,
+} from 'lucide-react'
+import './PastPapers.css'
+
+const tooltipStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.8rem' }
+const axisTick = { fontSize: 11, fill: 'var(--text-muted)' }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function attemptDateOf(a) {
+  if (a.attemptDate) return new Date(a.attemptDate + 'T00:00:00')
+  if (a.createdAt?.seconds) return new Date(a.createdAt.seconds * 1000)
+  return null
+}
+function fmtDate(a) {
+  const d = attemptDateOf(a)
+  return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date'
+}
+// Groups per-question marks by the topic string entered against each question and computes a
+// percentage per topic. Real data only — an attempt with no questionMarks yields an empty array,
+// never a fabricated breakdown.
+function aggregateByTopic(questionMarks) {
+  if (!Array.isArray(questionMarks) || !questionMarks.length) return []
+  const groups = {}
+  questionMarks.forEach(q => {
+    const key = (q.topic || '').trim()
+    if (!key) return
+    if (!groups[key]) groups[key] = { topic: key, scored: 0, marks: 0 }
+    groups[key].scored += Number(q.scored) || 0
+    groups[key].marks += Number(q.marks) || 0
+  })
+  return Object.values(groups)
+    .filter(g => g.marks > 0)
+    .map(g => ({ ...g, pct: Math.round((g.scored / g.marks) * 100) }))
+    .sort((a, b) => a.pct - b.pct)
+}
+// Matches a free-typed topic name against the student's REAL topic docs for that subject only —
+// never constructs/guesses a topic ID. If nothing matches, callers fall back to a subject-filtered
+// Topics link rather than a possibly-wrong direct link.
+function findTopicMatch(topics, subjectName, topicName) {
+  if (!topicName) return null
+  const norm = s => (s || '').trim().toLowerCase()
+  const target = norm(topicName)
+  return topics.find(t => norm(t.subjectId) === norm(subjectName) && norm(displayTopicName(t.name || t.topicName || '')) === target)
+    || topics.find(t => norm(t.subjectId) === norm(subjectName) && norm(t.name || t.topicName || '') === target)
+    || null
+}
+function findPreviousAttempt(attempts, current) {
+  const curDate = attemptDateOf(current)
+  if (!curDate) return null
+  const before = attempts
+    .filter(a => a.subject === current.subject && a.id !== current.id && a.percentage != null)
+    .map(a => ({ a, d: attemptDateOf(a) }))
+    .filter(x => x.d && x.d < curDate)
+    .sort((x, y) => y.d - x.d)
+  return before[0]?.a || null
+}
 
 export default function PastPapers() {
   const { user, profile } = useAuth()
   const [attempts, setAttempts] = useState([])
-  const [structures, setStructures] = useState([])
-  const [selSubject, setSelSubject] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [showQPrompt, setShowQPrompt] = useState(null)  // attempt to enter question marks for
-  const [showBoundaryEditor, setShowBoundaryEditor] = useState(false)
-  const [aiAnalysis, setAiAnalysis] = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
+  const [topics, setTopics] = useState([])
+  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('attempts')
-  const [selected,   setSelected]   = useState([])
-  const [sortCol,    setSortCol]    = useState('attemptDate')
-  const [sortDir,    setSortDir]    = useState('desc')
-  const [editEntry,  setEditEntry]  = useState(null)
-
-  const subjects = profile?.subjects?.map(s=>s.name) || []
-
-  function toggleSort(col) {
-    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortCol(col); setSortDir('asc') }
-  }
-
-  function sortIcon(col) {
-    if (sortCol !== col) return ' ↕'
-    return sortDir === 'asc' ? ' ↑' : ' ↓'
-  }
+  const [selSubject, setSelSubject] = useState('')
+  const [search, setSearch] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [editEntry, setEditEntry] = useState(null)
+  const [showQPrompt, setShowQPrompt] = useState(null)
+  const [detailAttempt, setDetailAttempt] = useState(null)
+  const [boundaryEditor, setBoundaryEditor] = useState(null)
+  const [analysis, setAnalysis] = useState('')
+  const [analysing, setAnalysing] = useState(false)
 
   useEffect(() => {
     if (!user) return
-    getPaperAttempts(user.uid, selSubject||null).then(setAttempts)
-    getPaperStructures({}).then(setStructures)
-  }, [user, selSubject])
+    Promise.all([
+      getPaperAttempts(user.uid),
+      getDocs(collection(db, 'users', user.uid, 'topics')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
+    ]).then(([atts, tops]) => { setAttempts(atts); setTopics(tops); setLoading(false) })
+  }, [user])
+
+  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
+  const currentTopics = useMemo(() => filterToCurrentQualification(topics, profile?.subjects), [topics, profile])
+  const subjectList = profile?.subjects?.map(s => s.name) || []
+
+  const subjectAverages = useMemo(() => {
+    return subjectList.map(name => {
+      const atts = currentAttempts.filter(a => a.subject === name && a.percentage != null)
+        .sort((a, b) => (attemptDateOf(a) || 0) - (attemptDateOf(b) || 0))
+      if (!atts.length) return { name, avg: null, count: 0, trend: null }
+      const avg = Math.round(atts.reduce((s, a) => s + a.percentage, 0) / atts.length)
+      let trend = null
+      if (atts.length >= 4) {
+        const half = Math.floor(atts.length / 2)
+        const firstHalf = atts.slice(0, half).reduce((s, a) => s + a.percentage, 0) / half
+        const secondHalf = atts.slice(half).reduce((s, a) => s + a.percentage, 0) / (atts.length - half)
+        trend = Math.round(secondHalf - firstHalf)
+      }
+      return { name, avg, count: atts.length, trend }
+    }).filter(s => s.count > 0)
+  }, [currentAttempts, subjectList])
+
+  const filtered = useMemo(() => {
+    let list = currentAttempts
+    if (selSubject) list = list.filter(a => a.subject === selSubject)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      list = list.filter(a => `${a.subject} ${a.board} ${a.paper} ${a.year} ${a.tier || ''}`.toLowerCase().includes(q))
+    }
+    return [...list].sort((a, b) => (attemptDateOf(b) || 0) - (attemptDateOf(a) || 0))
+  }, [currentAttempts, selSubject, search])
 
   async function handleDelete(id) {
+    if (!window.confirm('Delete this paper attempt? This cannot be undone.')) return
     await deletePaperAttempt(user.uid, id)
-    setAttempts(a=>a.filter(x=>x.id!==id))
-    toast.success('Paper deleted (-100 XP)')
+    setAttempts(prev => prev.filter(a => a.id !== id))
+    setDetailAttempt(null)
+    toast.success('Attempt deleted')
   }
 
-  async function handleBulkDelete() {
-    await Promise.all(selected.map(id=>deletePaperAttempt(user.uid, id)))
-    setAttempts(a=>a.filter(x=>!selected.includes(x.id)))
-    setSelected([])
-    toast.success(`Deleted ${selected.length} paper${selected.length!==1?'s':''} (-${selected.length*100} XP)`)
+  async function handleSaveQuestionMarks(attemptId, questionMarks) {
+    await updatePaperAttempt(user.uid, attemptId, { questionMarks })
+    setAttempts(prev => prev.map(a => a.id === attemptId ? { ...a, questionMarks } : a))
+    setShowQPrompt(null)
+    setDetailAttempt(prev => (prev && prev.id === attemptId) ? { ...prev, questionMarks } : prev)
+    toast.success('Performance by topic saved')
   }
 
-  async function handleAnalyse() {
-    setAiLoading(true)
-    const res = await analyseWeaknesses(currentAttempts, selSubject)
-    setAiAnalysis(res.text||res.error||'')
-    setAiLoading(false)
+  async function runAnalysis() {
+    setAnalysing(true)
+    try {
+      const result = await analyseWeaknesses(currentAttempts, selSubject, user.uid)
+      if (result.error) toast.error(result.error)
+      setAnalysis(result.text || result.error || 'Could not analyse.')
+    } catch (e) {
+      setAnalysis('Error: ' + e.message)
+    } finally {
+      setAnalysing(false)
+    }
   }
 
-  // Computed live against the student's current subjects every render, rather than trusting
-  // the archived flag alone — see filterToCurrentQualification in utils/firestore.js. This is
-  // the one place that decides what counts as "current" for this whole page; everything below
-  // reads from this, not the raw attempts fetch, so nothing here can accidentally skip the check
-  // the way the old "only filter when a subject is selected" logic used to.
-  const currentAttempts = filterToCurrentQualification(attempts, profile?.subjects)
-
-  const filtered = (selSubject ? currentAttempts.filter(a=>a.subject===selSubject) : [...currentAttempts])
-    .sort((a, b) => {
-      const dir = sortDir === 'asc' ? 1 : -1
-      const map = {
-        subject: [a.subject, b.subject],
-        qualification: [a.qualification||'GCSE', b.qualification||'GCSE'],
-        paper:   [a.paper, b.paper],
-        board:   [a.board, b.board],
-        year:    [a.year, b.year],
-        score:   [a.score, b.score],
-        percentage: [a.percentage, b.percentage],
-        grade:   [a.grade, b.grade],
-        attemptDate: [a.attemptDate, b.attemptDate],
-      }
-      const [av, bv] = map[sortCol] || [a[sortCol], b[sortCol]]
-      if (av == null) return 1
-      if (bv == null) return -1
-      if (typeof av === 'number') return (av - bv) * dir
-      return String(av).localeCompare(String(bv)) * dir
-    })
-  const chartData = [...filtered].reverse().map(a=>({ name:`${a.subject} P${a.paper} ${a.year}`, percentage:a.percentage, grade:a.grade }))
-
-  const subjectAverages = subjects.map(s=>{
-    const sub = currentAttempts.filter(a=>a.subject===s)
-    const avg = sub.length ? Math.round(sub.reduce((sum,a)=>sum+a.percentage,0)/sub.length) : null
-    return { subject:s, avg, count:sub.length, latest:sub[0] }
-  })
-
-  function toggleSelect(id) { setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]) }
+  if (loading) return (
+    <div className="fade-in">
+      <div className="papers-header"><div><h2 className="papers-title"><FileText size={22} /> Past Papers</h2></div></div>
+      <Skeleton height={90} style={{ marginBottom: 16, borderRadius: 12 }} />
+      <Skeleton height={300} style={{ borderRadius: 12 }} />
+    </div>
+  )
 
   return (
     <div className="fade-in">
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
-        <h2>Past Papers</h2>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          {selected.length>0 && <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}><Trash2 size={14}/> Delete {selected.length}</button>}
-          <button className="btn btn-secondary btn-sm" onClick={()=>setShowBoundaryEditor(true)}><Edit2 size={14}/> Grade boundaries</button>
-          <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}><Plus size={14}/> Log paper</button>
+      <div className="papers-header">
+        <div>
+          <h2 className="papers-title"><FileText size={22} /> Past Papers</h2>
+          <p className="papers-subtitle">Log attempts, track your score, and see where marks are slipping</p>
+        </div>
+        <div className="papers-header-actions">
+          <button className="btn btn-secondary" onClick={() => setBoundaryEditor({})}>Grade boundaries</button>
+          <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Log a paper</button>
         </div>
       </div>
 
-      <div className="tabs" style={{marginBottom:16}}>
-        {['attempts','progress','analyse'].map(t=>(
-          <button key={t} className={`tab${tab===t?' active':''}`} onClick={()=>setTab(t)}>
-            {t==='attempts'?'Attempts':t==='progress'?'Progress':'Analysis'}
-          </button>
-        ))}
+      {subjectAverages.length > 0 && (
+        <div className="papers-subject-summary">
+          {subjectAverages.map(s => (
+            <div key={s.name} className={`card papers-subject-card${selSubject === s.name ? ' active' : ''}`}
+              role="button" tabIndex={0}
+              onClick={() => setSelSubject(selSubject === s.name ? '' : s.name)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelSubject(selSubject === s.name ? '' : s.name) } }}>
+              <div className="papers-subject-card-name">
+                <span className="papers-subject-card-dot" style={{ background: SUBJECT_COLOURS?.[s.name] || 'var(--accent)' }} />
+                {s.name}
+              </div>
+              <div className="papers-subject-card-val" style={{ color: SUBJECT_COLOURS?.[s.name] || 'var(--accent)' }}>{s.avg}%</div>
+              <div className="papers-subject-card-meta">
+                {s.count} paper{s.count !== 1 ? 's' : ''}
+                {s.trend !== null && <span style={{ color: s.trend >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700, marginLeft: 6 }}>{s.trend >= 0 ? '+' : ''}{s.trend}%</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="tabs papers-tabs">
+        <button className={`tab${tab === 'attempts' ? ' active' : ''}`} onClick={() => setTab('attempts')}>Papers</button>
+        <button className={`tab${tab === 'progress' ? ' active' : ''}`} onClick={() => setTab('progress')}>Progress</button>
+        <button className={`tab${tab === 'analyse' ? ' active' : ''}`} onClick={() => setTab('analyse')}>Analysis</button>
       </div>
 
-      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
-        <button className={`btn btn-sm ${!selSubject?'btn-primary':'btn-secondary'}`} onClick={()=>setSelSubject('')}>All</button>
-        {subjects.map(s=><button key={s} className={`btn btn-sm ${selSubject===s?'btn-primary':'btn-secondary'}`} onClick={()=>setSelSubject(s)}>{s}</button>)}
-      </div>
+      {tab === 'attempts' && (<>
+        <div className="papers-filter-row">
+          <div className="papers-search">
+            <Search size={15} />
+            <input className="input" placeholder="Search by subject, board, paper or year" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select className="select" style={{ width: 'auto' }} value={selSubject} onChange={e => setSelSubject(e.target.value)}>
+            <option value="">All subjects</option>
+            {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
 
-      {tab==='attempts' && (
-        <>
-          <div className="grid-3" style={{marginBottom:16}}>
-            {subjectAverages.filter(s=>s.count>0).map(s=>(
-              <div key={s.subject} className="card stat-card" style={{cursor:'pointer'}} onClick={()=>setSelSubject(s.subject)}>
-                <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}>
-                  <div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[s.subject]||'var(--accent)'}}/>
-                  <span style={{fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:600}}>{s.subject}</span>
+        {filtered.length === 0 ? (
+          <div className="card empty-state">
+            <FileText size={32} style={{ opacity: 0.3 }} />
+            <p>{currentAttempts.length === 0 ? "You haven't logged any papers yet" : 'No papers match your search'}</p>
+            {currentAttempts.length === 0 && <button className="btn btn-primary" onClick={() => setShowAdd(true)}>Log your first paper</button>}
+          </div>
+        ) : (
+          <div className="papers-list">
+            {filtered.map(a => (
+              <div key={a.id} className="papers-card" role="button" tabIndex={0}
+                onClick={() => setDetailAttempt(a)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailAttempt(a) } }}>
+                <span className="papers-card-dot" style={{ background: SUBJECT_COLOURS?.[a.subject] || 'var(--accent)' }} />
+                <div className="papers-card-main">
+                  <div className="papers-card-title">
+                    {a.subject} · Paper {a.paper} ({a.year})
+                    {a.tier && a.tier !== 'N/A' && <span className="badge badge-grey" style={{ fontSize: '0.62rem' }}>{a.tier}</span>}
+                  </div>
+                  <div className="papers-card-sub">{a.board} · {fmtDate(a)}{a.questionMarks?.length ? ' · Topic breakdown added' : ''}</div>
                 </div>
-                <div style={{fontSize:'1.4rem',fontWeight:800,color:gradeColour(s.latest?.grade||'')}}>{s.avg}%</div>
-                <div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>{s.count} paper{s.count!==1?'s':''} · Grade {s.latest?.grade||'?'}</div>
+                <div className="papers-card-score">
+                  <div className="papers-card-pct" style={{ color: a.grade ? gradeColour(a.grade) : 'var(--text-primary)' }}>
+                    {a.percentage != null ? `${Math.round(a.percentage)}%` : '–'}
+                  </div>
+                  <div className="papers-card-marks">{a.score}/{a.maxMarks}{a.grade ? ` · Grade ${a.grade}` : ''}</div>
+                </div>
+                <div className="papers-card-actions">
+                  <button className="btn-icon" onClick={e => { e.stopPropagation(); setEditEntry(a) }} title="Edit"><Edit2 size={14} /></button>
+                  <button className="btn-icon" onClick={e => { e.stopPropagation(); handleDelete(a.id) }} title="Delete"><Trash2 size={14} /></button>
+                </div>
               </div>
             ))}
           </div>
+        )}
+      </>)}
 
-          {filtered.length===0 ? (
-            <div className="empty-state"><FileText size={40} style={{opacity:0.3}}/><h4>No papers logged</h4><button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Log your first paper</button></div>
+      {tab === 'progress' && (
+        <ProgressTab attempts={currentAttempts} subjectList={subjectList} selSubject={selSubject} setSelSubject={setSelSubject} />
+      )}
+
+      {tab === 'analyse' && (
+        <div className="card">
+          <h4 className="analytics-card-title" style={{ marginBottom: 14 }}><Brain size={16} /> Weakness analysis</h4>
+          {currentAttempts.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Log a few papers first so there's something to analyse.</p>
+          ) : !analysis && !analysing ? (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 14 }}>
+                Get an AI breakdown of patterns across {selSubject || 'all your'} paper attempts — weak areas, priority topics, and whether to focus on content or technique.
+              </p>
+              <button className="btn btn-primary" onClick={runAnalysis}>Analyse my papers</button>
+            </div>
+          ) : analysing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Skeleton height={16} /><Skeleton height={16} width="90%" /><Skeleton height={16} width="95%" />
+            </div>
           ) : (
-            <div className="table-wrapper">
-              <table>
-                <thead><tr>
-                  <th><input type="checkbox" checked={selected.length===filtered.length&&filtered.length>0} onChange={e=>setSelected(e.target.checked?filtered.map(x=>x.id):[])} style={{accentColor:'var(--accent)'}}/></th>
-                  {[
-                    {col:'subject',label:'Subject'},
-                    {col:'qualification',label:'Level'},
-                    {col:'paper',label:'Paper'},
-                    {col:'board',label:'Board'},
-                    {col:'year',label:'Year'},
-                    {col:'score',label:'Score'},
-                    {col:'percentage',label:'%'},
-                    {col:'grade',label:'Grade'},
-                    {col:'attemptDate',label:'Date'},
-                  ].map(({col,label})=>(
-                    <th key={col} onClick={()=>toggleSort(col)}
-                      style={{cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
-                      {label}{sortIcon(col)}
-                    </th>
-                  ))}
-                  <th></th>
-                </tr></thead>
-                <tbody>
-                  {filtered.map(a=>(
-                    <tr key={a.id} style={{background:selected.includes(a.id)?'rgba(34,197,94,0.08)':undefined}}>
-                      <td><input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggleSelect(a.id)} style={{accentColor:'var(--accent)'}}/></td>
-                      <td><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[a.subject]||'var(--accent)',flexShrink:0}}/>{a.subject}</div></td>
-                      <td><span className="badge badge-accent" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
-                      <td>P{a.paper}</td>
-                      <td>{a.board}</td>
-                      <td>{a.year}</td>
-                      <td>{a.score}/{a.maxMarks}</td>
-                      <td>{a.percentage}%</td>
-                      <td><span style={{fontWeight:800,color:gradeColour(a.grade||''),fontSize:'1rem'}}>{a.grade||'–'}</span></td>
-                      <td style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>{a.attemptDate||'–'}</td>
-                      <td style={{display:'flex',gap:4}}>
-                        <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--accent-light)'}} onClick={()=>setEditEntry(a)} title="Edit"><Edit2 size={13}/></button>
-                        <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDelete(a.id)} title="Delete"><Trash2 size={14}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <AIOutput text={analysis} compact />
+              <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setAnalysis('')}>Run again</button>
             </div>
           )}
-        </>
-      )}
-
-      {tab==='progress' && (
-        chartData.length<2 ? (
-          <div className="empty-state"><p>Log at least 2 papers to see a progress graph</p></div>
-        ) : (
-          <div className="card">
-            <h4 style={{marginBottom:16}}>Score progression</h4>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
-                <XAxis dataKey="name" tick={{fontSize:10,fill:'var(--text-muted)'}} interval="preserveStartEnd"/>
-                <YAxis domain={[0,100]} tickFormatter={v=>`${v}%`} tick={{fontSize:11,fill:'var(--text-muted)'}}/>
-                <Tooltip formatter={v=>`${v}%`} contentStyle={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:8}}/>
-                <Line type="monotone" dataKey="percentage" stroke="var(--accent-light)" strokeWidth={2} dot={{fill:'var(--accent)',strokeWidth:0,r:4}}/>
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )
-      )}
-
-      {tab==='analyse' && (
-        <div className="card">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-            <h4 style={{display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> Analysis</h4>
-            <button className="btn btn-primary btn-sm" onClick={handleAnalyse} disabled={aiLoading||filtered.length===0}>
-              {aiLoading?'Analysing…':'Analyse'}
-            </button>
-          </div>
-          {filtered.length===0&&<p>Log at least one paper to get an analysis.</p>}
-          {aiLoading&&<div className="loading-center"><div className="spinner"/></div>}
-          {aiAnalysis&&<div style={{whiteSpace:'pre-wrap',fontSize:'0.875rem',lineHeight:1.8}}>{aiAnalysis}</div>}
         </div>
       )}
 
       {showAdd && (
-        <AddAttemptModal user={user} profile={profile} structures={structures}
-          onClose={()=>setShowAdd(false)}
-          onSave={async(a,promptQ)=>{
-            const id = await savePaperAttempt(user.uid,a)
-            await getPaperAttempts(user.uid,null).then(setAttempts)
+        <AddAttemptModal
+          profile={profile}
+          onClose={() => setShowAdd(false)}
+          onSave={async (a) => {
+            const id = await savePaperAttempt(user.uid, a)
+            const saved = { ...a, id }
+            setAttempts(prev => [saved, ...prev])
             setShowAdd(false)
-            toast.success('Paper logged! +100 XP')
-            if(promptQ) setShowQPrompt({...a, id})
-          }}/>
-      )}
-
-      {showQPrompt && (
-        <QuestionMarksModal attempt={showQPrompt} user={user}
-          onClose={()=>setShowQPrompt(null)}
-          onSave={async()=>{setShowQPrompt(null);toast.success('Question marks saved')}}/>
+            toast.success('Paper logged')
+            setShowQPrompt(saved)
+          }}
+        />
       )}
 
       {editEntry && (
         <EditEntryModal
           attempt={editEntry}
-          onClose={()=>setEditEntry(null)}
-          onSave={async (updated) => {
-            await updatePaperAttempt(user.uid, editEntry.id, updated)
-            setAttempts(a => a.map(x => x.id === editEntry.id ? {...x, ...updated} : x))
+          onClose={() => setEditEntry(null)}
+          onSave={async (updates) => {
+            await updatePaperAttempt(user.uid, editEntry.id, updates)
+            setAttempts(prev => prev.map(a => a.id === editEntry.id ? { ...a, ...updates } : a))
             setEditEntry(null)
-            toast.success('Entry updated')
-          }}/>
+            toast.success('Attempt updated')
+          }}
+        />
       )}
-      {showBoundaryEditor && (
-        <BoundaryEditorModal profile={profile} onClose={()=>setShowBoundaryEditor(false)}/>
+
+      {showQPrompt && (
+        <QuestionMarksModal
+          attempt={showQPrompt}
+          onSkip={() => setShowQPrompt(null)}
+          onSave={(marks) => handleSaveQuestionMarks(showQPrompt.id, marks)}
+        />
+      )}
+
+      {boundaryEditor && (
+        <BoundaryEditorModal profile={profile} onClose={() => setBoundaryEditor(null)} />
+      )}
+
+      {detailAttempt && (
+        <PaperDetailModal
+          attempt={detailAttempt}
+          previous={findPreviousAttempt(currentAttempts, detailAttempt)}
+          topics={currentTopics}
+          onClose={() => setDetailAttempt(null)}
+          onEdit={() => { setEditEntry(detailAttempt); setDetailAttempt(null) }}
+          onDelete={() => handleDelete(detailAttempt.id)}
+          onAddQuestionMarks={() => setShowQPrompt(detailAttempt)}
+        />
       )}
     </div>
   )
 }
 
-function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
+// ── Progress tab ─────────────────────────────────────────────────────────────
+function ProgressTab({ attempts, subjectList, selSubject, setSelSubject }) {
+  const activeSubject = selSubject || subjectList[0] || ''
+  const data = useMemo(() => {
+    return attempts.filter(a => a.subject === activeSubject && a.percentage != null)
+      .sort((a, b) => (attemptDateOf(a) || 0) - (attemptDateOf(b) || 0))
+      .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} '${String(a.year).slice(2)}`, percentage: Math.round(a.percentage) }))
+  }, [attempts, activeSubject])
+
+  return (
+    <div className="card">
+      <div className="analytics-card-head" style={{ marginBottom: data.length < 2 ? 0 : 14 }}>
+        <h4 className="analytics-card-title"><TrendingUp size={16} /> Score progression</h4>
+        <select className="select" style={{ width: 'auto' }} value={activeSubject} onChange={e => setSelSubject(e.target.value)}>
+          {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+      {data.length < 2 ? (
+        <div className="empty-state" style={{ padding: '16px 0' }}><p>Log at least 2 papers for {activeSubject || 'a subject'} to see progression over time</p></div>
+      ) : (
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={axisTick} unit="%" axisLine={false} tickLine={false} width={36} />
+            <Tooltip formatter={(v) => [`${v}%`, 'Score']} contentStyle={tooltipStyle} />
+            <Line type="monotone" dataKey="percentage" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 4 }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
+
+// ── Paper detail panel ───────────────────────────────────────────────────────
+function PaperDetailModal({ attempt, previous, topics, onClose, onEdit, onDelete, onAddQuestionMarks }) {
+  const byTopic = useMemo(() => aggregateByTopic(attempt.questionMarks), [attempt.questionMarks])
+  const weak = byTopic.filter(t => t.pct < 60)
+  const trendPts = previous ? Math.round(attempt.percentage - previous.percentage) : null
+  const name = paperName(attempt.board, attempt.qualification, attempt.subject, attempt.paper)
+  const sourceUrl = getPastPaperSourceUrl(attempt.board, attempt.qualification)
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 620 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Paper detail</h3>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        <div className="paper-detail-head">
+          <div className="paper-detail-eyebrow">
+            <span className="papers-card-dot" style={{ background: SUBJECT_COLOURS?.[attempt.subject] || 'var(--accent)', display: 'inline-block', width: 8, height: 8, borderRadius: '50%' }} />
+            {attempt.board} · {attempt.qualification}{attempt.tier && attempt.tier !== 'N/A' ? ` · ${attempt.tier}` : ''}
+          </div>
+          <h3 className="paper-detail-title">{attempt.subject} · Paper {attempt.paper} ({attempt.year})</h3>
+          {name && <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 4 }}>{name}</p>}
+        </div>
+
+        <div className="paper-detail-score-row">
+          <div>
+            <div className="paper-detail-score-big" style={{ color: attempt.grade ? gradeColour(attempt.grade) : 'var(--text-primary)' }}>
+              {attempt.percentage != null ? `${Math.round(attempt.percentage)}%` : '–'}
+            </div>
+            {trendPts !== null && (
+              <span className="analytics-trend" style={{ color: trendPts >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                {trendPts >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {trendPts >= 0 ? '+' : ''}{trendPts}% from last attempt
+              </span>
+            )}
+          </div>
+          <div className="paper-detail-score-stats">
+            <div>
+              <div className="paper-detail-stat-val">{attempt.score}/{attempt.maxMarks}</div>
+              <div className="paper-detail-stat-label">Marks</div>
+            </div>
+            <div>
+              <div className="paper-detail-stat-val" style={{ color: attempt.grade ? gradeColour(attempt.grade) : undefined }}>{attempt.grade || '–'}</div>
+              <div className="paper-detail-stat-label">Grade</div>
+            </div>
+            <div>
+              <div className="paper-detail-stat-val">{fmtDate(attempt)}</div>
+              <div className="paper-detail-stat-label">Attempted</div>
+            </div>
+          </div>
+        </div>
+
+        <h4 className="paper-detail-section-title"><Brain size={15} /> Performance by topic</h4>
+        {byTopic.length === 0 ? (
+          <div className="paper-topic-empty">
+            <p>Add your marks question-by-question to see which topics cost you the most marks on this paper.</p>
+            <button className="btn btn-secondary btn-sm" onClick={onAddQuestionMarks}>Add performance by topic</button>
+          </div>
+        ) : (
+          <div>
+            {byTopic.map((t, i) => {
+              const match = findTopicMatch(topics, attempt.subject, t.topic)
+              const href = match ? `/topics/${match.id}` : `/topics?subject=${encodeURIComponent(attempt.subject)}`
+              const colour = t.pct >= 70 ? 'var(--success)' : t.pct >= 50 ? 'var(--warning)' : 'var(--danger)'
+              return (
+                <div key={i} className="paper-topic-row">
+                  <div className="paper-topic-row-top">
+                    <Link to={href}>{t.topic}</Link>
+                    <span className="pct" style={{ color: colour }}>{t.pct}%</span>
+                  </div>
+                  <div className="thin-progress"><div className="thin-progress-fill" style={{ width: `${t.pct}%`, background: colour }} /></div>
+                </div>
+              )
+            })}
+            {weak.length > 0 && (
+              <div className="paper-weak-chips">
+                {weak.map((t, i) => {
+                  const match = findTopicMatch(topics, attempt.subject, t.topic)
+                  const href = match ? `/topics/${match.id}` : `/topics?subject=${encodeURIComponent(attempt.subject)}`
+                  return <Link key={i} className="paper-weak-chip" to={href}><AlertCircle size={12} /> {t.topic}</Link>
+                })}
+              </div>
+            )}
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={onAddQuestionMarks}>Edit topic breakdown</button>
+          </div>
+        )}
+
+        {attempt.notes && (
+          <div style={{ marginTop: 18 }}>
+            <h4 className="paper-detail-section-title" style={{ marginBottom: 8 }}><FileText size={15} /> Notes</h4>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{attempt.notes}</p>
+          </div>
+        )}
+
+        <div className="paper-detail-actions">
+          {sourceUrl && (
+            <a className="btn btn-secondary" href={sourceUrl} target="_blank" rel="noreferrer">Review paper <ExternalLink size={14} /></a>
+          )}
+          <button className="btn btn-secondary" onClick={onEdit}><Edit2 size={14} /> Edit</button>
+          <button className="btn btn-ghost" style={{ color: 'var(--danger)', marginLeft: 'auto' }} onClick={onDelete}><Trash2 size={14} /> Delete</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Add attempt modal ────────────────────────────────────────────────────────
+function AddAttemptModal({ profile, onClose, onSave }) {
   const subjects = profile?.subjects || []
-  const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', year:2024, paper:1, score:'', maxMarks:'', attemptDate:new Date().toISOString().slice(0,10) })
+  const [form, setForm] = useState({
+    subject: subjects[0]?.name || '', board: subjects[0]?.board || 'AQA', tier: '', paper: '1',
+    year: AVAILABLE_YEARS[0], score: '', maxMarks: '', attemptDate: new Date().toISOString().slice(0, 10), notes: '',
+  })
   const [autoSpec, setAutoSpec] = useState(null)
   const [autoBoundary, setAutoBoundary] = useState(null)
-  const [questionMarks, setQMarks] = useState([])
-  const [useQ, setUseQ] = useState(false)
-  const [customBoundaries, setCustomBoundaries] = useState([])
-  const [useCustom, setUseCustom] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const selSubjMeta = subjects.find(s=>s.name===form.subject)
-  const defaultQual = getSubjectQualification(selSubjMeta, profile)
-  // Same reasoning as BoundaryEditorModal: previously formQual was only ever silently derived —
-  // if a student had e.g. both an AS-Level and an A-Level entry sharing a subject name, whichever
-  // one `.find()` happened to return first decided which paper spec and boundaries got auto-filled,
-  // with no way to see or correct it. Now it's shown and overridable, defaulting to the derived value.
-  const [levelOverride, setLevelOverride] = useState(null)
-  const formQual = levelOverride || defaultQual
-  useEffect(() => { setLevelOverride(null) }, [form.subject]) // reset override when subject changes
+  const activeSubject = subjects.find(s => s.name === form.subject)
+  const qualification = getSubjectQualification(activeSubject, profile)
+  const tiered = isTiered(form.subject)
 
   useEffect(() => {
-    if (!form.subject || !form.board || !form.paper) return
-    const subj = subjects.find(s=>s.name===form.subject)
-    const tier = subj?.tier||'N/A'
-    setForm(f=>({...f,tier}))
     let cancelled = false
-    ;(async () => {
-      const spec = await getMergedPaperSpec(form.board, form.subject, tier, form.paper, formQual)
+    async function load() {
+      if (!form.subject || !form.board) return
+      const spec = await getMergedPaperSpec(form.board, form.subject, form.tier || null, form.paper, qualification)
+      const bounds = await getMergedBoundaries(form.board, form.subject, form.tier || null, form.year, qualification)
       if (cancelled) return
       setAutoSpec(spec)
-      if (spec) {
-        setForm(f=>({...f, maxMarks: spec.maxMarks || f.maxMarks}))
-        if (spec.questions) { setQMarks(spec.questions.map(q=>({...q,scored:0}))); setUseQ(true) }
-      }
-      const bounds = await getMergedBoundaries(form.board, form.subject, tier, form.year, formQual)
-      if (!cancelled) setAutoBoundary(bounds)
-    })()
+      setAutoBoundary(bounds)
+      if (spec?.maxMarks && !form.maxMarks) setForm(f => ({ ...f, maxMarks: spec.maxMarks }))
+    }
+    load()
     return () => { cancelled = true }
-  }, [form.subject, form.board, form.paper, form.year, formQual])
+  }, [form.subject, form.board, form.tier, form.paper, form.year]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalScored = questionMarks.reduce((s,q)=>s+parseInt(q.scored||0),0)
+  const scoreNum = parseFloat(form.score)
+  const maxNum = parseFloat(form.maxMarks)
+  const percentage = (!Number.isNaN(scoreNum) && maxNum > 0) ? (scoreNum / maxNum) * 100 : null
+  const livePreviewGrade = (percentage != null && autoBoundary?.boundaries) ? calculateGradeFromBoundaries(scoreNum, autoBoundary) : null
 
   async function submit(e) {
     e.preventDefault()
-    const score   = useQ ? totalScored : parseInt(form.score)
-    const max     = parseInt(form.maxMarks)
-    const pct     = Math.round((score/max)*100)
-    const grades  = autoBoundary?.grades || getGradeOptions(form.subject, formQual, form.tier)
-    const bounds  = useCustom ? { boundaries:customBoundaries.map(Number), maxMarks:max, grades } : autoBoundary
-    const grade   = bounds ? calculateGradeFromBoundaries(score, bounds) : null
-    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, qualification:formQual, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
+    if (!form.subject || !form.score || !form.maxMarks) { toast.error('Fill in subject, score and total marks'); return }
+    setSaving(true)
+    const grade = autoBoundary?.boundaries ? calculateGradeFromBoundaries(scoreNum, autoBoundary) : null
+    await onSave({
+      subject: form.subject, board: form.board, tier: tiered ? form.tier : 'N/A', paper: form.paper,
+      year: form.year, score: scoreNum, maxMarks: maxNum, percentage, grade,
+      qualification, attemptDate: form.attemptDate, notes: form.notes.trim(), questionMarks: [],
+    })
+    setSaving(false)
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
-        <div className="modal-header"><span className="modal-title">Log paper attempt</span><button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button></div>
-        <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:12}}>
-          <div className="grid-2" style={{gap:10}}>
-            <div><label className="label">Subject</label>
-              <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} required>
-                <option value="">Select…</option>
-                {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
-              </select></div>
-            <div><label className="label">Board</label>
-              <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
-                {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
-              </select></div>
-            <div><label className="label">Level</label>
-              <select className="select" value={formQual} onChange={e=>setLevelOverride(e.target.value)}>
-                {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
-              </select></div>
-            {form.subject && isTiered(form.subject) && formQual === 'GCSE' && (
-              <div><label className="label">Tier</label>
-                <select className="select" value={form.tier} onChange={e=>setForm(f=>({...f,tier:e.target.value}))}>
-                  <option value="Higher">Higher</option><option value="Foundation">Foundation</option>
-                </select></div>
-            )}
-            <div><label className="label">Year</label>
-              <select className="select" value={form.year} onChange={e=>setForm(f=>({...f,year:parseInt(e.target.value)}))}>
-                {AVAILABLE_YEARS.map(y=><option key={y} value={y}>{y}</option>)}
-              </select></div>
-            <div><label className="label">Paper</label>
-              <select className="select" value={form.paper} onChange={e=>setForm(f=>({...f,paper:parseInt(e.target.value)}))}>
-                {[1,2,3,4].map(p=><option key={p} value={p}>Paper {p}</option>)}
-              </select></div>
-            <div><label className="label">Date attempted</label>
-              <input className="input" type="date" value={form.attemptDate} onChange={e=>setForm(f=>({...f,attemptDate:e.target.value}))}/></div>
-          </div>
-
-          {/* Auto-filled spec info */}
-          {autoSpec && (
-            <div style={{padding:'8px 12px',background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:'var(--radius-md)',fontSize:'0.8rem',display:'flex',alignItems:'center',gap:8}}>
-              <Check size={14} color="var(--success)"/>
-              Auto-filled: {autoSpec.maxMarks} marks · {autoSpec.duration} min
-            </div>
-          )}
-
-          {/* Grade boundaries — show both marks and % */}
-          {(autoBoundary || useCustom) && (
-            <div style={{padding:'10px 12px',background:'rgba(34,197,94,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.8rem'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                <span style={{fontWeight:600}}>
-                  Grade boundaries ({form.year}){useCustom?' — custom':' — auto-filled'}
-                </span>
-                {!useCustom ? (
-                  <button type="button" style={{background:'none',border:'none',fontSize:'0.75rem',color:'var(--accent-light)',cursor:'pointer'}}
-                    onClick={()=>{setUseCustom(true);setCustomBoundaries((autoBoundary?.boundaries||[]).map(b=>b||''))}}>
-                    Edit
-                  </button>
-                ) : (
-                  <button type="button" style={{background:'none',border:'none',fontSize:'0.75rem',color:'var(--text-muted)',cursor:'pointer'}}
-                    onClick={()=>setUseCustom(false)}>
-                    Reset to auto
-                  </button>
-                )}
-              </div>
-
-              {!useCustom && autoBoundary ? (
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:4}}>
-                  {(autoBoundary.grades || ['9','8','7','6','5','4','3','2','1']).map((g,i)=>{
-                    const marks = autoBoundary.boundaries[i]
-                    if (marks === null || marks === undefined) return null
-                    const pct = Math.round((marks / autoBoundary.maxMarks)*100)
-                    return (
-                      <div key={g} style={{textAlign:'center',padding:'4px 2px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-                        <div style={{fontWeight:800,color:gradeColour(g),fontSize:'0.9rem'}}>{g.startsWith('G') || g.includes('-') || g.includes('*') || /^[A-Z]$/.test(g) ? g : `G${g}`}</div>
-                        <div style={{fontSize:'0.72rem',fontWeight:600}}>{marks}/{autoBoundary.maxMarks}</div>
-                        <div style={{fontSize:'0.68rem',color:'var(--text-muted)'}}>{pct}%</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div>
-                  <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:6}}>
-                    Enter the minimum marks needed for each grade (out of {form.maxMarks||autoSpec?.maxMarks||80}):
-                  </p>
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:4}}>
-                    {(autoBoundary?.grades || getGradeOptions(form.subject, profile?.qualification || 'GCSE', form.tier)).map((g,i)=>(
-                      <div key={g} style={{textAlign:'center'}}>
-                        <div style={{fontSize:'0.68rem',color:gradeColour(g),fontWeight:700,marginBottom:2}}>{g}</div>
-                        <input className="input" type="number" min={0} max={form.maxMarks||80}
-                          style={{padding:'3px',textAlign:'center',fontSize:'0.75rem'}}
-                          value={customBoundaries[i]||''} onChange={e=>{const b=[...customBoundaries];b[i]=e.target.value;setCustomBoundaries(b)}}/>
-                        {customBoundaries[i] && form.maxMarks && (
-                          <div style={{fontSize:'0.62rem',color:'var(--text-muted)',marginTop:1}}>
-                            {Math.round((parseInt(customBoundaries[i])/(parseInt(form.maxMarks)||80))*100)}%
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Score entry */}
-          {useQ && questionMarks.length > 0 ? (
-            <div style={{background:'var(--bg-surface)',padding:12,borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:'0.875rem'}}>
-                <span style={{fontWeight:600}}>Marks per question</span>
-                <span style={{color:'var(--accent-light)',fontWeight:700}}>{totalScored}/{form.maxMarks||autoSpec?.maxMarks}</span>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))',gap:6}}>
-                {questionMarks.map((q,i)=>(
-                  <div key={i} style={{textAlign:'center'}}>
-                    <div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginBottom:2}}>Q{q.num} /{q.marks}</div>
-                    <input className="input" type="number" min={0} max={q.marks} value={q.scored}
-                      onChange={e=>setQMarks(qs=>qs.map((qx,j)=>j===i?{...qx,scored:Math.min(parseInt(e.target.value)||0,qx.marks)}:qx))}
-                      style={{textAlign:'center',padding:'4px',fontSize:'0.85rem'}}/>
-                  </div>
-                ))}
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={()=>setUseQ(false)}>Enter total score instead</button>
-            </div>
-          ) : (
-            <div className="grid-2" style={{gap:10}}>
-              <div><label className="label">Score</label>
-                <input className="input" type="number" min={0} value={form.score} onChange={e=>setForm(f=>({...f,score:e.target.value}))} required={!useQ}/></div>
-              <div><label className="label">Max marks{autoSpec?<span style={{color:'var(--success)',marginLeft:4,fontSize:'0.75rem'}}>auto-filled</span>:null}</label>
-                <input className="input" type="number" min={1} value={form.maxMarks} onChange={e=>setForm(f=>({...f,maxMarks:e.target.value}))} required/></div>
-            </div>
-          )}
-
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save paper</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function QuestionMarksModal({ attempt, user, onClose, onSave }) {
-  const [marks, setMarks] = useState(
-    Array.from({length:20},(_,i)=>({num:i+1,marks:3,scored:0,topic:''}))
-  )
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Enter marks per question</span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
+          <h3 className="modal-title">Log a paper</h3>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
-        <p style={{marginBottom:14,fontSize:'0.875rem'}}>Track your performance per question to identify weak topics. You can do this now or skip and do it later.</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8,maxHeight:300,overflowY:'auto',marginBottom:16}}>
-          {marks.map((q,i)=>(
-            <div key={i} style={{padding:8,background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-              <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:4}}>Q{q.num}</div>
-              <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:4}}>
-                <input className="input" type="number" min={0} max={q.marks} value={q.scored}
-                  onChange={e=>setMarks(ms=>ms.map((m,j)=>j===i?{...m,scored:parseInt(e.target.value)||0}:m))}
-                  style={{flex:1,padding:'3px',textAlign:'center',fontSize:'0.82rem'}}/>
-                <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>/{q.marks}</span>
-              </div>
-              <input className="input" placeholder="Topic" value={q.topic}
-                onChange={e=>setMarks(ms=>ms.map((m,j)=>j===i?{...m,topic:e.target.value}:m))}
-                style={{fontSize:'0.75rem',padding:'3px 6px'}}/>
-            </div>
-          ))}
-        </div>
-        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-          <button className="btn btn-secondary" onClick={onClose}>Skip for now</button>
-          <button className="btn btn-primary" onClick={()=>onSave(marks)}>Save question marks</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function BoundaryEditorModal({ profile, onClose }) {
-  const subjects = profile?.subjects || []
-  const [selSubj, setSelSubj] = useState(subjects[0]?.name||'')
-  const [selBoard, setSelBoard] = useState(subjects[0]?.board||'AQA')
-  const [selYear, setSelYear] = useState(2024)
-
-  const selSubjMeta = subjects.find(s=>s.name===selSubj)
-  const defaultQual = getSubjectQualification(selSubjMeta, profile)
-  // Level defaults from the subject's own stored qualification but is separately overridable —
-  // a student can have e.g. "Chemistry" saved as A-Level while wanting to sanity-check what the
-  // AS-Level boundary looked like, and previously there was no way to see or change this at all;
-  // it was silently baked into selSubjMeta with no UI control, same underlying issue as selBoard.
-  const [selLevel, setSelLevel] = useState(defaultQual)
-  useEffect(() => { setSelLevel(defaultQual) }, [selSubj]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const selTier = selLevel === 'GCSE' ? (selSubjMeta?.tier || 'Higher') : 'N/A'
-  const [bounds, setBounds] = useState(null)
-  useEffect(() => {
-    let cancelled = false
-    getMergedBoundaries(selBoard, selSubj, selTier, selYear, selLevel).then(b => { if (!cancelled) setBounds(b) })
-    return () => { cancelled = true }
-  }, [selBoard, selSubj, selTier, selYear, selLevel])
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">Grade boundaries reference</span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
-        </div>
-        <div className="grid-2" style={{gap:10,marginBottom:16}}>
-          <div><label className="label">Subject</label>
-            <select className="select" value={selSubj} onChange={e=>setSelSubj(e.target.value)}>
-              {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
-            </select></div>
-          <div><label className="label">Board</label>
-            <select className="select" value={selBoard} onChange={e=>setSelBoard(e.target.value)}>
-              {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
-            </select></div>
-          <div><label className="label">Level</label>
-            <select className="select" value={selLevel} onChange={e=>setSelLevel(e.target.value)}>
-              {['GCSE','AS-Level','A-Level'].map(l=><option key={l} value={l}>{l}</option>)}
-            </select></div>
-          <div><label className="label">Year</label>
-            <select className="select" value={selYear} onChange={e=>setSelYear(parseInt(e.target.value))}>
-              {AVAILABLE_YEARS.map(y=><option key={y} value={y}>{y}</option>)}
-            </select></div>
-        </div>
-        {bounds ? (
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
-              <span className="badge badge-accent">{selLevel}</span>
-              <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Total marks: {bounds.maxMarks}</span>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:6,textAlign:'center'}}>
-              {(bounds.grades || ['9','8','7','6','5','4','3','2','1']).map((g,i)=>(
-                <div key={g} style={{padding:8,background:'rgba(34,197,94,0.08)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-                  <div style={{fontWeight:800,color:gradeColour(g),fontSize:'1.1rem'}}>{g}</div>
-                  <div style={{fontSize:'0.75rem',marginTop:2}}>{bounds.boundaries[i]??'–'}</div>
-                </div>
-              ))}
-            </div>
-            <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:12}}>
-              Historical boundaries from real exam board results{bounds.note?` (${bounds.note.replace('~','approx. ')})`:''}. 2026 boundaries will be published after results day in August.
-            </p>
+            <label className="label">Subject</label>
+            <select className="select" value={form.subject} onChange={e => {
+              const sub = subjects.find(s => s.name === e.target.value)
+              setForm(f => ({ ...f, subject: e.target.value, board: sub?.board || f.board, tier: '' }))
+            }}>
+              {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
           </div>
-        ) : (
-          <div className="empty-state" style={{padding:'24px 0'}}><p>No boundary data found for {selBoard} {selSubj} at {selLevel}{selTier!=='N/A'?` (${selTier})`:''}.</p></div>
-        )}
-        <div style={{display:'flex',justifyContent:'flex-end',marginTop:16}}>
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Edit Entry Modal ──────────────────────────────────────────────────────────
-function EditEntryModal({ attempt, onClose, onSave }) {
-  const [form, setForm] = useState({
-    score:       attempt.score || 0,
-    maxMarks:    attempt.maxMarks || 80,
-    year:        attempt.year || 2024,
-    attemptDate: attempt.attemptDate || '',
-    notes:       attempt.notes || '',
-  })
-
-  function submit(e) {
-    e.preventDefault()
-    const score      = parseInt(form.score)
-    const maxMarks   = parseInt(form.maxMarks)
-    const percentage = Math.round((score / maxMarks) * 100)
-    onSave({ ...form, score, maxMarks, percentage })
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">
-            Edit entry — {attempt.subject} ({attempt.qualification||'GCSE'}) P{attempt.paper} {attempt.year}
-          </span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
-        </div>
-        <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:12}}>
-          <div className="grid-2" style={{gap:10}}>
+          <div className="grid-2">
             <div>
-              <label className="label">Score</label>
-              <input className="input" type="number" min={0} max={form.maxMarks}
-                value={form.score} onChange={e=>setForm(f=>({...f,score:e.target.value}))} required/>
-            </div>
-            <div>
-              <label className="label">Max marks</label>
-              <input className="input" type="number" min={1}
-                value={form.maxMarks} onChange={e=>setForm(f=>({...f,maxMarks:e.target.value}))} required/>
-            </div>
-            <div>
-              <label className="label">Year (paper year)</label>
-              <select className="select" value={form.year} onChange={e=>setForm(f=>({...f,year:parseInt(e.target.value)}))}>
-                {[2024,2023,2022,2021,2020,2019,2018,2017].map(y=><option key={y} value={y}>{y}</option>)}
+              <label className="label">Board</label>
+              <select className="select" value={form.board} onChange={e => setForm(f => ({ ...f, board: e.target.value }))}>
+                {['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Date attempted</label>
-              <input className="input" type="date" value={form.attemptDate}
-                onChange={e=>setForm(f=>({...f,attemptDate:e.target.value}))}/>
+              <label className="label">Year</label>
+              <select className="select" value={form.year} onChange={e => setForm(f => ({ ...f, year: parseInt(e.target.value) }))}>
+                {AVAILABLE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
             </div>
           </div>
-          <div>
-            <label className="label">Notes</label>
-            <textarea className="textarea" style={{minHeight:55}} value={form.notes}
-              onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
-              placeholder="Topics to revisit, things that went well…"/>
+          <div className="grid-2">
+            <div>
+              <label className="label">Paper</label>
+              <input className="input" value={form.paper} onChange={e => setForm(f => ({ ...f, paper: e.target.value }))} placeholder="1" />
+            </div>
+            {tiered && (
+              <div>
+                <label className="label">Tier</label>
+                <select className="select" value={form.tier} onChange={e => setForm(f => ({ ...f, tier: e.target.value }))}>
+                  <option value="">Select tier</option>
+                  <option value="Foundation">Foundation</option>
+                  <option value="Higher">Higher</option>
+                </select>
+              </div>
+            )}
           </div>
-          {form.score && form.maxMarks && (
-            <div style={{padding:'6px 12px',background:'rgba(34,197,94,0.08)',borderRadius:'var(--radius-md)',fontSize:'0.82rem'}}>
-              {Math.round((form.score/form.maxMarks)*100)}% — this will update the percentage. The grade will remain unless the paper had grade boundaries set during entry.
+          <div className="grid-2">
+            <div>
+              <label className="label">Score</label>
+              <input className="input" type="number" min="0" value={form.score} onChange={e => setForm(f => ({ ...f, score: e.target.value }))} placeholder="68" />
+            </div>
+            <div>
+              <label className="label">Total marks</label>
+              <input className="input" type="number" min="1" value={form.maxMarks} onChange={e => setForm(f => ({ ...f, maxMarks: e.target.value }))} placeholder="100" />
+            </div>
+          </div>
+          {percentage != null && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{Math.round(percentage)}%</span>
+              {livePreviewGrade && <span className="badge" style={{ background: 'transparent', border: `1px solid ${gradeColour(livePreviewGrade)}`, color: gradeColour(livePreviewGrade) }}>Grade {livePreviewGrade}</span>}
+              {autoBoundary?.note === 'admin-edited' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Using admin-set boundaries</span>}
+              {!autoBoundary?.boundaries && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No grade boundaries on file for this paper yet</span>}
             </div>
           )}
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <div>
+            <label className="label">Date attempted</label>
+            <input className="input" type="date" value={form.attemptDate} onChange={e => setForm(f => ({ ...f, attemptDate: e.target.value }))} />
+          </div>
+          <div>
+            <label className="label">Notes (optional)</label>
+            <textarea className="textarea" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ran out of time on Section B..." />
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save changes</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save attempt'}</button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Edit entry modal ─────────────────────────────────────────────────────────
+function EditEntryModal({ attempt, onClose, onSave }) {
+  const [score, setScore] = useState(attempt.score)
+  const [maxMarks, setMaxMarks] = useState(attempt.maxMarks)
+  const [attemptDate, setAttemptDate] = useState(attempt.attemptDate || '')
+  const [notes, setNotes] = useState(attempt.notes || '')
+  const [saving, setSaving] = useState(false)
+
+  async function submit(e) {
+    e.preventDefault()
+    setSaving(true)
+    const scoreNum = parseFloat(score), maxNum = parseFloat(maxMarks)
+    const percentage = maxNum > 0 ? (scoreNum / maxNum) * 100 : null
+    await onSave({ score: scoreNum, maxMarks: maxNum, percentage, attemptDate, notes: notes.trim() })
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Edit attempt</h3>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14 }}>{attempt.subject} · Paper {attempt.paper} ({attempt.year})</p>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="grid-2">
+            <div><label className="label">Score</label><input className="input" type="number" value={score} onChange={e => setScore(e.target.value)} /></div>
+            <div><label className="label">Total marks</label><input className="input" type="number" value={maxMarks} onChange={e => setMaxMarks(e.target.value)} /></div>
+          </div>
+          <div><label className="label">Date attempted</label><input className="input" type="date" value={attemptDate} onChange={e => setAttemptDate(e.target.value)} /></div>
+          <div><label className="label">Notes</label><textarea className="textarea" rows={3} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Question-by-question marks modal ─────────────────────────────────────────
+function QuestionMarksModal({ attempt, onSkip, onSave }) {
+  const existing = attempt.questionMarks?.length ? attempt.questionMarks : null
+  const [count, setCount] = useState(existing?.length || 10)
+  const [rows, setRows] = useState(() =>
+    existing || Array.from({ length: 10 }, (_, i) => ({ num: i + 1, marks: '', scored: '', topic: '' }))
+  )
+  const suggestions = useMemo(() => {
+    try { return getAllTopicsFlat(attempt.board, attempt.subject, attempt.qualification).map(t => t.name) }
+    catch { return [] }
+  }, [attempt.board, attempt.subject, attempt.qualification])
+  const listId = `topic-suggestions-${attempt.id}`
+
+  function setRowCount(n) {
+    setCount(n)
+    setRows(prev => {
+      const next = [...prev]
+      while (next.length < n) next.push({ num: next.length + 1, marks: '', scored: '', topic: '' })
+      return next.slice(0, n)
+    })
+  }
+  function updateRow(i, field, value) {
+    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r))
+  }
+  function submit() {
+    const cleaned = rows
+      .filter(r => r.topic.trim() || Number(r.marks) > 0)
+      .map(r => ({ num: r.num, marks: Number(r.marks) || 0, scored: Number(r.scored) || 0, topic: r.topic.trim() }))
+    onSave(cleaned)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onSkip}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Performance by topic</h3>
+          <button className="btn-icon" onClick={onSkip}><X size={18} /></button>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14 }}>
+          Enter the marks available and marks scored for each question, and which topic it tested. This powers the "performance by topic" and weak-topic breakdown for this paper — skip it and add it later any time from the paper's detail view.
+        </p>
+        <div className="qmarks-count-row">
+          <span>Number of questions:</span>
+          <select className="select" style={{ width: 'auto' }} value={count} onChange={e => setRowCount(parseInt(e.target.value))}>
+            {[...new Set([5, 8, 10, 12, 15, 20, 25, 30, count])].sort((a, b) => a - b).map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div className="qmarks-grid">
+          <div className="qmarks-row"><span>#</span><span style={{ textAlign: 'left' }}>Topic</span><span>Available</span><span>Scored</span></div>
+          {rows.map((r, i) => (
+            <div key={i} className="qmarks-row">
+              <span>{r.num}</span>
+              <input className="input" list={listId} value={r.topic} onChange={e => updateRow(i, 'topic', e.target.value)} placeholder="e.g. Cell Structure" />
+              <input className="input" type="number" min="0" value={r.marks} onChange={e => updateRow(i, 'marks', e.target.value)} />
+              <input className="input" type="number" min="0" value={r.scored} onChange={e => updateRow(i, 'scored', e.target.value)} />
+            </div>
+          ))}
+        </div>
+        {suggestions.length > 0 && (
+          <datalist id={listId}>{suggestions.map((s, i) => <option key={i} value={s} />)}</datalist>
+        )}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+          <button className="btn btn-secondary" onClick={onSkip}>Skip for now</button>
+          <button className="btn btn-primary" onClick={submit}><Check size={15} /> Save breakdown</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Grade boundary editor ────────────────────────────────────────────────────
+function BoundaryEditorModal({ profile, onClose }) {
+  const subjects = profile?.subjects || []
+  const [subject, setSubject] = useState(subjects[0]?.name || '')
+  const [year, setYear] = useState(AVAILABLE_YEARS[0])
+  const [boundaries, setBoundaries] = useState([])
+  const [saving, setSaving] = useState(false)
+  const activeSubject = subjects.find(s => s.name === subject)
+  const qualification = getSubjectQualification(activeSubject, profile)
+  const board = activeSubject?.board || 'AQA'
+  const grades = getGradeOptions(subject, qualification)
+  const boundaryCount = Math.max(0, grades.length - 1) // every scale ends in 'U', which has no boundary of its own
+
+  useEffect(() => {
+    let cancelled = false
+    getMergedBoundaries(board, subject, null, year, qualification).then(b => {
+      if (cancelled) return
+      if (b?.boundaries?.length) setBoundaries(b.boundaries.map(v => v == null ? '' : String(v)))
+      else setBoundaries(Array(boundaryCount).fill(''))
+    })
+    return () => { cancelled = true }
+  }, [subject, year, board, qualification]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function submit() {
+    setSaving(true)
+    try {
+      await saveBoundaryOverride(board, qualification, subject, {
+        maxMarks: null,
+        boundaries: boundaries.map(v => v === '' ? null : Number(v)),
+      })
+      toast.success('Grade boundaries saved')
+      onClose()
+    } catch (e) {
+      toast.error('Could not save: ' + e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Grade boundaries</h3>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14 }}>
+          Set the minimum mark needed for each grade. {year === 2026 ? '2026 boundaries are provisional until exam boards publish them after results day in August — using the most recent confirmed year as an estimate is reasonable until then.' : ''}
+        </p>
+        <div className="grid-2" style={{ marginBottom: 14 }}>
+          <div>
+            <label className="label">Subject</label>
+            <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
+              {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Year</label>
+            <select className="select" value={year} onChange={e => setYear(parseInt(e.target.value))}>
+              {AVAILABLE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto' }}>
+          {grades.slice(0, boundaryCount).map((g, i) => (
+            <div key={g} style={{ display: 'grid', gridTemplateColumns: '50px 1fr', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, color: gradeColour(g) }}>{g}</span>
+              <input className="input" type="number" min="0" value={boundaries[i] || ''} onChange={e => setBoundaries(prev => prev.map((v, idx) => idx === i ? e.target.value : v))} placeholder="Min. mark" />
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8 }}>Below the lowest mark above counts as U — no boundary needed for that one.</p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit} disabled={saving}>{saving ? 'Saving…' : 'Save boundaries'}</button>
+        </div>
       </div>
     </div>
   )
