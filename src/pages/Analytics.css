@@ -1,0 +1,150 @@
+/* src/pages/Analytics.css
+   Page-scoped styles for the Analytics redesign. Everything here builds on tokens already
+   defined in globals.css (--accent, --border, --text-muted, --r-lg, etc.) so light/dark mode
+   is inherited for free — nothing in this file hardcodes a light-only colour. */
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.analytics-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.analytics-title { display: flex; align-items: center; gap: 10px; margin: 0; }
+.analytics-subtitle { color: var(--text-muted); font-size: 0.875rem; margin-top: 2px; }
+
+/* ── Hero stat row ───────────────────────────────────────────────────────── */
+.analytics-hero {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.analytics-stat-card { padding: 16px 18px; display: flex; flex-direction: column; }
+.analytics-stat-top { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.analytics-stat-icon {
+  width: 28px; height: 28px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  background: var(--accent-pale); color: var(--accent-light);
+}
+.analytics-stat-label { font-size: 0.78rem; font-weight: 600; }
+.analytics-stat-value { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.01em; margin-top: 10px; line-height: 1; }
+.analytics-stat-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; min-height: 20px; }
+
+.analytics-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+.analytics-trend.is-up { color: var(--success); }
+.analytics-trend.is-down { color: var(--danger); }
+.analytics-trend.is-flat { color: var(--text-muted); }
+
+.analytics-sparkline { width: 72px; height: 30px; flex-shrink: 0; }
+
+.analytics-conf-distribution { display: flex; align-items: flex-end; gap: 3px; width: 72px; height: 30px; flex-shrink: 0; }
+.analytics-conf-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 4px; }
+
+@media (max-width: 900px) { .analytics-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) {
+  .analytics-hero { grid-template-columns: 1fr; }
+  .analytics-stat-card { padding: 14px 16px; }
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.analytics-tabs { margin-bottom: 20px; }
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.analytics-card { margin-bottom: 16px; }
+.analytics-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.analytics-card-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.95rem; }
+.analytics-card-note { font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 14px; }
+
+/* Segmented toggle used inside "Study patterns" */
+.analytics-seg { display: inline-flex; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 3px; gap: 2px; }
+.analytics-seg button {
+  border: none; background: none; cursor: pointer; padding: 6px 12px;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-muted); border-radius: var(--r-md);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.analytics-seg button.active { background: var(--bg-card); color: var(--text-primary); box-shadow: var(--shadow-xs); }
+
+@media (max-width: 480px) {
+  .analytics-card-head { flex-direction: column; align-items: stretch; }
+  .analytics-seg { width: 100%; }
+  .analytics-seg button { flex: 1; padding: 6px 4px; font-size: 0.68rem; }
+}
+
+/* ── Heatmap ─────────────────────────────────────────────────────────────── */
+.analytics-heatmap-scroll { overflow-x: auto; }
+.analytics-heatmap-grid { display: grid; grid-template-columns: repeat(84, minmax(8px, 1fr)); gap: 3px; min-width: 480px; }
+.analytics-heatmap-cell { aspect-ratio: 1; border-radius: 2px; }
+.analytics-heatmap-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.72rem; color: var(--text-muted); }
+.analytics-heatmap-legend .swatch { width: 12px; height: 12px; border-radius: 2px; }
+
+/* ── Personal records ────────────────────────────────────────────────────── */
+.analytics-records { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.analytics-record { padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-md); }
+.analytics-record-label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; }
+.analytics-record-val { font-weight: 700; font-size: 0.95rem; }
+@media (max-width: 560px) { .analytics-records { grid-template-columns: 1fr 1fr; } }
+
+/* ── Subject performance list ────────────────────────────────────────────── */
+.analytics-subject-list { display: flex; flex-direction: column; }
+.analytics-subject-row {
+  display: flex; align-items: center; gap: 12px; padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.analytics-subject-row:last-child { border-bottom: none; }
+.analytics-subject-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.analytics-subject-name { font-weight: 600; font-size: 0.875rem; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.analytics-subject-name span.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analytics-subject-metrics { display: flex; align-items: center; gap: 22px; margin-left: auto; flex-shrink: 0; }
+.analytics-metric { text-align: right; min-width: 46px; }
+.analytics-metric-val { font-weight: 700; font-size: 0.875rem; }
+.analytics-metric-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
+@media (max-width: 560px) {
+  .analytics-subject-row { flex-wrap: wrap; }
+  .analytics-subject-metrics { margin-left: 21px; gap: 16px; }
+}
+
+/* ── Confidence breakdown bars ───────────────────────────────────────────── */
+.analytics-conf-list { display: flex; flex-direction: column; gap: 12px; }
+.analytics-conf-item-top { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 5px; }
+.analytics-conf-item-top .name { font-weight: 600; }
+.analytics-conf-item-top .count { color: var(--text-muted); }
+
+/* ── Needs attention / strong topics ─────────────────────────────────────── */
+.analytics-topic-row {
+  display: block; padding: 11px 14px; border-radius: var(--r-md);
+  border: 1px solid var(--border); margin-bottom: 8px; text-decoration: none; color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.analytics-topic-row:last-child { margin-bottom: 0; }
+.analytics-topic-row:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+.analytics-topic-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.analytics-topic-name { font-weight: 600; font-size: 0.85rem; }
+.analytics-topic-subject { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+
+.analytics-strong-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.analytics-strong-chip {
+  display: flex; flex-direction: column; gap: 1px; padding: 7px 13px;
+  background: var(--success-pale); border: 1px solid var(--success-border);
+  border-radius: 20px; font-size: 0.8rem; text-decoration: none; color: inherit;
+}
+.analytics-strong-chip .name { font-weight: 600; color: var(--text-primary); }
+.analytics-strong-chip .subject { font-size: 0.66rem; color: var(--text-muted); }
+
+/* ── Recommendations ─────────────────────────────────────────────────────── */
+.analytics-rec {
+  display: flex; gap: 12px; padding: 13px 15px; background: var(--bg-surface);
+  border: 1px solid var(--border); border-left: 3px solid var(--rec-colour, var(--accent));
+  border-radius: var(--r-md); margin-bottom: 10px;
+}
+.analytics-rec:last-child { margin-bottom: 0; }
+.analytics-rec-icon { color: var(--rec-colour, var(--accent)); flex-shrink: 0; margin-top: 1px; }
+.analytics-rec-title { font-weight: 700; font-size: 0.875rem; margin-bottom: 3px; }
+.analytics-rec-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+
+.analytics-rec-positive {
+  display: flex; gap: 12px; padding: 14px 16px; background: var(--success-pale);
+  border: 1px solid var(--success-border); border-radius: var(--r-md);
+}
+.analytics-rec-positive .analytics-rec-icon { color: var(--success); }
+.analytics-rec-positive .analytics-rec-title { color: var(--success); }
+
+/* ── AI summary ──────────────────────────────────────────────────────────── */
+.analytics-summary-empty { text-align: center; padding: 20px 0; }
+.analytics-summary-empty p { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 14px; }
