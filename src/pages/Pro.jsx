@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { Check, Lock, Star, Crown, ArrowLeft } from 'lucide-react'
+import { Check, Lock, Crown, ArrowLeft, RotateCcw, Code2, GraduationCap } from 'lucide-react'
 import toast from 'react-hot-toast'
+import './AccountPages.css'
 
 const FREE_FEATURES = [
   '5 Topic Note generations per day',
@@ -38,6 +39,20 @@ const PRO_FEATURES = [
   { label: 'Everything in the free plan', highlight: false },
   { label: 'Cancel any time', highlight: false },
   { label: 'Supports independent development', highlight: false },
+]
+
+const TRUST_SIGNALS = [
+  { icon: Lock,          text: 'Secure checkout via Stripe' },
+  { icon: RotateCcw,     text: 'Cancel any time — no lock-in' },
+  { icon: Code2,         text: 'Supports independent development' },
+  { icon: GraduationCap, text: 'Built for UK students' },
+]
+
+const FAQ = [
+  { q: 'What happens if I cancel?', a: 'Your Pro access continues until the end of the current billing period. After that you drop to the free plan — your data stays intact.' },
+  { q: 'Am I a beta user with lifetime access?', a: 'If you signed up during the beta period, you have lifetime free access to all Pro features. Check your profile page — if it shows a Pro or Beta badge, you\'re all set and won\'t be charged.' },
+  { q: 'Can I switch between monthly and annual?', a: 'Yes — contact us and we\'ll switch your plan at the next renewal.' },
+  { q: 'Is this safe?', a: 'All payments are processed by Stripe. RevisionFlow never sees your card details.' },
 ]
 
 async function startCheckout(uid, plan) {
@@ -82,8 +97,7 @@ export default function Pro() {
       }}>
         <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
           <div style={{
-            width: 72, height: 72, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+            width: 72, height: 72, borderRadius: '50%', background: 'var(--gold)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 20px',
           }}>
@@ -97,18 +111,15 @@ export default function Pro() {
               ? 'As a beta user you have lifetime free access to all Pro features — including all themes, unlimited AI, and timed quiz mode.'
               : 'Your Pro subscription is active. All Pro features are now unlocked. Thank you for supporting RevisionFlow!'}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24, textAlign: 'left' }}>
-            {PRO_FEATURES.filter(f => f.highlight).map(f => (
-              <div key={f.label} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 14px', background: 'var(--gold-pale)',
-                borderRadius: 10, border: '1px solid var(--gold-border)',
-                fontSize: '0.875rem', fontWeight: 600,
-              }}>
-                <Check size={15} color="var(--success)" style={{ flexShrink: 0 }} />
-                {f.label}
-              </div>
-            ))}
+          <div className="card gold-card" style={{ textAlign: 'left', marginBottom: 24 }}>
+            <div className="ap-plan-features" style={{ margin: 0 }}>
+              {PRO_FEATURES.filter(f => f.highlight).map(f => (
+                <div key={f.label} className="ap-plan-feature">
+                  <Check size={15} color="var(--success)" className="ap-plan-feature-icon" />
+                  {f.label}
+                </div>
+              ))}
+            </div>
           </div>
           <Link to="/dashboard" className="btn btn-primary" style={{ padding: '12px 32px', fontSize: '0.95rem' }}>
             Go to dashboard →
@@ -125,7 +136,7 @@ export default function Pro() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '32px 24px' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+      <div className="ap-page" style={{ maxWidth: 760 }}>
 
         {/* Back link */}
         <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -134,16 +145,11 @@ export default function Pro() {
         </Link>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 14px',
-            borderRadius: 999, background: 'var(--gold-pale)',
-            border: '1px solid var(--gold-border)', marginBottom: 16,
-            fontSize: '0.78rem', fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.06em',
-          }}>
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <span className="badge badge-gold" style={{ marginBottom: 16, letterSpacing: '0.06em' }}>
             <Crown size={12} /> REVISIONFLOW PRO
-          </div>
-          <h1 style={{ fontSize: '2rem', marginBottom: 10, lineHeight: 1.2 }}>
+          </span>
+          <h1 style={{ fontSize: '2rem', marginTop: 12, marginBottom: 10, lineHeight: 1.2 }}>
             Unlock your full potential
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
@@ -153,31 +159,15 @@ export default function Pro() {
 
         {/* Billing toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <div style={{
-            display: 'inline-flex', background: 'var(--bg-surface)',
-            borderRadius: 12, padding: 4, border: '1px solid var(--border)',
-            gap: 4,
-          }}>
+          <div className="tabs" style={{ display: 'inline-flex' }}>
             {[
               { id: 'monthly', label: 'Monthly' },
               { id: 'annual',  label: 'Annual', badge: 'Save ' + saving + '%' },
             ].map(opt => (
-              <button key={opt.id} onClick={() => setPlan(opt.id)} style={{
-                padding: '8px 20px', borderRadius: 9, border: 'none', cursor: 'pointer',
-                fontWeight: 700, fontSize: '0.88rem',
-                background: plan === opt.id ? 'var(--accent)' : 'transparent',
-                color: plan === opt.id ? '#fff' : 'var(--text-muted)',
-                transition: 'all 0.18s',
-                display: 'flex', alignItems: 'center', gap: 7,
-              }}>
+              <button key={opt.id} className={`tab${plan === opt.id ? ' active' : ''}`} onClick={() => setPlan(opt.id)}>
                 {opt.label}
                 {opt.badge && (
-                  <span style={{
-                    padding: '1px 7px', borderRadius: 999, fontSize: '0.65rem',
-                    background: plan === 'annual' ? 'rgba(255,255,255,0.25)' : 'var(--success)',
-                    color: plan === 'annual' ? '#fff' : '#fff',
-                    fontWeight: 800,
-                  }}>{opt.badge}</span>
+                  <span className="badge badge-green" style={{ padding: '1px 7px', fontSize: '0.63rem' }}>{opt.badge}</span>
                 )}
               </button>
             ))}
@@ -185,70 +175,59 @@ export default function Pro() {
         </div>
 
         {/* Pricing cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
+        <div className="ap-pricing-grid" style={{ marginBottom: 32 }}>
 
           {/* Free */}
-          <div className="card" style={{ padding: 24 }}>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 4 }}>Free</div>
-              <div style={{ fontSize: '2rem', fontWeight: 900 }}>£0</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>forever</div>
+          <div className="card ap-plan-card">
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>Free</div>
+              <div className="ap-plan-price">
+                <span className="ap-plan-price-num">£0</span>
+              </div>
+              <div className="ap-plan-price-period">forever</div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            <div className="ap-plan-features">
               {FREE_FEATURES.map(f => (
-                <div key={f} style={{ display: 'flex', gap: 8, fontSize: '0.82rem', alignItems: 'flex-start' }}>
-                  <Check size={13} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>{f}</span>
+                <div key={f} className="ap-plan-feature">
+                  <Check size={13} color="var(--success)" className="ap-plan-feature-icon" />
+                  {f}
                 </div>
               ))}
             </div>
-            <div style={{ padding: '10px', background: 'var(--bg-hover)', borderRadius: 8,
+            <div style={{ padding: '10px', background: 'var(--bg-hover)', borderRadius: 'var(--r-sm)',
               textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
               Your current plan
             </div>
           </div>
 
           {/* Pro */}
-          <div style={{
-            padding: 24, borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))',
-            border: '2px solid var(--gold)',
-            position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-              padding: '3px 14px', borderRadius: 999,
-              background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
-              color: '#fff', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em',
-              whiteSpace: 'nowrap',
-            }}>MOST POPULAR</div>
+          <div className="card ap-plan-card ap-plan-card--featured">
+            <span className="ap-plan-ribbon">MOST POPULAR</span>
 
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>Pro</span>
                 <Crown size={15} color="var(--gold)" />
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--gold)' }}>
+              <div className="ap-plan-price">
+                <span className="ap-plan-price-num" style={{ color: 'var(--gold)' }}>
                   £{plan === 'annual' ? annualMonthly : monthlyPrice.toFixed(2)}
                 </span>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>/mo</span>
+                <span className="ap-plan-price-period">/mo</span>
               </div>
-              {plan === 'annual' ? (
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  £{annualPrice}/year · billed annually
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>billed monthly</div>
-              )}
+              <div className="ap-plan-price-period">
+                {plan === 'annual' ? `£${annualPrice}/year · billed annually` : 'billed monthly'}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            <div className="ap-plan-features">
               {PRO_FEATURES.map(f => (
-                <div key={f.label} style={{ display: 'flex', gap: 8, fontSize: '0.82rem', alignItems: 'flex-start' }}>
-                  <Check size={13} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ color: f.highlight ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    fontWeight: f.highlight ? 600 : 400 }}>{f.label}</span>
+                <div key={f.label} className="ap-plan-feature" style={{
+                  color: f.highlight ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: f.highlight ? 600 : 400,
+                }}>
+                  <Check size={13} color="var(--success)" className="ap-plan-feature-icon" />
+                  {f.label}
                 </div>
               ))}
             </div>
@@ -269,30 +248,20 @@ export default function Pro() {
         </div>
 
         {/* Trust signals */}
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
-          {[
-            { icon: '🔒', text: 'Secure checkout via Stripe' },
-            { icon: '↩️', text: 'Cancel any time — no lock-in' },
-            { icon: '👨‍💻', text: 'Supports independent development' },
-            { icon: '🎓', text: 'Built for UK students' },
-          ].map(t => (
+        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
+          {TRUST_SIGNALS.map(t => (
             <div key={t.text} style={{ display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <span>{t.icon}</span> {t.text}
+              fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              <t.icon size={14} /> {t.text}
             </div>
           ))}
         </div>
 
         {/* FAQ */}
         <div className="card" style={{ padding: '20px 24px' }}>
-          <h4 style={{ marginBottom: 16, fontSize: '0.95rem' }}>Common questions</h4>
+          <h4 className="card-eyebrow">Common questions</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              { q: 'What happens if I cancel?', a: 'Your Pro access continues until the end of the current billing period. After that you drop to the free plan — your data stays intact.' },
-              { q: 'Am I a beta user with lifetime access?', a: 'If you signed up during the beta period, you have lifetime free access to all Pro features. Check your profile page — if it shows a Pro or Beta badge, you\'re all set and won\'t be charged.' },
-              { q: 'Can I switch between monthly and annual?', a: 'Yes — contact us and we\'ll switch your plan at the next renewal.' },
-              { q: 'Is this safe?', a: 'All payments are processed by Stripe. RevisionFlow never sees your card details.' },
-            ].map(({ q, a }) => (
+            {FAQ.map(({ q, a }) => (
               <div key={q}>
                 <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 4 }}>{q}</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{a}</div>
