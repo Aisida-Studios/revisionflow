@@ -10,7 +10,7 @@ import {
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification, subjectColour } from '../data/subjects'
-import { getSubjectIcon } from '../utils/subjectIcons'
+import { getSubjectIcon, isBiologyLike } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
 import AIOutput from '../components/AIOutput'
@@ -18,7 +18,8 @@ import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
-import { componentForSubject } from '../data/illustrationThemes'
+import CellIllustration from '../components/illustrations/CellIllustration'
+import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
@@ -31,12 +32,13 @@ import {
 } from 'lucide-react'
 import './Study.css'
 
-// Subject-aware hero illustration — delegates to the shared illustrationThemes.js
-// resolver also used by Dashboard.jsx, Topics.jsx and TopicDetail.jsx, so the same
-// subject renders the same illustration everywhere rather than just biology-or-generic.
+// Subject-aware hero illustration — reuses the two existing illustration components
+// exactly the way TopicDetail.jsx already does (biology -> cell, everything else ->
+// seedling) rather than inventing a new illustration style for Study.
 function SubjectIllustration({ subject, size = 64 }) {
-  const Illustration = componentForSubject(subject)
-  return <Illustration size={size} />
+  return isBiologyLike(subject)
+    ? <CellIllustration size={size} />
+    : <SeedlingIllustration size={size} />
 }
 
 // Flashcard sets only carry board+level when they're official/admin-generated
@@ -2472,6 +2474,8 @@ export default function Study() {
   const [pubSets, setPubSets] = useState([])
   const [setsLoad, setSetsLoad] = useState(false)
   const [searchQ,   setSearchQ]   = useState('')
+  const [pubBoardFilter, setPubBoardFilter] = useState('')
+  const [pubLevelFilter, setPubLevelFilter] = useState('')
   const [mySearch,  setMySearch]   = useState('')
   const [myFcSubjectFilter, setMyFcSubjectFilter] = useState('')
   const [myFcBoardFilter,   setMyFcBoardFilter]   = useState('')
@@ -2675,7 +2679,15 @@ export default function Study() {
       if (myFcLevelFilter && level !== myFcLevelFilter) return false
       return true
     })
-  const filteredPub = pubSets.filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()) || s.subject?.toLowerCase().includes(searchQ.toLowerCase()))
+  const filteredPub = pubSets
+    .filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()) || s.subject?.toLowerCase().includes(searchQ.toLowerCase()))
+    .filter(s => {
+      if (!pubBoardFilter && !pubLevelFilter) return true
+      const { board, level } = deriveSetBoardLevel(s, profile)
+      if (pubBoardFilter && board !== pubBoardFilter) return false
+      if (pubLevelFilter && level !== pubLevelFilter) return false
+      return true
+    })
 
   return (
     <div className="fade-in">
@@ -2819,16 +2831,34 @@ export default function Study() {
 
           {flashTab === 'public' && (
             <div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                 <input className="input" placeholder="Search public sets…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
                 <select className="select" style={{ width: 'auto' }} onChange={e => loadPublicSets(e.target.value || null)}>
                   <option value="">All subjects</option>
                   {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              <div className="rf-config-grid" style={{ marginBottom: 16 }}>
+                <select className="select" value={pubBoardFilter} onChange={e => setPubBoardFilter(e.target.value)}>
+                  <option value="">All boards</option>
+                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <select className="select" value={pubLevelFilter} onChange={e => setPubLevelFilter(e.target.value)}>
+                  <option value="">All levels</option>
+                  {['GCSE','AS-Level','A-Level'].map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
               {setsLoad ? <div className="loading-center"><div className="spinner" /></div>
                 : filteredPub.length === 0 ? (
-                  <div className="empty-state"><Users size={32} style={{ opacity: 0.3 }} /><p>No public sets yet — be the first to share one!</p></div>
+                  <div className="empty-state">
+                    <Users size={32} style={{ opacity: 0.3 }} />
+                    {pubSets.length === 0 ? <p>No public sets yet — be the first to share one!</p> : (
+                      <>
+                        <p>No sets match those filters</p>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
                     {filteredPub.map(set => (
@@ -2836,7 +2866,7 @@ export default function Study() {
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                            {set.subject}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
+                            {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + deriveSetBoardLevel(set, profile).board : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
                             {set.author && <span style={{ marginLeft: 4, fontWeight: 600, color: set.author === 'RevisionFlow' ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                               {set.author === 'RevisionFlow' ? '✦ RevisionFlow' : '· ' + set.author}
                             </span>}
