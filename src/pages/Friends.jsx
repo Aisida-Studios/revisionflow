@@ -10,6 +10,7 @@ import { LEVELS } from '../data/subjects'
 import ReferralCard from '../components/ReferralCard'
 import toast from 'react-hot-toast'
 import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
+import './AccountPages.css'
 
 export default function Friends() {
   const { user, profile, refreshProfile } = useAuth()
@@ -114,30 +115,13 @@ export default function Friends() {
   const hasIncomingRequest = (uid) => requests.some(r => r.from === uid)
   const hasSentRequest     = (uid) => (profile?.sentFriendRequests || []).includes(uid)
 
-  const FriendCard = ({ f, actions }) => {
-    const lvl = LEVELS[Math.min((f.level || 1) - 1, LEVELS.length - 1)]
-    return (
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
-          {(f.displayName || 'U')[0].toUpperCase()}
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <div style={{ fontWeight: 600 }}>{f.displayName}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · 🔥 {f.streak || 0}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{(f.xp || 0).toLocaleString()} XP</div>
-        </div>
-        {actions}
-      </div>
-    )
-  }
+  const initial = (name) => (name || 'U')[0].toUpperCase()
 
   return (
-    <div className="fade-in">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+    <div className="fade-in ap-page ap-page--md">
+      <div className="ap-page-head">
         <h2>Friends</h2>
-        <span className="badge badge-accent"><Users size={12} /> {friends.length} friends</span>
+        <span className="badge badge-accent"><Users size={12} /> {friends.length} friend{friends.length === 1 ? '' : 's'}</span>
       </div>
 
       {/* ── Referral card — invite friends ── */}
@@ -147,29 +131,31 @@ export default function Friends() {
 
       {/* ── Search ── */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <h4 style={{ marginBottom: 4 }}>Find a friend</h4>
-        <p style={{ fontSize: '0.82rem', marginBottom: 12 }}>Search by username or display name</p>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: searchResults.length ? 12 : 0 }}>
-          <input
-            className="input"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by username or name…"
-          />
+        <h4 className="card-eyebrow" style={{ marginBottom: 2 }}>Find a friend</h4>
+        <p className="card-sub-line">Search by username or display name</p>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: searchResults.length ? 14 : 0 }}>
+          <div className="ap-search-wrap">
+            <Search size={16} />
+            <input
+              className="input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by username or name…"
+            />
+          </div>
           <button className="btn btn-primary" type="submit" disabled={searching || !search.trim()}>
-            {searching ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <Search size={16} />}
+            {searching ? <div className="spinner spinner-sm" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.35)' }} /> : <Search size={16} />}
           </button>
         </form>
 
         {searchResults.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="ap-person-list" style={{ borderTop: '1.5px solid var(--border)', marginTop: 4 }}>
             {searchResults.map(u => (
-              <div key={u.uid} style={{ padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{u.displayName || 'Anonymous'}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Level {u.level || 1}
-                  </div>
+              <div key={u.uid} className="ap-person-row">
+                <div className="ap-avatar ap-avatar--sm">{initial(u.displayName)}</div>
+                <div className="ap-person-main">
+                  <div className="ap-person-name">{u.displayName || 'Anonymous'}</div>
+                  <div className="ap-person-meta">Level {u.level || 1}</div>
                 </div>
                 {isAlreadyFriend(u.uid) ? (
                   <span className="badge badge-green"><UserCheck size={12} /> Friends</span>
@@ -191,7 +177,7 @@ export default function Friends() {
       </div>
 
       {/* ── Tabs: Friends / Requests ── */}
-      <div className="tabs" style={{ marginBottom: 20 }}>
+      <div className="tabs" style={{ marginBottom: 16 }}>
         <button className={`tab${tab === 'friends' ? ' active' : ''}`} onClick={() => setTab('friends')}>
           Friends ({friends.length})
         </button>
@@ -204,19 +190,31 @@ export default function Friends() {
       {tab === 'friends' && (
         friends.length === 0 ? (
           <div className="empty-state">
-            <Users size={48} style={{ opacity: 0.3 }} />
+            <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Users size={26} /></div>
             <h4>No friends yet</h4>
             <p>Share your referral link above or search by username to add friends.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {friends.map(f => (
-              <FriendCard key={f.uid} f={f} actions={
-                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.uid)}>
-                  <UserX size={15} />
-                </button>
-              } />
-            ))}
+          <div className="card" style={{ padding: '4px 16px' }}>
+            <div className="ap-person-list">
+              {friends.map(f => {
+                const lvl = LEVELS[Math.min((f.level || 1) - 1, LEVELS.length - 1)]
+                return (
+                  <div key={f.uid} className="ap-person-row">
+                    <div className="ap-avatar ap-avatar--md">{initial(f.displayName)}</div>
+                    <div className="ap-person-main">
+                      <div className="ap-person-name">{f.displayName}</div>
+                      <div className="ap-person-meta">
+                        Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · <span className="streak-fire">🔥</span> {f.streak || 0} · {(f.xp || 0).toLocaleString()} XP
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.uid)} aria-label={`Remove ${f.displayName}`}>
+                      <UserX size={15} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )
       )}
@@ -224,30 +222,30 @@ export default function Friends() {
       {tab === 'requests' && (
         requests.length === 0 ? (
           <div className="empty-state">
-            <UserPlus size={48} style={{ opacity: 0.3 }} />
+            <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><UserPlus size={26} /></div>
             <p>No pending friend requests</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {requests.map(req => (
-              <div key={req.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
-                  {(req.fromName || req.from || 'U')[0].toUpperCase()}
+          <div className="card" style={{ padding: '4px 16px' }}>
+            <div className="ap-person-list">
+              {requests.map(req => (
+                <div key={req.id} className="ap-person-row">
+                  <div className="ap-avatar ap-avatar--md">{initial(req.fromName || req.from)}</div>
+                  <div className="ap-person-main">
+                    <div className="ap-person-name">{req.fromName || 'RevisionFlow user'}</div>
+                    <div className="ap-person-meta">Wants to be your study buddy</div>
+                  </div>
+                  <div className="ap-person-actions">
+                    <button className="btn btn-primary btn-sm" onClick={() => handleAccept(req)}>
+                      <UserCheck size={14} /> Accept
+                    </button>
+                    <button className="btn btn-secondary btn-icon btn-sm" onClick={() => handleDecline(req)} aria-label="Decline request">
+                      <UserX size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontWeight: 600 }}>{req.fromName || 'RevisionFlow user'}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Wants to be your study buddy</div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => handleAccept(req)}>
-                    <UserCheck size={14} /> Accept
-                  </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => handleDecline(req)}>
-                    <UserX size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )
       )}
