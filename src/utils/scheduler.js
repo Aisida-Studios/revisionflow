@@ -88,11 +88,16 @@ function dayEndMin(date, availability, useExtended) {
   const dow = date.getDay()
   const dayName = DAY_NAMES[dow]
   const avail = availability[dayName]
-  if (avail?.endTime) {
-    const [h, m] = avail.endTime.split(':').map(Number)
-    return h * 60 + m
+  const explicit = avail?.endTime
+    ? (() => { const [h, m] = avail.endTime.split(':').map(Number); return h * 60 + m })()
+    : null
+  if (useExtended) {
+    // A floor, not a fallback — respects a later custom end time if the student already
+    // set one, but guarantees at least 22:00 during study leave even if their normal
+    // setting for this day is earlier (e.g. a normal 19:00 finish becomes 22:00).
+    return Math.max(explicit ?? 0, 22 * 60)
   }
-  return useExtended ? 22 * 60 : 21 * 60
+  return explicit ?? 21 * 60
 }
 
 function isHoliday(date, holidays) {
@@ -117,21 +122,26 @@ export function generateSchedule(options) {
     availability,      // { Monday: { enabled, startTime, endTime }, ... }
     startDate,         // Date
     endDate,           // Date
-    holidays = [],     // [{ start, end }]
+    holidays = [],     // [{ start, end }] — full blackout dates, zero sessions scheduled
     contentRatio = 2,  // default content sessions per exam session
     examRatio = 1,
     contentDuration = 45,
     sessionGap = 30,
-    cappedDay = 'none',    // day name (e.g. 'Tuesday') or 'none' — was hardcoded to Tuesday
-    cappedDayMax = 1,      // was hardcoded to 1 regardless of what the UI showed
-    includeEmergency = true, // was always on regardless of this flag
-    extendedFromDate = null, // Date from which end time extends to 22:00
+    dayCaps = [],          // [{ day: 'Tuesday', max: 1 }, ...] — was a single day, now any number
+    maxSessionsPerDay = null, // NEW: a flat cap applying to every day, independent of dayCaps
+    includeEmergency = true,
+    extendedFromDate = null, // Date from which end time has a 22:00 floor (not just a fallback)
+    dynamicRatio = false,  // NEW: bias a subject toward more exam practice as its exam nears
     topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } — optional, from real confidence data
   } = options
 
   const CONTENT_DUR = contentDuration || 45
   const GAP_MINUTES  = sessionGap ?? 30
-  const capDayIndex  = cappedDay !== 'none' ? DAY_NAMES.indexOf(cappedDay) : -1
+  const dayCapMap = {}  // day-index (0-6) -> max sessions
+  dayCaps.forEach(({ day, max }) => {
+    const idx = DAY_NAMES.indexOf(day)
+    if (idx >= 0) dayCapMap[idx] = max
+  })
 
   const sessions    = []
   const counters    = {}  // session name counters
@@ -245,6 +255,22 @@ export function generateSchedule(options) {
     return typePtr[subjName] % total < ratio[0] ? 'content' : 'exam'
   }
 
+  // NEW: when dynamicRatio is on, a subject's content:exam balance shifts toward exam
+  // practice as its real exam date gets close — grounded in the same examDateMap used
+  // for emergency sessions, not a guess. Falls back to the subject's normal/base ratio
+  // whenever there's no exam data or the feature is off.
+  function effectiveRatio(subjName, baseRatio, date) {
+    if (!dynamicRatio) return baseRatio
+    const upcoming = Object.entries(examDateMap)
+      .filter(([k]) => k.startsWith(`${subjName}-`) && examDateMap[k] >= date)
+      .map(([, d]) => d)
+    if (!upcoming.length) return baseRatio
+    const nearestDays = differenceInDays(new Date(Math.min(...upcoming.map(d => d.getTime()))), date)
+    if (nearestDays <= 7)  return [1, 3]
+    if (nearestDays <= 21) return [1, 2]
+    return baseRatio
+  }
+
   function subjMeta(subjName) {
     return subjects.find(x => x.name === subjName)
   }
@@ -309,6 +335,16 @@ export function generateSchedule(options) {
       continue
     }
 
+    // Holiday / unavailable period — a genuine blackout now. Previously this only
+    // softened the day-cap rule on the specific capped weekday and did nothing on any
+    // other day, so declaring a holiday barely changed what got scheduled. Skips
+    // everything for the day, including emergency sessions — an explicitly-declared
+    // unavailable period (e.g. a family trip) takes precedence over an exam being close.
+    if (isHoliday(current, holidays)) {
+      current = addDays(current, 1)
+      continue
+    }
+
     // Sunday: emergency sessions only
     if (isSunday) {
       const emergencies = emergencyMap[dateStr] || []
@@ -326,13 +362,12 @@ export function generateSchedule(options) {
     const endMin = dayEndMin(current, availability,
       extendedFromDate && current >= new Date(extendedFromDate))
 
-    // Day cap before extended date — was hardcoded to Tuesday, always capped at exactly 1
-    // session, regardless of what the UI let the user pick. Now honours cappedDay/cappedDayMax.
-    const isDayCapped = capDayIndex >= 0 && dow === capDayIndex &&
-      (!extendedFromDate || current < new Date(extendedFromDate))
-    const holidayDayCapped = capDayIndex >= 0 && dow === capDayIndex &&
-      isHoliday(current, holidays) &&
-      (!extendedFromDate || current < new Date(extendedFromDate))
+    // Day cap(s) — was a single hardcoded Tuesday-only rule; now any number of days can
+    // each have their own max, and an optional flat maxSessionsPerDay applies everywhere.
+    const dayCapForToday = dayCapMap[dow]
+    const effectiveCap = [dayCapForToday, maxSessionsPerDay].filter(v => v != null)
+    const isDayCapped = effectiveCap.length > 0
+    const capLimit = isDayCapped ? Math.min(...effectiveCap) : Infinity
 
     let curMin = startMin
     let slotsUsed = 0
@@ -340,16 +375,18 @@ export function generateSchedule(options) {
     // Emergency sessions first
     const emergencies = emergencyMap[dateStr] || []
     emergencies.forEach(({ subj, paper }) => {
-      if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) return
+      if (isDayCapped && slotsUsed >= capLimit) return
       if (curMin >= endMin) return
       const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
       if (result) { sessions.push(result.session); curMin = result.newMin; slotsUsed++ }
     })
 
-    // Active subjects (not all papers completed)
-    const activeSubjects = subjects.filter(s =>
-      activePapers(s.name).length > 0
-    )
+    // Active subjects (not all papers completed, and not paused via ratio [0,0])
+    const activeSubjects = subjects.filter(s => {
+      const r = s.ratio || [contentRatio, examRatio]
+      if (r[0] === 0 && r[1] === 0) return false // explicitly paused
+      return activePapers(s.name).length > 0
+    })
 
     // Pre-exam day: fill with tomorrow's exam subjects
     const tmrExams = examsTomorrow[dateStr] || []
@@ -363,8 +400,7 @@ export function generateSchedule(options) {
     if (preExamSubjs.length > 0) {
       let i = 0
       while (curMin + CONTENT_DUR <= endMin) {
-        if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) break
-        if (holidayDayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
+        if (isDayCapped && slotsUsed >= capLimit) break
         const subj = preExamSubjs[i % preExamSubjs.length]
         const ap = activePapers(subj).filter(p => preExamPapersMap[subj]?.includes(p))
         if (!ap.length) { i++; if (i > preExamSubjs.length * 3) break; continue }
@@ -411,13 +447,13 @@ export function generateSchedule(options) {
 
       for (const subj of ordered) {
         if (curMin + CONTENT_DUR > endMin) break
-        if (isDayCapped && !holidayDayCapped && slotsUsed >= cappedDayMax) break
-        if (holidayDayCapped && curMin + CONTENT_DUR > 18 * 60 + 30) break
+        if (isDayCapped && slotsUsed >= capLimit) break
 
         const ap = activePapers(subj.name)
         if (!ap.length) continue
 
-        let stype = nextSessionType(subj.name, subj.ratio)
+        const ratioToday = effectiveRatio(subj.name, subj.ratio, current)
+        let stype = nextSessionType(subj.name, ratioToday)
         let paper = pickPaper(subj.name, stype, current)
         if (!paper) continue
 
@@ -456,10 +492,11 @@ export function generateSchedule(options) {
 export const SCHEDULE_DEFAULTS = {
   contentRatio: 2,
   examRatio: 1,
-  cappedDay: 'none',
-  cappedDayMax: 1,
+  dayCaps: [],
+  maxSessionsPerDay: null,
   sessionGap: 30,
   includeEmergency: true,
+  dynamicRatio: false,
   holidays: [],
 }
 
