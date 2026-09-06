@@ -1,19 +1,32 @@
 // src/pages/Settings.jsx
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { updateUserProfile, archiveSupersededAttempts, deleteSubjectAttempts } from '../utils/firestore'
 import { detectQualificationSwitches } from '../utils/qualificationSwitch'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
-import { GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS, EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
-import { GRADE_BOUNDARIES, AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
+import { EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
+import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
 import toast from 'react-hot-toast'
-import { useIsPro, ProBadge } from '../components/ProGate'
+import { useIsPro } from '../components/ProGate'
 import { auth } from '../firebase'
-import { Sun, Moon, Plus, X, Trash2, Crown } from 'lucide-react'
+import {
+  Sun, Moon, Plus, X, Trash2, Crown, User, BookOpen, Palette,
+  Shield, Bell, BarChart2, FileText, LogOut
+} from 'lucide-react'
+import './AccountPages.css'
+
+const TAB_DEFS = [
+  { key: 'profile',       label: 'Profile',       icon: User },
+  { key: 'subjects',      label: 'Subjects',      icon: BookOpen },
+  { key: 'appearance',    label: 'Appearance',    icon: Palette },
+  { key: 'privacy',       label: 'Privacy',       icon: Shield },
+  { key: 'notifications', label: 'Notifications', icon: Bell },
+  { key: 'boundaries',    label: 'Boundaries',    icon: BarChart2 },
+]
 
 function PortalButton({ uid }) {
   const [loading, setLoading] = React.useState(false)
@@ -46,7 +59,7 @@ export default function Settings() {
   const [searchParams]                    = useSearchParams()
   const [tab,          setTab]          = useState(() => {
     const t = searchParams.get('tab')
-    const VALID = ['profile', 'subjects', 'appearance', 'privacy', 'notifications', 'boundaries']
+    const VALID = TAB_DEFS.map(d => d.key)
     return VALID.includes(t) ? t : 'profile'
   })
   const [displayName,  setDisplayName]  = useState(profile?.displayName || '')
@@ -146,16 +159,14 @@ export default function Settings() {
     catch (e) { alert('Please sign out and sign back in first, then try again.') }
   }
 
-  const TABS = ['profile', 'subjects', 'appearance', 'privacy', 'notifications', 'boundaries']
-
   return (
-    <div className="fade-in" style={{ maxWidth: 640, margin: '0 auto' }}>
+    <div className="fade-in ap-page ap-page--narrow">
       <h2 style={{ marginBottom: 24 }}>Settings</h2>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {TABS.map(t => (
-          <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'boundaries' ? 'Boundaries' : t.charAt(0).toUpperCase() + t.slice(1)}
+        {TAB_DEFS.map(({ key, label, icon: Icon }) => (
+          <button key={key} className={`tab${tab === key ? ' active' : ''}`} onClick={() => setTab(key)}>
+            <Icon size={13} /> {label}
           </button>
         ))}
       </div>
@@ -163,7 +174,7 @@ export default function Settings() {
       {/* ── Profile ── */}
       {tab === 'profile' && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h4>Profile settings</h4>
+          <h4 className="card-eyebrow" style={{ margin: 0 }}>Profile settings</h4>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Display name</label>
@@ -173,7 +184,7 @@ export default function Settings() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Username</label>
             <input className="input" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="your-username" />
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
               Profile URL: {window.location.origin}/u/{username || 'yourname'}
             </span>
           </div>
@@ -186,7 +197,7 @@ export default function Settings() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Qualification</label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{profile?.qualification || 'GCSE'}</span>
+              <span className="badge badge-accent">{profile?.qualification || 'GCSE'}</span>
               {QUALIFICATIONS.filter(q => q !== (profile?.qualification || 'GCSE')).map(q => (
                 <button key={q} className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow(q)}>
                   Switch to {q === 'BTEC-L2' ? 'BTEC (L2)' : q === 'BTEC-L3' ? 'BTEC (L3)' : q} →
@@ -209,42 +220,47 @@ export default function Settings() {
       {/* ── Subjects ── */}
       {tab === 'subjects' && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h4>Your subjects</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {subjects.map((s, i) => {
-              const subjQual = getSubjectQualification(s, profile)
-              return (
-              <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-                <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
-                <span className="badge badge-grey">{s.board}</span>
-                {subjQual !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{subjQual}</span>}
-                <span className="badge badge-grey">{s.tier}</span>
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grade:</span>
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                    value={s.currentGrade}
-                    onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, currentGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>→</span>
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                    value={s.targetGrade}
-                    onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+          <h4 className="card-eyebrow" style={{ margin: 0 }}>Your subjects</h4>
+
+          {subjects.length > 0 && (
+            <div className="ap-settings-group">
+              {subjects.map((s, i) => {
+                const subjQual = getSubjectQualification(s, profile)
+                return (
+                <div key={s.id || i} className="ap-subject-row">
+                  <div className="ap-subject-row-id">
+                    <span className="ap-subject-row-name">{s.name}</span>
+                    <span className="badge badge-grey">{s.board}</span>
+                    {subjQual !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{subjQual}</span>}
+                    {s.tier && s.tier !== 'N/A' && <span className="badge badge-grey">{s.tier}</span>}
+                  </div>
+                  <div className="ap-subject-row-grades">
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grade:</span>
+                    <select className="select" style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
+                      value={s.currentGrade}
+                      onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, currentGrade: e.target.value } : x))}>
+                      {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <span style={{ color: 'var(--text-muted)' }}>→</span>
+                    <select className="select" style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
+                      value={s.targetGrade}
+                      onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
+                      {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))} aria-label={`Remove ${s.name}`}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* Add subject form */}
-          <div style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Level:</span>
+          <div style={{ paddingTop: subjects.length ? 4 : 0, borderTop: subjects.length ? '1.5px solid var(--border)' : 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Level:</span>
               {[
                 { v: 'GCSE', label: 'GCSE' },
                 { v: 'AS-Level', label: 'AS-Level' },
@@ -253,7 +269,7 @@ export default function Settings() {
                 { v: 'BTEC-L3', label: 'BTEC (L3)' },
               ].map(({ v, label }) => (
                 <button key={v} onClick={() => setNewSubjLevel(v)}
-                  style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubjLevel || qual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubjLevel || qual) === v ? 'rgba(34,197,94,0.15)' : 'transparent', color: (newSubjLevel || qual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                  style={{ padding: '3px 10px', borderRadius: 'var(--r-sm)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${(newSubjLevel || qual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubjLevel || qual) === v ? 'var(--accent-pale)' : 'transparent', color: (newSubjLevel || qual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                   {label}
                 </button>
               ))}
@@ -277,14 +293,14 @@ export default function Settings() {
                 </select>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Current:</label>
-              <select className="select" style={{ flex: 1 }} value={newSubj.currentGrade} onChange={e => setNewSubj(s => ({ ...s, currentGrade: e.target.value }))}>
+              <select className="select" style={{ flex: 1, minWidth: 90 }} value={newSubj.currentGrade} onChange={e => setNewSubj(s => ({ ...s, currentGrade: e.target.value }))}>
                 <option value="">--</option>
                 {getGradeOptions(newSubj.name, addSubjQual, newSubj.tier).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Target:</label>
-              <select className="select" style={{ flex: 1 }} value={newSubj.targetGrade} onChange={e => setNewSubj(s => ({ ...s, targetGrade: e.target.value }))}>
+              <select className="select" style={{ flex: 1, minWidth: 90 }} value={newSubj.targetGrade} onChange={e => setNewSubj(s => ({ ...s, targetGrade: e.target.value }))}>
                 {getGradeOptions(newSubj.name, addSubjQual, newSubj.tier).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
@@ -303,12 +319,12 @@ export default function Settings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Dark / light toggle */}
           <div className="card">
-            <h4 style={{ marginBottom: 14 }}>Display mode</h4>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
+            <h4 className="card-eyebrow" style={{ margin: 0 }}>Display mode</h4>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 <div>
-                  <div style={{ fontWeight: 600 }}>{theme === 'dark' ? 'Dark mode' : 'Light mode'}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{theme === 'dark' ? 'Dark mode' : 'Light mode'}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Switch between dark and light themes</div>
                 </div>
               </div>
@@ -346,73 +362,88 @@ export default function Settings() {
 
       {/* ── Privacy ── */}
       {tab === 'privacy' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h4>Privacy settings</h4>
-          {[
-            { key: 'profilePublic',       label: 'Public profile',           desc: 'Anyone can view your profile at your public URL' },
-            { key: 'friendsCanSeeGrades', label: 'Friends can see grades',   desc: 'Friends can see your subject grades on the leaderboard' },
-          ].map(setting => (
-            <div key={setting.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{setting.label}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{setting.desc}</div>
-              </div>
-              <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
-                <input type="checkbox" checked={privacy[setting.key]} onChange={e => setPrivacy(p => ({ ...p, [setting.key]: e.target.checked }))} style={{ opacity: 0, width: 0, height: 0 }} />
-                <span style={{ position: 'absolute', inset: 0, background: privacy[setting.key] ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 18, transition: 'background 0.2s' }} />
-                <span style={{ position: 'absolute', top: 3, left: privacy[setting.key] ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-              </label>
-            </div>
-          ))}
-          <button className="btn btn-primary" onClick={saveProfile} disabled={saving}>
-            {saving ? 'Saving…' : 'Save privacy settings'}
-          </button>
-          <div className="divider" />
-          <a href="/privacy" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', marginBottom: '0.5rem' }}>
-            📄 Privacy Policy
-          </a>
-          {/* Subscription management */}
-          <div className="divider" />
-          <div>
-            <label className="label" style={{ marginBottom: 8 }}>Subscription</label>
-            {isBeta ? (
-              <div style={{ padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))', border: '1px solid var(--gold-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Crown size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Pro — Lifetime Access
-                    <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--gold-pale)', color: 'var(--gold)', fontSize: '0.68rem', fontWeight: 800 }}>BETA</span>
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>All Pro features unlocked forever — thank you for being an early supporter</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h4 className="card-eyebrow" style={{ margin: 0 }}>Privacy settings</h4>
+          <div className="ap-settings-group">
+            {[
+              { key: 'profilePublic',       label: 'Public profile',           desc: 'Anyone can view your profile at your public URL' },
+              { key: 'friendsCanSeeGrades', label: 'Friends can see grades',   desc: 'Friends can see your subject grades on the leaderboard' },
+            ].map(setting => (
+              <div key={setting.key} className="ap-settings-row">
+                <div className="ap-settings-row-main">
+                  <div className="ap-settings-row-title">{setting.label}</div>
+                  <div className="ap-settings-row-desc">{setting.desc}</div>
                 </div>
+                <label className="ap-toggle">
+                  <input type="checkbox" checked={privacy[setting.key]} onChange={e => setPrivacy(p => ({ ...p, [setting.key]: e.target.checked }))} />
+                  <span className="ap-toggle-track" />
+                </label>
               </div>
-            ) : isPro ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))', border: '1px solid var(--gold-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Crown size={18} color="var(--gold)" style={{ flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Pro — Active</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {profile?.stripePlan === 'annual' ? '£29.99/year' : '£3.99/month'}
-                      {profile?.stripeCurrentPeriodEnd ? ' · renews ' + new Date(profile.stripeCurrentPeriodEnd * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : ''}
-                    </div>
-                  </div>
-                </div>
-                <PortalButton uid={user?.uid} />
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '14px 16px', borderRadius: 18, background: 'var(--bg-card)', border: '2px solid var(--border)' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
-                </div>
-                <a href="/pro" className="btn btn-primary btn-sm"><Crown size={13} /> Upgrade to Pro</a>
-              </div>
-            )}
+            ))}
           </div>
 
-          <button className="btn btn-danger" onClick={handleDeleteAccount} style={{ marginBottom: '0.5rem' }}>🗑 Delete Account</button>
-          <button className="btn btn-danger" onClick={logout}>Sign out</button>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={saveProfile} disabled={saving}>
+              {saving ? 'Saving…' : 'Save privacy settings'}
+            </button>
+            <a href="/privacy" target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+              <FileText size={14} /> Privacy Policy
+            </a>
+          </div>
+
+          {/* Subscription */}
+          <div className="ap-settings-section-label">Subscription</div>
+          {isBeta ? (
+            <div className="card gold-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Crown size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Pro — Lifetime Access
+                  <span className="badge badge-gold" style={{ fontSize: '0.68rem' }}>BETA</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>All Pro features unlocked forever — thank you for being an early supporter</div>
+              </div>
+            </div>
+          ) : isPro ? (
+            <div className="card gold-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Crown size={18} color="var(--gold)" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Pro — Active</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    {profile?.stripePlan === 'annual' ? '£29.99/year' : '£3.99/month'}
+                    {profile?.stripeCurrentPeriodEnd ? ' · renews ' + new Date(profile.stripeCurrentPeriodEnd * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : ''}
+                  </div>
+                </div>
+              </div>
+              <PortalButton uid={user?.uid} />
+            </div>
+          ) : (
+            <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
+              </div>
+              <Link to="/pro" className="btn btn-primary btn-sm"><Crown size={13} /> Upgrade to Pro</Link>
+            </div>
+          )}
+
+          {/* Danger zone */}
+          <div className="ap-settings-section-label">Danger zone</div>
+          <div className="ap-danger-zone" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 650, fontSize: '0.88rem' }}>Delete account</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Permanently deletes your account and all data. Cannot be undone.</div>
+              </div>
+              <button className="btn btn-danger btn-sm" onClick={handleDeleteAccount} style={{ flexShrink: 0 }}>
+                <Trash2 size={13} /> Delete account
+              </button>
+            </div>
+          </div>
+          <button className="btn btn-secondary" onClick={logout} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4 }}>
+            <LogOut size={14} /> Sign out
+          </button>
         </div>
       )}
 
@@ -444,8 +475,8 @@ export default function Settings() {
       {pendingSwitches && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 440 }}>
-            <div className="modal-header">
-              <span className="modal-title">Keep your old history?</span>
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Keep your old history?</span>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '4px 0 16px' }}>
               {pendingSwitches.map(sw => sw.subjectName).join(', ')} {pendingSwitches.length === 1 ? "isn't" : "aren't"} part of your current subjects anymore.
@@ -490,15 +521,15 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">Switch to {newQual}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Switch to {newQual}</span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
 
         {step === 1 && (
           <div>
             <p style={{ marginBottom: 16 }}>You are switching your qualification to <strong>{newQual}</strong>.</p>
-            <div style={{ padding: 12, background: 'var(--bg-card)', border: '1px solid var(--danger)', borderRadius: 14, marginBottom: 16 }}>
+            <div className="ap-danger-zone" style={{ marginBottom: 16 }}>
               <p style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>Action required</p>
               <p style={{ fontSize: '0.85rem' }}>
                 Your current subjects and exam dates will be replaced. You need to pick your new {newQual} subjects to continue.
@@ -515,30 +546,36 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
         {step === 2 && (
           <div>
             <p style={{ fontSize: '0.85rem', marginBottom: 16 }}>Select your new subjects for {newQual}.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {subjects.map((s, i) => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-                  <span style={{ flex: 1, fontWeight: 500, fontSize: '0.875rem' }}>{s.name}</span>
-                  <span className="badge badge-grey">{s.board}</span>
-                  {isSixthForm && <span className="badge badge-grey">{s.qualification}</span>}
-                  <select style={{ padding: '2px 4px', borderRadius: 4, border: '2px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                    value={s.targetGrade}
-                    onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
-                    {getGradeOptions(s.name, s.qualification || newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                  <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+            {subjects.length > 0 && (
+              <div className="ap-settings-group" style={{ marginBottom: 16 }}>
+                {subjects.map((s, i) => (
+                  <div key={s.id} className="ap-subject-row">
+                    <div className="ap-subject-row-id">
+                      <span className="ap-subject-row-name">{s.name}</span>
+                      <span className="badge badge-grey">{s.board}</span>
+                      {isSixthForm && <span className="badge badge-grey">{s.qualification}</span>}
+                    </div>
+                    <div className="ap-subject-row-grades">
+                      <select className="select" style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
+                        value={s.targetGrade}
+                        onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
+                        {getGradeOptions(s.name, s.qualification || newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, paddingTop: subjects.length ? 4 : 0, borderTop: subjects.length ? '1.5px solid var(--border)' : 'none' }}>
               {isSixthForm && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', alignSelf: 'center' }}>This subject:</span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>This subject:</span>
                   {['AS-Level', 'A-Level'].map(v => (
                     <button key={v} onClick={() => setNewSubj(s => ({ ...s, qualification: v, name: '' }))}
-                      style={{ padding: '3px 10px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${(newSubj.qualification||newQual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubj.qualification||newQual) === v ? 'rgba(34,197,94,0.15)' : 'transparent', color: (newSubj.qualification||newQual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
+                      style={{ padding: '3px 10px', borderRadius: 'var(--r-sm)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${(newSubj.qualification||newQual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubj.qualification||newQual) === v ? 'var(--accent-pale)' : 'transparent', color: (newSubj.qualification||newQual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                       {v}
                     </button>
                   ))}
@@ -591,8 +628,8 @@ function BoundaryViewer({ profile }) {
 
   return (
     <div className="card">
-      <h4 style={{ marginBottom: 4 }}>Grade Boundaries Reference</h4>
-      <p style={{ fontSize: '0.82rem', marginBottom: 16 }}>Per-paper boundaries from real published results.</p>
+      <h4 className="card-eyebrow" style={{ marginBottom: 2 }}>Grade Boundaries Reference</h4>
+      <p className="card-sub-line">Per-paper boundaries from real published results.</p>
       <div className="grid-2" style={{ gap: 10, marginBottom: 16 }}>
         <div>
           <label className="label">Subject</label>
@@ -620,7 +657,7 @@ function BoundaryViewer({ profile }) {
               const pct = Math.round((marks / bounds.maxMarks) * 100)
               const label = /^[0-9]+$/.test(String(g)) ? `G${g}` : g
               return (
-                <div key={g} style={{ padding: '10px 8px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', textAlign: 'center' }}>
+                <div key={g} style={{ padding: '10px 8px', background: 'var(--bg-hover)', borderRadius: 'var(--r-md)', textAlign: 'center' }}>
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: gradeColour(g) }}>{label}</div>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', marginTop: 2 }}>{marks}/{bounds.maxMarks}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{pct}%</div>
@@ -641,10 +678,9 @@ function BoundaryViewer({ profile }) {
 // ── Notifications Settings ─────────────────────────────────────────────────────
 function Toggle({ val, onChange }) {
   return (
-    <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer', flexShrink: 0 }}>
-      <input type="checkbox" checked={val} onChange={e => onChange(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
-      <span style={{ position: 'absolute', inset: 0, background: val ? 'var(--accent)' : 'var(--bg-hover)', borderRadius: 18, transition: 'background 0.2s' }} />
-      <span style={{ position: 'absolute', top: 3, left: val ? 22 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
+    <label className="ap-toggle">
+      <input type="checkbox" checked={val} onChange={e => onChange(e.target.checked)} />
+      <span className="ap-toggle-track" />
     </label>
   )
 }
@@ -851,16 +887,16 @@ function NotificationsSettings({ profile, user, onSave }) {
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <h4>Notifications</h4>
+      <h4 className="card-eyebrow" style={{ margin: 0 }}>Notifications</h4>
 
-      <div style={{ padding: '14px 16px', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)', background: 'var(--bg-card)' }}>
+      <div style={{ padding: '14px 16px', borderRadius: 'var(--r-lg)', border: '1.5px solid var(--border)', background: 'var(--bg-hover)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>Push notifications</div>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
           Push notifications work even when the app is closed.
           You will get exam reminders, streak warnings and daily nudges directly on your device.
         </div>
         {permission === 'denied' ? (
-          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14, fontSize: '0.82rem', color: 'var(--danger)' }}>
+          <div style={{ padding: '9px 12px', borderRadius: 'var(--r-md)', background: 'var(--danger-pale)', border: '1.5px solid var(--danger-border)', color: 'var(--danger)', fontSize: '0.82rem', fontWeight: 500, lineHeight: 1.5 }}>
             Notifications are blocked. Go to your browser settings and allow notifications for this site.
           </div>
         ) : pushSubscribed ? (
@@ -880,12 +916,12 @@ function NotificationsSettings({ profile, user, onSave }) {
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="ap-settings-group">
         {SETTINGS.map(s => (
-          <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{s.label}</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.desc}</div>
+          <div key={s.key} className="ap-settings-row">
+            <div className="ap-settings-row-main">
+              <div className="ap-settings-row-title">{s.label}</div>
+              <div className="ap-settings-row-desc">{s.desc}</div>
             </div>
             <Toggle val={s.val} onChange={s.set} />
           </div>
