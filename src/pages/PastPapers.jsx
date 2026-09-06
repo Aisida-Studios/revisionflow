@@ -3,13 +3,13 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
-  savePaperAttempt, getPaperAttempts, deletePaperAttempt, updatePaperAttempt, filterToCurrentQualification,
+  savePaperAttempt, getPaperAttempts, deletePaperAttempt, updatePaperAttempt, gradeImpliesQualification,
 } from '../utils/firestore'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
-import { calculateGradeFromBoundaries, AVAILABLE_YEARS, getPastPaperSourceUrl } from '../data/paperDatabase'
+import { AVAILABLE_YEARS, getPastPaperSourceUrl } from '../data/paperDatabase'
 import { getMergedPaperSpec, getMergedBoundaries, saveBoundaryOverride } from '../data/overrides'
 import { isTiered } from '../data/examDates2026'
 import { paperName } from '../data/paperNames'
@@ -57,6 +57,54 @@ function aggregateByTopic(questionMarks) {
     .map(g => ({ ...g, pct: Math.round((g.scored / g.marks) * 100) }))
     .sort((a, b) => a.pct - b.pct)
 }
+// Stricter than the shared filterToCurrentQualification (used elsewhere in the app, e.g.
+// Dashboard's predicted grades): still trusts an explicit qualification tag, or an unambiguous
+// grade format (GCSE grades are 1-9, A-Level/AS-Level use A*-E), but never falls back to
+// guessing from whichever other record for the subject happens to be closest in time. That
+// time-proximity guess is reasonable for a quick dashboard glance, but here — averages, trends,
+// trajectories — it can silently blend an old qualification's numbers into a new one's (e.g.
+// GCSE Maths into AS-Level Maths). An honest gap is better than a wrong average.
+function strictQualificationMatch(records, subjectsList) {
+  const list = Array.isArray(subjectsList) ? subjectsList : []
+  return records.filter(r => {
+    if (r.archived) return false
+    const name = r.subject || r.subjectId
+    const subjMeta = list.find(s => s.name === name)
+    if (!subjMeta) return false
+    const currentQual = subjMeta.qualification
+    if (r.qualification) return r.qualification === currentQual
+    const byGrade = gradeImpliesQualification(r.grade)
+    if (byGrade) return byGrade === currentQual
+    return false
+  })
+}
+
+// Real UK grade boundaries are almost always published per WHOLE SUBJECT — every component
+// paper added together — not per individual paper. E.g. AQA GCSE Maths Higher boundaries are
+// out of 240 (three 80-mark papers combined), but a single logged paper is only out of 80.
+// Comparing a raw single-paper score against that combined-total boundary breaks completely: a
+// perfect 80/80 (100%) never reaches a boundary meant for 240, and comes out as a U.
+// Comparing PERCENTAGES instead is scale-independent, and matches how students actually use a
+// single practice paper to gauge themselves ("boundaries were 78% for a 9, I got 82%, so I'm on
+// track") — it's an ESTIMATE from one paper, not the real combined-exam grade, so callers should
+// treat/label it as such whenever the boundary's own maxMarks doesn't match the paper's.
+function gradeFromBoundaries(scorePercentage, boundaryData) {
+  if (!boundaryData?.boundaries?.length || !boundaryData?.maxMarks || scorePercentage == null) return null
+  const { boundaries, grades, maxMarks } = boundaryData
+  const gradeLabels = grades && grades.length ? grades : ['9', '8', '7', '6', '5', '4', '3', '2', '1']
+  for (let i = 0; i < boundaries.length; i++) {
+    if (boundaries[i] == null) continue
+    const boundaryPct = (boundaries[i] / maxMarks) * 100
+    if (scorePercentage >= boundaryPct) return gradeLabels[i]
+  }
+  return 'U'
+}
+// True when the boundary data's own mark scale doesn't match the paper actually being logged —
+// the tell-tale sign we're comparing against a whole-subject/combined-papers boundary rather
+// than a genuine per-paper one, so the resulting grade is an estimate, not the real thing.
+function isEstimatedGrade(boundaryData, attemptMaxMarks) {
+  return !!(boundaryData?.maxMarks && attemptMaxMarks && boundaryData.maxMarks !== Number(attemptMaxMarks))
+}
 // Matches a free-typed topic name against the student's REAL topic docs for that subject only —
 // never constructs/guesses a topic ID. If nothing matches, callers fall back to a subject-filtered
 // Topics link rather than a possibly-wrong direct link.
@@ -94,6 +142,7 @@ export default function PastPapers() {
   const [boundaryEditor, setBoundaryEditor] = useState(null)
   const [analysis, setAnalysis] = useState('')
   const [analysing, setAnalysing] = useState(false)
+  const [recalculating, setRecalculating] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -103,8 +152,8 @@ export default function PastPapers() {
     ]).then(([atts, tops]) => { setAttempts(atts); setTopics(tops); setLoading(false) })
   }, [user])
 
-  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
-  const currentTopics = useMemo(() => filterToCurrentQualification(topics, profile?.subjects), [topics, profile])
+  const currentAttempts = useMemo(() => strictQualificationMatch(attempts, profile?.subjects), [attempts, profile])
+  const currentTopics = useMemo(() => strictQualificationMatch(topics, profile?.subjects), [topics, profile])
   const subjectList = profile?.subjects?.map(s => s.name) || []
 
   const subjectAverages = useMemo(() => {
@@ -150,6 +199,36 @@ export default function PastPapers() {
     toast.success('Performance by topic saved')
   }
 
+  // One-off fix-up for attempts logged before the grade calculation bug was fixed (it was
+  // comparing a single paper's raw marks against whole-subject, all-papers-combined boundaries,
+  // so scores frequently came out far too low — e.g. a perfect single-paper score reading as a
+  // U). Re-derives every attempt's grade with the corrected, percentage-based logic and only
+  // writes the ones that actually changed.
+  async function handleRecalculateGrades() {
+    if (!currentAttempts.length) { toast.error('No papers to recalculate'); return }
+    setRecalculating(true)
+    let changed = 0
+    try {
+      for (const a of currentAttempts) {
+        if (a.percentage == null) continue
+        const qual = a.qualification || profile?.subjects?.find(s => s.name === a.subject)?.qualification
+        const bounds = await getMergedBoundaries(a.board, a.subject, a.tier === 'N/A' ? null : a.tier, a.year, qual)
+        const newGrade = bounds?.boundaries ? gradeFromBoundaries(a.percentage, bounds) : null
+        const newEstimated = isEstimatedGrade(bounds, a.maxMarks)
+        if (newGrade !== (a.grade ?? null) || newEstimated !== (a.gradeEstimated || false)) {
+          await updatePaperAttempt(user.uid, a.id, { grade: newGrade, gradeEstimated: newEstimated })
+          setAttempts(prev => prev.map(x => x.id === a.id ? { ...x, grade: newGrade, gradeEstimated: newEstimated } : x))
+          changed++
+        }
+      }
+      toast.success(changed ? `Updated ${changed} grade${changed === 1 ? '' : 's'}` : 'All grades were already correct')
+    } catch (e) {
+      toast.error('Could not recalculate: ' + e.message)
+    } finally {
+      setRecalculating(false)
+    }
+  }
+
   async function runAnalysis() {
     setAnalysing(true)
     try {
@@ -179,6 +258,9 @@ export default function PastPapers() {
           <p className="papers-subtitle">Log attempts, track your score, and see where marks are slipping</p>
         </div>
         <div className="papers-header-actions">
+          <button className="btn btn-secondary" onClick={handleRecalculateGrades} disabled={recalculating}>
+            {recalculating ? 'Recalculating…' : 'Recalculate grades'}
+          </button>
           <button className="btn btn-secondary" onClick={() => setBoundaryEditor({})}>Grade boundaries</button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Log a paper</button>
         </div>
@@ -247,7 +329,7 @@ export default function PastPapers() {
                   <div className="papers-card-pct" style={{ color: a.grade ? gradeColour(a.grade) : 'var(--text-primary)' }}>
                     {a.percentage != null ? `${Math.round(a.percentage)}%` : '–'}
                   </div>
-                  <div className="papers-card-marks">{a.score}/{a.maxMarks}{a.grade ? ` · Grade ${a.grade}` : ''}</div>
+                  <div className="papers-card-marks">{a.score}/{a.maxMarks}{a.grade ? ` · Grade ${a.grade}${a.gradeEstimated ? ' (est.)' : ''}` : ''}</div>
                 </div>
                 <div className="papers-card-actions">
                   <button className="btn-icon" onClick={e => { e.stopPropagation(); setEditEntry(a) }} title="Edit"><Edit2 size={14} /></button>
@@ -420,7 +502,7 @@ function PaperDetailModal({ attempt, previous, topics, onClose, onEdit, onDelete
             </div>
             <div>
               <div className="paper-detail-stat-val" style={{ color: attempt.grade ? gradeColour(attempt.grade) : undefined }}>{attempt.grade || '–'}</div>
-              <div className="paper-detail-stat-label">Grade</div>
+              <div className="paper-detail-stat-label">{attempt.gradeEstimated ? 'Grade (est.)' : 'Grade'}</div>
             </div>
             <div>
               <div className="paper-detail-stat-val">{fmtDate(attempt)}</div>
@@ -428,6 +510,11 @@ function PaperDetailModal({ attempt, previous, topics, onClose, onEdit, onDelete
             </div>
           </div>
         </div>
+        {attempt.gradeEstimated && (
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: -10, marginBottom: 18 }}>
+            This grade is estimated from your percentage on this paper alone — published boundaries cover the whole subject across all papers, not just this one.
+          </p>
+        )}
 
         <h4 className="paper-detail-section-title"><Brain size={15} /> Performance by topic</h4>
         {byTopic.length === 0 ? (
@@ -516,16 +603,17 @@ function AddAttemptModal({ profile, onClose, onSave }) {
   const scoreNum = parseFloat(form.score)
   const maxNum = parseFloat(form.maxMarks)
   const percentage = (!Number.isNaN(scoreNum) && maxNum > 0) ? (scoreNum / maxNum) * 100 : null
-  const livePreviewGrade = (percentage != null && autoBoundary?.boundaries) ? calculateGradeFromBoundaries(scoreNum, autoBoundary) : null
+  const livePreviewGrade = (percentage != null && autoBoundary?.boundaries) ? gradeFromBoundaries(percentage, autoBoundary) : null
+  const gradeIsEstimated = isEstimatedGrade(autoBoundary, maxNum)
 
   async function submit(e) {
     e.preventDefault()
     if (!form.subject || !form.score || !form.maxMarks) { toast.error('Fill in subject, score and total marks'); return }
     setSaving(true)
-    const grade = autoBoundary?.boundaries ? calculateGradeFromBoundaries(scoreNum, autoBoundary) : null
+    const grade = autoBoundary?.boundaries ? gradeFromBoundaries(percentage, autoBoundary) : null
     await onSave({
       subject: form.subject, board: form.board, tier: tiered ? form.tier : 'N/A', paper: form.paper,
-      year: form.year, score: scoreNum, maxMarks: maxNum, percentage, grade,
+      year: form.year, score: scoreNum, maxMarks: maxNum, percentage, grade, gradeEstimated: gradeIsEstimated,
       qualification, attemptDate: form.attemptDate, notes: form.notes.trim(), questionMarks: [],
     })
     setSaving(false)
@@ -589,11 +677,18 @@ function AddAttemptModal({ profile, onClose, onSave }) {
             </div>
           </div>
           {percentage != null && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
-              <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{Math.round(percentage)}%</span>
-              {livePreviewGrade && <span className="badge" style={{ background: 'transparent', border: `1px solid ${gradeColour(livePreviewGrade)}`, color: gradeColour(livePreviewGrade) }}>Grade {livePreviewGrade}</span>}
-              {autoBoundary?.note === 'admin-edited' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Using admin-set boundaries</span>}
-              {!autoBoundary?.boundaries && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No grade boundaries on file for this paper yet</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{Math.round(percentage)}%</span>
+                {livePreviewGrade && <span className="badge" style={{ background: 'transparent', border: `1px solid ${gradeColour(livePreviewGrade)}`, color: gradeColour(livePreviewGrade) }}>Grade {livePreviewGrade}</span>}
+                {autoBoundary?.note === 'admin-edited' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Using admin-set boundaries</span>}
+                {!autoBoundary?.boundaries && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No grade boundaries on file for this paper yet</span>}
+              </div>
+              {livePreviewGrade && gradeIsEstimated && (
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Estimated from this paper's percentage — published boundaries are for the whole subject ({autoBoundary.maxMarks} marks across all papers), not this paper alone.
+                </p>
+              )}
             </div>
           )}
           <div>
@@ -627,7 +722,15 @@ function EditEntryModal({ attempt, onClose, onSave }) {
     setSaving(true)
     const scoreNum = parseFloat(score), maxNum = parseFloat(maxMarks)
     const percentage = maxNum > 0 ? (scoreNum / maxNum) * 100 : null
-    await onSave({ score: scoreNum, maxMarks: maxNum, percentage, attemptDate, notes: notes.trim() })
+    // Recompute the grade against fresh boundaries rather than leaving the old (possibly wrong,
+    // pre-fix) value in place — score or marks changing should always update the grade with it.
+    let grade = attempt.grade, gradeEstimated = attempt.gradeEstimated || false
+    if (percentage != null) {
+      const bounds = await getMergedBoundaries(attempt.board, attempt.subject, attempt.tier === 'N/A' ? null : attempt.tier, attempt.year, attempt.qualification)
+      grade = bounds?.boundaries ? gradeFromBoundaries(percentage, bounds) : null
+      gradeEstimated = isEstimatedGrade(bounds, maxNum)
+    }
+    await onSave({ score: scoreNum, maxMarks: maxNum, percentage, grade, gradeEstimated, attemptDate, notes: notes.trim() })
     setSaving(false)
   }
 
