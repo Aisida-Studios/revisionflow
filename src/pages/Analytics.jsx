@@ -6,7 +6,7 @@ import AIOutput from '../components/AIOutput'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts, filterToCurrentQualification } from '../utils/firestore'
+import { getPaperAttempts, gradeImpliesQualification } from '../utils/firestore'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
@@ -59,6 +59,29 @@ function weekBounds(offset) {
   return [start, new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7)]
 }
 const fmtMins = (m) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
+
+// Stricter than the shared filterToCurrentQualification (used elsewhere in the app, e.g.
+// Dashboard's predicted grades): still trusts an explicit qualification tag, or an unambiguous
+// grade format (GCSE grades are 1-9, A-Level/AS-Level use A*-E — so a grade of '7' or 'A*' alone
+// settles it), but never falls back to guessing from whichever other record for the subject
+// happens to be closest in time. That time-proximity guess is reasonable for a quick dashboard
+// glance, but for subject-level averages here it can silently blend an old qualification's
+// numbers into a new one's (e.g. GCSE Maths into AS-Level Maths) — an honest gap is better than
+// a wrong average.
+function strictQualificationMatch(records, subjectsList) {
+  const list = Array.isArray(subjectsList) ? subjectsList : []
+  return records.filter(r => {
+    if (r.archived) return false
+    const name = r.subject || r.subjectId
+    const subjMeta = list.find(s => s.name === name)
+    if (!subjMeta) return false
+    const currentQual = subjMeta.qualification
+    if (r.qualification) return r.qualification === currentQual
+    const byGrade = gradeImpliesQualification(r.grade)
+    if (byGrade) return byGrade === currentQual
+    return false
+  })
+}
 
 // ── Small presentational pieces ─────────────────────────────────────────────
 function Sparkline({ id, data, colour = 'var(--accent)' }) {
@@ -224,13 +247,15 @@ export default function Analytics() {
   const subjectList = profile?.subjects?.map(s => s.name) || []
   useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Qualification-filtered — see filterToCurrentQualification in utils/firestore.js. Grades and
-  // confidence are meaningful only against the student's current subjects; study time below
-  // deliberately stays unfiltered since time spent doesn't become "wrong" across a qualification
-  // change the way a stale grade or confidence rating would.
-  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
+  // Strictly qualification-matched — see strictQualificationMatch above for why this is
+  // stricter than the shared filterToCurrentQualification used elsewhere in the app. Study time
+  // below deliberately stays unfiltered (all sessions, lifetime): sessions don't carry a
+  // qualification field at all (see the Time-by-subject note further down), and time spent
+  // doesn't become "wrong" across a qualification change the way a stale grade or confidence
+  // rating would.
+  const currentAttempts = useMemo(() => strictQualificationMatch(attempts, profile?.subjects), [attempts, profile])
   const currentSubjects = useMemo(() => profile?.subjects || [], [profile])
-  const currentTopics = useMemo(() => filterToCurrentQualification(topics, currentSubjects), [topics, currentSubjects])
+  const currentTopics = useMemo(() => strictQualificationMatch(topics, currentSubjects), [topics, currentSubjects])
 
   // ── Core time data (lifetime) ─────────────────────────────────────────────
   const completedSessions = useMemo(() => sessions.filter(s => s.completed), [sessions])
@@ -422,11 +447,23 @@ export default function Analytics() {
   }, [completedSessions, profile])
 
   // ── Subjects tab ───────────────────────────────────────────────────────────
+  // Time is grouped by subject NAME only, because session documents don't store a qualification
+  // field at all (confirmed against how sessions are actually created in Calendar.jsx) — there's
+  // no reliable signal to split old GCSE minutes from new AS-Level minutes for a subject that's
+  // changed level. What we CAN do honestly is label every bar with the subject's CURRENT
+  // qualification, so it's never ambiguous which level a bar is currently tracked under, even
+  // though historical minutes logged before a level change may still be folded into it.
   const subjectDist = useMemo(() => {
     const counts = {}
     completedSessions.forEach(s => { if (s.subject) counts[s.subject] = (counts[s.subject] || 0) + (parseInt(s.duration) || 45) })
     return Object.entries(counts)
-      .map(([name, minutes]) => ({ name, minutes, hours: Math.round(minutes / 60 * 10) / 10, qualification: profile?.subjects?.find(s => s.name === name)?.qualification }))
+      .map(([name, minutes]) => {
+        const qualification = profile?.subjects?.find(s => s.name === name)?.qualification
+        return {
+          name, minutes, hours: Math.round(minutes / 60 * 10) / 10, qualification,
+          label: qualification ? `${name} (${qualification})` : name,
+        }
+      })
       .sort((a, b) => b.minutes - a.minutes)
   }, [completedSessions, profile])
 
@@ -613,10 +650,10 @@ export default function Analytics() {
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No sessions logged yet</p></div>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(120, subjectDist.length * 38)}>
-              <BarChart data={subjectDist} layout="vertical">
+              <BarChart data={subjectDist} layout="vertical" margin={{ left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                 <XAxis type="number" tick={axisTick} unit="h" axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={axisTick} width={90} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="label" tick={axisTick} width={150} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={tooltipStyle} />
                 <Bar dataKey="hours" radius={[0, 4, 4, 0]} maxBarSize={22}>
                   {subjectDist.map((s, i) => <Cell key={i} fill={SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length]} />)}
