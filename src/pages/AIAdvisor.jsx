@@ -1,15 +1,12 @@
 // src/pages/AIAdvisor.jsx
 import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { buildAIContext, getSystemPrompt } from '../utils/buildAIContext'
-import { usePriority } from '../context/PriorityContext'
 import { collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import {
   chatWithAI,
   getResourceRecommendations,
   generateStudyPlan,
-  analyseWeaknesses,
   getTopicAdvice,
   predictGrade,
   suggestNextTopic,
@@ -18,7 +15,8 @@ import { checkAndAwardBadge } from '../utils/firestore'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
-import { MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, FileText, Check, Lightbulb } from 'lucide-react'
+import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb } from 'lucide-react'
+import './AccountPages.css'
 
 const QUICK_PROMPTS = [
   'What should I revise today?',
@@ -32,7 +30,6 @@ const QUICK_PROMPTS = [
 export default function AIAdvisor() {
   const { profile, user } = useAuth()
   const { isPro, isBeta } = useIsPro()
-  const { priorities, getTopPriorities } = usePriority()
   const [messages,    setMessages]    = useState([])
   const [input,       setInput]       = useState('')
   const [loading,     setLoading]     = useState(false)
@@ -59,13 +56,10 @@ export default function AIAdvisor() {
   const [nextTopic,   setNextTopic]   = useState('')
   const [nextLoad,    setNextLoad]    = useState(false)
 
-  // Answer marker
-
   // Techniques
   const [techSubj,    setTechSubj]    = useState('')
   const [techLoading, setTechLoading] = useState(false)
   const [techResult,  setTechResult]  = useState('')
-
 
   const bottomRef = useRef()
   const [userContext, setUserContext] = useState('')
@@ -121,7 +115,7 @@ export default function AIAdvisor() {
         content:`Hi ${profile.displayName?.split(' ')[0]}! I'm your AI revision advisor and I can see your full profile.\n\n` +
           `You're revising: ${(profile.subjects||[]).map(s=>s.name).join(', ')||'no subjects set yet'}.\n\n` +
           (weakTopics.length ? `Your weakest topics right now: ${weakTopics.slice(0,3).join(', ')}.\n\n` : '') +
-          `Ask me anything — I can predict your grades, suggest what to revise next, mark your practice answers, generate flashcards, or give specific advice on any topic.`
+          `Ask me anything — I can predict your grades, suggest what to revise next, give exam technique tips, or give specific advice on any topic.`
       }])
     } catch(e) {
       setMessages([{role:'assistant',content:`Hi! I'm your AI revision advisor. How can I help you today?`}])
@@ -219,19 +213,6 @@ export default function AIAdvisor() {
     setNextLoad(false)
   }
 
-  async function handleMarkAnswer() {
-    if (!markSubj||!markQ||!markA) return
-    setMarkLoad(true)
-    setMarkResult('')
-    // Build an enriched question string with optional context
-    const enrichedQ = markIsPaper
-      ? `[${markSubj} ${markYear} Paper ${markPaperNum}${markMarks ? `, ${markMarks} marks` : ''}] ${markQ}`
-      : markMarks ? `[${markMarks} marks] ${markQ}` : markQ
-    const res = await markAnswer(markSubj, enrichedQ, markA)
-    setMarkResult(res.text||res.error||'')
-    setMarkLoad(false)
-  }
-
   async function handleTechniques() {
     if (!techSubj) return
     setTechLoading(true)
@@ -241,43 +222,15 @@ export default function AIAdvisor() {
     setTechLoading(false)
   }
 
-  async function handlePredictedQuestions() {
-    if (!predSubj || !predTopic) return
-    setPredLoad(true)
-    setPredResult('')
-    setPredParsed([])
-    const subj  = profile?.subjects?.find(s => s.name === predSubj)
-    const board = predBoard || subj?.board || 'AQA'
-    const level = predLevel || profile?.qualification || 'GCSE'
-    const res   = await generatePredictedQuestions(predSubj, board, predTopic, level, predMarks)
-    const text  = res.text || res.error || ''
-    setPredResult(text)
-    // Robust parser — handles ---QUESTION 1--- and **Question 1** and Q1 formats
-    const blocks = text
-      .split(/(?:---QUESTION\s*\d+---|(?:^|\n)(?:\*\*)?Question\s*\d+(?:\*\*)?[:\s])/i)
-      .filter(b => b && b.trim().length > 10)
-    const cards = blocks.map(block => {
-      const msIdx  = block.search(/MARK SCHEME:|Mark scheme:/i)
-      const tipIdx = block.search(/EXAMINER TIP:|Examiner tip:/i)
-      const question   = msIdx > -1 ? block.slice(0, msIdx).trim() : (tipIdx > -1 ? block.slice(0, tipIdx).trim() : block.trim())
-      const afterMs    = msIdx > -1 ? block.slice(msIdx).replace(/MARK SCHEME:/i, '').trim() : ''
-      const markScheme = tipIdx > -1 && afterMs ? afterMs.slice(0, afterMs.search(/EXAMINER TIP:/i)).trim() : afterMs.trim()
-      const tip        = tipIdx > -1 ? block.slice(tipIdx).replace(/EXAMINER TIP:/i, '').trim() : ''
-      return { question, markScheme, tip }
-    })
-    const valid = cards.filter(c => c.question.length > 5)
-    setPredParsed(valid)
-    setPredLoad(false)
-  }
-
   const subjects = profile?.subjects?.map(s=>s.name)||[]
+  const initial  = (profile?.displayName || 'U')[0].toUpperCase()
 
   return (
-    <div className="fade-in" style={{maxWidth:860,margin:'0 auto'}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+    <div className="fade-in ap-page ap-page--chat">
+      <div className="ap-page-head">
         <div>
-          <h2 style={{display:'flex',alignItems:'center',gap:9}}><MessageSquare size={22} color="var(--accent-light)"/> AI Revision Advisor</h2>
-          <p style={{fontSize:'0.82rem'}}>Powered by Mistral AI · Sees your full profile · Free</p>
+          <h2 style={{display:'flex',alignItems:'center',gap:9}}><Compass size={22} color="var(--accent-light)"/> AI Advisor</h2>
+          <p className="ap-page-sub">Powered by Mistral AI · Sees your full profile</p>
         </div>
       </div>
 
@@ -298,39 +251,52 @@ export default function AIAdvisor() {
 
       {/* ── Chat ── */}
       {tab==='chat'&&(
-        <div className="card" style={{display:'flex',flexDirection:'column',height:'calc(100vh - 300px)',minHeight:400}}>
-          <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:10,padding:'12px 0'}}>
-            {messages.map((m,i)=>(
-              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',flexDirection:m.role==='user'?'row-reverse':'row'}}>
-                <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:m.role==='user'?'var(--accent)':'rgba(34,197,94,0.2)'}}>
-                  {m.role==='user'?'👤':<Zap size={14} color="var(--accent-light)"/>}
-                </div>
-                {m.role==='user' ? (
-                  <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:'var(--radius-lg)',background:'var(--accent)',fontSize:'0.875rem',lineHeight:1.7,borderBottomRightRadius:4}}>
-                    {m.content}
-                  </div>
-                ) : (
-                  <div style={{maxWidth:'88%'}}>
-                    <AIOutput text={m.content} label="AI Response" />
-                  </div>
-                )}
+        <div className="ap-chat-shell">
+          {messages.length === 0 ? (
+            <div className="ap-chat-empty">
+              <div className="ap-chat-empty-icon"><Compass size={24} /></div>
+              <div>
+                <div style={{fontWeight:700,marginBottom:4}}>Ask me anything about your revision</div>
+                <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, papers and confidence ratings</div>
               </div>
-            ))}
-            {loading&&(
-              <div style={{display:'flex',gap:8}}>
-                <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(34,197,94,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}><Zap size={14} color="var(--accent-light)"/></div>
-                <div style={{padding:'9px 13px',background:'var(--bg-surface)',borderRadius:'var(--radius-lg)',border:'1px solid var(--border)'}}>
-                  <div style={{display:'flex',gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:'50%',background:'var(--accent)',animation:`bounce 1s ease ${i*0.15}s infinite`}}/>)}</div>
+            </div>
+          ) : (
+            <div className="ap-chat-scroll">
+              {messages.map((m,i)=>(
+                <div key={i} className={`ap-chat-msg${m.role==='user'?' ap-chat-msg--user':''}`}>
+                  <div className="ap-chat-avatar">
+                    {m.role==='user' ? initial : <Zap size={14} />}
+                  </div>
+                  {m.role==='user' ? (
+                    <div className="ap-chat-bubble">{m.content}</div>
+                  ) : (
+                    <div style={{maxWidth:'100%',minWidth:0}}>
+                      <AIOutput text={m.content} label="AI Response" />
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-            <div ref={bottomRef}/>
+              ))}
+              {loading&&(
+                <div className="ap-chat-msg">
+                  <div className="ap-chat-avatar"><Zap size={14} /></div>
+                  <div className="ap-chat-bubble"><span className="ap-typing-dots"><span/><span/><span/></span></div>
+                </div>
+              )}
+              <div ref={bottomRef}/>
+            </div>
+          )}
+          <div style={{padding:'10px 12px 0',display:'flex',gap:6,flexWrap:'wrap'}}>
+            {QUICK_PROMPTS.map(p=><button key={p} className="ap-chat-chip" onClick={()=>sendMessage(p)}>{p}</button>)}
           </div>
-          <div style={{padding:'8px 0',borderTop:'1px solid var(--border)',display:'flex',gap:5,flexWrap:'wrap'}}>
-            {QUICK_PROMPTS.map(p=><button key={p} className="btn btn-secondary btn-sm" style={{fontSize:'0.72rem'}} onClick={()=>sendMessage(p)}>{p}</button>)}
-          </div>
-          <div style={{display:'flex',gap:8,paddingTop:10}}>
-            <input className="input" value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask me anything…" onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}} disabled={loading}/>
+          <div className="ap-chat-inputbar">
+            <textarea
+              rows={1}
+              value={input}
+              onChange={e=>setInput(e.target.value)}
+              placeholder="Ask me anything…"
+              onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}}
+              disabled={loading}
+            />
             <button className="btn btn-primary btn-icon" onClick={()=>sendMessage()} disabled={!input.trim()||loading}><Send size={17}/></button>
           </div>
         </div>
@@ -338,61 +304,89 @@ export default function AIAdvisor() {
 
       {/* ── Grade Predictor ── */}
       {tab==='predict'&&(
-        <div className="card">
-          <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Target size={18} color="var(--accent-light)"/> Grade Predictor</h4>
-          <p style={{marginBottom:16,fontSize:'0.875rem'}}>Based on your paper scores, topic confidence, and revision patterns.</p>
-          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
-            <select className="select" style={{flex:1,minWidth:180}} value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
-              <option value="">Select subject…</option>
-              {subjects.map(s=><option key={s} value={s}>{s}</option>)}
-            </select>
-            <button className="btn btn-primary" style={{minWidth:140}} onClick={handleGradePredict} disabled={gradeLoad||!gradeSubj}>
+        <div className="ap-tool-layout">
+          <div className="card">
+            <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Target size={18} color="var(--accent-light)"/> Grade Predictor</h4>
+            <p style={{marginBottom:16,fontSize:'0.875rem'}}>Based on your paper scores, topic confidence, and revision patterns.</p>
+            <div className="form-group">
+              <label className="label">Subject</label>
+              <select className="select" value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
+                <option value="">Select subject…</option>
+                {subjects.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleGradePredict} disabled={gradeLoad||!gradeSubj}>
               {gradeLoad?'Predicting…':'Predict grade'}
             </button>
           </div>
-          {gradeLoad&&<div className="loading-center"><div className="spinner"/></div>}
-          {gradePred&&<div style={{marginTop:16}}><AIOutput text={gradePred} label="Grade Prediction" /></div>}
+          <div className="ap-tool-output">
+            {gradeLoad && <div className="loading-center"><div className="spinner"/></div>}
+            {gradePred && <AIOutput text={gradePred} label="Grade Prediction" />}
+            {!gradeLoad && !gradePred && (
+              <div className="ap-tool-output-empty">
+                <Target size={30} style={{opacity:0.3}} />
+                Pick a subject and predict your likely grade
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* ── Next Topic ── */}
       {tab==='next'&&(
-        <div className="card">
-          <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> What Should I Revise Next?</h4>
-          <p style={{marginBottom:16,fontSize:'0.875rem'}}>AI picks your highest-priority topic based on confidence ratings, exam proximity, and recent mistakes.</p>
-          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
-            <select className="select" style={{flex:1,minWidth:180}} value={nextSubj} onChange={e=>setNextSubj(e.target.value)}>
-              <option value="">Select subject…</option>
-              {subjects.map(s=><option key={s} value={s}>{s}</option>)}
-            </select>
-            <button className="btn btn-primary" style={{minWidth:140}} onClick={handleNextTopic} disabled={nextLoad||!nextSubj}>
+        <div className="ap-tool-layout">
+          <div className="card">
+            <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> What Should I Revise Next?</h4>
+            <p style={{marginBottom:16,fontSize:'0.875rem'}}>AI picks your highest-priority topic based on confidence ratings, exam proximity, and recent mistakes.</p>
+            <div className="form-group">
+              <label className="label">Subject</label>
+              <select className="select" value={nextSubj} onChange={e=>setNextSubj(e.target.value)}>
+                <option value="">Select subject…</option>
+                {subjects.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleNextTopic} disabled={nextLoad||!nextSubj}>
               {nextLoad?'Thinking…':'Suggest topic'}
             </button>
           </div>
-          {nextLoad&&<div className="loading-center"><div className="spinner"/></div>}
-          {nextTopic&&<div style={{marginTop:16}}><AIOutput text={nextTopic} label="Topic Suggestion" /></div>}
+          <div className="ap-tool-output">
+            {nextLoad && <div className="loading-center"><div className="spinner"/></div>}
+            {nextTopic && <AIOutput text={nextTopic} label="Topic Suggestion" />}
+            {!nextLoad && !nextTopic && (
+              <div className="ap-tool-output-empty">
+                <Brain size={30} style={{opacity:0.3}} />
+                Pick a subject to get your next topic
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ── Answer Marker ── */}
+      {/* ── Resources ── */}
       {tab==='resources'&&(
         <div style={{display:'flex',flexDirection:'column',gap:14}}>
-          <p>Personalised resource recommendations for each of your subjects.</p>
+          <p style={{fontSize:'0.875rem',color:'var(--text-secondary)'}}>Personalised resource recommendations for each of your subjects.</p>
           {(profile?.subjects||[]).map(s=>(
             <div key={s.name} className="card">
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:resources[s.name]?12:0}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div style={{width:9,height:9,borderRadius:'50%',background:SUBJECT_COLOURS[s.name]||'var(--accent)'}}/>
-                  <h4>{s.name}</h4>
+                  <h4 style={{margin:0}}>{s.name}</h4>
                   <span className="badge badge-grey">{s.board}</span>
                 </div>
                 <button className="btn btn-secondary btn-sm" onClick={()=>getResources(s.name)} disabled={loadingRes===s.name}>
                   {loadingRes===s.name?'Loading…':<><BookOpen size={13}/> Get resources</>}
                 </button>
               </div>
-              {resources[s.name]&&<div style={{marginTop:12}}><AIOutput text={resources[s.name]} label={`Resources for ${s.name}`} /></div>}
+              {resources[s.name]&&<div style={{marginTop:14}}><AIOutput text={resources[s.name]} label={`Resources for ${s.name}`} /></div>}
             </div>
           ))}
+          {(profile?.subjects||[]).length === 0 && (
+            <div className="empty-state">
+              <div className="ap-icon-circle" style={{width:56,height:56}}><BookOpen size={26} /></div>
+              <p>Add subjects in Settings to get personalised resources</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -401,8 +395,8 @@ export default function AIAdvisor() {
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:10}}>
             <div>
-              <h4>Study Plan</h4>
-              <p style={{fontSize:'0.875rem'}}>Personalised plan based on your subjects, exam dates and preferences</p>
+              <h4 style={{margin:0}}>Study Plan</h4>
+              <p style={{fontSize:'0.875rem',margin:'2px 0 0'}}>Personalised plan based on your subjects, exam dates and preferences</p>
             </div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {studyPlan && (
@@ -426,9 +420,7 @@ export default function AIAdvisor() {
                   <button className="btn btn-secondary btn-sm" onClick={()=>setShowAddCal(true)} disabled={calAdded}>
                     {calAdded ? <><Check size={13}/> Added!</> : '+ Add to Calendar'}
                   </button>
-                  <button className="btn btn-ghost btn-sm"
-                    style={{color:'var(--text-muted)',fontSize:'0.75rem',borderColor:'var(--border)'}}
-                    onClick={()=>setPlanPrefs(p=>({...p,showForm:true,confirmed:false}))} disabled={planLoading}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setPlanPrefs(p=>({...p,showForm:true,confirmed:false}))} disabled={planLoading}>
                     New plan
                   </button>
                 </>
@@ -443,7 +435,7 @@ export default function AIAdvisor() {
           </div>
 
           {planPrefs.showForm && (
-            <div style={{padding:14,background:'rgba(34,197,94,0.06)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',marginBottom:14}}>
+            <div style={{padding:'14px 0',borderTop:'1.5px solid var(--border)',borderBottom:'1.5px solid var(--border)',marginBottom:14}}>
               <h4 style={{marginBottom:12,fontSize:'0.9rem'}}>Customise your plan</h4>
               <div className="grid-2" style={{gap:10,marginBottom:12}}>
                 <div>
@@ -463,12 +455,12 @@ export default function AIAdvisor() {
                 </div>
               </div>
               {(profile?.examDates||[]).length > 0 ? (
-                <div style={{padding:'6px 10px',background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:'var(--radius-md)',fontSize:'0.8rem',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
-                  <Check size={13} color="var(--success)"/>
-                  {(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).length} upcoming exam dates found — plan will be capped to your exam period
+                <div style={{display:'flex',alignItems:'flex-start',gap:8,padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--success-pale)',border:'1.5px solid var(--success-border)',color:'var(--success)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
+                  <Check size={13} style={{flexShrink:0,marginTop:2}}/>
+                  <span>{(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).length} upcoming exam dates found — plan will be capped to your exam period</span>
                 </div>
               ) : (
-                <div style={{padding:'6px 10px',background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'var(--radius-md)',fontSize:'0.8rem',marginBottom:10}}>
+                <div style={{padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--warning-pale)',border:'1.5px solid var(--warning-border)',color:'var(--warning)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
                   ⚠ No exam dates set — add them in Exam Dates for a more accurate plan
                 </div>
               )}
@@ -484,8 +476,8 @@ export default function AIAdvisor() {
           {planLoading&&<div className="loading-center"><div className="spinner"/></div>}
           {studyPlan&&!planLoading&&<div style={{marginTop:14}}><AIOutput text={studyPlan} label="Generated Study Plan" /></div>}
           {!studyPlan&&!planLoading&&!planPrefs.showForm&&(
-            <div className="empty-state" style={{padding:'28px 0'}}>
-              <TrendingUp size={36} style={{opacity:0.3}}/>
+            <div className="empty-state">
+              <div className="ap-icon-circle" style={{width:56,height:56}}><TrendingUp size={26} /></div>
               <p>Click Generate to build your personalised revision plan</p>
               <p style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Uses your exam dates, subjects, and grade targets</p>
             </div>
@@ -496,34 +488,36 @@ export default function AIAdvisor() {
       {/* ── Revision Techniques ── */}
       {tab==='techniques'&&(
         <div>
-          <div className="card" style={{marginBottom:16}}>
-            <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}>
-              <Lightbulb size={18} color="var(--accent-light)"/> Evidence-Based Revision Techniques
-            </h4>
-            <p style={{marginBottom:14,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
-              Get subject-specific advice on the most effective revision methods — grounded in cognitive science research.
-            </p>
-            <div style={{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap'}}>
-              <div style={{flex:1,minWidth:180}}>
-                <label className="label">Choose a subject</label>
+          <div className="ap-tool-layout" style={{marginBottom:16}}>
+            <div className="card">
+              <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}>
+                <Lightbulb size={18} color="var(--accent-light)"/> Evidence-Based Techniques
+              </h4>
+              <p style={{marginBottom:14,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
+                Subject-specific advice grounded in cognitive science research.
+              </p>
+              <div className="form-group">
+                <label className="label">Subject</label>
                 <select className="select" value={techSubj} onChange={e=>setTechSubj(e.target.value)}>
                   <option value="">Select subject…</option>
                   {subjects.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <button className="btn btn-primary" onClick={handleTechniques}
-                disabled={techLoading||!techSubj} style={{minWidth:140}}>
+              <button className="btn btn-primary" onClick={handleTechniques} disabled={techLoading||!techSubj} style={{width:'100%'}}>
                 {techLoading?'Generating…':'Get techniques'}
               </button>
             </div>
-          </div>
-
-          {techLoading && <div className="loading-center" style={{marginBottom:16}}><div className="spinner"/></div>}
-          {techResult && (
-            <div style={{marginBottom:16}}>
-              <AIOutput text={techResult} label={`Revision Techniques — ${techSubj}`} />
+            <div className="ap-tool-output">
+              {techLoading && <div className="loading-center"><div className="spinner"/></div>}
+              {techResult && <AIOutput text={techResult} label={`Revision Techniques — ${techSubj}`} />}
+              {!techLoading && !techResult && (
+                <div className="ap-tool-output-empty">
+                  <Lightbulb size={30} style={{opacity:0.3}} />
+                  Pick a subject for tailored technique advice
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="card" style={{marginBottom:16}}>
             <h4 style={{marginBottom:12}}>The 6 most effective revision techniques (research-backed)</h4>
@@ -536,7 +530,7 @@ export default function AIAdvisor() {
                 {name:'Concrete Examples',rating:'★★★★☆',ratingCol:'var(--warning)',desc:'Grounding abstract concepts in specific, memorable examples. Particularly powerful for sciences, economics, and law.',how:'For every abstract principle, write down 2–3 real-world examples. Draw diagrams that show the concept in action.',avoid:'Abstract definitions without application — hard to recall under exam pressure.'},
                 {name:'Dual Coding',rating:'★★★☆☆',ratingCol:'var(--warning)',desc:'Combining verbal and visual information — words plus diagrams, charts, or mind maps.',how:'Draw diagrams from memory, create visual summaries, annotate your notes with sketches.',avoid:'Relying on either text OR visuals alone — the combination is what matters.'},
               ].map(t=>(
-                <div key={t.name} style={{padding:'12px 14px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
+                <div key={t.name} style={{padding:'12px 14px',background:'var(--bg-hover)',borderRadius:'var(--r-md)'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
                     <span style={{fontWeight:700,fontSize:'0.9rem'}}>{t.name}</span>
                     <span style={{fontSize:'0.75rem',color:t.ratingCol,fontWeight:700}}>{t.rating}</span>
@@ -565,8 +559,6 @@ export default function AIAdvisor() {
           onClose={()=>setShowAddCal(false)}
           onDone={()=>{setShowAddCal(false);setCalAdded(true);setTimeout(()=>setCalAdded(false),4000)}}/>
       )}
-
-      <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
     </div>
   )
 }
@@ -652,26 +644,24 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:520}} onClick={e=>e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">Add study plan to calendar</span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+          <span style={{fontWeight:700,fontSize:'1.05rem'}}>Add study plan to calendar</span>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <p style={{fontSize:'0.875rem',marginBottom:14}}>
           This will create revision sessions in your calendar based on the study plan.
         </p>
         {preview && (
           <>
-            <div style={{padding:'8px 12px',background:'rgba(34,197,94,0.08)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',fontSize:'0.82rem',marginBottom:14}}>
-              <strong>{preview.length} sessions</strong> across {Object.keys(bySubject).length} subjects:
-              <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:6}}>
-                {Object.entries(bySubject).map(([s,n])=>(
-                  <span key={s} className="badge badge-accent" style={{fontSize:'0.72rem'}}>{s}: {n}</span>
-                ))}
-              </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,alignItems:'center',padding:'10px 12px',marginBottom:14,fontWeight:600,fontSize:'0.82rem',background:'var(--accent-pale)',borderRadius:'var(--r-md)',color:'var(--accent-light)'}}>
+              <span>{preview.length} sessions across {Object.keys(bySubject).length} subjects:</span>
+              {Object.entries(bySubject).map(([s,n])=>(
+                <span key={s} className="badge badge-grey" style={{fontSize:'0.7rem'}}>{s}: {n}</span>
+              ))}
             </div>
-            <div style={{maxHeight:160,overflowY:'auto',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',marginBottom:14}}>
+            <div style={{maxHeight:160,overflowY:'auto',borderRadius:'var(--r-md)',border:'1.5px solid var(--border)',marginBottom:14}}>
               {preview.slice(0,8).map((s,i)=>(
-                <div key={i} style={{display:'flex',gap:10,padding:'5px 10px',borderBottom:'1px solid var(--border)',fontSize:'0.78rem',alignItems:'center'}}>
+                <div key={i} style={{display:'flex',gap:10,padding:'6px 10px',borderBottom:'1px solid var(--border)',fontSize:'0.78rem',alignItems:'center'}}>
                   <span style={{color:'var(--text-muted)',flexShrink:0,minWidth:68}}>{s.date}</span>
                   <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.title}</span>
                   <span className={`badge badge-${s.type.includes('Exam')?'blue':'accent'}`} style={{fontSize:'0.65rem',flexShrink:0}}>{s.type==='Exam Practice'?'Exam':'Content'}</span>
@@ -688,9 +678,9 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
             {val:'replace', label:'Replace existing calendar', desc:'Deletes all current sessions first'},
           ].map(opt=>(
             <button key={opt.val} onClick={()=>setMode(opt.val)}
-              style={{display:'block',width:'100%',padding:'8px 12px',marginBottom:6,borderRadius:'var(--radius-md)',cursor:'pointer',textAlign:'left',
+              style={{display:'block',width:'100%',padding:'8px 12px',marginBottom:6,borderRadius:'var(--r-md)',cursor:'pointer',textAlign:'left',
                 border:`2px solid ${mode===opt.val?'var(--accent)':'var(--border)'}`,
-                background:mode===opt.val?'rgba(34,197,94,0.1)':'var(--bg-surface)'}}>
+                background:mode===opt.val?'var(--accent-pale)':'var(--bg-surface)'}}>
               <span style={{fontWeight:600,fontSize:'0.875rem'}}>{opt.label}</span>
               <span style={{fontSize:'0.78rem',color:'var(--text-muted)',marginLeft:8}}>{opt.desc}</span>
             </button>
