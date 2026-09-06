@@ -1,12 +1,12 @@
 // src/pages/PublicProfile.jsx
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getUserByUsername } from '../utils/firestore'
 import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
-import { Zap, Flame, Trophy, Star } from 'lucide-react'
+import { Zap, Star } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
+import './AccountPages.css'
 
 export default function PublicProfile() {
   const { username } = useParams()
@@ -56,10 +56,10 @@ export default function PublicProfile() {
 
   if (notFound) return (
     <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center',
-      justifyContent:'center', gap:16, background:'var(--bg-base)' }}>
-      <div style={{ fontSize:'4rem' }}>👤</div>
+      justifyContent:'center', gap:16, background:'var(--bg-base)', padding:24, textAlign:'center' }}>
+      <div className="ap-icon-circle" style={{ width:64, height:64 }}><Star size={28} /></div>
       <h2>Profile not found</h2>
-      <p style={{ color:'var(--text-muted)', textAlign:'center', maxWidth:320 }}>
+      <p style={{ color:'var(--text-muted)', maxWidth:320 }}>
         This user either doesn&apos;t exist or has a private profile.
       </p>
       <Link to="/signup" className="btn btn-primary">Join RevisionFlow free</Link>
@@ -73,13 +73,13 @@ export default function PublicProfile() {
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', padding:24 }}>
-      <div style={{ maxWidth:640, margin:'0 auto' }}>
+      <div className="ap-page ap-page--narrow">
 
         {/* Nav — works for signed-out users too */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
-          <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
-            <Zap size={20} color="var(--accent-light)" />
-            <span style={{ fontWeight:800, color:'var(--text-primary)' }}>RevisionFlow</span>
+          <Link to="/" className="pp-logo" style={{ textDecoration:'none' }}>
+            <div className="pp-logo-mark"><Zap size={19} color="#fff" /></div>
+            <span className="pp-logo-word">Revision<span>Flow</span></span>
           </Link>
           <div style={{ display:'flex', gap:8 }}>
             <Link to="/login"  className="btn btn-ghost btn-sm">Log in</Link>
@@ -89,10 +89,7 @@ export default function PublicProfile() {
 
         {/* Hero card */}
         <div className="card accent-card" style={{ padding:32, textAlign:'center', marginBottom:20 }}>
-          <div style={{ width:80, height:80, borderRadius:'50%',
-            background:'var(--brand-gradient)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontWeight:800, fontSize:'2.2rem', margin:'0 auto 16px' }}>
+          <div className="ap-avatar ap-avatar--xl" style={{ margin:'0 auto 16px', fontSize: iconEmoji ? '2.4rem' : undefined }}>
             {iconEmoji || (p.displayName||'U')[0].toUpperCase()}
           </div>
           <h2 style={{ marginBottom:4 }}>{p.displayName || 'Anonymous'}</h2>
@@ -102,30 +99,22 @@ export default function PublicProfile() {
             </p>
           )}
           {lvl && (
-            <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 12px',
-              borderRadius:999, background:'var(--accent-pale)', marginBottom:16,
-              fontSize:'0.8rem', fontWeight:700, color:'var(--accent-light)' }}>
+            <div className="badge badge-accent" style={{ marginBottom:16 }}>
               <Star size={12} /> Level {p.level||1} — {lvl.title}
             </div>
           )}
           <div style={{ display:'flex', gap:28, justifyContent:'center', flexWrap:'wrap' }}>
             <div>
-              <div style={{ fontSize:'1.6rem', fontWeight:800, color:'var(--accent-light)' }}>
-                {(p.xp||0).toLocaleString()}
-              </div>
-              <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:2 }}>XP earned</div>
+              <div className="stat-num" style={{ color:'var(--accent-light)' }}>{(p.xp||0).toLocaleString()}</div>
+              <div className="stat-cap">XP earned</div>
             </div>
             <div>
-              <div style={{ fontSize:'1.6rem', fontWeight:800, color:'var(--warning)' }}>
-                🔥 {p.streak||0}
-              </div>
-              <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:2 }}>Day streak</div>
+              <div className="stat-num" style={{ color:'var(--warning)' }}><span className="streak-fire">🔥</span> {p.streak||0}</div>
+              <div className="stat-cap">Day streak</div>
             </div>
             <div>
-              <div style={{ fontSize:'1.6rem', fontWeight:800, color:'var(--accent-light)' }}>
-                {unlockedBadges.length}
-              </div>
-              <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:2 }}>Badges</div>
+              <div className="stat-num" style={{ color:'var(--accent-light)' }}>{unlockedBadges.length}</div>
+              <div className="stat-cap">Badges</div>
             </div>
           </div>
         </div>
@@ -133,13 +122,12 @@ export default function PublicProfile() {
         {/* Subjects (only if settings allow) */}
         {p.settings?.friendsCanSeeGrades !== false && (p.subjects||[]).length > 0 && (
           <div className="card" style={{ marginBottom:20 }}>
-            <h4 style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>
+            <h4 className="card-eyebrow" style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
               {p.subjects.map(s => (
-                <span key={s.name} style={{ display:'flex', alignItems:'center', gap:6,
-                  padding:'4px 12px', borderRadius:999,
+                <span key={s.name} className="badge" style={{
                   background: SUBJECT_COLOURS[s.name] || 'var(--accent)',
-                  color:'#fff', fontSize:'0.82rem', fontWeight:600 }}>
+                  color:'#fff', borderColor:'transparent' }}>
                   {s.name}
                 </span>
               ))}
@@ -150,17 +138,13 @@ export default function PublicProfile() {
         {/* Badges */}
         {unlockedBadges.length > 0 && (
           <div className="card" style={{ marginBottom:20 }}>
-            <h4 style={{ marginBottom:12, fontSize:'0.9rem' }}>
+            <h4 className="card-eyebrow" style={{ marginBottom:12, fontSize:'0.9rem' }}>
               Badges <span style={{ color:'var(--text-muted)', fontWeight:400 }}>({unlockedBadges.length})</span>
             </h4>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            <div className="ap-badge-grid">
               {unlockedBadges.map(b => (
-                <div key={b.id} title={b.name + ': ' + b.desc}
-                  style={{ width:48, height:48, borderRadius:10,
-                    background:'rgba(34,197,94,0.1)', border:'1px solid var(--border)',
-                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.6rem',
-                    cursor:'default' }}>
-                  {b.icon}
+                <div key={b.id} className="ap-badge-chip ap-badge-chip--earned" title={b.name + ': ' + b.desc}>
+                  <span className="ap-badge-chip-icon">{b.icon}</span>
                 </div>
               ))}
             </div>
@@ -168,11 +152,10 @@ export default function PublicProfile() {
         )}
 
         {/* CTA */}
-        <div style={{ textAlign:'center', padding:'28px 24px', borderRadius:16,
-          background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.15)' }}>
-          <div style={{ fontSize:'1.5rem', marginBottom:8 }}>⚡</div>
+        <div className="card accent-card" style={{ textAlign:'center', padding:'28px 24px' }}>
+          <div className="ap-icon-circle" style={{ margin:'0 auto 12px' }}><Zap size={18} /></div>
           <h4 style={{ marginBottom:6 }}>Track your own revision</h4>
-          <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginBottom:16, maxWidth:300, margin:'0 auto 16px' }}>
+          <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginBottom:16, maxWidth:300, marginLeft:'auto', marginRight:'auto' }}>
             Join {p.displayName?.split(' ')[0] || 'them'} on RevisionFlow — free revision platform for UK GCSE, AS-Level &amp; A-Level.
           </p>
           <Link to="/signup" className="btn btn-primary">Start revising free →</Link>
