@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { chatWithAI } from '../utils/ai'
 import {
   HelpCircle, Send, BookOpen, Calendar, FileText, Brain,
-  MessageSquare, Timer, BarChart2, Users, Trophy, Settings,
-  Zap, ChevronDown, ChevronUp, Layers, ClipboardList, Gift,
-  Star, Globe, Lock, Shield, Bell, Palette, Link2, Repeat, GraduationCap
+  MessageSquare, Timer, BarChart2, Users, Trophy,
+  Zap, ChevronDown, ChevronUp, Layers, ClipboardList,
+  Star, Globe, Shield, Palette, Link2, Repeat, GraduationCap
 } from 'lucide-react'
+import './AccountPages.css'
 
 const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level revision web app. AS-Level is a standalone qualification, kept completely separate from A-Level throughout the app (own topics, exam dates, past papers, grade scale) — not treated as "year one of A-Level". Here is the complete up-to-date feature set:
 
@@ -277,16 +278,16 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
   ]
 
   return (
-    <div className="fade-in" style={{ maxWidth: 780, margin: '0 auto' }}>
+    <div className="fade-in ap-page ap-page--wide">
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <HelpCircle size={22} color="var(--accent-light)" /> Help Centre
-        </h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Everything you need to know about RevisionFlow · Last updated August 2026
-        </p>
+      <div className="ap-page-head" style={{ marginBottom: 24 }}>
+        <div>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <HelpCircle size={22} color="var(--accent-light)" /> Help Centre
+          </h2>
+          <p className="ap-page-sub">Everything you need to know about RevisionFlow · Last updated August 2026</p>
+        </div>
       </div>
 
       {/* AI assistant */}
@@ -308,17 +309,17 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           </button>
         </div>
         {(loading || answer) && (
-          <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.7 }}>
-            <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--accent-light)', fontSize: '0.78rem' }}>✨ RevisionFlow Assistant</div>
+          <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--bg-surface)', border: '1.5px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.88rem', lineHeight: 1.7 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--accent-light)', fontSize: '0.78rem' }}>RevisionFlow Assistant</div>
             {loading
-              ? <span style={{ color: 'var(--text-muted)' }}>Finding answer…</span>
+              ? <span className="ap-typing-dots"><span /><span /><span /></span>
               : <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{answer}</p>
             }
           </div>
         )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
           {QUICK_QUESTIONS.map(q => (
-            <button key={q} onClick={() => ask(q)} className="btn btn-secondary btn-sm" style={{ borderRadius: 20, fontSize: '0.76rem', padding: '4px 12px' }}>
+            <button key={q} onClick={() => ask(q)} className="ap-chat-chip">
               {q}
             </button>
           ))}
@@ -326,7 +327,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       </div>
 
       {/* What's new banner */}
-      <div style={{ marginBottom: 24, padding: '14px 18px', background: 'linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04))', borderRadius: 12, border: '1px solid rgba(34,197,94,0.25)' }}>
+      <div className="card" style={{ marginBottom: 24, background: 'var(--accent-pale)', borderColor: 'var(--border-strong)' }}>
         <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-light)', marginBottom: 8 }}>🆕 Recently added</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
           <span>✦ <strong>Tutor (Pro)</strong> — Maths step-by-step solver and English essay feedback, both accept a photo instead of typing</span>
@@ -350,11 +351,11 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
       {/* FAQ — categorised */}
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ marginBottom: 14, fontSize: '1rem' }}>Frequently Asked Questions</h3>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div className="tabs" style={{ marginBottom: 14 }}>
           {faqCategories.map(cat => (
             <button
               key={cat.id}
-              className={`btn btn-sm ${openCat === cat.id ? 'btn-primary' : 'btn-secondary'}`}
+              className={`tab${openCat === cat.id ? ' active' : ''}`}
               onClick={() => setOpenCat(openCat === cat.id ? null : cat.id)}
             >
               {cat.label}
@@ -362,20 +363,18 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           ))}
         </div>
         {faqCategories.filter(cat => cat.id === openCat).map(cat => (
-          <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div key={cat.id} className="ap-faq-list">
             {cat.questions.map((item, i) => (
-              <div key={i} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div key={i} className="ap-faq-item">
                 <button
+                  className="ap-faq-question"
                   onClick={() => setOpenFaq(openFaq === `${cat.id}-${i}` ? null : `${cat.id}-${i}`)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.88rem', textAlign: 'left', gap: 10 }}
                 >
                   {item.q}
                   {openFaq === `${cat.id}-${i}` ? <ChevronUp size={16} style={{ flexShrink: 0 }} /> : <ChevronDown size={16} style={{ flexShrink: 0 }} />}
                 </button>
                 {openFaq === `${cat.id}-${i}` && (
-                  <div style={{ padding: '0 18px 16px', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-                    {item.a}
-                  </div>
+                  <div className="ap-faq-answer">{item.a}</div>
                 )}
               </div>
             ))}
@@ -390,8 +389,8 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           {FEATURES.map(f => {
             const Icon = f.icon
             return (
-              <div key={f.title} className="card" style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${f.colour}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div key={f.title} className="card ap-feature-tile" style={{ padding: '16px 14px' }}>
+                <div className="ap-feature-tile-icon" style={{ background: `${f.colour}18` }}>
                   <Icon size={18} color={f.colour} />
                 </div>
                 <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{f.title}</div>
@@ -404,7 +403,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
 
       {/* XP quick reference */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <h4 style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
+        <h4 className="card-eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <Zap size={16} color="var(--accent-light)" /> XP Quick Reference
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
@@ -423,7 +422,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
             { action: 'Earn a badge',            xp: '+50 to +600' },
             { action: 'Referral accepted',       xp: '+100–200' },
           ].map(r => (
-            <div key={r.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-surface)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            <div key={r.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--r-sm)' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.action}</span>
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-light)', flexShrink: 0, marginLeft: 8 }}>{r.xp}</span>
             </div>
