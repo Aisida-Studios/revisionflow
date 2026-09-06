@@ -1,5 +1,6 @@
 // src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -7,14 +8,15 @@ import { getPaperAttempts, getMistakes } from '../utils/firestore'
 import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
 import { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
-import { BADGE_LIST, BADGE_CATEGORIES } from '../data/badges'
+import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
-import { Zap, Flame, Trophy, Copy, Check, Download, Loader, Share2, X, Crown, Settings } from 'lucide-react'
+import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
+import './AccountPages.css'
 
 // Opens a Stripe Customer Portal session for subscription management
 function ManageSubButton({ uid }) {
@@ -184,7 +186,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="fade-in" style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div className="fade-in ap-page ap-page--md">
 
       {/* ── Milestone celebration modal ── */}
       {showMilestone && (
@@ -220,8 +222,8 @@ export default function Profile() {
       {showCard && (
         <div className="modal-overlay" onClick={() => setShowCard(false)}>
           <div className="modal" style={{ maxWidth: 520, padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title"><Share2 size={16} /> Streak Card</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1.05rem' }}><Share2 size={16} /> Streak Card</span>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowCard(false)}><X size={18} /></button>
             </div>
             {cardLoading ? (
@@ -249,11 +251,9 @@ export default function Profile() {
         </div>
       )}
 
-
       {/* ── Header card ── */}
       <div className="card accent-card" style={{ marginBottom: 20, padding: 28, textAlign: 'center' }}>
-        {/* Avatar */}
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--brand-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.8rem', margin: '0 auto 14px' }}>
+        <div className="ap-avatar ap-avatar--xl" style={{ margin: '0 auto 14px', fontSize: iconEmoji ? '2.4rem' : undefined }}>
           {iconEmoji || (profile?.displayName || 'U')[0].toUpperCase()}
         </div>
 
@@ -314,16 +314,16 @@ export default function Profile() {
 
       {/* ── Pro subscription card ── */}
       {(isPro || isBeta) && (
-        <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg,var(--gold-pale) 0%,var(--bg-muted) 100%)', border: '1px solid var(--gold-border)' }}>
+        <div className="card gold-card" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#f59e0b,#fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Crown size={20} color="#fff" />
               </div>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                   RevisionFlow Pro
-                  {isBeta && <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: 'var(--gold-pale)', color: 'var(--gold)', fontWeight: 700 }}>LIFETIME</span>}
+                  {isBeta && <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>LIFETIME</span>}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
                   {isBeta
@@ -341,7 +341,7 @@ export default function Profile() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
             {['Unlimited Topic Notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
-              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'var(--gold-pale)', border: '1px solid var(--gold-border)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--gold)' }}>
+              <span key={f} className="badge badge-gold">
                 <Check size={10} /> {f}
               </span>
             ))}
@@ -349,32 +349,32 @@ export default function Profile() {
         </div>
       )}
       {!isPro && (
-        <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div className="card" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Upgrade to Pro</div>
+            <div style={{ fontWeight: 650, fontSize: '0.88rem', marginBottom: 2 }}>Upgrade to Pro</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Unlimited AI, all themes, timed quiz — from £3.99/mo</div>
           </div>
-          <a href="/pro" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}><Zap size={13} /> Upgrade</a>
+          <Link to="/pro" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}><Zap size={13} /> Upgrade</Link>
         </div>
       )}
 
       {/* ── Subjects ── */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <h4 style={{ marginBottom: 14 }}>Your subjects</h4>
+        <h4 className="card-eyebrow" style={{ marginBottom: 2 }}>Your subjects</h4>
         {(profile?.subjects || []).length === 0 ? (
-          <p>No subjects added. Go to Settings to add subjects.</p>
+          <p className="card-sub-line" style={{ margin: '8px 0 0' }}>No subjects added. Go to Settings to add subjects.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div className="ap-person-list" style={{ marginTop: 8 }}>
             {(profile?.subjects || []).map(s => (
-              <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontWeight: 600 }}>{s.name}</span>
+              <div key={s.name} className="ap-person-row">
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />
+                <div className="ap-person-main" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span className="ap-person-name" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
                   {getSubjectQualification(s, profile) !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{getSubjectQualification(s, profile)}</span>}
                   {s.tier && s.tier !== 'N/A' && <span className="badge badge-accent">{s.tier}</span>}
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
                   {profile?.startingGrades?.[s.name] && (
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Start: <strong>{profile.startingGrades[s.name]}</strong>
@@ -394,35 +394,29 @@ export default function Profile() {
 
       {/* ── Badges ── */}
       <BadgeAuditButton />
-      
+
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h4>Badges ({unlockedBadges.length}/{BADGE_LIST.length})</h4>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <h4 className="card-eyebrow" style={{ margin: 0 }}>Badges ({unlockedBadges.length}/{BADGE_LIST.length})</h4>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{BADGE_LIST.length - unlockedBadges.length} remaining</span>
         </div>
-        <p style={{ fontSize: '0.8rem', marginBottom: 14 }}>
-          Complete sessions, maintain streaks, and hit milestones to earn badges and XP.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8 }}>
+        <p className="card-sub-line">Complete sessions, maintain streaks, and hit milestones to earn badges and XP.</p>
+        <div className="ap-badge-tile-grid">
           {BADGE_LIST.map(b => {
             const unlocked = earnedIds.includes(b.id)
             return (
-              <div key={b.id} title={b.desc}
-                style={{ padding: 10, borderRadius: 'var(--radius-md)', textAlign: 'center', border: `1px solid ${unlocked ? 'rgba(34,197,94,0.45)' : 'var(--border)'}`, background: unlocked ? 'rgba(34,197,94,0.12)' : 'var(--bg-surface)', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 4, opacity: unlocked ? 1 : 0.35 }}>{b.icon}</div>
-                <div style={{ fontWeight: 600, fontSize: '0.78rem', lineHeight: 1.2, color: unlocked ? 'var(--text-primary)' : 'var(--text-muted)' }}>{b.name}</div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.3, opacity: unlocked ? 1 : 0.6 }}>{b.desc}</div>
-                {unlocked && <div style={{ marginTop: 4, fontSize: '0.68rem', color: 'var(--accent-light)', fontWeight: 600 }}>+{b.xp} XP ✓</div>}
-                {!unlocked && <div style={{ marginTop: 4, fontSize: '0.68rem', color: 'var(--text-muted)' }}>🔒 {b.hint || 'Keep going!'}</div>}
+              <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>
+                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>{b.icon}</div>
+                <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>
+                <div className="ap-badge-tile-desc">{b.desc}</div>
+                {unlocked
+                  ? <div className="ap-badge-tile-status" style={{ color: 'var(--accent-light)' }}>+{b.xp} XP <Check size={11} /></div>
+                  : <div className="ap-badge-tile-status" style={{ color: 'var(--text-muted)' }}><Lock size={10} /> {b.hint || 'Keep going!'}</div>}
               </div>
             )
           })}
         </div>
       </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 }
