@@ -11,6 +11,7 @@ import {
 } from '../utils/firestore'
 import { collection, getDocs, deleteDoc, doc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
+import { useIsPro, ProBadge } from '../components/ProGate'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV } from '../utils/calendar'
 import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
 import { getSubjectIcon } from '../utils/subjectIcons'
@@ -20,7 +21,7 @@ import toast from 'react-hot-toast'
 import { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'
 import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
-  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye,
+  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye, Lock,
   CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,
   Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,
 } from 'lucide-react'
@@ -51,10 +52,12 @@ function parseLocalDate(dateStr) {
 
 export default function Calendar() {
   const { user, profile } = useAuth()
+  const { isPro, isBeta } = useIsPro()
   const [view,         setView]         = useState('month')
   const [current,      setCurrent]      = useState(new Date())
   const [sessions,     setSessions]     = useState([])
   const [backlogTasks, setBacklogTasks] = useState([])   // tasks with no date at all
+  const [recsSubjectFilter, setRecsSubjectFilter] = useState('')
   const [mistakes,     setMistakes]     = useState([])
   const [topics,       setTopics]       = useState([])
   const [selected,     setSelected]     = useState(null)
@@ -388,9 +391,13 @@ export default function Calendar() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
 
-  const recommendations = recsEnabled
+  const recommendations = (recsEnabled && (isPro || isBeta))
     ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
     : []
+  const filteredRecommendations = recsSubjectFilter
+    ? recommendations.filter(r => r.subject === recsSubjectFilter)
+    : recommendations
+  const recSubjectOptions = [...new Set(recommendations.map(r => r.subject))]
   const unresolvedMistakes = mistakes.filter(m => !m.resolved)
 
   return (
@@ -541,7 +548,7 @@ export default function Calendar() {
               <span className="rf-cal-legend-swatch"><span style={{width:7,height:7,borderRadius:'50%',background:'currentColor',display:'block',opacity:0.4}}/></span>
               Completed
             </span>
-            {recsEnabled && recsOnGrid && (
+            {recsEnabled && recsOnGrid && recommendations.length > 0 && (
               <span className="rf-cal-legend-item">
                 <span className="rf-cal-legend-swatch"><Lightbulb size={12}/></span>
                 Suggested (today only)
@@ -646,33 +653,56 @@ export default function Calendar() {
           the calendar when the student explicitly clicks "Schedule" and confirms the modal. */}
       <div className="card rf-recs-panel">
         <div className="rf-recs-head">
-          <h4><Lightbulb size={16} color="var(--accent)"/> Recommended topics</h4>
-          <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
-            <label className="rf-recs-toggle">
-              <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
-              Show recommendations
-            </label>
-            {recsEnabled && (
+          <h4><Lightbulb size={16} color="var(--accent)"/> Recommended topics {(isPro || isBeta) && <ProBadge style={{marginLeft:2}}/>}</h4>
+          {(isPro || isBeta) && (
+            <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
               <label className="rf-recs-toggle">
-                <input type="checkbox" checked={recsOnGrid} onChange={e=>handleToggleRecsOnGrid(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
-                Show on today's date
+                <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+                Show recommendations
               </label>
-            )}
-          </div>
+              {recsEnabled && (
+                <label className="rf-recs-toggle">
+                  <input type="checkbox" checked={recsOnGrid} onChange={e=>handleToggleRecsOnGrid(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+                  Show on today's date
+                </label>
+              )}
+            </div>
+          )}
         </div>
-        {recsEnabled && (
+        {!(isPro || isBeta) ? (
+          <div className="empty-state" style={{padding:'20px 0'}}>
+            <Lightbulb size={26} style={{opacity:0.35}}/>
+            <p style={{fontSize:'0.85rem',fontWeight:600}}>Recommended topics is a Pro feature</p>
+            <p style={{fontSize:'0.8rem',maxWidth:340,textAlign:'center'}}>
+              Get personalised topic suggestions based on your confidence ratings, exam dates and logged mistakes.
+            </p>
+            <Link to="/pro" className="btn btn-primary btn-sm"><Lock size={13}/> Upgrade to Pro</Link>
+          </div>
+        ) : recsEnabled && (
           <>
             <p className="rf-recs-sub">Based on your confidence ratings, exam dates and logged mistakes — recalculated live, and nothing is added to your calendar unless you choose to. {recsOnGrid && "Today's top picks also show as dashed suggestions on the calendar itself."}</p>
+            {recSubjectOptions.length > 1 && (
+              <div style={{marginBottom:12}}>
+                <select className="select" style={{width:'auto',fontSize:'0.8rem'}} value={recsSubjectFilter} onChange={e=>setRecsSubjectFilter(e.target.value)}>
+                  <option value="">All subjects</option>
+                  {recSubjectOptions.map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
             {loading ? (
               <div className="rf-recs-grid">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>
-            ) : recommendations.length === 0 ? (
+            ) : filteredRecommendations.length === 0 ? (
               <div className="empty-state" style={{padding:'18px 0'}}>
                 <CheckCircle2 size={26} style={{opacity:0.35}}/>
-                <p style={{fontSize:'0.85rem'}}>Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.</p>
+                <p style={{fontSize:'0.85rem'}}>
+                  {recommendations.length === 0
+                    ? 'Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.'
+                    : 'No recommendations for that subject right now.'}
+                </p>
               </div>
             ) : (
               <div className="rf-recs-grid">
-                {recommendations.map(rec=>(
+                {filteredRecommendations.map(rec=>(
                   <div key={rec.id} className="rf-rec-card">
                     <div className="rf-rec-card-top">
                       <div className="rf-rec-icon" style={{background:subjectColour(rec.subject)}}>
