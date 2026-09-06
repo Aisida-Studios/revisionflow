@@ -1,0 +1,275 @@
+/* src/pages/AccountPages.css
+   Shared stylesheet for the "account & social" page cluster: AIAdvisor, Friends,
+   Leaderboard, Profile, Settings, Pro, Help and PublicProfile. This brings all
+   eight pages into the same visual language already established by Landing,
+   Dashboard and globals.css — every colour/radius/shadow/type value below reads
+   an existing token from styles/globals.css, nothing here redefines a shared
+   primitive. Classes are prefixed ap- (Account Pages) to avoid any collision
+   with existing global class names. Imported by all eight page files above. */
+
+/* ── Shared page shell ─────────────────────────────────────────────────────
+   Every page gets a centred column; width varies by content type (a settings
+   form reads better narrow, a chat or FAQ page wants more room). Set via a
+   modifier class rather than inline styles so it stays easy to scan/change. */
+.ap-page { margin: 0 auto; }
+.ap-page--narrow  { max-width: 640px; }   /* Settings */
+.ap-page--md       { max-width: 720px; }  /* Friends, Leaderboard, Profile */
+.ap-page--wide     { max-width: 780px; }  /* Help */
+.ap-page--chat     { max-width: 920px; }  /* AI Advisor */
+
+.ap-page-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.ap-page-head h2 { margin: 0; }
+.ap-page-sub { margin: 4px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ── Avatar chip — used by Friends / Leaderboard / Profile / PublicProfile ── */
+.ap-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 50%; background: var(--brand-gradient); color: #fff;
+  font-weight: 800; letter-spacing: -0.01em; overflow: hidden;
+}
+.ap-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ap-avatar--sm { width: 36px;  height: 36px;  font-size: 0.85rem; }
+.ap-avatar--md { width: 44px;  height: 44px;  font-size: 1rem; }
+.ap-avatar--lg { width: 64px;  height: 64px;  font-size: 1.4rem; }
+.ap-avatar--xl { width: 92px;  height: 92px;  font-size: 2rem; }
+
+/* ── Person row — Friends list, friend requests, leaderboard rows ─────────
+   A roomier, dividing-line version of globals.css's .plain-row: these pages
+   are a list of people as the primary content, not a compact dashboard
+   widget, so the row can afford more breathing room and a visible divider
+   instead of relying on hover alone. */
+.ap-person-list { display: flex; flex-direction: column; }
+.ap-person-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 6px; border-bottom: 1.5px solid var(--border);
+}
+.ap-person-list > .ap-person-row:last-child { border-bottom: none; }
+.ap-person-row:hover { background: var(--bg-hover); border-radius: var(--r-md); }
+.ap-person-main { flex: 1; min-width: 0; }
+.ap-person-name {
+  font-weight: 700; font-size: 0.92rem; display: flex; align-items: center; gap: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ap-person-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 1px; }
+.ap-person-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+
+/* ── Rank badge — Leaderboard only, restrained (no medal emoji) ──────────── */
+.ap-rank {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-weight: 800; font-size: 0.85rem; color: var(--text-muted); background: var(--bg-hover);
+}
+.ap-rank--1 { background: var(--gold-pale); color: var(--gold); border: 1.5px solid var(--gold-border); }
+.ap-rank--2 { background: var(--bg-muted); color: var(--text-secondary); border: 1.5px solid var(--border-strong); }
+.ap-rank--3 { background: var(--warning-pale); color: var(--warning); border: 1.5px solid var(--warning-border); }
+.ap-row--me { background: var(--accent-pale); border-radius: var(--r-md); }
+.ap-row--me:hover { background: var(--accent-pale); }
+
+/* ── Badge chip grid — Profile / PublicProfile earned badges ─────────────── */
+.ap-badge-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.ap-badge-chip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 68px; padding: 10px 4px; border-radius: var(--r-lg);
+  background: var(--bg-hover); border: 1.5px solid transparent; text-align: center;
+}
+.ap-badge-chip-icon { font-size: 1.5rem; line-height: 1; }
+.ap-badge-chip-name { font-size: 0.62rem; font-weight: 700; color: var(--text-secondary); line-height: 1.2; }
+.ap-badge-chip--locked { opacity: 0.4; filter: grayscale(1); }
+.ap-badge-chip--earned { background: var(--accent-pale); border-color: var(--border-strong); }
+
+/* Larger badge tile — Profile's full badge browser (name + desc + status).
+   Distinct from .ap-badge-chip above, which is a compact icon-only chip used
+   where only earned badges are ever shown (PublicProfile). */
+.ap-badge-tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.ap-badge-tile {
+  padding: 10px; border-radius: var(--r-md); text-align: center;
+  border: 1.5px solid var(--border); background: var(--bg-hover);
+  transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.ap-badge-tile:hover { transform: translateY(-2px); }
+.ap-badge-tile--earned { border-color: var(--success-border); background: var(--success-pale); }
+.ap-badge-tile-icon { font-size: 1.5rem; margin-bottom: 4px; }
+.ap-badge-tile-icon--locked { opacity: 0.35; }
+.ap-badge-tile-name { font-weight: 650; font-size: 0.78rem; line-height: 1.25; color: var(--text-primary); }
+.ap-badge-tile-name--locked { color: var(--text-muted); }
+.ap-badge-tile-desc { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
+.ap-badge-tile-status {
+  margin-top: 5px; font-size: 0.68rem; font-weight: 700; display: flex;
+  align-items: center; justify-content: center; gap: 3px;
+}
+
+/* ── Settings rows — flatter grouped list, no nested cards ───────────────── */
+.ap-settings-group { display: flex; flex-direction: column; }
+.ap-settings-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 4px; border-bottom: 1.5px solid var(--border); flex-wrap: wrap;
+}
+.ap-settings-group > .ap-settings-row:last-child { border-bottom: none; }
+.ap-settings-row-main { flex: 1; min-width: 200px; }
+.ap-settings-row-title { font-weight: 700; font-size: 0.9rem; }
+.ap-settings-row-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+.ap-settings-section-label {
+  font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); margin: 26px 0 4px;
+}
+.ap-settings-group + .ap-settings-section-label,
+.ap-page > .ap-settings-section-label:first-child { margin-top: 4px; }
+
+/* Toggle switch — reused by Notifications + Privacy tabs */
+.ap-toggle { position: relative; display: inline-block; width: 42px; height: 25px; flex-shrink: 0; }
+.ap-toggle input { opacity: 0; width: 0; height: 0; }
+.ap-toggle-track {
+  position: absolute; inset: 0; border-radius: var(--r-full); cursor: pointer;
+  background: var(--border-strong); transition: background var(--dur) var(--ease);
+}
+.ap-toggle-track::before {
+  content: ''; position: absolute; width: 19px; height: 19px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: transform var(--dur) var(--ease);
+  box-shadow: var(--shadow-xs);
+}
+.ap-toggle input:checked + .ap-toggle-track { background: var(--accent); }
+.ap-toggle input:checked + .ap-toggle-track::before { transform: translateX(17px); }
+.ap-toggle input:focus-visible + .ap-toggle-track { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.ap-danger-zone { border: 1.5px solid var(--danger-border); border-radius: var(--r-lg); padding: 14px 16px; }
+
+/* Subject editor row — wraps cleanly at 320px instead of overflowing */
+.ap-subject-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 14px 4px; border-bottom: 1.5px solid var(--border);
+}
+.ap-settings-group > .ap-subject-row:last-child { border-bottom: none; }
+.ap-subject-row-id { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 160px; }
+.ap-subject-row-name { font-weight: 700; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-subject-row-grades { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── Chat shell — AI Advisor "Chat" tab ───────────────────────────────────── */
+.ap-chat-shell {
+  display: flex; flex-direction: column;
+  height: min(640px, 68vh); min-height: 420px;
+  background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.ap-chat-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.ap-chat-msg { display: flex; gap: 10px; max-width: 88%; }
+.ap-chat-msg--user { align-self: flex-end; flex-direction: row-reverse; }
+.ap-chat-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-pale); color: var(--accent);
+}
+.ap-chat-msg--user .ap-chat-avatar { background: var(--bg-hover); color: var(--text-secondary); }
+.ap-chat-bubble {
+  padding: 11px 15px; border-radius: var(--r-lg); font-size: 0.9rem; line-height: 1.6;
+  background: var(--bg-hover); color: var(--text-primary); min-width: 0;
+}
+.ap-chat-msg--user .ap-chat-bubble { background: var(--accent); color: #fff; }
+.ap-chat-msg--user .ap-chat-bubble :is(strong,b) { color: #fff; }
+
+.ap-chat-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 14px; padding: 24px;
+}
+.ap-chat-empty-icon {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--accent-pale); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.ap-chat-chip {
+  padding: 8px 14px; border-radius: var(--r-full); border: 1.5px solid var(--border);
+  background: var(--bg-surface); color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all var(--dur) var(--ease);
+}
+.ap-chat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-pale); }
+
+.ap-chat-inputbar {
+  display: flex; align-items: flex-end; gap: 8px; padding: 12px;
+  border-top: 1.5px solid var(--border); background: var(--bg-surface); flex-shrink: 0;
+}
+.ap-chat-inputbar textarea {
+  flex: 1; resize: none; border: none; background: transparent; font-family: var(--font);
+  font-size: 0.9rem; color: var(--text-primary); padding: 9px 10px; max-height: 120px; outline: none;
+}
+.ap-chat-inputbar textarea::placeholder { color: var(--text-muted); }
+
+.ap-typing-dots { display: inline-flex; gap: 3px; align-items: center; padding: 4px 0; }
+.ap-typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+  animation: ap-typing 1.2s ease-in-out infinite;
+}
+.ap-typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.ap-typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ap-typing { 0%,60%,100% { opacity:0.3; transform:translateY(0); } 30% { opacity:1; transform:translateY(-3px); } }
+
+/* ── Advisor tool tabs (predict / next / resources / plan / techniques) ──── */
+.ap-tool-layout { display: grid; grid-template-columns: minmax(0,300px) minmax(0,1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .ap-tool-layout { grid-template-columns: minmax(0,1fr); } }
+.ap-tool-output { min-height: 120px; }
+.ap-tool-output-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  gap: 10px; padding: 40px 20px; color: var(--text-muted); font-size: 0.85rem; min-height: 200px;
+}
+
+/* ── Pricing cards — Pro page ──────────────────────────────────────────────
+   Deliberately restrained: a border + small ribbon marks the recommended
+   plan, not a gradient wash, per the brand's "no purple SaaS gradient" rule. */
+.ap-pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; align-items: stretch; }
+@media (max-width: 640px) { .ap-pricing-grid { grid-template-columns: minmax(0,1fr); } }
+.ap-plan-card { display: flex; flex-direction: column; position: relative; }
+.ap-plan-card--featured { border-color: var(--gold-border); box-shadow: var(--shadow-md); }
+.ap-plan-ribbon {
+  position: absolute; top: -12px; left: 20px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; border-radius: var(--r-full);
+  background: var(--gold); color: #fff; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.03em;
+}
+.ap-plan-price { display: flex; align-items: baseline; gap: 4px; margin: 10px 0 2px; }
+.ap-plan-price-num { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; }
+.ap-plan-price-period { color: var(--text-muted); font-size: 0.85rem; }
+.ap-plan-features { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; flex: 1; }
+.ap-plan-feature { display: flex; align-items: flex-start; gap: 9px; font-size: 0.87rem; color: var(--text-secondary); line-height: 1.4; }
+.ap-plan-feature-icon { flex-shrink: 0; margin-top: 1px; }
+
+/* ── FAQ accordion + feature tiles — Help page ────────────────────────────── */
+.ap-faq-list { display: flex; flex-direction: column; gap: 8px; }
+.ap-faq-item { border-radius: var(--r-lg); border: 1.5px solid var(--border); background: var(--bg-card); overflow: hidden; }
+.ap-faq-question {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px; background: transparent; border: none; cursor: pointer;
+  font-family: var(--font); font-weight: 650; font-size: 0.88rem; color: var(--text-primary); text-align: left;
+}
+.ap-faq-answer { padding: 0 16px 16px; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.7; border-top: 1.5px solid var(--border); padding-top: 14px; }
+
+.ap-feature-tile { display: flex; flex-direction: column; gap: 6px; }
+.ap-feature-tile-icon { width: 36px; height: 36px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; }
+
+/* ── Public profile brand mark — mirrors Landing.jsx's .lp-logo exactly,
+   redefined locally so PublicProfile.jsx never has to import Landing.css. ── */
+.pp-logo { display: flex; align-items: center; gap: 10px; }
+.pp-logo-mark {
+  width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--accent);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.pp-logo-word { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); }
+.pp-logo-word span { color: var(--accent-light); }
+
+/* ── Search input with a leading icon (matches the reference input field) ── */
+.ap-search-wrap { position: relative; flex: 1; min-width: 0; }
+.ap-search-wrap .input { padding-left: 40px; }
+.ap-search-wrap > svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+
+/* ── Small helpers shared across the cluster ──────────────────────────────── */
+.ap-icon-circle {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 40px; height: 40px; border-radius: 50%; background: var(--accent-pale); color: var(--accent);
+}
+@media (max-width: 480px) {
+  .ap-page-head { gap: 10px; }
+  .ap-avatar--lg { width: 56px; height: 56px; font-size: 1.2rem; }
+  .ap-avatar--xl { width: 76px; height: 76px; font-size: 1.7rem; }
+  .ap-chat-shell { height: min(560px, 72vh); }
+  .ap-chat-msg { max-width: 94%; }
+}
