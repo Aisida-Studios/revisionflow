@@ -138,11 +138,14 @@ export default function PastPapers() {
   const [showAdd, setShowAdd] = useState(false)
   const [editEntry, setEditEntry] = useState(null)
   const [showQPrompt, setShowQPrompt] = useState(null)
+  const [backfillQueue, setBackfillQueue] = useState(null) // null = not backfilling; array of attempts still to go
+  const [backfillTotal, setBackfillTotal] = useState(0)
   const [detailAttempt, setDetailAttempt] = useState(null)
   const [boundaryEditor, setBoundaryEditor] = useState(null)
   const [analysis, setAnalysis] = useState('')
   const [analysing, setAnalysing] = useState(false)
   const [recalculating, setRecalculating] = useState(false)
+  const [recalcProgress, setRecalcProgress] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -183,6 +186,10 @@ export default function PastPapers() {
     return [...list].sort((a, b) => (attemptDateOf(b) || 0) - (attemptDateOf(a) || 0))
   }, [currentAttempts, selSubject, search])
 
+  const attemptsMissingBreakdown = useMemo(() =>
+    [...currentAttempts].filter(a => !a.questionMarks?.length).sort((a, b) => (attemptDateOf(b) || 0) - (attemptDateOf(a) || 0))
+  , [currentAttempts])
+
   async function handleDelete(id) {
     if (!window.confirm('Delete this paper attempt? This cannot be undone.')) return
     await deletePaperAttempt(user.uid, id)
@@ -194,9 +201,32 @@ export default function PastPapers() {
   async function handleSaveQuestionMarks(attemptId, questionMarks) {
     await updatePaperAttempt(user.uid, attemptId, { questionMarks })
     setAttempts(prev => prev.map(a => a.id === attemptId ? { ...a, questionMarks } : a))
-    setShowQPrompt(null)
     setDetailAttempt(prev => (prev && prev.id === attemptId) ? { ...prev, questionMarks } : prev)
-    toast.success('Performance by topic saved')
+  }
+
+  // Guided flow for adding topic breakdowns to several already-logged papers in one go, without
+  // fabricating any of the per-question data itself — the student still enters real marks for
+  // each paper, this just removes the friction of finding and opening each one individually.
+  function startBackfill(list) {
+    if (!list.length) return
+    setBackfillTotal(list.length)
+    setBackfillQueue(list.slice(1))
+    setShowQPrompt(list[0])
+  }
+  function advanceBackfill() {
+    if (backfillQueue === null) { setShowQPrompt(null); return }
+    if (backfillQueue.length === 0) {
+      setBackfillQueue(null)
+      setShowQPrompt(null)
+      toast.success('All done — topic breakdowns updated')
+      return
+    }
+    setShowQPrompt(backfillQueue[0])
+    setBackfillQueue(backfillQueue.slice(1))
+  }
+  function stopBackfill() {
+    setBackfillQueue(null)
+    setShowQPrompt(null)
   }
 
   // One-off fix-up for attempts logged before the grade calculation bug was fixed (it was
@@ -209,8 +239,10 @@ export default function PastPapers() {
     setRecalculating(true)
     let changed = 0
     try {
-      for (const a of currentAttempts) {
-        if (a.percentage == null) continue
+      const scored = currentAttempts.filter(a => a.percentage != null)
+      for (let i = 0; i < scored.length; i++) {
+        const a = scored[i]
+        setRecalcProgress({ current: i + 1, total: scored.length })
         const qual = a.qualification || profile?.subjects?.find(s => s.name === a.subject)?.qualification
         const bounds = await getMergedBoundaries(a.board, a.subject, a.tier === 'N/A' ? null : a.tier, a.year, qual)
         const newGrade = bounds?.boundaries ? gradeFromBoundaries(a.percentage, bounds) : null
@@ -226,6 +258,7 @@ export default function PastPapers() {
       toast.error('Could not recalculate: ' + e.message)
     } finally {
       setRecalculating(false)
+      setRecalcProgress(null)
     }
   }
 
@@ -259,7 +292,7 @@ export default function PastPapers() {
         </div>
         <div className="papers-header-actions">
           <button className="btn btn-secondary" onClick={handleRecalculateGrades} disabled={recalculating}>
-            {recalculating ? 'Recalculating…' : 'Recalculate grades'}
+            {recalculating ? `Recalculating… ${recalcProgress ? `(${recalcProgress.current}/${recalcProgress.total})` : ''}` : 'Recalculate grades'}
           </button>
           <button className="btn btn-secondary" onClick={() => setBoundaryEditor({})}>Grade boundaries</button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Log a paper</button>
@@ -280,7 +313,11 @@ export default function PastPapers() {
               <div className="papers-subject-card-val" style={{ color: SUBJECT_COLOURS?.[s.name] || 'var(--accent)' }}>{s.avg}%</div>
               <div className="papers-subject-card-meta">
                 {s.count} paper{s.count !== 1 ? 's' : ''}
-                {s.trend !== null && <span style={{ color: s.trend >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700, marginLeft: 6 }}>{s.trend >= 0 ? '+' : ''}{s.trend}%</span>}
+                {s.trend !== null ? (
+                  <span style={{ color: s.trend >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700, marginLeft: 6 }}>{s.trend >= 0 ? '+' : ''}{s.trend}%</span>
+                ) : s.count < 4 ? (
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 6 }} title="A trend appears once you've logged 4 or more papers for this subject">· trend at 4+</span>
+                ) : null}
               </div>
             </div>
           ))}
@@ -294,6 +331,15 @@ export default function PastPapers() {
       </div>
 
       {tab === 'attempts' && (<>
+        {attemptsMissingBreakdown.length > 0 && (
+          <div className="papers-backfill-banner">
+            <Brain size={16} />
+            <span>
+              <strong>{attemptsMissingBreakdown.length}</strong> paper{attemptsMissingBreakdown.length !== 1 ? 's' : ''} {attemptsMissingBreakdown.length !== 1 ? "don't" : "doesn't"} have a topic breakdown yet
+            </span>
+            <button className="btn btn-secondary btn-sm" onClick={() => startBackfill(attemptsMissingBreakdown)}>Add them now</button>
+          </div>
+        )}
         <div className="papers-filter-row">
           <div className="papers-search">
             <Search size={15} />
@@ -400,9 +446,15 @@ export default function PastPapers() {
 
       {showQPrompt && (
         <QuestionMarksModal
+          key={showQPrompt.id}
           attempt={showQPrompt}
-          onSkip={() => setShowQPrompt(null)}
-          onSave={(marks) => handleSaveQuestionMarks(showQPrompt.id, marks)}
+          progress={backfillQueue !== null ? { current: backfillTotal - backfillQueue.length, total: backfillTotal } : null}
+          onSkip={() => backfillQueue !== null ? advanceBackfill() : setShowQPrompt(null)}
+          onClose={stopBackfill}
+          onSave={async (marks) => {
+            await handleSaveQuestionMarks(showQPrompt.id, marks)
+            if (backfillQueue !== null) { advanceBackfill() } else { toast.success('Performance by topic saved'); setShowQPrompt(null) }
+          }}
         />
       )}
 
@@ -489,10 +541,12 @@ function PaperDetailModal({ attempt, previous, topics, onClose, onEdit, onDelete
             <div className="paper-detail-score-big" style={{ color: attempt.grade ? gradeColour(attempt.grade) : 'var(--text-primary)' }}>
               {attempt.percentage != null ? `${Math.round(attempt.percentage)}%` : '–'}
             </div>
-            {trendPts !== null && (
-              <span className="analytics-trend" style={{ color: trendPts >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+            {trendPts !== null ? (
+              <span className="paper-trend" style={{ color: trendPts >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                 {trendPts >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {trendPts >= 0 ? '+' : ''}{trendPts}% from last attempt
               </span>
+            ) : (
+              <span className="paper-trend" style={{ color: 'var(--text-muted)' }}>First logged attempt for this subject</span>
             )}
           </div>
           <div className="paper-detail-score-stats">
@@ -760,7 +814,7 @@ function EditEntryModal({ attempt, onClose, onSave }) {
 }
 
 // ── Question-by-question marks modal ─────────────────────────────────────────
-function QuestionMarksModal({ attempt, onSkip, onSave }) {
+function QuestionMarksModal({ attempt, onSkip, onClose, onSave, progress }) {
   const existing = attempt.questionMarks?.length ? attempt.questionMarks : null
   const [count, setCount] = useState(existing?.length || 10)
   const [rows, setRows] = useState(() =>
@@ -791,12 +845,18 @@ function QuestionMarksModal({ attempt, onSkip, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onSkip}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Performance by topic</h3>
-          <button className="btn-icon" onClick={onSkip}><X size={18} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <h3 className="modal-title">Performance by topic</h3>
+            {progress && <span className="badge badge-grey">{progress.current} of {progress.total}</span>}
+          </div>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
+        <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 4 }}>
+          {attempt.subject} · {attempt.board} Paper {attempt.paper} ({attempt.year})
+        </p>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14 }}>
           Enter the marks available and marks scored for each question, and which topic it tested. This powers the "performance by topic" and weak-topic breakdown for this paper — skip it and add it later any time from the paper's detail view.
         </p>
@@ -821,7 +881,7 @@ function QuestionMarksModal({ attempt, onSkip, onSave }) {
           <datalist id={listId}>{suggestions.map((s, i) => <option key={i} value={s} />)}</datalist>
         )}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button className="btn btn-secondary" onClick={onSkip}>Skip for now</button>
+          <button className="btn btn-secondary" onClick={onSkip}>{progress ? 'Skip this one' : 'Skip for now'}</button>
           <button className="btn btn-primary" onClick={submit}><Check size={15} /> Save breakdown</button>
         </div>
       </div>
