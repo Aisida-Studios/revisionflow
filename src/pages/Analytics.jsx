@@ -125,7 +125,7 @@ function TrendChip({ value, format: fmt, period = 'last month' }) {
   return <span className={`analytics-trend ${cls}`}><Icon size={12} /> {fmt(value)} vs {period}</span>
 }
 
-function StatHero({ icon, label, value, loading, trend, spark }) {
+function StatHero({ icon, label, value, loading, trend, spark, emptyHint }) {
   return (
     <div className="card analytics-stat-card">
       <div className="analytics-stat-top">
@@ -136,7 +136,7 @@ function StatHero({ icon, label, value, loading, trend, spark }) {
         {loading ? <Skeleton height={28} width={70} /> : value}
       </div>
       <div className="analytics-stat-foot">
-        {loading ? <Skeleton height={14} width={90} /> : (trend || <span />)}
+        {loading ? <Skeleton height={14} width={90} /> : (trend || (emptyHint && <span className="analytics-trend is-flat">{emptyHint}</span>) || <span />)}
         {!loading && spark}
       </div>
     </div>
@@ -567,12 +567,15 @@ export default function Analytics() {
       <div className="analytics-hero">
         <StatHero icon={<Clock size={15} />} label="Study time" value={fmtMins(totalMinutes)}
           trend={<TrendChip value={studyTimeTrend} format={v => `${v > 0 ? '+' : ''}${v}%`} />}
+          emptyHint="Not enough history yet"
           spark={<Sparkline id="study" data={last10Weeks.map(w => ({ v: w.mins }))} />} />
         <StatHero icon={<Award size={15} />} label="Average grade" value={avgGrade != null ? `${avgGrade}%` : '–'}
           trend={<TrendChip value={avgGradeTrend} format={v => `${v > 0 ? '+' : ''}${v} pts`} />}
+          emptyHint="Not enough history yet"
           spark={<Sparkline id="grade" data={gradeSpark} colour="var(--info)" />} />
         <StatHero icon={<Brain size={15} />} label="Topic confidence" value={avgConfidencePct != null ? `${avgConfidencePct}%` : '–'}
           trend={<TrendChip value={confidenceTrend} format={v => `${v > 0 ? '+' : ''}${v} pts`} />}
+          emptyHint="Not enough history yet"
           spark={<ConfDistribution counts={confidenceCounts} />} />
         <StatHero icon={<Activity size={15} />} label="Sessions completed" value={completedSessions.length}
           trend={<TrendChip value={sessionsMonthDelta} format={v => `${v > 0 ? '+' : ''}${v}`} />}
