@@ -73,6 +73,8 @@ export default function Profile() {
   const earnedIds      = profile?.badges || []
   const unlockedBadges = BADGE_LIST.filter(b => earnedIds.includes(b.id))
   const iconEmoji      = resolveProfileIcon(profile?.profileIcon).emoji
+  const [avatarError, setAvatarError] = useState(false)
+  const hasRealAvatar  = !!profile?.avatarUrl && !avatarError
 
   // Detect streak milestones and prompt to share
   useEffect(() => {
@@ -253,8 +255,10 @@ export default function Profile() {
 
       {/* ── Header card ── */}
       <div className="card accent-card" style={{ marginBottom: 20, padding: 28, textAlign: 'center' }}>
-        <div className="ap-avatar ap-avatar--xl" style={{ margin: '0 auto 14px', fontSize: iconEmoji ? '2.4rem' : undefined }}>
-          {iconEmoji || (profile?.displayName || 'U')[0].toUpperCase()}
+        <div className="ap-avatar ap-avatar--xl" style={{ margin: '0 auto 14px', fontSize: (!hasRealAvatar && iconEmoji) ? '2.4rem' : undefined }}>
+          {hasRealAvatar
+            ? <img src={profile.avatarUrl} alt="" onError={() => setAvatarError(true)} />
+            : (iconEmoji || (profile?.displayName || 'U')[0].toUpperCase())}
         </div>
 
         <h2 style={{ marginBottom: 4, display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
