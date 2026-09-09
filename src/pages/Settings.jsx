@@ -163,7 +163,7 @@ export default function Settings() {
     <div className="fade-in ap-page ap-page--narrow">
       <h2 style={{ marginBottom: 24 }}>Settings</h2>
 
-      <div className="tabs" style={{ marginBottom: 20 }}>
+      <div className="tabs tabs--scroll" style={{ marginBottom: 20 }}>
         {TAB_DEFS.map(({ key, label, icon: Icon }) => (
           <button key={key} className={`tab${tab === key ? ' active' : ''}`} onClick={() => setTab(key)}>
             <Icon size={13} /> {label}
