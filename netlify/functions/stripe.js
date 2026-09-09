@@ -2,8 +2,20 @@
 // CommonJS — netlify/functions/package.json has "type":"commonjs"
 //
 // Handles two things:
-//   POST /api/stripe  { action:'create-checkout', uid, plan }  → returns { url }
-//   POST /api/stripe  { action:'webhook' }                     → Stripe webhook handler
+//   POST /api/stripe  { action:'create-portal' | 'create-checkout', plan }  → returns { url }
+//   POST /api/stripe  (Stripe webhook, identified by the stripe-signature header)
+//
+// SECURITY MODEL:
+//   'create-portal' and 'create-checkout' require a valid Firebase ID token in the
+//   Authorization header — verifyUserToken() below decodes it and that uid (never a
+//   client-supplied uid field) is the only uid used. Previously uid came straight from
+//   the request body, so anyone who knew or guessed another user's Firebase uid could
+//   open THAT PERSON'S Stripe billing portal (view invoices, change card, cancel) or
+//   start a subscription tied to their account. This mirrors the verifyIdToken pattern
+//   already used correctly in admin.js/friends.js.
+//   The webhook path is unaffected by this — it's authenticated separately via Stripe's
+//   own signature verification (stripe.webhooks.constructEvent), which is unrelated to
+//   Firebase auth and stays exactly as it was.
 //
 // Required Netlify env vars:
 //   STRIPE_SECRET_KEY          — sk_live_... (or sk_test_... for testing)
@@ -30,10 +42,21 @@ function respond(status, body) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
     body: JSON.stringify(body),
   }
+}
+
+// ── Auth verification ─────────────────────────────────────────────────────────
+// Extracts the Bearer token from the Authorization header and verifies it with
+// Firebase Admin. Used only by the 'create-portal'/'create-checkout' actions below —
+// the webhook path is gated by Stripe's own signature check instead, not this.
+async function verifyUserToken(event) {
+  const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) throw new Error('No authorization token provided')
+  return admin.auth().verifyIdToken(token)
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -68,12 +91,19 @@ module.exports.handler = async (event) => {
   let body
   try { body = JSON.parse(event.body || '{}') } catch { return respond(400, { error: 'Invalid JSON' }) }
 
-  const { action, uid, plan } = body
+  const { action, plan } = body
+
+  // ── Verify Firebase ID token — uid comes from here, never from the body ────
+  let decoded
+  try {
+    decoded = await verifyUserToken(event)
+  } catch (e) {
+    return respond(401, { error: 'Please sign in to manage your subscription.' })
+  }
+  const uid = decoded.uid
 
   // ── Create Customer Portal session ────────────────────────────────────────
   if (action === 'create-portal') {
-    if (!uid) return respond(400, { error: 'uid required' })
-
     const userDoc = await db.collection('users').doc(uid).get()
     const customerId = userDoc.data()?.stripeCustomerId
 
@@ -91,7 +121,7 @@ module.exports.handler = async (event) => {
 
   // ── Create Checkout session ────────────────────────────────────────────────
   if (action === 'create-checkout') {
-    if (!uid || !plan) return respond(400, { error: 'uid and plan required' })
+    if (!plan) return respond(400, { error: 'plan required' })
 
     const priceId = plan === 'annual'
       ? process.env.STRIPE_ANNUAL_PRICE_ID
