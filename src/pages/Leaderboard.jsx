@@ -11,9 +11,20 @@ import toast from 'react-hot-toast'
 import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 import './AccountPages.css'
 
-function Avatar({ icon, name }) {
-  const emoji = icon ? resolveProfileIcon(icon).emoji : null
+const PERIODS = [
+  { key: 'week',    label: 'This week' },
+  { key: 'month',   label: 'This month' },
+  { key: 'allTime', label: 'All time' },
+]
+const XP_FIELD = { week: 'xpThisWeek', month: 'xpThisMonth', allTime: 'xp' }
+
+function Avatar({ icon, name, avatarUrl }) {
+  const [imgError, setImgError] = useState(false)
+  const emoji  = icon ? resolveProfileIcon(icon).emoji : null
   const letter = (name || 'A')[0].toUpperCase()
+  if (avatarUrl && !imgError) {
+    return <div className="ap-avatar ap-avatar--md"><img src={avatarUrl} alt="" onError={() => setImgError(true)} /></div>
+  }
   return (
     <div className="ap-avatar ap-avatar--md" style={emoji ? { fontSize: '1.3rem' } : undefined}>
       {emoji || letter}
@@ -26,12 +37,12 @@ function RankBadge({ rank }) {
   return <span className={cls}>{rank + 1}</span>
 }
 
-function BoardRow({ entry, rank, isMe }) {
+function BoardRow({ entry, rank, isMe, xp }) {
   const name = entry.hideNameFromLeaderboard ? 'Anonymous' : (entry.displayName || 'Anonymous')
   return (
     <div className={`ap-person-row${isMe ? ' ap-row--me' : ''}`}>
       <RankBadge rank={rank} />
-      <Avatar icon={entry.profileIcon} name={name} />
+      <Avatar icon={entry.profileIcon} name={name} avatarUrl={entry.hideNameFromLeaderboard ? '' : entry.avatarUrl} />
       <div className="ap-person-main">
         <div className="ap-person-name" style={{ fontWeight: isMe ? 800 : 700 }}>
           {name} {isMe && <span style={{ fontSize: '0.7rem', color: 'var(--accent-light)', fontWeight: 700 }}>(you)</span>}
@@ -40,7 +51,7 @@ function BoardRow({ entry, rank, isMe }) {
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-light)' }}>
-          {(entry.xp || 0).toLocaleString()}
+          {(xp || 0).toLocaleString()}
         </div>
         <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>XP</div>
       </div>
@@ -51,8 +62,11 @@ function BoardRow({ entry, rank, isMe }) {
 export default function Leaderboard() {
   const { user, profile, refreshProfile } = useAuth()
   const [tab,          setTab]          = useState('friends')
+  const [period,       setPeriod]       = useState('allTime')
   const [friendsBoard, setFriendsBoard] = useState([])
-  const [globalBoard,  setGlobalBoard]  = useState([])
+  // Global board is a separate Firestore query per period (not just a re-sort), so it's cached
+  // per period key to avoid re-fetching every time someone flips back and forth.
+  const [globalCache,  setGlobalCache]  = useState({})
   const [loadingF,     setLoadingF]     = useState(true)
   const [loadingG,     setLoadingG]     = useState(false)
 
@@ -62,42 +76,48 @@ export default function Leaderboard() {
   useEffect(() => {
     if (!user || !profile) return
     setLoadingF(true)
+    // Fetched once — getLeaderboard returns xp/xpThisWeek/xpThisMonth together, so switching
+    // the period tab below just re-sorts this same data instead of re-fetching.
     getLeaderboard(friendUids, user.uid)
       .then(d => { setFriendsBoard(d || []); setLoadingF(false) })
       .catch(() => setLoadingF(false))
   }, [user, profile])
 
   useEffect(() => {
-    if (tab !== 'global' || globalBoard.length) return
+    if (tab !== 'global' || globalCache[period]) return
     setLoadingG(true)
-    getGlobalLeaderboard(100)
+    getGlobalLeaderboard(100, period)
       .then(d => {
-        setGlobalBoard(d || [])
+        setGlobalCache(c => ({ ...c, [period]: d || [] }))
         setLoadingG(false)
-        // Check top_three badge
-        const rank = (d || []).findIndex(u => u.uid === user?.uid)
-        if (rank >= 0 && rank < 3) {
-          checkAndAwardBadge(user.uid, 'top_three').catch(() => {})
+        // Check top_three badge (all-time board only — that's the one meant to matter for this)
+        if (period === 'allTime') {
+          const rank = (d || []).findIndex(u => u.uid === user?.uid)
+          if (rank >= 0 && rank < 3) checkAndAwardBadge(user.uid, 'top_three').catch(() => {})
         }
       })
       .catch(() => setLoadingG(false))
-  }, [tab])
+  }, [tab, period])
 
   async function toggleHideName() {
     const newVal = !(profile?.hideNameFromLeaderboard)
     await updateUserProfile(user.uid, { hideNameFromLeaderboard: newVal })
     await refreshProfile()
-    setGlobalBoard([]) // force reload
+    setGlobalCache({}) // force reload of every period
     toast.success(newVal ? 'You now appear as "Anonymous" on the global board' : 'Your name is visible again')
   }
 
-  const board        = tab === 'friends' ? friendsBoard : globalBoard
+  const xpField  = XP_FIELD[period]
+  const board    = tab === 'friends'
+    ? [...friendsBoard].sort((a, b) => (b[xpField] || 0) - (a[xpField] || 0))
+    : (globalCache[period] || [])
   const loading      = tab === 'friends' ? loadingF : loadingG
-  const myRank       = board.findIndex(u => u.uid === user?.uid)
-  const myEntry      = board[myRank]
-  const topBoard     = board.slice(0, 100)
-  const isHidden     = profile?.hideNameFromLeaderboard
-  const myRankColour = myRank === 0 ? 'var(--gold)' : myRank === 1 ? 'var(--text-secondary)' : myRank === 2 ? 'var(--warning)' : 'var(--text-primary)'
+  const myRank        = board.findIndex(u => u.uid === user?.uid)
+  const myEntry       = board[myRank]
+  const topBoard      = board.slice(0, 100)
+  const isHidden      = profile?.hideNameFromLeaderboard
+  const myRankColour  = myRank === 0 ? 'var(--gold)' : myRank === 1 ? 'var(--text-secondary)' : myRank === 2 ? 'var(--warning)' : 'var(--text-primary)'
+  const periodLabel   = PERIODS.find(p => p.key === period)?.label.toLowerCase() || 'all time'
 
   return (
     <div className="fade-in ap-page ap-page--md">
@@ -123,21 +143,35 @@ export default function Leaderboard() {
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700 }}>Your rank on the {tab === 'friends' ? 'friends' : 'global'} board</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {(myEntry.xp || 0).toLocaleString()} XP · <span className="streak-fire">🔥</span> {myEntry.streak || 0} day streak
+              {(myEntry[xpField] || 0).toLocaleString()} XP {periodLabel !== 'all time' ? `(${periodLabel})` : ''} · <span className="streak-fire">🔥</span> {myEntry.streak || 0} day streak
             </div>
           </div>
           {myRank === 0 && <Crown size={22} color="var(--gold)" />}
         </div>
       )}
 
-      {/* Tab bar */}
-      <div className="tabs" style={{ marginBottom: 16 }}>
+      {/* Scope: Friends / Global */}
+      <div className="tabs" style={{ marginBottom: 10 }}>
         <button className={'tab' + (tab === 'friends' ? ' active' : '')} onClick={() => setTab('friends')}>
           <Users size={14} /> Friends
         </button>
         <button className={'tab' + (tab === 'global' ? ' active' : '')} onClick={() => setTab('global')}>
           <Globe size={14} /> Global
         </button>
+      </div>
+
+      {/* Period: This week / This month / All time — secondary to the scope tabs above */}
+      <div className="tabs" style={{ marginBottom: 16, padding: 3, background: 'transparent', border: 'none' }}>
+        {PERIODS.map(p => (
+          <button
+            key={p.key}
+            className={'tab' + (period === p.key ? ' active' : '')}
+            onClick={() => setPeriod(p.key)}
+            style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {/* Board */}
@@ -161,13 +195,13 @@ export default function Leaderboard() {
           {tab === 'friends' ? (
             <>
               <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Users size={26} /></div>
-              <p>No friends yet — add friends to see them here!</p>
-              <Link to="/friends" className="btn btn-primary btn-sm">Find friends</Link>
+              <p>{period === 'allTime' ? 'No friends yet — add friends to see them here!' : `No friend XP logged ${periodLabel} yet.`}</p>
+              {period === 'allTime' && <Link to="/friends" className="btn btn-primary btn-sm">Find friends</Link>}
             </>
           ) : (
             <>
               <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Globe size={26} /></div>
-              <p>Global board loading…</p>
+              <p>{period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet — be the first!`}</p>
             </>
           )}
         </div>
@@ -180,6 +214,7 @@ export default function Leaderboard() {
                 entry={entry}
                 rank={idx}
                 isMe={entry.uid === user?.uid}
+                xp={entry[xpField]}
               />
             ))}
           </div>
