@@ -479,6 +479,19 @@ code {
   color: var(--accent);
 }
 
+/* .tabs--scroll: opt-in for tab bars with enough items that they don't comfortably fit one
+   row (e.g. 6 tabs with icons on a narrow page) — scrolls horizontally instead of wrapping, so
+   no tab ever drops to an orphaned second line. Default .tabs/.tab behaviour (wrap, grow to
+   fill) is unchanged for every existing 2-4 item tab bar. */
+.tabs--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs--scroll::-webkit-scrollbar { display: none; }
+.tabs--scroll .tab { flex: 0 0 auto; }
+
 /* ── Divider ─────────────────────────────────────────────────────────────── */
 .divider { height: 2px; background: var(--border); border-radius: 99px; margin: 20px 0; }
 
@@ -506,6 +519,15 @@ code {
   box-shadow: var(--shadow-xl);
   animation: modalIn 0.28s var(--ease-out);
 }
+/* Used across ~15 modal components (Settings, AIAdvisor, Calendar, Study, Topics, Login and
+   more) but never previously defined here — every modal header in the app was rendering
+   unstyled. Deliberately minimal: just the header row + title weight/size, since modal bodies
+   vary too much to standardise further. */
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 16px;
+}
+.modal-title { font-weight: 700; font-size: 1.05rem; color: var(--text-primary); }
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.96) translateY(12px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -788,6 +810,21 @@ tr:hover td { background:var(--bg-hover); }
 
 .checklist-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0; }
 .badge-showcase { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Earned-badge emoji chip in the showcase row above, and the small per-subject icon chip used
+   throughout Dashboard's subject overview list — both referenced in the JSX but not previously
+   defined anywhere, so both were rendering as bare unstyled inline text. */
+.badge-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; background: var(--bg-hover); border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.badge-icon--more { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); background: var(--bg-muted); }
+.subject-badge {
+  width: 28px; height: 28px; border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 
 /* ── Top row: next session (dominant) + Today / Streak ──────────────────── */
 .dash-top-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
@@ -796,8 +833,15 @@ tr:hover td { background:var(--bg-hover); }
 .next-session-card { position: relative; overflow: hidden; min-height: 200px; }
 .next-session-subject { margin: 2px 0 2px; font-size: 1.7rem; font-weight: 800; letter-spacing: -0.01em; max-width: 60%; }
 .next-session-topic { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.92rem; max-width: 60%; }
+.next-session-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .next-session-cta { margin-top: 16px; display: inline-flex; }
 .next-session-empty { max-width: 60%; }
+/* Streak card's title+freeze-badge row, and the Achievements card's level+XP row — same
+   space-between header pattern used inline elsewhere in Dashboard, given a real class since
+   both were referenced in the JSX without ever being defined. */
+.streak-card-head, .achievement-level-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;
+}
 .growth-illustration {
   position: absolute; right: 8px; bottom: 0; width: 170px; height: auto; pointer-events: none;
 }
