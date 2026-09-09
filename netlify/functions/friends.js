@@ -61,9 +61,37 @@ async function removeFriendPair(db, uidA, uidB) {
   await refB.update({ friends: admin.firestore.FieldValue.arrayRemove(uidA) })
 }
 
+// Mirrors currentWeekStart/currentMonthStart/xpPeriodPatch in src/utils/firestore.js —
+// duplicated here for the same reason BADGE_XP below is: this runs under the Admin SDK in a
+// separate Node runtime that can't import client-side firestore.js. Keep both copies in sync if
+// the period logic ever changes.
+function currentWeekStart(now = new Date()) {
+  const d = new Date(now)
+  const day = d.getDay()
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
+  return d.toISOString().slice(0, 10)
+}
+function currentMonthStart(now = new Date()) {
+  return now.toISOString().slice(0, 7) + '-01'
+}
+function xpPeriodPatch(admin, existingData, amount) {
+  const weekStart  = currentWeekStart()
+  const monthStart = currentMonthStart()
+  const inc = admin.firestore.FieldValue.increment(amount)
+  return {
+    xpWeekStart:  weekStart,
+    xpMonthStart: monthStart,
+    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? inc : amount,
+    xpThisMonth:  existingData?.xpMonthStart === monthStart ? inc : amount,
+  }
+}
+
 async function awardXP(db, uid, amount, reason) {
   const admin = await getAdmin()
-  await db.collection('users').doc(uid).update({ xp: admin.firestore.FieldValue.increment(amount) })
+  const ref   = db.collection('users').doc(uid)
+  const snap  = await ref.get()
+  const data  = snap.exists ? snap.data() : {}
+  await ref.update({ xp: admin.firestore.FieldValue.increment(amount), ...xpPeriodPatch(admin, data, amount) })
 }
 
 // Mirrors checkAndAwardBadge's 'first_friend' case in src/utils/firestore.js — duplicated
@@ -78,11 +106,13 @@ async function awardFirstFriendBadge(db, admin, uid) {
   const ref  = db.collection('users').doc(uid)
   const snap = await ref.get()
   if (!snap.exists) return
-  const earned = snap.data().badges || []
+  const data   = snap.data()
+  const earned = data.badges || []
   if (earned.includes('first_friend')) return
   await ref.update({
     badges: [...earned, 'first_friend'],
     xp:     admin.firestore.FieldValue.increment(BADGE_XP.first_friend),
+    ...xpPeriodPatch(admin, data, BADGE_XP.first_friend),
   })
 }
 
