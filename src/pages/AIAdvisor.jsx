@@ -224,6 +224,8 @@ export default function AIAdvisor() {
 
   const subjects = profile?.subjects?.map(s=>s.name)||[]
   const initial  = (profile?.displayName || 'U')[0].toUpperCase()
+  const [avatarError, setAvatarError] = useState(false)
+  const hasRealAvatar = !!profile?.avatarUrl && !avatarError
 
   return (
     <div className="fade-in ap-page ap-page--chat">
@@ -234,7 +236,7 @@ export default function AIAdvisor() {
         </div>
       </div>
 
-      <div className="tabs" style={{marginBottom:20}}>
+      <div className="tabs tabs--scroll" style={{marginBottom:20}}>
         {[
           {k:'chat',       label:'Chat',          icon:MessageSquare},
           {k:'predict',    label:'Grade Predict',  icon:Target},
@@ -265,7 +267,9 @@ export default function AIAdvisor() {
               {messages.map((m,i)=>(
                 <div key={i} className={`ap-chat-msg${m.role==='user'?' ap-chat-msg--user':''}`}>
                   <div className="ap-chat-avatar">
-                    {m.role==='user' ? initial : <Zap size={14} />}
+                    {m.role==='user'
+                      ? (hasRealAvatar ? <img src={profile.avatarUrl} alt="" onError={()=>setAvatarError(true)} /> : initial)
+                      : <Zap size={14} />}
                   </div>
                   {m.role==='user' ? (
                     <div className="ap-chat-bubble">{m.content}</div>
