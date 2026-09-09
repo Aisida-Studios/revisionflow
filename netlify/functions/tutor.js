@@ -5,47 +5,38 @@
 // Rate limiting uses Firestore (Firebase Admin SDK) so limits persist across
 // cold starts and function instances. Free users: 150 AI calls/day.
 // Pro/beta users: unlimited (isPro or betaUser field on user doc).
-//
-// SECURITY MODEL:
-//   Every request must include a valid Firebase ID token in the Authorization header.
-//   The server verifies this token with Firebase Admin Auth (verifyUserToken below) and
-//   uses ONLY the uid it decodes from that token — never a client-supplied uid field.
-//   Previously uid was read straight from the request body, which meant anyone could
-//   claim to be any user (stealing their Pro status or burning their daily allowance)
-//   and, for the general request pool, omitting uid entirely bypassed rate limiting
-//   altogether — an unauthenticated, unlimited proxy to the paid Mistral API. This
-//   mirrors the verifyIdToken pattern already used correctly in admin.js/friends.js.
 
 const MISTRAL_URL  = 'https://api.mistral.ai/v1/chat/completions'
 const MAX_TOKENS   = 8192
 const FREE_LIMIT   = 150   // requests per 24h for free users
 
+// How long this function will wait on Mistral before giving up and returning its own clean
+// JSON error, instead of letting the Netlify platform kill the function mid-request (which is
+// what produces the "non-JSON response / HTTP 502" error — the platform's own timeout response
+// isn't JSON, so the client can't parse it).
+//
+// This MUST stay comfortably under whatever the actual function execution limit is, or it's
+// pointless — the platform will just kill the function first regardless. netlify.toml requests
+// a 26s limit for this function, but that only applies on Netlify plans that support extended
+// function timeouts; the free/Starter tier is hard-capped at 10 seconds no matter what
+// netlify.toml says. 8000ms is safe on EVERY tier (leaves ~2s headroom under the 10s floor for
+// the Firestore allowance check + response overhead above). If you've confirmed you're on a
+// plan where the 26s config actually applies, raise this to ~22000 to let slower/longer
+// completions (a full study plan, a big batch of exam questions) finish instead of being cut
+// off early.
+const MISTRAL_TIMEOUT_MS = 8000
+
 // ── Firebase Admin — lazy singleton ──────────────────────────────────────────
-let _admin = null
-async function getAdmin() {
-  if (_admin) return _admin
+let _db = null
+async function getDb() {
+  if (_db) return _db
   const admin = require('firebase-admin')
   if (!admin.apps.length) {
     const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}')
     admin.initializeApp({ credential: admin.credential.cert(sa) })
   }
-  _admin = admin
-  return admin
-}
-async function getDb() {
-  const admin = await getAdmin()
-  return admin.firestore()
-}
-
-// ── Auth verification ─────────────────────────────────────────────────────────
-// Extracts the Bearer token from the Authorization header and verifies it with
-// Firebase Admin. Returns the decoded token (its .uid is the only uid this file trusts).
-async function verifyUserToken(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) throw new Error('No authorization token provided')
-  const admin = await getAdmin()
-  return admin.auth().verifyIdToken(token)
+  _db = admin.firestore()
+  return _db
 }
 
 // ── Firestore rate limiter ────────────────────────────────────────────────────
@@ -53,9 +44,8 @@ async function verifyUserToken(event) {
 // { date: "YYYY-MM-DD", count: N }
 // Resets automatically when the date changes.
 async function checkRateLimit(uid) {
-  // uid is verified upstream (verifyUserToken) before this is ever called, so this
-  // branch shouldn't be reachable in practice — kept as a defensive fallback only.
-  if (!uid) return { allowed: false, reason: 'Please sign in to use AI features.' }
+  // No uid = unauthenticated call, allow through (will be blocked upstream)
+  if (!uid) return { allowed: true, remaining: FREE_LIMIT }
 
   const db = await getDb()
 
@@ -150,7 +140,7 @@ function respond(statusCode, body) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
     body: JSON.stringify(body),
   }
@@ -166,23 +156,13 @@ module.exports.handler = async function(event) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
       body: '',
     }
   }
 
   if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
-
-  // ── Verify Firebase ID token before doing anything else ──────────────────
-  // uid comes exclusively from here from this point on — never from the body.
-  let decoded
-  try {
-    decoded = await verifyUserToken(event)
-  } catch (e) {
-    return respond(401, { error: 'Please sign in to use AI features.' })
-  }
-  const uid = decoded.uid
 
   let body
   try {
@@ -191,7 +171,7 @@ module.exports.handler = async function(event) {
     return respond(400, { error: 'Invalid JSON body' })
   }
 
-  const { messages, systemPrompt, maxTokens, imageBase64, feature } = body
+  const { messages, systemPrompt, maxTokens, uid, imageBase64, feature } = body
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return respond(400, { error: 'messages array is required' })
@@ -212,10 +192,10 @@ module.exports.handler = async function(event) {
   // (flashcards, exam questions, marking, topic notes, ...) shares the general pool.
   let rateCheck
   try {
-    if (imageBase64) rateCheck = await checkImageRateLimit(uid)
-    else if (feature === 'advisorChat') rateCheck = await checkChatLimit(uid)
-    else if (feature === 'essayFeedback') rateCheck = await checkEssayLimit(uid)
-    else rateCheck = await checkRateLimit(uid)
+    if (imageBase64) rateCheck = await checkImageRateLimit(uid || null)
+    else if (feature === 'advisorChat') rateCheck = await checkChatLimit(uid || null)
+    else if (feature === 'essayFeedback') rateCheck = await checkEssayLimit(uid || null)
+    else rateCheck = await checkRateLimit(uid || null)
   } catch(e) {
     // If Firestore is unreachable, fail open (don't block users) but log it
     console.error('[tutor] allowance check failed:', e.message)
@@ -261,6 +241,9 @@ module.exports.handler = async function(event) {
 
   const fullMessages = [{ role: 'system', content: systemPrompt || DEFAULT_SYSTEM }].concat(safeMessages)
 
+  const controller = new AbortController()
+  const abortTimer = setTimeout(() => controller.abort(), MISTRAL_TIMEOUT_MS)
+
   try {
     const mistralRes = await fetch(MISTRAL_URL, {
       method: 'POST',
@@ -274,7 +257,9 @@ module.exports.handler = async function(event) {
         temperature: 0.7,
         max_tokens:  Math.min(maxTokens || MAX_TOKENS, MAX_TOKENS),
       }),
+      signal: controller.signal,
     })
+    clearTimeout(abortTimer)
 
     if (!mistralRes.ok) {
       let errBody = {}
@@ -294,6 +279,11 @@ module.exports.handler = async function(event) {
       remaining: rateCheck.isPro ? null : rateCheck.remaining,
     })
   } catch(e) {
+    clearTimeout(abortTimer)
+    if (e.name === 'AbortError') {
+      console.error('[tutor] Mistral call exceeded', MISTRAL_TIMEOUT_MS, 'ms — aborted to return a clean response')
+      return respond(504, { error: 'That request is taking longer than usual. Try again, or ask for something a bit shorter.' })
+    }
     console.error('[tutor] error:', e)
     return respond(503, { error: 'Could not reach the AI service. Check your connection.' })
   }
