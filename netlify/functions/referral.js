@@ -63,22 +63,51 @@ async function unlockRocketIcon(db, uid) {
   }
 }
 
+// Mirrors currentWeekStart/currentMonthStart/xpPeriodPatch in src/utils/firestore.js — same
+// duplication reasoning as REFERRAL_BADGE above. Keep in sync with the client-side and
+// friends.js copies if this logic ever changes.
+function currentWeekStart(now = new Date()) {
+  const d = new Date(now)
+  const day = d.getDay()
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
+  return d.toISOString().slice(0, 10)
+}
+function currentMonthStart(now = new Date()) {
+  return now.toISOString().slice(0, 7) + '-01'
+}
+function xpPeriodPatch(admin, existingData, amount) {
+  const weekStart  = currentWeekStart()
+  const monthStart = currentMonthStart()
+  const inc = admin.firestore.FieldValue.increment(amount)
+  return {
+    xpWeekStart:  weekStart,
+    xpMonthStart: monthStart,
+    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? inc : amount,
+    xpThisMonth:  existingData?.xpMonthStart === monthStart ? inc : amount,
+  }
+}
+
 async function awardReferralBadge(db, uid) {
   const ref = db.collection('users').doc(uid)
   const snap = await ref.get()
   if (!snap.exists) return
-  const earned = snap.data().badges || []
+  const data   = snap.data()
+  const earned = data.badges || []
   if (earned.includes(REFERRAL_BADGE.id)) return
   const admin = await getAdmin()
   await ref.update({
     badges: [...earned, REFERRAL_BADGE.id],
     xp: admin.firestore.FieldValue.increment(REFERRAL_BADGE.xp),
+    ...xpPeriodPatch(admin, data, REFERRAL_BADGE.xp),
   })
 }
 
 async function awardXP(db, uid, amount) {
   const admin = await getAdmin()
-  await db.collection('users').doc(uid).update({ xp: admin.firestore.FieldValue.increment(amount) })
+  const ref   = db.collection('users').doc(uid)
+  const snap  = await ref.get()
+  const data  = snap.exists ? snap.data() : {}
+  await ref.update({ xp: admin.firestore.FieldValue.increment(amount), ...xpPeriodPatch(admin, data, amount) })
 }
 
 module.exports.handler = async function (event) {
