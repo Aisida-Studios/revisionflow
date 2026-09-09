@@ -3,22 +3,8 @@
 // The Mistral API key is server-side only: MISTRAL_API_KEY in Netlify env vars.
 // Never use VITE_MISTRAL_API_KEY — the key must never be in the browser bundle.
 import { recordActivityStreak } from './firestore'
-import { auth } from '../firebase'
 
 const AI_ENDPOINT = '/api/tutor'
-
-// ── Auth header helper ─────────────────────────────────────────────────────────
-// tutor.js now verifies a Firebase ID token server-side and derives uid from it —
-// it no longer trusts a client-supplied uid field. getIdToken() returns Firebase's
-// cached token and transparently refreshes it in the background when it's close to
-// expiring, so this is cheap to call on every request. Returns null if nobody's
-// signed in, which callers below turn into a "please sign in" message before ever
-// touching the network.
-async function authedHeaders() {
-  if (!auth.currentUser) return null
-  const idToken = await auth.currentUser.getIdToken()
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken }
-}
 
 const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level, A-Level and BTEC revision.
 AS-Level is a standalone one-year qualification, separate from A-Level (not the first year of it) —
@@ -37,23 +23,20 @@ Always reference specific free resources where relevant:
 - All subjects: Seneca, PMT, SaveMyExams`
 
 // ── Core call function ─────────────────────────────────────────────────────────
-// uid is used locally only, to record the activity streak below — it is no longer sent
-// to the server. tutor.js now derives uid itself from the verified auth token attached
-// by authedHeaders() above, so a caller can't influence whose account is charged.
+// uid is passed for server-side rate limiting — never used for anything else.
 export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, uid = null, feature = null) {
-  const headers = await authedHeaders()
-  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000) // safety net against a hung request
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       signal:  controller.signal,
       body: JSON.stringify({
         messages:     [{ role: 'user', content: prompt }],
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
+        uid,
         feature,
       }),
     })
@@ -100,19 +83,18 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
 // than adding an optional param to callAI so none of its ~15 existing text-only callers
 // need to change, and so it's obvious at a glance which calls actually send an image. ──
 export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM, maxTokens = 2000, uid = null) {
-  const headers = await authedHeaders()
-  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       signal:  controller.signal,
       body: JSON.stringify({
         messages:     [{ role: 'user', content: prompt }],
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
+        uid,
         imageBase64,
       }),
     })
@@ -161,16 +143,14 @@ export async function extractTextFromImage(imageBase64, kind, uid) {
   return callAIWithImage(prompt, imageBase64, sys, 1500, uid)
 }
 export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null, feature = null) {
-  const headers = await authedHeaders()
-  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       signal:  controller.signal,
-      body: JSON.stringify({ messages, systemPrompt, feature }),
+      body: JSON.stringify({ messages, systemPrompt, uid, feature }),
     })
     clearTimeout(timeoutId)
 
@@ -199,46 +179,71 @@ export async function generateStudyPlan(userData, uid, isPro) {
     ? `from now until ${lastExamDate} (first exam: ${firstExamDate}, approximately ${weeks} weeks away)`
     : `approximately ${weeks} weeks`
 
-  const detailConstraint = isPro
-    ? `- Give a week-by-week breakdown for the ENTIRE plan, not just the final weeks — one short paragraph per week`
-    : `- Keep each week's entry concise — one paragraph per phase, not per week`
+  const subjectsDesc = subjects?.map(s => `${s.name} (${s.board}, current: ${s.currentGrade || '?'}, target: ${s.targetGrade || 9})`).join(', ')
+  const examsDesc = examDates?.filter(e => new Date(e.examDate) > new Date()).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)).slice(0,12).map(e => `${e.subject} P${e.paper} on ${e.examDate}`).join(', ') || 'Not specified'
+  const phase1End = Math.floor(weeks*0.4)
+  const phase2End = Math.floor(weeks*0.8)
 
-  const formatSection = isPro
-    ? `1. Subject priority order and reasoning (bullet list)
-2. Phase 1 — Foundation (week-by-week breakdown)
-3. Phase 2 — Intensive revision (week-by-week breakdown, more past papers)
-4. Phase 3 — Final push (week-by-week, exam-specific focus)
-5. Resources per subject (concise list)
-6. 3 practical motivation tips`
-    : `1. Subject priority order and reasoning (bullet list)
+  const header = `Generate part of a personalised GCSE/A-Level revision study plan for a student.
+
+STUDENT DETAILS:
+Subjects: ${subjectsDesc}
+Exam period: ${windowDesc}
+Upcoming exams: ${examsDesc}
+Available hours per week: ${availableHours || 10}
+Focus preference: ${preferences || 'Balanced content and exam practice'}
+
+The plan covers EXACTLY ${weeks} weeks total, in 3 phases: Foundation (weeks 1-${phase1End}), Intensive (weeks ${phase1End+1}-${phase2End}), Final push (weeks ${phase2End+1}-${weeks}).`
+
+  if (!isPro) {
+    // Free tier: no week-by-week requirement (one paragraph per phase, not per week) and a
+    // 600-word cap keeps this comfortably small enough for a single call.
+    const prompt = `${header}
+
+FORMAT — write ALL of these sections in this one response:
+1. Subject priority order and reasoning (bullet list)
 2. Phase 1 — Foundation (what to do, which subjects, ratio)
 3. Phase 2 — Intensive revision (shift in focus, more past papers)
 4. Phase 3 — Final push (exam-specific focus, week by week for last 3 weeks only)
 5. Resources per subject (concise list)
-6. 3 practical motivation tips`
+6. 3 practical motivation tips
 
-  const wordCap = isPro ? 1400 : 600
+In the final 2 weeks before each exam, prioritise that specific subject heavily.
+Keep the total response under 600 words. Be specific and actionable.`
+    return callAI(prompt, SYSTEM, 1400, uid)
+  }
 
-  const prompt = `Generate a personalised GCSE/A-Level revision study plan for a student.
+  // Pro tier: a full week-by-week breakdown for a plan that can span many weeks is genuinely a
+  // lot of structured content to ask for in one completion — the same class of problem as
+  // generateTopicNote() below, and the same fix: two smaller sequential calls (not parallel, so
+  // this doesn't turn into concurrent Mistral calls) instead of one large one, each asking for
+  // less content. Call A covers the two earlier phases (up to 80% of the plan); call B covers
+  // the final phase plus the fixed-size resources/motivation sections.
+  const promptA = `${header}
 
-STUDENT DETAILS:
-Subjects: ${subjects?.map(s => `${s.name} (${s.board}, current: ${s.currentGrade || '?'}, target: ${s.targetGrade || 9})`).join(', ')}
-Exam period: ${windowDesc}
-Upcoming exams: ${examDates?.filter(e => new Date(e.examDate) > new Date()).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)).slice(0,12).map(e => `${e.subject} P${e.paper} on ${e.examDate}`).join(', ') || 'Not specified'}
-Available hours per week: ${availableHours || 10}
-Focus preference: ${preferences || 'Balanced content and exam practice'}
+Write ONLY these two sections — do not write anything about Phase 3, resources, or motivation tips, those are handled separately:
+1. Subject priority order and reasoning (bullet list)
+2. Phase 1 — Foundation (weeks 1-${phase1End}): week-by-week breakdown, one short paragraph per week
+3. Phase 2 — Intensive revision (weeks ${phase1End+1}-${phase2End}): week-by-week breakdown, one short paragraph per week, more past papers
 
-IMPORTANT CONSTRAINTS:
-- The plan must cover EXACTLY ${weeks} weeks — no more
-- Structure into 3 clear phases: Foundation (weeks 1-${Math.floor(weeks*0.4)}), Intensive (weeks ${Math.floor(weeks*0.4)+1}-${Math.floor(weeks*0.8)}), Final push (weeks ${Math.floor(weeks*0.8)+1}-${weeks})
-- In the final 2 weeks before each exam, prioritise that specific subject heavily
-${detailConstraint}
+Keep this response under 800 words total. Be specific and actionable — name actual subjects and papers.`
 
-FORMAT:
-${formatSection}
+  const promptB = `${header}
 
-Keep the total response under ${wordCap} words. Be specific and actionable.`
-  return callAI(prompt, SYSTEM, isPro ? 8192 : 4096, uid)
+You already wrote Phase 1 (Foundation) and Phase 2 (Intensive) in an earlier response — do not repeat them. Write ONLY these sections, continuing straight on as if part of the same plan:
+
+4. Phase 3 — Final push (weeks ${phase2End+1}-${weeks}): week-by-week breakdown, one short paragraph per week, exam-specific focus. In the final 2 weeks before each exam, prioritise that specific subject heavily.
+5. Resources per subject (concise list)
+6. 3 practical motivation tips
+
+Keep this response under 700 words total. Be specific and actionable — name actual subjects and papers. Do not restate the phase numbers/dates from Phase 1 or 2.`
+
+  const resA = await callAI(promptA, SYSTEM, 2400, uid)
+  if (resA.error) return resA
+  const resB = await callAI(promptB, SYSTEM, 2200, uid)
+  if (resB.error) return resB
+
+  return { text: resA.text.trim() + '\n\n' + resB.text.trim(), provider: resA.provider || resB.provider }
 }
 
 export async function getTopicAdvice(subject, topic, confidence, mistakes, uid) {
@@ -264,7 +269,7 @@ One specific, actionable tip on how marks are awarded for "${topic}".
 
 Keep under 280 words total. Everything must be specific to "${topic}".
 Recent mistakes to address: ${mistakes?.join(', ') || 'none logged'}`
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, 1200, uid)
 }
 
 export async function analyseWeaknesses(paperAttempts, subject, uid) {
@@ -279,7 +284,7 @@ Provide:
 3. Specific free resources for each weak area
 4. Whether to focus more on content revision or exam technique
 5. Realistic grade trajectory based on recent scores`
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, 1800, uid)
 }
 
 export async function getResourceRecommendations(subject, board, tier, weakTopics, qualification, uid) {
@@ -294,7 +299,7 @@ For each resource:
 - Recommended time per week
 
 Only include genuinely free resources, and only ones that actually cover ${qualification || 'GCSE'} content for this subject (not just GCSE, if the student is past GCSE). Include at least 5.`
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, 2000, uid)
 }
 
 export async function generateCalendarPlan(userData, uid) {
@@ -307,8 +312,9 @@ Content:exam ratio: ${userData.ratio || '2:1'}
 Weeks until exams: ${userData.weeksUntilExams}
 
 Generate a week-by-week plan showing subject priority, session types, and key milestones.
-Be specific about which papers and topics to cover each week.`
-  return callAI(prompt, SYSTEM, 8192, uid)
+Be specific about which papers and topics to cover each week.
+Keep each week to 2-3 short bullet points regardless of how many weeks are in the plan — total response under roughly 700 words even for a long run-up to exams.`
+  return callAI(prompt, SYSTEM, 2200, uid)
 }
 
 export async function getDailyAdvice(uid, todaysSessions, streak, recentMistakes) {
@@ -359,7 +365,7 @@ Provide:
 2. What would push the grade up
 3. What risks pulling it down
 4. The single most impactful thing to work on right now`
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, 1200, uid)
 }
 
 export async function suggestNextTopic(subject, topicConfidences, examDates, qualification, uid) {
@@ -378,7 +384,7 @@ Recommend ONE specific topic and explain:
 2. How to structure a 45-minute revision session on it
 3. Specific resources to use
 4. What a grade 9 answer looks like for exam questions on this topic`
-  return callAI(prompt, SYSTEM, 8192, uid)
+  return callAI(prompt, SYSTEM, 1200, uid)
 }
 
 export async function markAnswer(subject, board, level, paper, question, markAllocation, studentAnswer, uid) {
@@ -443,11 +449,11 @@ TO REACH THE NEXT MARK BAND:
 
 EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written on actual marked scripts, e.g. "Some relevant knowledge shown but analysis lacks development — candidate must engage more explicitly with the question's focus on..."]`
 
-  return callAI(prompt, markerSystem, 8192, uid)
+  return callAI(prompt, markerSystem, 2000, uid)
 }
 
 
-export async function generateFlashcards(subject, topic, count, uid, maxTokens = 8192, focusHint = '') {
+export async function generateFlashcards(subject, topic, count, uid, maxTokens = Math.min(8192, 300 + (count || 8) * 90), focusHint = '') {
   count = count || 8
   var topicPart = topic ? ', topic: ' + topic : ''
   var prompt = [
@@ -528,12 +534,6 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
   const markDist = distributeMarks(total, n, cfg.marks)
   const isMaths  = subject === 'Mathematics' || subject === 'Further Mathematics' || subject === 'Statistics'
 
-  // Build the allocation description for the prompt
-  const allocDesc = markDist.map((m, i) => {
-    const cmd = cfg.cmds[m] || (m <= 2 ? 'State' : m <= 4 ? 'Explain' : 'Evaluate')
-    return 'Q' + (i + 1) + ': ' + m + ' marks — command word: ' + cmd
-  }).join('\n')
-
   const mathsExtra = isMaths
     ? '\n\nMATHS FORMATTING RULES:\n' +
       '- Write all mathematical expressions in plain text: e.g. "x^2 + 3x - 4 = 0", "sin(30°)", "√(16)", "3/4"\n' +
@@ -555,42 +555,71 @@ export async function generatePredictedQuestions(subject, board, level, topic, t
     'You write questions that are indistinguishable from real past paper questions. ' +
     'Every question must be spec-accurate, use the exact command words for the board, and include a fully worked mark scheme.'
 
-  const prompt =
-    'Write EXACTLY ' + n + ' exam question' + (n > 1 ? 's' : '') + ' for ' + board + ' ' + level + ' ' + subject + ' on the topic: "' + topic + '"\n\n' +
+  // Generating every question in one completion scales badly — a batch of several detailed
+  // exam questions, each with a full mark scheme and worked example, is a genuinely long single
+  // response. Same fix as generateTopicNote/generateStudyPlan above: split into smaller
+  // sequential calls (at most 2 questions per call) so each individual completion stays fast,
+  // run one after another rather than in parallel so a big batch doesn't turn into N concurrent
+  // Mistral calls. Each batch's question numbers and mark allocation are calculated from its
+  // position in the overall set, so the final concatenated text reads as one continuous
+  // ---QUESTION N--- sequence — TopicDetail.jsx's parser (which just finds every marker and
+  // slices between them) needs no changes.
+  const BATCH_SIZE = 2
+  const batches = []
+  for (let start = 0; start < n; start += BATCH_SIZE) {
+    batches.push({ start, count: Math.min(BATCH_SIZE, n - start) })
+  }
 
-    'MARK ALLOCATION — follow EXACTLY:\n' + allocDesc + '\n' +
-    'Total: ' + markDist.reduce((a, b) => a + b, 0) + ' marks\n\n' +
+  const parts = []
+  for (const b of batches) {
+    const batchDist = markDist.slice(b.start, b.start + b.count)
+    const allocDesc = batchDist.map((m, i) => {
+      const qNum = b.start + i + 1
+      const cmd = cfg.cmds[m] || (m <= 2 ? 'State' : m <= 4 ? 'Explain' : 'Evaluate')
+      return 'Q' + qNum + ': ' + m + ' marks — command word: ' + cmd
+    }).join('\n')
 
-    'BOARD RULES FOR ' + board + ' ' + level + ':\n' +
-    '- Style: ' + cfg.style + '\n' +
-    '- Mark scheme format: ' + cfg.scheme + '\n' +
-    specExtra +
-    '- Every question MUST be specifically and exclusively about the topic: "' + topic + '"\n' +
-    '- Do NOT include any question outside the ' + board + ' ' + level + ' ' + subject + ' specification\n' +
-    '- Use the exact phrasing and command words used on real ' + board + ' papers\n' +
-    mathsExtra + '\n\n' +
+    const prompt =
+      'Write EXACTLY ' + b.count + ' exam question' + (b.count > 1 ? 's' : '') + ' for ' + board + ' ' + level + ' ' + subject + ' on the topic: "' + topic + '"' +
+      (n > b.count ? ' — these are questions ' + (b.start+1) + (b.count > 1 ? '-' + (b.start+b.count) : '') + ' of a larger set of ' + n + '. Number them starting from Q' + (b.start+1) + '.' : '') + '\n\n' +
 
-    'OUTPUT FORMAT — copy this structure exactly for each question:\n\n' +
-    '---QUESTION 1--- [X marks]\n' +
-    '[The question text here, written exactly as it would appear on the exam paper. Include any stimulus, figures, or data if appropriate for this mark value and command word.]\n\n' +
-    'MARK SCHEME:\n' +
-    '[Full mark scheme as it would appear in the official mark scheme booklet:\n' +
-    '- For point-mark: bullet each creditworthy point. State max marks clearly.\n' +
-    '- For level-based: give full level descriptors (L1/L2/L3) with mark ranges + indicative content bullets.\n' +
-    '- For maths: show full worked solution with M/A/B marks on each line.]\n\n' +
-    'EXAMINER TIP:\n' +
-    '[Most common student mistake on this specific question. One sentence.]\n\n' +
-    '---QUESTION 2--- [X marks]\n' +
-    '[etc.]\n\n' +
+      'MARK ALLOCATION — follow EXACTLY:\n' + allocDesc + '\n' +
+      'Total for this batch: ' + batchDist.reduce((a, c) => a + c, 0) + ' marks\n\n' +
 
-    'CRITICAL REQUIREMENTS:\n' +
-    '1. Output EXACTLY ' + n + ' question block' + (n > 1 ? 's' : '') + ' — no more, no fewer\n' +
-    '2. Each block MUST start with ---QUESTION N--- on its own line\n' +
-    '3. Each block MUST contain: question text, MARK SCHEME section, EXAMINER TIP section\n' +
-    '4. Do NOT include any text before ---QUESTION 1--- or after the last EXAMINER TIP\n' +
-    '5. Questions must read as genuine exam questions — not as AI-generated placeholders'
+      'BOARD RULES FOR ' + board + ' ' + level + ':\n' +
+      '- Style: ' + cfg.style + '\n' +
+      '- Mark scheme format: ' + cfg.scheme + '\n' +
+      specExtra +
+      '- Every question MUST be specifically and exclusively about the topic: "' + topic + '"\n' +
+      '- Do NOT include any question outside the ' + board + ' ' + level + ' ' + subject + ' specification\n' +
+      '- Use the exact phrasing and command words used on real ' + board + ' papers\n' +
+      mathsExtra + '\n\n' +
 
-  return callAI(prompt, sysPrompt, 8192, uid)
+      'OUTPUT FORMAT — copy this structure exactly for each question, using the question numbers given above:\n\n' +
+      '---QUESTION ' + (b.start+1) + '--- [X marks]\n' +
+      '[The question text here, written exactly as it would appear on the exam paper. Include any stimulus, figures, or data if appropriate for this mark value and command word.]\n\n' +
+      'MARK SCHEME:\n' +
+      '[Full mark scheme as it would appear in the official mark scheme booklet:\n' +
+      '- For point-mark: bullet each creditworthy point. State max marks clearly.\n' +
+      '- For level-based: give full level descriptors (L1/L2/L3) with mark ranges + indicative content bullets.\n' +
+      '- For maths: show full worked solution with M/A/B marks on each line.]\n\n' +
+      'EXAMINER TIP:\n' +
+      '[Most common student mistake on this specific question. One sentence.]\n\n' +
+      (b.count > 1 ? '---QUESTION ' + (b.start+2) + '--- [X marks]\n[etc.]\n\n' : '') +
+
+      'CRITICAL REQUIREMENTS:\n' +
+      '1. Output EXACTLY ' + b.count + ' question block' + (b.count > 1 ? 's' : '') + ' — no more, no fewer\n' +
+      '2. Each block MUST start with ---QUESTION N--- on its own line, using the exact numbers given above\n' +
+      '3. Each block MUST contain: question text, MARK SCHEME section, EXAMINER TIP section\n' +
+      '4. Do NOT include any text before the first question block or after the last EXAMINER TIP\n' +
+      '5. Questions must read as genuine exam questions — not as AI-generated placeholders'
+
+    const res = await callAI(prompt, sysPrompt, 3200, uid)
+    if (res.error) return res
+    parts.push(res.text.trim())
+  }
+
+  return { text: parts.join('\n\n'), provider: 'mistral' }
 }
 
 
