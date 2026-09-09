@@ -1,5 +1,6 @@
 // src/components/AIOutput.jsx
 import React, { useState } from 'react'
+import { callAI } from '../utils/ai'
 
 // Converts **bold**, *italic*, `code`, and [text](url) inline
 function inlineFormat(text) {
@@ -122,15 +123,8 @@ export default function AIOutput({ text, label, compact, onSummarise }) {
         const result = await onSummarise(text)
         setSummary(result || 'Could not summarise.')
       } else {
-        const res = await fetch('/api/tutor', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: 'Summarise this in 3 bullet points:\n\n' + text }],
-          }),
-        })
-        const data = await res.json()
-        setSummary(data.text || 'Could not summarise.')
+        const result = await callAI('Summarise this in 3 bullet points:\n\n' + text)
+        setSummary(result.text || result.error || 'Could not summarise.')
       }
     } catch {
       setSummary('Could not summarise.')
