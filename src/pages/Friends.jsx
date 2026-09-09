@@ -12,6 +12,16 @@ import toast from 'react-hot-toast'
 import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
 import './AccountPages.css'
 
+// Shows a real profile photo when one is available (Google sign-in), falling back to the
+// initial letter — on missing avatarUrl, or if the image fails to load (photo URLs can expire).
+function PersonAvatar({ name, avatarUrl, size = 'md' }) {
+  const [imgError, setImgError] = useState(false)
+  if (avatarUrl && !imgError) {
+    return <div className={`ap-avatar ap-avatar--${size}`}><img src={avatarUrl} alt="" onError={() => setImgError(true)} /></div>
+  }
+  return <div className={`ap-avatar ap-avatar--${size}`}>{(name || 'U')[0].toUpperCase()}</div>
+}
+
 export default function Friends() {
   const { user, profile, refreshProfile } = useAuth()
   const [friends,       setFriends]       = useState([])
@@ -152,7 +162,7 @@ export default function Friends() {
           <div className="ap-person-list" style={{ borderTop: '1.5px solid var(--border)', marginTop: 4 }}>
             {searchResults.map(u => (
               <div key={u.uid} className="ap-person-row">
-                <div className="ap-avatar ap-avatar--sm">{initial(u.displayName)}</div>
+                <PersonAvatar name={u.displayName} avatarUrl={u.avatarUrl} size="sm" />
                 <div className="ap-person-main">
                   <div className="ap-person-name">{u.displayName || 'Anonymous'}</div>
                   <div className="ap-person-meta">Level {u.level || 1}</div>
@@ -201,7 +211,7 @@ export default function Friends() {
                 const lvl = LEVELS[Math.min((f.level || 1) - 1, LEVELS.length - 1)]
                 return (
                   <div key={f.uid} className="ap-person-row">
-                    <div className="ap-avatar ap-avatar--md">{initial(f.displayName)}</div>
+                    <PersonAvatar name={f.displayName} avatarUrl={f.avatarUrl} />
                     <div className="ap-person-main">
                       <div className="ap-person-name">{f.displayName}</div>
                       <div className="ap-person-meta">
