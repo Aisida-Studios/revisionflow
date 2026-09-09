@@ -66,6 +66,7 @@ export async function ensureUser(uid, initialData = {}) {
       friends:      [],
       referralCode,
       displayName:  initialData.displayName || '',
+      avatarUrl:    initialData.avatarUrl   || '',
       profile: {
         displayName: initialData.displayName || '',
         email:       initialData.email       || '',
@@ -79,6 +80,9 @@ export async function ensureUser(uid, initialData = {}) {
     if (!existing.referralCode)                                    patches.referralCode           = referralCode
     if (!existing.displayName  && initialData.displayName)         patches.displayName             = initialData.displayName
     if (!existing.profile?.displayName && initialData.displayName) patches['profile.displayName'] = initialData.displayName
+    // Refresh on every login (not just "if missing") — a Google photo can change, or wasn't
+    // available yet if the account was originally created with email/password.
+    if (initialData.avatarUrl && existing.avatarUrl !== initialData.avatarUrl) patches.avatarUrl = initialData.avatarUrl
     if (Object.keys(patches).length > 0) await updateDoc(ref, patches)
   }
 }
@@ -213,6 +217,39 @@ export async function recordActivityStreak(uid) {
 // keeping their own copies, so the sidebar, dashboard, and Profile page can never disagree about
 // what level a given XP total actually is.
 
+// ── XP period tracking (this week / this month) ──────────────────────────────
+// Backs the Leaderboard's This week/This month tabs. Deliberately has no scheduled reset job —
+// a cron-based reset is one more thing that can silently fail and leave stale numbers with
+// nothing to flag it. Instead, the "period start" (the Monday of the current ISO week, or the
+// 1st of the current month) is recomputed fresh from today's date every time XP is awarded,
+// and compared against what's stored on the user doc:
+//  - same period  → increment the running total, same as `xp` itself
+//  - different (or missing) period → the period has rolled over; start the counter fresh at
+//    just this award, and stamp the new period start
+// getLeaderboard/getGlobalLeaderboard below do the read-side half of this: any entry whose
+// stored period start doesn't match the CURRENT period is treated as 0 for that period,
+// regardless of what number is sitting in xpThisWeek/xpThisMonth — so an inactive user's stale
+// total from a previous period never has to be reset by anything, it's just never trusted.
+export function currentWeekStart(now = new Date()) {
+  const d   = new Date(now)
+  const day = d.getDay() // 0=Sun..6=Sat
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day)) // ISO week: Monday start
+  return d.toISOString().slice(0, 10) // 'YYYY-MM-DD'
+}
+export function currentMonthStart(now = new Date()) {
+  return now.toISOString().slice(0, 7) + '-01' // 'YYYY-MM-01'
+}
+function xpPeriodPatch(existingData, amount) {
+  const weekStart  = currentWeekStart()
+  const monthStart = currentMonthStart()
+  return {
+    xpWeekStart:  weekStart,
+    xpMonthStart: monthStart,
+    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? increment(amount) : amount,
+    xpThisMonth:  existingData?.xpMonthStart === monthStart ? increment(amount) : amount,
+  }
+}
+
 export const awardXP = async (uid, amount, reason = '') => {
   if (!uid || !amount || amount <= 0) return
   // Nothing previously ever wrote profile.level — not even an initial value in ensureUser — so
@@ -222,10 +259,11 @@ export const awardXP = async (uid, amount, reason = '') => {
   // total will be, so we can compute and write the correct level in the same update.
   const ref     = doc(db, 'users', uid)
   const snap    = await getDoc(ref)
-  const prevXp  = snap.exists() ? (snap.data().xp || 0) : 0
+  const data    = snap.exists() ? snap.data() : {}
+  const prevXp  = data.xp || 0
   const newXp   = prevXp + amount
   const newLevel = levelFromXP(newXp)
-  await updateDoc(ref, { xp: increment(amount), level: newLevel })
+  await updateDoc(ref, { xp: increment(amount), level: newLevel, ...xpPeriodPatch(data, amount) })
   // Fire browser event so XPToast component can show the popup
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount, reason } }))
@@ -250,12 +288,14 @@ export const checkAndAwardBadge = async (uid, badgeId) => {
   const snap = await getDoc(ref)
   if (!snap.exists()) return
 
-  const earned = snap.data().badges || []
+  const data   = snap.data()
+  const earned = data.badges || []
   if (earned.includes(badgeId)) return
 
   await updateDoc(ref, {
     badges: [...earned, badgeId],
     xp:     increment(badge.xp || 0),
+    ...xpPeriodPatch(data, badge.xp || 0),
   })
 
   // Single choke point for every badge source (streak milestones, quest
@@ -324,7 +364,17 @@ export const autoCompleteQuest = async (uid, questId) => {
    LEADERBOARD
 ========================= */
 
-export const getLeaderboard = async (friendUids, currentUid) => {
+// effective period XP: a stored xpThisWeek/xpThisMonth is only trusted if its stamped period
+// start matches the CURRENT period — otherwise the user just hasn't earned anything (and so
+// hasn't written anything) since the period rolled over, and their real total for the current
+// period is 0, regardless of what's sitting in the field from last time.
+function effectivePeriodXP(d, period) {
+  if (period === 'week')  return d.xpWeekStart  === currentWeekStart()  ? (d.xpThisWeek  || 0) : 0
+  if (period === 'month') return d.xpMonthStart === currentMonthStart() ? (d.xpThisMonth || 0) : 0
+  return d.xp || 0
+}
+
+export const getLeaderboard = async (friendUids, currentUid, period = 'allTime') => {
   if (!friendUids || friendUids.length === 0) return []
 
   const uids     = [...new Set([...friendUids, currentUid].filter(Boolean))]
@@ -337,7 +387,10 @@ export const getLeaderboard = async (friendUids, currentUid) => {
         return {
           uid,
           displayName:             d.displayName || d.profile?.displayName || d.profile?.name || 'Anonymous',
+          avatarUrl:               d.avatarUrl || d.profile?.avatarUrl || '',
           xp:                      d.xp || 0,
+          xpThisWeek:              effectivePeriodXP(d, 'week'),
+          xpThisMonth:             effectivePeriodXP(d, 'month'),
           level:                   levelFromXP(d.xp || 0),
           streak:                  d.streak || 0,
           profileIcon:             d.profileIcon || null,
@@ -348,24 +401,51 @@ export const getLeaderboard = async (friendUids, currentUid) => {
     })
   )
 
-  return profiles.filter(Boolean).sort((a, b) => b.xp - a.xp)
+  const field = { allTime: 'xp', week: 'xpThisWeek', month: 'xpThisMonth' }
+  const key   = field[period] || 'xp'
+  return profiles.filter(Boolean).sort((a, b) => b[key] - a[key])
 }
 
-export const getGlobalLeaderboard = async (maxResults = 100) => {
+export const getGlobalLeaderboard = async (maxResults = 100, period = 'allTime') => {
   try {
-    const q    = query(collection(db, 'users'), orderBy('xp', 'desc'), limit(maxResults))
+    if (period === 'allTime') {
+      const q    = query(collection(db, 'users'), orderBy('xp', 'desc'), limit(maxResults))
+      const snap = await getDocs(q)
+      return snap.docs.map(d => {
+        const data = d.data()
+        return {
+          uid:                     d.id,
+          displayName:             data.displayName || data.profile?.displayName || data.profile?.name || 'Anonymous',
+          avatarUrl:               data.avatarUrl || data.profile?.avatarUrl || '',
+          xp:                      data.xp || 0,
+          streak:                  data.streak || 0,
+          profileIcon:             data.profileIcon || null,
+          hideNameFromLeaderboard: data.hideNameFromLeaderboard || data.profile?.hideNameFromLeaderboard || false,
+        }
+      })
+    }
+
+    // week/month: order by the raw stored counter to get a good candidate pool (anyone
+    // currently near the top by raw value is a plausible top performer), but the raw value can
+    // be stale for a user who was very active last period and has done nothing since it rolled
+    // over. Fetch a larger pool than requested, recompute the real (period-aware) value for
+    // each, drop anyone whose effective total is 0, re-sort, then trim to what was asked for.
+    const rawField = period === 'week' ? 'xpThisWeek' : 'xpThisMonth'
+    const q    = query(collection(db, 'users'), orderBy(rawField, 'desc'), limit(maxResults * 3))
     const snap = await getDocs(q)
-    return snap.docs.map(d => {
+    const withEffective = snap.docs.map(d => {
       const data = d.data()
       return {
         uid:                     d.id,
         displayName:             data.displayName || data.profile?.displayName || data.profile?.name || 'Anonymous',
-        xp:                      data.xp || 0,
+        avatarUrl:               data.avatarUrl || data.profile?.avatarUrl || '',
+        xp:                      effectivePeriodXP(data, period),
         streak:                  data.streak || 0,
         profileIcon:             data.profileIcon || null,
         hideNameFromLeaderboard: data.hideNameFromLeaderboard || data.profile?.hideNameFromLeaderboard || false,
       }
     })
+    return withEffective.filter(u => u.xp > 0).sort((a, b) => b.xp - a.xp).slice(0, maxResults)
   } catch { return [] }
 }
 
@@ -860,6 +940,7 @@ export const getFriendProfiles = async (friendUids) => {
         return {
           uid,
           displayName: d.displayName || d.profile?.displayName || 'Anonymous',
+          avatarUrl:   d.avatarUrl || d.profile?.avatarUrl || '',
           xp:          d.xp || 0,
           level:       levelFromXP(d.xp || 0),
           streak:      d.streak || 0,
