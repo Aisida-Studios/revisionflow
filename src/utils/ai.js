@@ -3,8 +3,22 @@
 // The Mistral API key is server-side only: MISTRAL_API_KEY in Netlify env vars.
 // Never use VITE_MISTRAL_API_KEY — the key must never be in the browser bundle.
 import { recordActivityStreak } from './firestore'
+import { auth } from '../firebase'
 
 const AI_ENDPOINT = '/api/tutor'
+
+// ── Auth header helper ─────────────────────────────────────────────────────────
+// tutor.js now verifies a Firebase ID token server-side and derives uid from it —
+// it no longer trusts a client-supplied uid field. getIdToken() returns Firebase's
+// cached token and transparently refreshes it in the background when it's close to
+// expiring, so this is cheap to call on every request. Returns null if nobody's
+// signed in, which callers below turn into a "please sign in" message before ever
+// touching the network.
+async function authedHeaders() {
+  if (!auth.currentUser) return null
+  const idToken = await auth.currentUser.getIdToken()
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken }
+}
 
 const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level, A-Level and BTEC revision.
 AS-Level is a standalone one-year qualification, separate from A-Level (not the first year of it) —
@@ -23,20 +37,23 @@ Always reference specific free resources where relevant:
 - All subjects: Seneca, PMT, SaveMyExams`
 
 // ── Core call function ─────────────────────────────────────────────────────────
-// uid is passed for server-side rate limiting — never used for anything else.
+// uid is used locally only, to record the activity streak below — it is no longer sent
+// to the server. tutor.js now derives uid itself from the verified auth token attached
+// by authedHeaders() above, so a caller can't influence whose account is charged.
 export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, uid = null, feature = null) {
+  const headers = await authedHeaders()
+  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000) // safety net against a hung request
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal:  controller.signal,
       body: JSON.stringify({
         messages:     [{ role: 'user', content: prompt }],
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
-        uid,
         feature,
       }),
     })
@@ -83,18 +100,19 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 8192, ui
 // than adding an optional param to callAI so none of its ~15 existing text-only callers
 // need to change, and so it's obvious at a glance which calls actually send an image. ──
 export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM, maxTokens = 2000, uid = null) {
+  const headers = await authedHeaders()
+  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal:  controller.signal,
       body: JSON.stringify({
         messages:     [{ role: 'user', content: prompt }],
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
-        uid,
         imageBase64,
       }),
     })
@@ -143,14 +161,16 @@ export async function extractTextFromImage(imageBase64, kind, uid) {
   return callAIWithImage(prompt, imageBase64, sys, 1500, uid)
 }
 export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null, feature = null) {
+  const headers = await authedHeaders()
+  if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 55000)
   try {
     const res = await fetch(AI_ENDPOINT, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal:  controller.signal,
-      body: JSON.stringify({ messages, systemPrompt, uid, feature }),
+      body: JSON.stringify({ messages, systemPrompt, feature }),
     })
     clearTimeout(timeoutId)
 
