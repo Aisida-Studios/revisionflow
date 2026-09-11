@@ -873,16 +873,19 @@ export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQu
 
 export const sendFriendRequest = async (fromUid, toUid) => {
   let fromName = ''
+  let fromAvatarUrl = ''
   try {
     const snap = await getDoc(doc(db, 'users', fromUid))
     if (snap.exists()) {
       const d = snap.data()
       fromName = d.displayName || d.profile?.displayName || ''
+      fromAvatarUrl = d.avatarUrl || d.profile?.avatarUrl || ''
     }
   } catch {}
   await addDoc(collection(db, 'friendRequests'), {
     from:      fromUid,
     fromName,
+    fromAvatarUrl,
     to:        toUid,
     createdAt: serverTimestamp(),
   })
