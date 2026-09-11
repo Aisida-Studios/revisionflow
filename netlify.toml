@@ -6,22 +6,6 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# ── Function timeouts ──────────────────────────────────────────────────────────
-# Netlify's default synchronous function timeout is 10 seconds. tutor.js waits on a single
-# Mistral completion that can legitimately take longer than that — a detailed answer-marking
-# response, a multi-week study plan, or a batch of exam questions can all take 15-25+ seconds
-# to generate, especially under load. When the PLATFORM kills the function mid-request (rather
-# than the function returning its own error), the client gets a raw 502 with a non-JSON body —
-# which is exactly the "Server returned a non-JSON response (HTTP 502)" error. 26 seconds is the
-# maximum Netlify allows for a synchronous function.
-# NOTE: this setting only takes effect on a Netlify plan that supports extended function
-# timeouts (Pro tier and above) — on the free/Starter tier every function is hard-capped at 10
-# seconds no matter what is configured here. tutor.js's own internal timeout (see MISTRAL_TIMEOUT_MS
-# in that file) is what protects you on the free tier — this config is what lets it actually use
-# the extra time once you're on a plan that allows it.
-[functions."tutor"]
-  timeout = 26
-
 # ── Security headers ──────────────────────────────────────────────────────────
 # Applied to every response Netlify serves.
 [[headers]]
