@@ -15,7 +15,7 @@ import { checkAndAwardBadge } from '../utils/firestore'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
-import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb } from 'lucide-react'
+import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'
 import './AccountPages.css'
 
 const QUICK_PROMPTS = [
@@ -130,9 +130,13 @@ export default function AIAdvisor() {
     setMessages(newMessages)
     setLoading(true)
     const res = await chatWithAI(newMessages, { subjects: profile?.subjects, context: userContext }, user?.uid)
-    setMessages(ms=>[...ms,{role:'assistant',content:res.text||res.error||'Sorry, I had trouble responding.'}])
+    if (res.error) {
+      setMessages(ms=>[...ms,{role:'assistant', isError:true, failedInput: msg, content: res.error}])
+    } else {
+      setMessages(ms=>[...ms,{role:'assistant',content:res.text}])
+      checkAndAwardBadge(user.uid, 'first_ai').catch(()=>{})
+    }
     setLoading(false)
-    if (res.text) checkAndAwardBadge(user.uid, 'first_ai').catch(()=>{})
   }
 
   async function getResources(subject) {
@@ -273,6 +277,15 @@ export default function AIAdvisor() {
                   </div>
                   {m.role==='user' ? (
                     <div className="ap-chat-bubble">{m.content}</div>
+                  ) : m.isError ? (
+                    <div className="ap-chat-bubble ap-chat-bubble--error">
+                      {m.content}
+                      <div>
+                        <button className="ap-chat-retry" onClick={()=>sendMessage(m.failedInput)}>
+                          <RefreshCw size={11} /> Try again
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div style={{maxWidth:'100%',minWidth:0}}>
                       <AIOutput text={m.content} label="AI Response" />
