@@ -13,6 +13,20 @@ import { resolveProfileIcon } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
 import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'
+import {
+  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Medal, Award, Trophy,
+  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+} from 'lucide-react'
+
+// Every badge carries a lucideIcon name (src/data/badges.js) — this looks it up to a real
+// component. Kept as an explicit map rather than a dynamic import because ES imports need
+// static names; Dashboard.jsx still uses the emoji `icon` field directly and is unaffected.
+const BADGE_ICONS = {
+  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
+  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+}
 import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
@@ -408,9 +422,12 @@ export default function Profile() {
         <div className="ap-badge-tile-grid">
           {BADGE_LIST.map(b => {
             const unlocked = earnedIds.includes(b.id)
+            const Icon = BADGE_ICONS[b.lucideIcon]
             return (
               <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>
-                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>{b.icon}</div>
+                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>
+                  {Icon ? <Icon size={22} /> : b.icon}
+                </div>
                 <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>
                 <div className="ap-badge-tile-desc">{b.desc}</div>
                 {unlocked
