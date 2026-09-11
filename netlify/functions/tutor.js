@@ -197,6 +197,11 @@ module.exports.handler = async function(event) {
   try {
     decoded = await verifyUserToken(event)
   } catch (e) {
+    // Never shown to the client, but this is what actually explains a "signed in but still
+    // 401" report — expired token, malformed token, or (most commonly) the ID token's project
+    // not matching the project FIREBASE_SERVICE_ACCOUNT was issued for. Check Netlify's function
+    // logs for this line.
+    console.error('[tutor] auth verification failed:', e.code || e.message || e)
     return respond(401, { error: 'Please sign in to use AI features.' })
   }
   const uid = decoded.uid
