@@ -5,6 +5,18 @@ import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import { Zap, Star } from 'lucide-react'
+import {
+  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Crown, Medal, Award, Trophy,
+  TrendingUp, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+} from 'lucide-react'
+
+// Same badge icon lookup as Profile.jsx — see src/data/badges.js for the lucideIcon field.
+const BADGE_ICONS = {
+  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
+  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+}
 import LoadingScreen from '../components/LoadingScreen'
 import './AccountPages.css'
 
@@ -142,11 +154,14 @@ export default function PublicProfile() {
               Badges <span style={{ color:'var(--text-muted)', fontWeight:400 }}>({unlockedBadges.length})</span>
             </h4>
             <div className="ap-badge-grid">
-              {unlockedBadges.map(b => (
-                <div key={b.id} className="ap-badge-chip ap-badge-chip--earned" title={b.name + ': ' + b.desc}>
-                  <span className="ap-badge-chip-icon">{b.icon}</span>
-                </div>
-              ))}
+              {unlockedBadges.map(b => {
+                const Icon = BADGE_ICONS[b.lucideIcon]
+                return (
+                  <div key={b.id} className="ap-badge-chip ap-badge-chip--earned" title={b.name + ': ' + b.desc}>
+                    <span className="ap-badge-chip-icon">{Icon ? <Icon size={20} /> : b.icon}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
