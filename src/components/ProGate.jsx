@@ -31,7 +31,7 @@ export function ProBadge({ style = {} }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 3,
       padding: '1px 7px', borderRadius: 999,
-      background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+      background: 'var(--gold)',
       color: '#fff', fontSize: '0.65rem', fontWeight: 800,
       letterSpacing: '0.04em', verticalAlign: 'middle',
       ...style,
@@ -67,12 +67,12 @@ export default function ProGate({ children, feature = 'this feature', compact = 
   return (
     <div style={{
       padding: '32px 24px', borderRadius: 14, textAlign: 'center',
-      background: 'linear-gradient(135deg,var(--gold-pale),var(--bg-muted))',
+      background: 'var(--gold-pale)',
       border: '1px solid var(--gold-border)',
     }}>
       <div style={{
         width: 48, height: 48, borderRadius: '50%',
-        background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+        background: 'var(--gold)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 14px',
       }}>
