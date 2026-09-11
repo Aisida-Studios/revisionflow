@@ -125,8 +125,6 @@ export default function Friends() {
   const hasIncomingRequest = (uid) => requests.some(r => r.from === uid)
   const hasSentRequest     = (uid) => (profile?.sentFriendRequests || []).includes(uid)
 
-  const initial = (name) => (name || 'U')[0].toUpperCase()
-
   return (
     <div className="fade-in ap-page ap-page--md">
       <div className="ap-page-head">
@@ -240,7 +238,7 @@ export default function Friends() {
             <div className="ap-person-list">
               {requests.map(req => (
                 <div key={req.id} className="ap-person-row">
-                  <div className="ap-avatar ap-avatar--md">{initial(req.fromName || req.from)}</div>
+                  <PersonAvatar name={req.fromName || req.from} avatarUrl={req.fromAvatarUrl} />
                   <div className="ap-person-main">
                     <div className="ap-person-name">{req.fromName || 'RevisionFlow user'}</div>
                     <div className="ap-person-meta">Wants to be your study buddy</div>
