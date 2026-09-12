@@ -26,6 +26,8 @@
 //   instead. MAX_TOKENS was also cut from 8192 to 5000, and every individual AI feature in
 //   src/utils/ai.js now asks for a maxTokens ceiling sized to what it actually needs (see that
 //   file) — shorter requested completions are the biggest lever on how long a call can run.
+//   One automatic retry was added for Mistral's own rate-limit response specifically (not
+//   RevisionFlow's own daily allowance) — see callMistral() and the retry right below it.
 
 const MISTRAL_URL        = 'https://api.mistral.ai/v1/chat/completions'
 const MAX_TOKENS         = 5000    // hard server-side ceiling — enforced via Math.min() below no
@@ -172,6 +174,26 @@ function respond(statusCode, body) {
 
 const DEFAULT_SYSTEM = "You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level and A-Level revision. AS-Level is a standalone qualification, separate from A-Level — keep their content and grading scale (A-E vs A*-E) distinct. You give specific, practical, encouraging advice tailored to UK students. Be concise but thorough. Use bullet points where helpful. Focus on actionable recommendations. Always reference specific free resources where relevant: Maths: Dr Frost Maths, 1stclassmaths, Corbettmaths, PMT. Sciences: Cognito, PMT, SaveMyExams, Primrose Kitten. Computer Science: Craig 'n' Dave, CS GCSE Guru, Seneca. English: Mr Bruff, SaveMyExams. All subjects: Seneca, PMT, SaveMyExams."
 
+// Makes one attempt to Mistral's chat completions endpoint. Pulled out on its own so the
+// automatic retry below (for Mistral's own rate limit) can call it a second time without
+// duplicating the request body and headers.
+function callMistral(apiKey, fullMessages, maxTokens, controller) {
+  return fetch(MISTRAL_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify({
+      model:      'mistral-small-latest',
+      messages:   fullMessages,
+      temperature: 0.7,
+      max_tokens:  Math.min(maxTokens || MAX_TOKENS, MAX_TOKENS),
+    }),
+    signal: controller.signal,
+  })
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports.handler = async function(event) {
   const requestStart = Date.now()
@@ -291,20 +313,21 @@ module.exports.handler = async function(event) {
   const mistralStart  = Date.now()
 
   try {
-    const mistralRes = await fetch(MISTRAL_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey,
-      },
-      body: JSON.stringify({
-        model:      'mistral-small-latest',
-        messages:   fullMessages,
-        temperature: 0.7,
-        max_tokens:  Math.min(maxTokens || MAX_TOKENS, MAX_TOKENS),
-      }),
-      signal: controller.signal,
-    })
+    let mistralRes = await callMistral(apiKey, fullMessages, maxTokens, controller)
+    let retried = false
+
+    // One automatic retry, only for Mistral's own rate limit (its 429 — RevisionFlow's own
+    // daily-allowance 429 is returned much earlier, above, before Mistral is ever called).
+    // A short burst against the account's rate limit is the most common cause and often
+    // clears within a second or two. Nothing else retries here: a timeout has already used
+    // most of the 45s budget by the time it happens, and 401/403/5xx from Mistral won't be
+    // fixed by immediately trying again.
+    if (mistralRes.status === 429) {
+      console.error('[tutor] Mistral rate-limited — retrying once after 1s')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      mistralRes = await callMistral(apiKey, fullMessages, maxTokens, controller)
+      retried = true
+    }
 
     if (!mistralRes.ok) {
       let errBody = {}
@@ -335,7 +358,7 @@ module.exports.handler = async function(event) {
 
     if (!text) return respond(502, { error: 'AI returned an empty response.' })
 
-    console.log('[tutor] feature=' + (feature || 'general') + ' auth=' + authMs + 'ms allowance=' + allowanceMs + 'ms mistral=' + (Date.now() - mistralStart) + 'ms total=' + (Date.now() - requestStart) + 'ms')
+    console.log('[tutor] feature=' + (feature || 'general') + ' auth=' + authMs + 'ms allowance=' + allowanceMs + 'ms mistral=' + (Date.now() - mistralStart) + 'ms total=' + (Date.now() - requestStart) + 'ms' + (retried ? ' retried=true' : ''))
 
     return respond(200, {
       text,
