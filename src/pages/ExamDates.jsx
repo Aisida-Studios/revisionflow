@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateUserProfile } from '../utils/firestore'
-import { countdownLabel, countdownUrgency, daysUntilExam } from '../utils/calendar'
+import { countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone } from '../utils/examUtils'
 import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
 import { isTiered } from '../data/examDates2026'
 import { getMergedExamDates } from '../data/overrides'
 import toast from 'react-hot-toast'
 import { Plus, X, Clock, Trash2, Check, Zap, Edit2 } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format } from 'date-fns'
 
 export default function ExamDates() {
   const { user, profile, refreshProfile } = useAuth()
