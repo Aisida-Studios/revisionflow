@@ -1067,7 +1067,7 @@ function StatsTab({ email }) {
               <div style={{
                 width: '100%', minHeight: d.count > 0 ? 3 : 1,
                 height: (d.count / maxDay * 100) + '%',
-                background: d.count > 0 ? 'linear-gradient(180deg,var(--purple-400),var(--purple-700))' : 'var(--border)',
+                background: d.count > 0 ? 'var(--accent)' : 'var(--border)',
                 borderRadius: '3px 3px 0 0',
               }} />
             </div>
