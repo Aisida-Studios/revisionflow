@@ -37,7 +37,7 @@ import toast from 'react-hot-toast'
 import {
   ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote, Pencil,
   ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,
-  BookOpen, Sparkles, RotateCcw, Eye, EyeOff,
+  BookOpen, RotateCcw, Eye, EyeOff,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import './Topics.css'
