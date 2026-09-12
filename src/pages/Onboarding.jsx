@@ -10,11 +10,11 @@ import {
   GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS,
   EXAM_BOARDS, getGradeOptions, SUBJECT_COLOURS,
 } from '../data/subjects'
-import { isTiered, EXAM_DATES_2026 } from '../data/examDates2026'
+import { isTiered } from '../data/examDates2026'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
 import toast from 'react-hot-toast'
-import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Users, Brain, Sparkles, Star } from 'lucide-react'
+import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
