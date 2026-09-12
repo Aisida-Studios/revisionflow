@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
-import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp, collection, query, where } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, setDoc, collection, query, where } from 'firebase/firestore'
 import {
   auth, db, loginWithEmail, signupWithEmail,
   loginWithGoogle as _loginWithGoogle,
