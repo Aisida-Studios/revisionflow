@@ -6,7 +6,7 @@ import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc
 import { db } from '../firebase'
 import { generateSchedule, buildSubjectsFromProfile } from '../utils/scheduler'
 import { downloadICS } from '../utils/calendar'
-import { format, addMonths, addWeeks } from 'date-fns'
+import { format, addMonths } from 'date-fns'
 import toast from 'react-hot-toast'
 import { X, ChevronRight, ChevronLeft, Download, Check, Clock, Calendar, AlertCircle, Plus, Trash2 } from 'lucide-react'
 
@@ -57,11 +57,8 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
   const [contentDuration, setContentDuration] = useState(45)
   const [sessionGap,      setSessionGap]      = useState(30)
   const [emergencySessions, setEmergency]     = useState(true)
-  const [dayCaps,          setDayCaps]        = useState([]) // [{day, max}] - was a single day
-  const [newCapDay,        setNewCapDay]      = useState('Tuesday')
-  const [newCapMax,        setNewCapMax]      = useState(1)
-  const [maxSessionsPerDay, setMaxSessionsPerDay] = useState('') // '' = no flat cap
-  const [dynamicRatio,     setDynamicRatio]   = useState(false)
+  const [dayCap,          setDayCap]          = useState('none') // 'none' | day name
+  const [dayCapCount,     setDayCapCount]     = useState(1)
   const [useTopicFocus,   setUseTopicFocus]   = useState(true)
   const [holidays, setHolidays] = useState([])
   const [newHol,   setNewHol]   = useState({ start:'', end:'', label:'' })
@@ -93,10 +90,8 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
           if (d.contentDuration !== undefined) setContentDuration(d.contentDuration)
           if (d.sessionGap !== undefined) setSessionGap(d.sessionGap)
           if (d.emergencySessions !== undefined) setEmergency(d.emergencySessions)
-          if (d.dayCaps !== undefined) setDayCaps(d.dayCaps)
-          else if (d.dayCap && d.dayCap !== 'none') setDayCaps([{ day: d.dayCap, max: d.dayCapCount || 1 }]) // migrate old single-day format
-          if (d.maxSessionsPerDay !== undefined) setMaxSessionsPerDay(d.maxSessionsPerDay ?? '')
-          if (d.dynamicRatio !== undefined) setDynamicRatio(d.dynamicRatio)
+          if (d.dayCap !== undefined) setDayCap(d.dayCap)
+          if (d.dayCapCount !== undefined) setDayCapCount(d.dayCapCount)
           if (d.useTopicFocus !== undefined) setUseTopicFocus(d.useTopicFocus)
           if (d.subjectRatios) setSubjectRatios(d.subjectRatios)
           if (d.subjectRatioValues) setSubjectRatioValues(d.subjectRatioValues)
@@ -124,10 +119,6 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
     }))
 
     if (!builtSubjects.length) { toast.error('Add subjects first'); return }
-    if (contentRatio === 0 && examRatio === 0 && builtSubjects.some(s => subjectRatios[s.name] === 'global')) {
-      toast.error('Global content and exam ratio are both 0 — no sessions would be generated for subjects using the global ratio')
-      return
-    }
 
     setLoading(true)
     let topicFocus = {}
@@ -163,11 +154,10 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
       examRatio,
       contentDuration,
       sessionGap,
-      dayCaps,
-      maxSessionsPerDay: maxSessionsPerDay === '' ? null : parseInt(maxSessionsPerDay),
+      cappedDay:          dayCap,
+      cappedDayMax:       dayCapCount,
       extendedFromDate:   extendedDate ? new Date(extendedDate) : null,
       includeEmergency:   emergencySessions,
-      dynamicRatio,
       topicFocus,
     })
     setLoading(false)
@@ -212,9 +202,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
 
       try {
         await setDoc(doc(db, 'users', user.uid, 'settings', 'calendarPrefs'), {
-          contentRatio, examRatio, contentDuration, sessionGap, emergencySessions,
-          dayCaps, maxSessionsPerDay: maxSessionsPerDay === '' ? null : parseInt(maxSessionsPerDay),
-          dynamicRatio, useTopicFocus,
+          contentRatio, examRatio, contentDuration, sessionGap, emergencySessions, dayCap, dayCapCount, useTopicFocus,
           subjectRatios, subjectRatioValues, prioritySubjects: prioritySubjects || []
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
@@ -347,9 +335,6 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
             {/* Holidays */}
             <div>
               <label className="label">Holiday / unavailable periods (optional)</label>
-              <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:8}}>
-                No sessions at all get scheduled on these dates — use for time you genuinely can't revise (family trip, etc.), not school holidays where you actually have more free time.
-              </p>
               {holidays.map(h=>(
                 <div key={h.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'5px 10px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.82rem',marginBottom:5}}>
                   <span>{h.label||'Holiday'}: {h.start} → {h.end}</span>
@@ -419,7 +404,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 <div style={{textAlign:'center'}}>
                   <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:3}}>Exam practice</div>
                   <select className="select" style={{width:70}} value={examRatio} onChange={e=>setExamRatio(parseInt(e.target.value))}>
-                    {[0,1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
+                    {[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <span style={{fontSize:'0.82rem',color:'var(--text-muted)',paddingTop:16}}>
@@ -444,44 +429,27 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
               </select>
             </div>
 
-            {/* Day cap(s) — now supports any number of days, not just one */}
+            {/* Day cap */}
             <div>
-              <label className="label">Session caps on specific days (optional)</label>
+              <label className="label">Session cap on a specific day (optional)</label>
               <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:8}}>
-                Useful if some days have less time available (e.g. cap Wednesday at 1, Friday at 2).
+                Useful if one day has less time available (e.g. limit Wednesday to 1 session).
               </p>
-              {dayCaps.map((c,i)=>(
-                <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'5px 10px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.82rem',marginBottom:5}}>
-                  <span>{c.day}: max {c.max} session{c.max!==1?'s':''}</span>
-                  <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>setDayCaps(cs=>cs.filter((_,ci)=>ci!==i))}><Trash2 size={12}/></button>
-                </div>
-              ))}
               <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-                <select className="select" style={{width:'auto'}} value={newCapDay} onChange={e=>setNewCapDay(e.target.value)}>
-                  {DAYS.filter(d=>!dayCaps.some(c=>c.day===d)).map(d=><option key={d} value={d}>{d}</option>)}
+                <select className="select" style={{width:'auto'}} value={dayCap} onChange={e=>setDayCap(e.target.value)}>
+                  <option value="none">No cap</option>
+                  {DAYS.map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
-                <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>max</span>
-                <select className="select" style={{width:70}} value={newCapMax} onChange={e=>setNewCapMax(parseInt(e.target.value))}>
-                  {[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
-                </select>
-                <button className="btn btn-secondary btn-sm"
-                  onClick={()=>{ setDayCaps(cs=>[...cs,{day:newCapDay,max:newCapMax}]); }}
-                  disabled={DAYS.filter(d=>!dayCaps.some(c=>c.day===d)).length===0}>
-                  <Plus size={13}/> Add cap
-                </button>
+                {dayCap !== 'none' && (
+                  <>
+                    <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>max</span>
+                    <select className="select" style={{width:70}} value={dayCapCount} onChange={e=>setDayCapCount(parseInt(e.target.value))}>
+                      {[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <span style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>session{dayCapCount!==1?'s':''}</span>
+                  </>
+                )}
               </div>
-            </div>
-
-            {/* Flat per-day cap — applies to every day, independent of the day-specific caps above */}
-            <div>
-              <label className="label">Overall max sessions per day (optional)</label>
-              <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:8}}>
-                A flat ceiling that applies every day, on top of any day-specific caps above.
-              </p>
-              <select className="select" style={{width:'auto'}} value={maxSessionsPerDay} onChange={e=>setMaxSessionsPerDay(e.target.value)}>
-                <option value="">No flat cap</option>
-                {[1,2,3,4].map(n=><option key={n} value={n}>{n} session{n!==1?'s':''} max</option>)}
-              </select>
             </div>
 
             {/* Emergency sessions */}
@@ -513,22 +481,6 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 </div>
               </label>
             </div>
-
-            {/* Dynamic ratio */}
-            <div>
-              <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
-                <input type="checkbox" checked={dynamicRatio} onChange={e=>setDynamicRatio(e.target.checked)}
-                  style={{width:16,height:16,accentColor:'var(--accent)'}}/>
-                <div>
-                  <span style={{fontWeight:600,fontSize:'0.875rem'}}>Shift toward exam practice as each exam nears</span>
-                  <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:0}}>
-                    In the 3 weeks before a subject's exam its sessions lean more toward practice papers;
-                    in the final week, heavily so. Uses your real exam dates — subjects without one keep
-                    their normal ratio throughout.
-                  </p>
-                </div>
-              </label>
-            </div>
           </div>
         )}
 
@@ -544,28 +496,12 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 <div key={s.name} style={{padding:12,background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,gap:10,flexWrap:'wrap'}}>
                     <span style={{fontWeight:600,fontSize:'0.875rem'}}>{s.name}</span>
-                    <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
-                      <label style={{display:'flex',alignItems:'center',gap:5,fontSize:'0.78rem',cursor:'pointer'}}>
-                        <input type="checkbox" checked={prioritySubjects.includes(s.name)}
-                          onChange={e=>setPrioritySubjects(ps=>e.target.checked?[...ps,s.name]:ps.filter(x=>x!==s.name))}
-                          style={{accentColor:'var(--warning)'}}/>
-                        High priority
-                      </label>
-                      <label style={{display:'flex',alignItems:'center',gap:5,fontSize:'0.78rem',cursor:'pointer'}}>
-                        <input type="checkbox"
-                          checked={subjectRatios[s.name]==='custom' && subjectRatioValues[s.name]?.[0]===0 && subjectRatioValues[s.name]?.[1]===0}
-                          onChange={e=>{
-                            if (e.target.checked) {
-                              setSubjectRatios(r=>({...r,[s.name]:'custom'}))
-                              setSubjectRatioValues(v=>({...v,[s.name]:[0,0]}))
-                            } else {
-                              setSubjectRatioValues(v=>({...v,[s.name]:[2,1]}))
-                            }
-                          }}
-                          style={{accentColor:'var(--danger)'}}/>
-                        Pause this subject
-                      </label>
-                    </div>
+                    <label style={{display:'flex',alignItems:'center',gap:5,fontSize:'0.78rem',cursor:'pointer'}}>
+                      <input type="checkbox" checked={prioritySubjects.includes(s.name)}
+                        onChange={e=>setPrioritySubjects(ps=>e.target.checked?[...ps,s.name]:ps.filter(x=>x!==s.name))}
+                        style={{accentColor:'var(--warning)'}}/>
+                      High priority
+                    </label>
                   </div>
                   <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
                     <label style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Ratio:</label>
@@ -577,19 +513,16 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                     {subjectRatios[s.name]==='custom'&&(
                       <div style={{display:'flex',gap:4,alignItems:'center'}}>
                         <select className="select" style={{width:55,fontSize:'0.78rem',padding:'3px 4px'}}
-                          value={subjectRatioValues[s.name]?.[0] ?? 2}
-                          onChange={e=>setSubjectRatioValues(v=>({...v,[s.name]:[parseInt(e.target.value),v[s.name]?.[1] ?? 1]}))}>
+                          value={subjectRatioValues[s.name]?.[0]||2}
+                          onChange={e=>setSubjectRatioValues(v=>({...v,[s.name]:[parseInt(e.target.value),v[s.name]?.[1]||1]}))}>
                           {[0,1,2,3,4].map(n=><option key={n} value={n}>{n}</option>)}
                         </select>
                         <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>:</span>
                         <select className="select" style={{width:55,fontSize:'0.78rem',padding:'3px 4px'}}
-                          value={subjectRatioValues[s.name]?.[1] ?? 1}
-                          onChange={e=>setSubjectRatioValues(v=>({...v,[s.name]:[v[s.name]?.[0] ?? 2,parseInt(e.target.value)]}))}>
-                          {[0,1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
+                          value={subjectRatioValues[s.name]?.[1]||1}
+                          onChange={e=>setSubjectRatioValues(v=>({...v,[s.name]:[v[s.name]?.[0]||2,parseInt(e.target.value)]}))}>
+                          {[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
                         </select>
-                        {subjectRatioValues[s.name]?.[0]===0 && subjectRatioValues[s.name]?.[1]===0 && (
-                          <span className="badge badge-red" style={{fontSize:'0.68rem'}}>Paused — no sessions generated</span>
-                        )}
                       </div>
                     )}
                   </div>
@@ -610,11 +543,9 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
                 ['Ratio', `${contentRatio} content : ${examRatio} exam practice`],
                 ['Session length', `${contentDuration} minutes`],
                 ['Session gap', `${sessionGap} minutes`],
-                ['Day caps', dayCaps.length?dayCaps.map(c=>`${c.day} max ${c.max}`).join(', '):'None'],
-                ['Max per day (flat)', maxSessionsPerDay===''?'None':`${maxSessionsPerDay} sessions`],
+                ['Day cap', dayCap==='none'?'None':`${dayCap} max ${dayCapCount} session${dayCapCount!==1?'s':''}`],
                 ['Emergency sessions', emergencySessions?`Yes (${examDates.length} exams)`:'No'],
                 ['Topic focus', useTopicFocus?'On — uses your weakest topics':'Off — generic titles'],
-                ['Dynamic ratio', dynamicRatio?'On — more exam practice as exams near':'Off — fixed ratio throughout'],
                 ['Holidays', holidays.length?holidays.map(h=>h.label||'Holiday').join(', '):'None'],
               ].map(([label, val])=>(
                 <div key={label} style={{display:'flex',justifyContent:'space-between',padding:'6px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
