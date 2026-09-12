@@ -2,7 +2,7 @@
 // Shows the user's referral link with a copy button and QR code.
 // Add this to the Profile page and the Friends page.
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getReferralUrl } from '../utils/referrals'
 import { Copy, Check, Share2 } from 'lucide-react'
