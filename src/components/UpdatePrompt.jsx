@@ -84,7 +84,7 @@ export default function UpdatePrompt() {
   return (
     <div style={{
       marginBottom: 20, padding: '14px 18px',
-      background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(147,51,234,0.08))',
+      background: 'var(--accent-pale)',
       border: '1px solid var(--accent)', borderRadius: 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column', gap: 10,
     }}>
