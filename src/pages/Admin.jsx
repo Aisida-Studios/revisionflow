@@ -10,7 +10,7 @@ import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
   Shield, Users, Star, Search, CheckCircle, XCircle,
-  BarChart2, Zap, RefreshCw, AlertTriangle, ChevronDown, ChevronUp, TrendingUp,
+  BarChart2, Zap, RefreshCw, AlertTriangle, TrendingUp,
 } from 'lucide-react'
 
 const ADMIN_EMAIL = 'femiaisida1@gmail.com'
