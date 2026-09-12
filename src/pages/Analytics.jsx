@@ -1,240 +1,81 @@
 // src/pages/Analytics.jsx
 import React, { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import Skeleton from '../components/Skeleton'
-import AIOutput from '../components/AIOutput'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts, gradeImpliesQualification } from '../utils/firestore'
+import { getPaperAttempts, filterToCurrentQualification } from '../utils/firestore'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, AreaChart, Area,
 } from 'recharts'
 import { SUBJECT_COLOURS } from '../data/subjects'
-import { CONF_LABELS, CONF_COLOURS, displayTopicName } from '../utils/topicDisplay'
-import {
-  Clock, Flame, TrendingUp, TrendingDown, Minus, Award, Target, BookOpen,
-  Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2, Activity,
-} from 'lucide-react'
-import './Analytics.css'
+import { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,
+         Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'
 
-const COLOURS = ['#0d9488', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#166534']
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'subjects', label: 'Subjects' },
-  { id: 'topics', label: 'Topics' },
-  { id: 'trends', label: 'Trends' },
-]
-const tooltipStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.8rem' }
-const axisTick = { fontSize: 11, fill: 'var(--text-muted)' }
+const COLOURS = ['#0d9488','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#166534']
+const HOUR_LABELS = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am',
+                     '12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm']
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-// ── Date helpers — local-date parsing throughout, no UTC shifts ────────────
-function sessionDate(s) {
-  return s.startTime ? new Date(s.startTime) : (s.date ? new Date(s.date + 'T00:00:00') : null)
-}
-function attemptDateOf(a) {
-  if (a.attemptDate) return new Date(a.attemptDate + 'T00:00:00')
-  if (a.createdAt?.seconds) return new Date(a.createdAt.seconds * 1000)
-  return null
-}
-function toDate(d) {
-  if (!d) return null
-  if (d.seconds) return new Date(d.seconds * 1000)
-  if (typeof d.toDate === 'function') return d.toDate()
-  const parsed = new Date(d)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-function monthBounds(offset) {
-  const now = new Date()
-  return [new Date(now.getFullYear(), now.getMonth() + offset, 1), new Date(now.getFullYear(), now.getMonth() + offset + 1, 1)]
-}
-function weekBounds(offset) {
-  const now = new Date()
-  const diffToMon = (now.getDay() + 6) % 7
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMon)
-  const start = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + offset * 7)
-  return [start, new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7)]
-}
-const fmtMins = (m) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
-
-// Stricter than the shared filterToCurrentQualification (used elsewhere in the app, e.g.
-// Dashboard's predicted grades): still trusts an explicit qualification tag, or an unambiguous
-// grade format (GCSE grades are 1-9, A-Level/AS-Level use A*-E — so a grade of '7' or 'A*' alone
-// settles it), but never falls back to guessing from whichever other record for the subject
-// happens to be closest in time. That time-proximity guess is reasonable for a quick dashboard
-// glance, but for subject-level averages here it can silently blend an old qualification's
-// numbers into a new one's (e.g. GCSE Maths into AS-Level Maths) — an honest gap is better than
-// a wrong average.
-function strictQualificationMatch(records, subjectsList) {
-  const list = Array.isArray(subjectsList) ? subjectsList : []
-  return records.filter(r => {
-    if (r.archived) return false
-    const name = r.subject || r.subjectId
-    const subjMeta = list.find(s => s.name === name)
-    if (!subjMeta) return false
-    const currentQual = subjMeta.qualification
-    if (r.qualification) return r.qualification === currentQual
-    const byGrade = gradeImpliesQualification(r.grade)
-    if (byGrade) return byGrade === currentQual
-    return false
-  })
-}
-
-// ── Small presentational pieces ─────────────────────────────────────────────
-function Sparkline({ id, data, colour = 'var(--accent)' }) {
-  const hasShape = data && data.filter(d => d.v > 0).length >= 2
-  if (!hasShape) return <div className="analytics-sparkline" />
-  const gradId = `spark-grad-${id}`
+function StatCard({ icon, label, val, sub, colour, loading }) {
   return (
-    <div className="analytics-sparkline">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 3, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colour} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={colour} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={colour} strokeWidth={1.75} fill={`url(#${gradId})`} dot={false} isAnimationActive={false} />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
+      <div style={{ color: colour || 'var(--accent-light)', marginBottom: 4 }}>{icon}</div>
+      <div style={{ fontWeight: 800, fontSize: '1.35rem', color: colour || 'var(--accent-light)' }}>
+        {loading ? <Skeleton height={26} width={60} style={{ margin: '0 auto' }} /> : val}
+      </div>
+      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.3 }}>
+        {loading ? <Skeleton height={11} width={70} style={{ margin: '4px auto 0' }} /> : label}
+      </div>
+      {sub && !loading && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
 
-function ConfDistribution({ counts }) {
-  const max = Math.max(1, ...[1, 2, 3, 4, 5].map(l => counts[l] || 0))
+function Section({ title, icon, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="analytics-conf-distribution">
-      {[1, 2, 3, 4, 5].map(level => (
-        <div key={level} className="analytics-conf-bar"
-          style={{ height: `${Math.max(8, ((counts[level] || 0) / max) * 100)}%`, background: CONF_COLOURS[level] }}
-          title={`${CONF_LABELS[level]}: ${counts[level] || 0}`} />
-      ))}
+    <div className="card" style={{ marginBottom: 16, padding: 0, overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+        borderBottom: open ? '1px solid var(--border)' : 'none',
+      }}>
+        <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem' }}>
+          {icon} {title}
+        </h4>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div style={{ padding: '14px 18px' }}>{children}</div>}
     </div>
-  )
-}
-
-function TrendChip({ value, format: fmt, period = 'last month' }) {
-  if (value === null || value === undefined || Number.isNaN(value)) return null
-  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus
-  const cls = value > 0 ? 'is-up' : value < 0 ? 'is-down' : 'is-flat'
-  return <span className={`analytics-trend ${cls}`}><Icon size={12} /> {fmt(value)} vs {period}</span>
-}
-
-function StatHero({ icon, label, value, loading, trend, spark, emptyHint }) {
-  return (
-    <div className="card analytics-stat-card">
-      <div className="analytics-stat-top">
-        <span className="analytics-stat-icon">{icon}</span>
-        <span className="analytics-stat-label">{label}</span>
-      </div>
-      <div className="analytics-stat-value">
-        {loading ? <Skeleton height={28} width={70} /> : value}
-      </div>
-      <div className="analytics-stat-foot">
-        {loading ? <Skeleton height={14} width={90} /> : (trend || (emptyHint && <span className="analytics-trend is-flat">{emptyHint}</span>) || <span />)}
-        {!loading && spark}
-      </div>
-    </div>
-  )
-}
-
-function Card({ title, icon, note, right, children }) {
-  return (
-    <div className="card analytics-card">
-      <div className="analytics-card-head">
-        <h4 className="analytics-card-title">{icon}{title}</h4>
-        {right}
-      </div>
-      {note && <p className="analytics-card-note">{note}</p>}
-      {children}
-    </div>
-  )
-}
-
-function StudyPatternsCard({ weeklyPattern, timeOfDayData, sessionLengthDist }) {
-  const [mode, setMode] = useState('day')
-  const caption = useMemo(() => {
-    if (mode === 'day') {
-      const best = [...weeklyPattern].sort((a, b) => b.hours - a.hours)[0]
-      if (!best || best.hours === 0) return null
-      return `Most productive: ${best.day}s (${best.hours}h avg)`
-    }
-    if (mode === 'time') {
-      const peak = [...timeOfDayData].sort((a, b) => b.hours - a.hours)[0]
-      if (!peak || peak.hours === 0) return null
-      return `You study most in the ${peak.label.split('\n')[0].toLowerCase()}`
-    }
-    const peak = [...sessionLengthDist].sort((a, b) => b.count - a.count)[0]
-    if (!peak || peak.count === 0) return null
-    return `Most sessions run ${peak.label}`
-  }, [mode, weeklyPattern, timeOfDayData, sessionLengthDist])
-
-  return (
-    <Card title="Study patterns" icon={<Calendar size={16} />} note={caption}
-      right={
-        <div className="analytics-seg">
-          <button className={mode === 'day' ? 'active' : ''} onClick={() => setMode('day')}>Day of week</button>
-          <button className={mode === 'time' ? 'active' : ''} onClick={() => setMode('time')}>Time of day</button>
-          <button className={mode === 'length' ? 'active' : ''} onClick={() => setMode('length')}>Session length</button>
-        </div>
-      }>
-      {mode === 'day' && (
-        <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={weeklyPattern}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="day" tick={axisTick} axisLine={false} tickLine={false} />
-            <YAxis tick={axisTick} unit="h" axisLine={false} tickLine={false} width={32} />
-            <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={tooltipStyle} />
-            <Bar dataKey="hours" radius={[4, 4, 0, 0]} fill="var(--accent)" maxBarSize={34} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-      {mode === 'time' && (
-        <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={timeOfDayData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-            <YAxis tick={axisTick} unit="h" axisLine={false} tickLine={false} width={32} />
-            <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={tooltipStyle} />
-            <Bar dataKey="hours" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={34} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-      {mode === 'length' && (
-        <ResponsiveContainer width="100%" height={190}>
-          <BarChart data={sessionLengthDist}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} width={28} />
-            <Tooltip formatter={(v) => [v, 'Sessions']} contentStyle={tooltipStyle} />
-            <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={34} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Card>
   )
 }
 
 export default function Analytics() {
   const { user, profile } = useAuth()
-  const [sessions, setSessions] = useState([])
-  const [attempts, setAttempts] = useState([])
-  const [topics, setTopics] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [sessions,  setSessions]  = useState([])
+  const [attempts,  setAttempts]  = useState([])
+  const [topics,    setTopics]    = useState([])
+  const [loading,   setLoading]   = useState(true)
   const [dateRange, setDateRange] = useState(30)
-  const [gradeSub, setGradeSub] = useState('')
+  const [gradeSub,  setGradeSub]  = useState('')
   const [activeTab, setActiveTab] = useState('overview')
+
+  // Computed live against current subjects — used by every breakdown/chart below that's about
+  // "how am I doing", so old-qualification data doesn't quietly reappear the way relying on the
+  // archived flag alone did. The two lifetime stats (top bar "Papers logged", and "Papers
+  // attempted"/"Topics rated" under Personal Records) deliberately keep using the raw, unfiltered
+  // `attempts`/`topics` instead — those are meant to count everything, forever.
+  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
 
   useEffect(() => {
     if (!user) return
     Promise.all([
       getDocs(collection(db, 'users', user.uid, 'sessions')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
-      getPaperAttempts(user.uid),
+      getPaperAttempts(user.uid, null),
       getDocs(collection(db, 'users', user.uid, 'topics')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
     ]).then(([sess, atts, tops]) => {
       setSessions(sess)
@@ -245,171 +86,148 @@ export default function Analytics() {
   }, [user])
 
   const subjectList = profile?.subjects?.map(s => s.name) || []
-  useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length])
 
-  // Strictly qualification-matched — see strictQualificationMatch above for why this is
-  // stricter than the shared filterToCurrentQualification used elsewhere in the app. Study time
-  // below deliberately stays unfiltered (all sessions, lifetime): sessions don't carry a
-  // qualification field at all (see the Time-by-subject note further down), and time spent
-  // doesn't become "wrong" across a qualification change the way a stale grade or confidence
-  // rating would.
-  const currentAttempts = useMemo(() => strictQualificationMatch(attempts, profile?.subjects), [attempts, profile])
-  const currentSubjects = useMemo(() => profile?.subjects || [], [profile])
-  const currentTopics = useMemo(() => strictQualificationMatch(topics, currentSubjects), [topics, currentSubjects])
-
-  // ── Core time data (lifetime) ─────────────────────────────────────────────
+  // ── Core data ──────────────────────────────────────────────────────────────
   const completedSessions = useMemo(() => sessions.filter(s => s.completed), [sessions])
-  const totalMinutes = useMemo(() => completedSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [completedSessions])
-  const rangeStart = useMemo(() => subDays(new Date(), dateRange), [dateRange])
-  const recentSessions = useMemo(() => completedSessions.filter(s => { const d = sessionDate(s); return d && d >= rangeStart }), [completedSessions, rangeStart])
-  const recentMinutes = useMemo(() => recentSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [recentSessions])
-  const avgDailyMinutes = Math.round(recentMinutes / dateRange)
-  const completionRate = sessions.length ? Math.round((completedSessions.length / sessions.length) * 100) : 0
+  const totalMinutes      = useMemo(() => completedSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [completedSessions])
+  const rangeStart        = useMemo(() => subDays(new Date(), dateRange), [dateRange])
 
-  // ── Hero stat: study time ─────────────────────────────────────────────────
-  const studyTimeTrend = useMemo(() => {
-    const [curS, curE] = monthBounds(0), [prevS, prevE] = monthBounds(-1)
-    let cur = 0, prev = 0
-    completedSessions.forEach(s => {
-      const d = sessionDate(s); if (!d) return
-      const mins = parseInt(s.duration) || 45
-      if (d >= curS && d < curE) cur += mins
-      else if (d >= prevS && d < prevE) prev += mins
-    })
-    if (!prev) return null
-    return Math.round(((cur - prev) / prev) * 100)
-  }, [completedSessions])
+  const recentSessions = useMemo(() => completedSessions.filter(s => {
+    const d = s.startTime ? new Date(s.startTime) : s.date ? new Date(s.date + 'T00:00:00') : null
+    return d && d >= rangeStart
+  }), [completedSessions, rangeStart])
 
-  const last10Weeks = useMemo(() => {
-    const weeks = Array.from({ length: 10 }, (_, i) => {
-      const [s, e] = weekBounds(i - 9)
-      return { start: s, end: e, mins: 0, count: 0 }
-    })
-    completedSessions.forEach(s => {
-      const d = sessionDate(s); if (!d) return
-      const bucket = weeks.find(w => d >= w.start && d < w.end)
-      if (bucket) { bucket.mins += parseInt(s.duration) || 45; bucket.count += 1 }
-    })
-    return weeks
-  }, [completedSessions])
+  const recentMinutes    = useMemo(() => recentSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [recentSessions])
+  const avgDailyMinutes  = Math.round(recentMinutes / dateRange)
+  const completionRate   = sessions.length ? Math.round((completedSessions.length / sessions.length) * 100) : 0
+  const avgSessionLength = completedSessions.length ? Math.round(totalMinutes / completedSessions.length) : 0
 
-  // ── Hero stat: average grade ──────────────────────────────────────────────
-  const avgGrade = useMemo(() => {
-    const withPct = currentAttempts.filter(a => a.percentage != null)
-    return withPct.length ? Math.round(withPct.reduce((s, a) => s + a.percentage, 0) / withPct.length) : null
-  }, [currentAttempts])
-
-  const avgGradeTrend = useMemo(() => {
-    const [curS, curE] = monthBounds(0), [prevS, prevE] = monthBounds(-1)
-    const cur = [], prev = []
-    currentAttempts.forEach(a => {
-      if (a.percentage == null) return
-      const d = attemptDateOf(a); if (!d) return
-      if (d >= curS && d < curE) cur.push(a.percentage)
-      else if (d >= prevS && d < prevE) prev.push(a.percentage)
-    })
-    if (!cur.length || !prev.length) return null
-    const curAvg = cur.reduce((a, b) => a + b, 0) / cur.length
-    const prevAvg = prev.reduce((a, b) => a + b, 0) / prev.length
-    return Math.round(curAvg - prevAvg)
-  }, [currentAttempts])
-
-  const gradeSpark = useMemo(() => {
-    return currentAttempts
-      .filter(a => a.percentage != null)
-      .map(a => ({ v: a.percentage, _d: attemptDateOf(a) }))
-      .filter(a => a._d)
-      .sort((a, b) => a._d - b._d)
-      .slice(-10)
-  }, [currentAttempts])
-
-  // ── Hero stat: topic confidence ───────────────────────────────────────────
-  const avgConfidencePct = useMemo(() => {
-    const rated = currentTopics.filter(t => t.confidence)
-    return rated.length ? Math.round((rated.reduce((s, t) => s + t.confidence, 0) / rated.length) * 20) : null
-  }, [currentTopics])
-
-  const confidenceCounts = useMemo(() => {
-    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    currentTopics.forEach(t => { if (t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
-    return counts
-  }, [currentTopics])
-
-  const confidenceTrend = useMemo(() => {
-    // Aggregated, never-invented trend: for each topic with real confidenceHistory, compare the
-    // latest rating to the newest entry that's at least ~3 weeks older, then average the deltas.
-    // Topics without enough history simply don't contribute — same "omit rather than fabricate"
-    // rule TopicDetail.jsx already uses per-topic, generalised across the whole subject set.
-    const deltas = []
-    currentTopics.forEach(t => {
-      const hist = Array.isArray(t.confidenceHistory) ? t.confidenceHistory : []
-      const sorted = hist.map(h => ({ ...h, _d: toDate(h?.date) })).filter(h => h._d).sort((a, b) => a._d - b._d)
-      if (sorted.length < 2) return
-      const latest = sorted[sorted.length - 1]
-      const baseline = [...sorted].reverse().find(h => latest._d - h._d >= 21 * 24 * 60 * 60 * 1000)
-      if (!baseline) return
-      deltas.push((latest.value - baseline.value) * 20)
-    })
-    if (!deltas.length) return null
-    return Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length)
-  }, [currentTopics])
-
-  // ── Hero stat: sessions completed ─────────────────────────────────────────
-  const sessionsMonthDelta = useMemo(() => {
-    const [curS, curE] = monthBounds(0), [prevS, prevE] = monthBounds(-1)
-    let cur = 0, prev = 0
-    completedSessions.forEach(s => {
-      const d = sessionDate(s); if (!d) return
-      if (d >= curS && d < curE) cur++
-      else if (d >= prevS && d < prevE) prev++
-    })
-    return cur - prev
-  }, [completedSessions])
-
-  // ── Daily study chart (respects the date-range selector) ──────────────────
+  // ── Daily study chart ─────────────────────────────────────────────────────
   const dailyData = useMemo(() => {
     const days = eachDayOfInterval({ start: rangeStart, end: new Date() })
     return days.map(day => {
-      const dayStr = format(day, 'yyyy-MM-dd')
-      const daySess = recentSessions.filter(s => s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr))
-      const total = daySess.reduce((sum, s) => sum + (parseInt(s.duration) || 45) / 60, 0)
-      return { date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'), total: Math.round(total * 10) / 10 }
+      const dayStr     = format(day, 'yyyy-MM-dd')
+      const daySess    = recentSessions.filter(s =>
+        s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr)
+      )
+      const bySubject  = {}
+      let total        = 0
+      daySess.forEach(s => {
+        const hrs = (parseInt(s.duration) || 45) / 60
+        bySubject[s.subject] = (bySubject[s.subject] || 0) + hrs
+        total += hrs
+      })
+      return { date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'), total: Math.round(total * 10) / 10, sessions: daySess.length, ...bySubject }
     })
-  }, [recentSessions, rangeStart, dateRange])
+  }, [recentSessions, dateRange])
 
-  // ── Day-of-week / time-of-day / session-length patterns (all-time) ───────
+  // ── Weekly pattern ────────────────────────────────────────────────────────
   const weeklyPattern = useMemo(() => {
-    const counts = Array(7).fill(0).map((_, i) => ({ day: DAY_NAMES[i], minutes: 0 }))
+    const counts = Array(7).fill(0).map((_, i) => ({ day: DAY_NAMES[i], minutes: 0, sessions: 0 }))
     completedSessions.forEach(s => {
-      const d = s.startTime ? new Date(s.startTime) : (s.date ? new Date(s.date + 'T12:00:00') : null)
+      const d = s.startTime ? new Date(s.startTime) : s.date ? new Date(s.date + 'T12:00:00') : null
       if (!d) return
-      counts[getDay(d)].minutes += parseInt(s.duration) || 45
+      const dow = getDay(d)
+      counts[dow].minutes  += parseInt(s.duration) || 45
+      counts[dow].sessions += 1
     })
     return counts.map(c => ({ ...c, hours: Math.round(c.minutes / 60 * 10) / 10 }))
   }, [completedSessions])
 
+  // ── Time of day ───────────────────────────────────────────────────────────
   const timeOfDayData = useMemo(() => {
     const buckets = [
-      { label: 'Early\n6–9am', hours: [6, 7, 8], minutes: 0 },
-      { label: 'Morning\n9–12', hours: [9, 10, 11], minutes: 0 },
-      { label: 'Afternoon\n12–5', hours: [12, 13, 14, 15, 16], minutes: 0 },
-      { label: 'Evening\n5–9pm', hours: [17, 18, 19, 20], minutes: 0 },
-      { label: 'Night\n9pm+', hours: [21, 22, 23, 0, 1], minutes: 0 },
+      { label: 'Early\n6–9am',  hours: [6,7,8],        sessions: 0, minutes: 0 },
+      { label: 'Morning\n9–12', hours: [9,10,11],       sessions: 0, minutes: 0 },
+      { label: 'Afternoon\n12–5',hours:[12,13,14,15,16], sessions: 0, minutes: 0 },
+      { label: 'Evening\n5–9pm', hours: [17,18,19,20],  sessions: 0, minutes: 0 },
+      { label: 'Night\n9pm+',   hours: [21,22,23,0,1],  sessions: 0, minutes: 0 },
     ]
     completedSessions.forEach(s => {
       if (!s.startTime) return
       const hr = new Date(s.startTime).getHours()
       const bucket = buckets.find(b => b.hours.includes(hr))
-      if (bucket) bucket.minutes += parseInt(s.duration) || 45
+      if (bucket) { bucket.sessions++; bucket.minutes += parseInt(s.duration) || 45 }
     })
     return buckets.map(b => ({ ...b, hours: Math.round(b.minutes / 60 * 10) / 10 }))
   }, [completedSessions])
 
+  // ── Subject distribution ──────────────────────────────────────────────────
+  const subjectDist = useMemo(() => {
+    const counts = {}
+    completedSessions.forEach(s => {
+      if (!s.subject) return
+      counts[s.subject] = (counts[s.subject] || 0) + (parseInt(s.duration) || 45)
+    })
+    return Object.entries(counts)
+      .map(([name, minutes]) => ({
+        name, minutes, hours: Math.round(minutes / 60 * 10) / 10,
+        qualification: profile?.subjects?.find(s => s.name === name)?.qualification,
+      }))
+      .sort((a, b) => b.minutes - a.minutes)
+  }, [completedSessions, profile])
+
+  // ── Subject balance (how close to equal distribution) ────────────────────
+  const subjectBalance = useMemo(() => {
+    if (!subjectDist.length) return []
+    const target = totalMinutes / subjectDist.length
+    return subjectDist.map(s => ({
+      name:  s.name.length > 14 ? s.name.slice(0, 12) + '…' : s.name,
+      qualification: s.qualification,
+      actual: s.hours,
+      target: Math.round(target / 60 * 10) / 10,
+      pct: Math.min(100, Math.round((s.minutes / Math.max(target, 1)) * 100)),
+    }))
+  }, [subjectDist, totalMinutes])
+
+  const currentSubjects = useMemo(() => profile?.subjects || [], [profile])
+  const currentTopics = useMemo(() => filterToCurrentQualification(topics, currentSubjects), [topics, currentSubjects])
+
+  // ── Topic confidence breakdown ────────────────────────────────────────────
+  const confidenceBreakdown = useMemo(() => {
+    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    currentTopics.forEach(t => { if (t.confidence) counts[t.confidence] = (counts[t.confidence] || 0) + 1 })
+    const labels = { 1: 'Not started', 2: 'Struggling', 3: 'Getting there', 4: 'Confident', 5: 'Mastered' }
+    const colours = { 1: '#dc2626', 2: '#f97316', 3: '#eab308', 4: '#84cc16', 5: '#16a34a' }
+    return Object.entries(counts).map(([k, v]) => ({ name: labels[k], value: v, colour: colours[k] })).filter(c => c.value > 0)
+  }, [currentTopics])
+
+  const weakTopics = useMemo(() =>
+    currentTopics.filter(t => t.confidence <= 2).slice(0, 8)
+      .map(t => ({ subject: t.subjectId || '–', topic: t.name || t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
+  , [currentTopics])
+
+  const strongTopics = useMemo(() =>
+    currentTopics.filter(t => t.confidence >= 4).slice(0, 6)
+      .map(t => ({ subject: t.subjectId || '–', topic: t.name || t.topicName || t.topic || t.id }))
+  , [currentTopics])
+
+  // ── Grade trajectory ──────────────────────────────────────────────────────
+  const gradeTrajectory = useMemo(() => {
+    if (!gradeSub) return []
+    return currentAttempts
+      .filter(a => a.subject === gradeSub && a.percentage)
+      .sort((a, b) => new Date(a.attemptDate || a.createdAt?.seconds * 1000 || 0) - new Date(b.attemptDate || b.createdAt?.seconds * 1000 || 0))
+      .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} ${a.year}`, percentage: Math.round(a.percentage), grade: a.grade || '' }))
+  }, [currentAttempts, gradeSub])
+
+  const gradeTrend = useMemo(() => {
+    if (gradeTrajectory.length < 2) return null
+    const first = gradeTrajectory[0].percentage
+    const last  = gradeTrajectory[gradeTrajectory.length - 1].percentage
+    return last - first
+  }, [gradeTrajectory])
+
+  // ── Session length distribution ───────────────────────────────────────────
   const sessionLengthDist = useMemo(() => {
     const buckets = [
-      { label: '<15m', min: 0, max: 15, count: 0 }, { label: '15–30m', min: 15, max: 30, count: 0 },
-      { label: '30–45m', min: 30, max: 45, count: 0 }, { label: '45–60m', min: 45, max: 60, count: 0 },
-      { label: '60–90m', min: 60, max: 90, count: 0 }, { label: '90m+', min: 90, max: 9999, count: 0 },
+      { label: '<15m',  min: 0,   max: 15,  count: 0 },
+      { label: '15–30m',min: 15,  max: 30,  count: 0 },
+      { label: '30–45m',min: 30,  max: 45,  count: 0 },
+      { label: '45–60m',min: 45,  max: 60,  count: 0 },
+      { label: '60–90m',min: 60,  max: 90,  count: 0 },
+      { label: '90m+',  min: 90,  max: 9999,count: 0 },
     ]
     completedSessions.forEach(s => {
       const dur = parseInt(s.duration) || 45
@@ -419,132 +237,69 @@ export default function Analytics() {
     return buckets
   }, [completedSessions])
 
-  // ── Consistency heatmap (12 weeks) ────────────────────────────────────────
+  // ── XP over time ──────────────────────────────────────────────────────────
+  const xpHistory = useMemo(() => {
+    if (!profile?.xp) return []
+    // Approximate from session count — real XP history would need its own subcollection
+    const days = eachDayOfInterval({ start: rangeStart, end: new Date() })
+    let cumXP = Math.max(0, (profile.xp || 0) - recentSessions.length * 50)
+    return days.map(day => {
+      const dayStr  = format(day, 'yyyy-MM-dd')
+      const daySess = recentSessions.filter(s =>
+        s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr)
+      )
+      cumXP += daySess.length * 50
+      return { date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'), xp: cumXP }
+    })
+  }, [recentSessions, profile, dateRange])
+
+  // ── Personal records ──────────────────────────────────────────────────────
+  const records = useMemo(() => {
+    const longestSession = completedSessions.reduce((max, s) => Math.max(max, parseInt(s.duration) || 45), 0)
+    const sessionsPerDay = {}
+    completedSessions.forEach(s => {
+      const d = s.date || (s.startTime ? format(new Date(s.startTime), 'yyyy-MM-dd') : null)
+      if (d) sessionsPerDay[d] = (sessionsPerDay[d] || 0) + 1
+    })
+    const mostProductiveDay = Object.entries(sessionsPerDay).sort((a, b) => b[1] - a[1])[0]
+    const bestStreak = profile?.bestStreak || profile?.streak || 0
+    const subjectMins = {}
+    completedSessions.forEach(s => {
+      if (s.subject) subjectMins[s.subject] = (subjectMins[s.subject] || 0) + (parseInt(s.duration) || 45)
+    })
+    const topSubject = Object.entries(subjectMins).sort((a, b) => b[1] - a[1])[0]
+    return { longestSession, mostProductiveDay, bestStreak, topSubject }
+  }, [completedSessions, profile])
+
+  // ── Consistency heatmap ───────────────────────────────────────────────────
   const heatmapData = useMemo(() => {
     const start = subDays(new Date(), 83)
-    return eachDayOfInterval({ start, end: new Date() }).map(day => {
+    const days  = eachDayOfInterval({ start, end: new Date() })
+    return days.map(day => {
       const dayStr = format(day, 'yyyy-MM-dd')
-      const count = completedSessions.filter(s => s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr)).length
-      return { dayStr, count, label: format(day, 'EEE d MMM') }
+      const count  = completedSessions.filter(s =>
+        s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr)
+      ).length
+      return { date: day, dayStr, count, label: format(day, 'EEE d MMM') }
     })
   }, [completedSessions])
+
   const heatColour = (count) => {
     if (count === 0) return 'var(--bg-hover)'
     if (count === 1) return 'rgba(34,197,94,0.35)'
     if (count === 2) return 'rgba(34,197,94,0.58)'
     if (count === 3) return 'rgba(34,197,94,0.78)'
-    return 'var(--success)'
+    return '#16a34a'
   }
 
-  // ── Personal records (slimmed — day-of-week and totals already live elsewhere) ─
-  const records = useMemo(() => {
-    const longestSession = completedSessions.reduce((max, s) => Math.max(max, parseInt(s.duration) || 45), 0)
-    const bestStreak = profile?.bestStreak || profile?.streak || 0
-    const subjectMins = {}
-    completedSessions.forEach(s => { if (s.subject) subjectMins[s.subject] = (subjectMins[s.subject] || 0) + (parseInt(s.duration) || 45) })
-    const topSubject = Object.entries(subjectMins).sort((a, b) => b[1] - a[1])[0]
-    return { longestSession, bestStreak, topSubject }
-  }, [completedSessions, profile])
+  const fmtMins = (m) => m >= 60 ? `${Math.floor(m/60)}h ${m%60}m` : `${m}m`
 
-  // ── Subjects tab ───────────────────────────────────────────────────────────
-  // Time is grouped by subject NAME only, because session documents don't store a qualification
-  // field at all (confirmed against how sessions are actually created in Calendar.jsx) — there's
-  // no reliable signal to split old GCSE minutes from new AS-Level minutes for a subject that's
-  // changed level. What we CAN do honestly is label every bar with the subject's CURRENT
-  // qualification, so it's never ambiguous which level a bar is currently tracked under, even
-  // though historical minutes logged before a level change may still be folded into it.
-  const subjectDist = useMemo(() => {
-    const counts = {}
-    completedSessions.forEach(s => { if (s.subject) counts[s.subject] = (counts[s.subject] || 0) + (parseInt(s.duration) || 45) })
-    return Object.entries(counts)
-      .map(([name, minutes]) => {
-        const qualification = profile?.subjects?.find(s => s.name === name)?.qualification
-        return {
-          name, minutes, hours: Math.round(minutes / 60 * 10) / 10, qualification,
-          label: qualification ? `${name} (${qualification})` : name,
-        }
-      })
-      .sort((a, b) => b.minutes - a.minutes)
-  }, [completedSessions, profile])
-
-  const subjectBalance = useMemo(() => {
-    if (!subjectDist.length) return []
-    const target = totalMinutes / subjectDist.length
-    return subjectDist.map(s => ({
-      name: s.name.length > 14 ? s.name.slice(0, 12) + '…' : s.name,
-      qualification: s.qualification, pct: Math.min(200, Math.round((s.minutes / Math.max(target, 1)) * 100)),
-    }))
-  }, [subjectDist, totalMinutes])
-
-  const subjectPerformance = useMemo(() => {
-    return currentSubjects.map(sub => {
-      const name = sub.name
-      const atts = currentAttempts.filter(a => a.subject === name && a.percentage != null)
-      const tops = currentTopics.filter(t => t.subjectId === name && t.confidence)
-      const grade = atts.length ? Math.round(atts.reduce((s, a) => s + a.percentage, 0) / atts.length) : null
-      const conf = tops.length ? Math.round((tops.reduce((s, t) => s + t.confidence, 0) / tops.length) * 20) : null
-      const mins = subjectDist.find(d => d.name === name)?.minutes || 0
-      return { name, qualification: sub.qualification, grade, conf, mins }
-    }).sort((a, b) => b.mins - a.mins)
-  }, [currentSubjects, currentAttempts, currentTopics, subjectDist])
-
-  // ── Topics tab ─────────────────────────────────────────────────────────────
-  const weakTopics = useMemo(() =>
-    currentTopics.filter(t => t.confidence && t.confidence <= 2)
-      .sort((a, b) => a.confidence - b.confidence)
-      .slice(0, 8)
-      .map(t => ({ id: t.id, subject: t.subjectId || '–', topic: displayTopicName(t.name || t.topicName || t.topic || t.id), confidence: t.confidence }))
-  , [currentTopics])
-
-  const strongTopics = useMemo(() =>
-    currentTopics.filter(t => t.confidence >= 4).slice(0, 6)
-      .map(t => ({ id: t.id, subject: t.subjectId || '–', topic: displayTopicName(t.name || t.topicName || t.topic || t.id) }))
-  , [currentTopics])
-
-  // ── Trends tab ─────────────────────────────────────────────────────────────
-  const gradeTrajectory = useMemo(() => {
-    if (!gradeSub) return []
-    return currentAttempts.filter(a => a.subject === gradeSub && a.percentage != null)
-      .sort((a, b) => (attemptDateOf(a) || 0) - (attemptDateOf(b) || 0))
-      .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} ${a.year}`, percentage: Math.round(a.percentage), grade: a.grade || '' }))
-  }, [currentAttempts, gradeSub])
-
-  const gradeTrend = useMemo(() => {
-    if (gradeTrajectory.length < 2) return null
-    return gradeTrajectory[gradeTrajectory.length - 1].percentage - gradeTrajectory[0].percentage
-  }, [gradeTrajectory])
-
-  const papersBySubject = useMemo(() => {
-    const bySubject = {}
-    currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
-    return Object.entries(bySubject).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
-  }, [currentAttempts])
-
-  const scoreDistribution = useMemo(() => {
-    const buckets = [
-      { label: '0–40%', min: 0, max: 40, count: 0 }, { label: '40–50%', min: 40, max: 50, count: 0 },
-      { label: '50–60%', min: 50, max: 60, count: 0 }, { label: '60–70%', min: 60, max: 70, count: 0 },
-      { label: '70–80%', min: 70, max: 80, count: 0 }, { label: '80–90%', min: 80, max: 90, count: 0 },
-      { label: '90–100%', min: 90, max: 101, count: 0 },
-    ]
-    currentAttempts.forEach(a => {
-      if (a.percentage == null) return
-      const b = buckets.find(b => a.percentage >= b.min && a.percentage < b.max)
-      if (b) b.count++
-    })
-    return buckets
-  }, [currentAttempts])
+  const TABS = ['overview','subjects','topics','grades','insights']
 
   if (loading) return (
     <div className="fade-in">
-      <div className="analytics-header">
-        <div>
-          <h2 className="analytics-title"><Activity size={22} /> Analytics</h2>
-          <p className="analytics-subtitle">Your revision activity at a glance</p>
-        </div>
-      </div>
-      <div className="analytics-hero">
-        {Array(4).fill(0).map((_, i) => <div key={i} className="card analytics-stat-card"><Skeleton height={90} /></div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10, marginBottom: 20 }}>
+        {Array(6).fill(0).map((_, i) => <div key={i} className="card" style={{ padding: '14px 10px', textAlign: 'center' }}><Skeleton height={60} /></div>)}
       </div>
       <Skeleton height={220} style={{ marginBottom: 16, borderRadius: 12 }} />
       <Skeleton height={180} style={{ borderRadius: 12 }} />
@@ -553,45 +308,42 @@ export default function Analytics() {
 
   return (
     <div className="fade-in">
-      <div className="analytics-header">
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 className="analytics-title"><Activity size={22} /> Analytics</h2>
-          <p className="analytics-subtitle">Your revision activity at a glance</p>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Activity size={22} /> Study Insights</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 2 }}>Your complete revision analytics</p>
         </div>
         <select className="select" style={{ width: 'auto' }} value={dateRange} onChange={e => setDateRange(parseInt(e.target.value))}>
           {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}
         </select>
       </div>
 
-      {/* ── Hero stat row ── */}
-      <div className="analytics-hero">
-        <StatHero icon={<Clock size={15} />} label="Study time" value={fmtMins(totalMinutes)}
-          trend={<TrendChip value={studyTimeTrend} format={v => `${v > 0 ? '+' : ''}${v}%`} />}
-          emptyHint="Not enough history yet"
-          spark={<Sparkline id="study" data={last10Weeks.map(w => ({ v: w.mins }))} />} />
-        <StatHero icon={<Award size={15} />} label="Average grade" value={avgGrade != null ? `${avgGrade}%` : '–'}
-          trend={<TrendChip value={avgGradeTrend} format={v => `${v > 0 ? '+' : ''}${v} pts`} />}
-          emptyHint="Not enough history yet"
-          spark={<Sparkline id="grade" data={gradeSpark} colour="var(--info)" />} />
-        <StatHero icon={<Brain size={15} />} label="Topic confidence" value={avgConfidencePct != null ? `${avgConfidencePct}%` : '–'}
-          trend={<TrendChip value={confidenceTrend} format={v => `${v > 0 ? '+' : ''}${v} pts`} />}
-          emptyHint="Not enough history yet"
-          spark={<ConfDistribution counts={confidenceCounts} />} />
-        <StatHero icon={<Activity size={15} />} label="Sessions completed" value={completedSessions.length}
-          trend={<TrendChip value={sessionsMonthDelta} format={v => `${v > 0 ? '+' : ''}${v}`} />}
-          spark={<Sparkline id="sessions" data={last10Weeks.map(w => ({ v: w.count }))} colour="var(--gold)" />} />
+      {/* ── Summary stats row ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
+        <StatCard icon={<Clock size={18}/>}    label="Total study time"    val={fmtMins(totalMinutes)}        colour="var(--accent-light)" />
+        <StatCard icon={<Activity size={18}/>} label="Sessions completed"  val={completedSessions.length}     colour="var(--info)" />
+        <StatCard icon={<Zap size={18}/>}      label="Avg session length"  val={`${avgSessionLength}m`}       colour="#0d9488" />
+        <StatCard icon={<Flame size={18}/>}    label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
+        <StatCard icon={<Target size={18}/>}   label="Completion rate"     val={`${completionRate}%`}         colour="var(--success)" />
+        <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={attempts.length}              colour="var(--accent)" />
+        <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={topics.length}                colour="#0891b2" />
+        <StatCard icon={<BarChart2 size={18}/>}label="Avg daily (period)"  val={`${avgDailyMinutes}m`}        colour="var(--info)" />
       </div>
 
       {/* ── Tabs ── */}
-      <div className="tabs analytics-tabs" style={{ flexWrap: 'wrap' }}>
+      <div className="tabs" style={{ marginBottom: 20, flexWrap: 'wrap' }}>
         {TABS.map(t => (
-          <button key={t.id} className={`tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
+          <button key={t} className={`tab${activeTab === t ? ' active' : ''}`} onClick={() => setActiveTab(t)}
+            style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
       </div>
 
-      {/* ══ OVERVIEW ══ */}
+      {/* ══ OVERVIEW TAB ══ */}
       {activeTab === 'overview' && (<>
-        <Card title="Daily study hours" icon={<Clock size={16} />}>
+
+        {/* Daily study chart */}
+        <Section title="Daily Study Hours" icon={<Clock size={16}/>}>
           {dailyData.every(d => d.total === 0) ? (
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No completed sessions in this period</p></div>
           ) : (
@@ -599,296 +351,407 @@ export default function Analytics() {
               <AreaChart data={dailyData}>
                 <defs>
                   <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.02} />
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.03} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="date" tick={axisTick} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-                <YAxis tick={axisTick} unit="h" axisLine={false} tickLine={false} width={32} />
-                <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={tooltipStyle} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} unit="h" />
+                <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
                 <Area type="monotone" dataKey="total" stroke="var(--accent)" fill="url(#areaGrad)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </Card>
+        </Section>
 
-        <StudyPatternsCard weeklyPattern={weeklyPattern} timeOfDayData={timeOfDayData} sessionLengthDist={sessionLengthDist} />
+        {/* Weekly pattern */}
+        <Section title="Day-of-Week Pattern" icon={<Calendar size={16}/>}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>Which days you study most — all time</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={weeklyPattern}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} unit="h" />
+              <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+              <Bar dataKey="hours" radius={[4,4,0,0]}>
+                {weeklyPattern.map((_, i) => <Cell key={i} fill={COLOURS[i % COLOURS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          {weeklyPattern.length > 0 && (() => {
+            const best = [...weeklyPattern].sort((a,b) => b.hours - a.hours)[0]
+            const worst = [...weeklyPattern].filter(d => d.sessions > 0).sort((a,b) => a.hours - b.hours)[0]
+            return (
+              <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                <span className="badge badge-green">🏆 Most productive: {best.day} ({best.hours}h avg)</span>
+                {worst && worst.day !== best.day && <span className="badge badge-grey">📉 Lightest: {worst.day}</span>}
+              </div>
+            )
+          })()}
+        </Section>
 
-        <Card title="Study consistency" icon={<Calendar size={16} />} note="Last 12 weeks">
-          <div className="analytics-heatmap-scroll">
-            <div className="analytics-heatmap-grid">
+        {/* Time of day */}
+        <Section title="Time of Day" icon={<Clock size={16}/>}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>When you tend to study — all time</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={timeOfDayData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} unit="h" />
+              <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+              <Bar dataKey="hours" fill="var(--accent)" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          {timeOfDayData.length > 0 && (() => {
+            const peak = [...timeOfDayData].sort((a,b) => b.hours - a.hours)[0]
+            if (!peak || peak.hours === 0) return null
+            return <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 10 }}>📍 You study most in the <strong>{peak.label.split('\n')[0]}</strong></p>
+          })()}
+        </Section>
+
+        {/* Session length distribution */}
+        <Section title="Session Length Distribution" icon={<BarChart2 size={16}/>}>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={sessionLengthDist}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <Tooltip formatter={(v) => [v, 'Sessions']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+              <Bar dataKey="count" fill="#3b82f6" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Section>
+
+        {/* Consistency heatmap */}
+        <Section title="Study Consistency (12 weeks)" icon={<Calendar size={16}/>}>
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(84,1fr)', gap: 2, minWidth: 560 }}>
               {heatmapData.map((d, i) => (
-                <div key={i} className="analytics-heatmap-cell" title={`${d.label}: ${d.count} session${d.count !== 1 ? 's' : ''}`} style={{ background: heatColour(d.count) }} />
+                <div key={i} title={`${d.label}: ${d.count} session${d.count !== 1 ? 's' : ''}`}
+                  style={{ aspectRatio: '1', borderRadius: 2, background: heatColour(d.count), cursor: 'default' }} />
               ))}
             </div>
-            <div className="analytics-heatmap-legend">
-              Less {[0, 1, 2, 3, 4].map(n => <div key={n} className="swatch" style={{ background: heatColour(n) }} />)} More
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              Less
+              {[0,1,2,3,4].map(n => <div key={n} style={{ width: 12, height: 12, borderRadius: 2, background: heatColour(n) }} />)}
+              More
             </div>
           </div>
-        </Card>
+        </Section>
 
-        <Card title="Personal records" icon={<Award size={16} />}>
-          <div className="analytics-records">
-            <div className="analytics-record">
-              <div className="analytics-record-label"><Flame size={13} /> Longest session</div>
-              <div className="analytics-record-val">{records.longestSession ? fmtMins(records.longestSession) : '–'}</div>
-            </div>
-            <div className="analytics-record">
-              <div className="analytics-record-label"><Star size={13} /> Best streak</div>
-              <div className="analytics-record-val">{records.bestStreak} days</div>
-            </div>
-            <div className="analytics-record">
-              <div className="analytics-record-label"><BookOpen size={13} /> Top subject</div>
-              <div className="analytics-record-val">{records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–'}</div>
-            </div>
+        {/* Personal records */}
+        <Section title="Personal Records" icon={<Award size={16}/>}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10 }}>
+            {[
+              { label: '🏆 Longest session',    val: fmtMins(records.longestSession) || '–' },
+              { label: '🔥 Best streak',         val: `${records.bestStreak} days` },
+              { label: '📅 Most productive day', val: records.mostProductiveDay ? `${records.mostProductiveDay[0]} (${records.mostProductiveDay[1]} sessions)` : '–' },
+              { label: '📚 Top subject',         val: records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–' },
+              { label: '📝 Papers attempted',    val: attempts.length },
+              { label: '🧠 Topics rated',        val: topics.length },
+            ].map(r => (
+              <div key={r.label} style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>{r.label}</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{r.val}</div>
+              </div>
+            ))}
           </div>
-        </Card>
+        </Section>
       </>)}
 
-      {/* ══ SUBJECTS ══ */}
+      {/* ══ SUBJECTS TAB ══ */}
       {activeTab === 'subjects' && (<>
-        <Card title="Time by subject" icon={<BookOpen size={16} />}>
+
+        <Section title="Time by Subject" icon={<BookOpen size={16}/>}>
           {subjectDist.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No sessions logged yet</p></div>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(120, subjectDist.length * 38)}>
-              <BarChart data={subjectDist} layout="vertical" margin={{ left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" tick={axisTick} unit="h" axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="label" tick={axisTick} width={150} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={tooltipStyle} />
-                <Bar dataKey="hours" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                  {subjectDist.map((s, i) => <Cell key={i} fill={SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
-
-        <Card title="Subject performance" icon={<BarChart2 size={16} />}>
-          {subjectPerformance.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>Add subjects in Settings to see a breakdown here</p></div>
-          ) : (
-            <div className="analytics-subject-list">
-              {subjectPerformance.map(s => (
-                <div key={s.name} className="analytics-subject-row">
-                  <span className="analytics-subject-dot" style={{ background: SUBJECT_COLOURS?.[s.name] || 'var(--accent)' }} />
-                  <span className="analytics-subject-name">
-                    <span className="truncate">{s.name}</span>
-                    {s.qualification && <span className="badge badge-grey" style={{ fontSize: '0.62rem' }}>{s.qualification}</span>}
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={subjectDist} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} unit="h" />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={90} />
+                  <Tooltip formatter={(v) => [`${v}h`, 'Study time']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                  <Bar dataKey="hours" radius={[0,4,4,0]}>
+                    {subjectDist.map((s, i) => <Cell key={i} fill={SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+                {subjectDist.map((s, i) => (
+                  <span key={s.name} className="badge" style={{ background: (SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length]) + '22', color: SUBJECT_COLOURS?.[s.name] || COLOURS[i % COLOURS.length] }}>
+                    {s.name}{s.qualification && <span style={{ opacity: 0.75, fontWeight: 400 }}> ({s.qualification})</span>}: {s.hours}h
                   </span>
-                  <div className="analytics-subject-metrics">
-                    <div className="analytics-metric">
-                      <div className="analytics-metric-val">{s.grade != null ? `${s.grade}%` : '–'}</div>
-                      <div className="analytics-metric-label">Grade</div>
-                    </div>
-                    <div className="analytics-metric">
-                      <div className="analytics-metric-val">{s.conf != null ? `${s.conf}%` : '–'}</div>
-                      <div className="analytics-metric-label">Confidence</div>
-                    </div>
-                    <div className="analytics-metric">
-                      <div className="analytics-metric-val">{s.mins ? fmtMins(s.mins) : '–'}</div>
-                      <div className="analytics-metric-label">Time</div>
-                    </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Section>
+
+        <Section title="Subject Balance" icon={<Target size={16}/>}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>How evenly you distribute your time — 100% = your fair share</p>
+          {subjectBalance.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No data yet</p> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {subjectBalance.map((s, i) => (
+                <div key={s.name}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                      {s.name}
+                      {s.qualification && <span className="badge badge-grey" style={{ marginLeft: 6, fontSize: '0.65rem' }}>{s.qualification}</span>}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: s.pct < 50 ? 'var(--danger)' : s.pct > 150 ? 'var(--warning)' : 'var(--success)', fontWeight: 600 }}>
+                      {s.pct}%{s.pct < 50 ? ' ⚠️' : s.pct > 150 ? ' 📈' : ' ✓'}
+                    </span>
+                  </div>
+                  <div style={{ height: 8, background: 'var(--bg-hover)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: Math.min(s.pct, 100) + '%', borderRadius: 4,
+                      background: s.pct < 50 ? 'var(--danger)' : s.pct > 150 ? 'var(--warning)' : 'var(--success)',
+                      transition: 'width 0.6s ease' }} />
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
+        </Section>
 
-        <Card title="Subject balance" icon={<Target size={16} />} note="How evenly you spread study time — 100% is an equal share">
-          {subjectBalance.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No data yet</p> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {subjectBalance.map(s => {
-                const state = s.pct < 50 ? 'danger' : s.pct > 150 ? 'warning' : 'success'
-                return (
-                  <div key={s.name} className="progress-row">
-                    <div className="progress-row-top">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {s.name}
-                        {s.qualification && <span className="badge badge-grey" style={{ fontSize: '0.62rem' }}>{s.qualification}</span>}
-                      </span>
-                      <span style={{ color: `var(--${state})`, fontWeight: 700 }}>{s.pct}%</span>
-                    </div>
-                    <div className="thin-progress"><div className="thin-progress-fill" style={{ width: `${Math.min(s.pct, 100)}%`, background: `var(--${state})` }} /></div>
-                  </div>
-                )
-              })}
-            </div>
+        <Section title="XP Earned (this period)" icon={<Zap size={16}/>}>
+          {xpHistory.every(d => d.xp === 0) ? <p style={{ color: 'var(--text-muted)' }}>No XP data yet</p> : (
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={xpHistory}>
+                <defs>
+                  <linearGradient id="xpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                <Area type="monotone" dataKey="xp" stroke="#f59e0b" fill="url(#xpGrad)" strokeWidth={2} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           )}
-        </Card>
+        </Section>
       </>)}
 
-      {/* ══ TOPICS ══ */}
+      {/* ══ TOPICS TAB ══ */}
       {activeTab === 'topics' && (<>
-        <Card title="Confidence breakdown" icon={<Brain size={16} />}>
-          {currentTopics.filter(t => t.confidence).length === 0 ? (
+
+        <Section title="Confidence Breakdown" icon={<Brain size={16}/>}>
+          {confidenceBreakdown.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}>
-              <Brain size={28} style={{ opacity: 0.3 }} />
+              <Brain size={32} style={{ opacity: 0.3 }} />
               <p>Rate topics in the Topics page to see your confidence breakdown</p>
             </div>
           ) : (
-            <div className="analytics-conf-list">
-              {[5, 4, 3, 2, 1].map(level => {
-                const count = confidenceCounts[level] || 0
-                const total = currentTopics.filter(t => t.confidence).length
-                const pct = total ? Math.round((count / total) * 100) : 0
-                return (
-                  <div key={level}>
-                    <div className="analytics-conf-item-top">
-                      <span className="name">{CONF_LABELS[level]}</span>
-                      <span className="count">{count} topic{count !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="thin-progress"><div className="thin-progress-fill" style={{ width: `${pct}%`, background: CONF_COLOURS[level] }} /></div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+              <ResponsiveContainer width={200} height={200}>
+                <PieChart>
+                  <Pie data={confidenceBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
+                    {confidenceBreakdown.map((c, i) => <Cell key={i} fill={c.colour} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {confidenceBreakdown.map(c => (
+                  <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: c.colour, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.85rem', flex: 1 }}>{c.name}</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{c.value}</span>
                   </div>
-                )
-              })}
+                ))}
+                <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {currentTopics.length} topics rated total
+                </div>
+              </div>
             </div>
           )}
-        </Card>
+        </Section>
 
-        <Card title="Needs attention" icon={<AlertCircle size={16} />}>
+        <Section title="Needs Attention" icon={<AlertCircle size={16}/>}>
           {weakTopics.length === 0 ? (
-            <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CheckCircle size={16} /> No topics rated as struggling — great work
-            </p>
+            <p style={{ color: 'var(--success)', fontWeight: 600 }}>✓ No topics rated as struggling — great work!</p>
           ) : (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {weakTopics.map((t, i) => (
-                <Link key={i} to={`/topics/${t.id}`} className="analytics-topic-row">
-                  <div className="analytics-topic-row-top">
-                    <span className="analytics-topic-name">{t.topic}</span>
-                    <span className="analytics-topic-subject">{t.subject}</span>
+                <div key={i} style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{t.topic}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.subject}</div>
                   </div>
-                  <div className="thin-progress"><div className="thin-progress-fill" style={{ width: `${t.confidence * 20}%`, background: 'var(--danger)' }} /></div>
-                </Link>
+                  <div style={{ display: 'flex', gap: 2 }}>
+                    {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: '0.9rem', opacity: n <= t.confidence ? 1 : 0.2 }}>⭐</span>)}
+                  </div>
+                </div>
               ))}
             </div>
           )}
-        </Card>
+        </Section>
 
-        <Card title="Strong topics" icon={<CheckCircle size={16} />}>
+        <Section title="Strong Topics" icon={<CheckCircle size={16}/>}>
           {strongTopics.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Rate topics as confident and they'll appear here</p>
+            <p style={{ color: 'var(--text-muted)' }}>Rate topics as confident (4–5 stars) and they'll appear here</p>
           ) : (
-            <div className="analytics-strong-grid">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {strongTopics.map((t, i) => (
-                <Link key={i} to={`/topics/${t.id}`} className="analytics-strong-chip">
-                  <span className="name">{t.topic}</span>
-                  <span className="subject">{t.subject}</span>
-                </Link>
+                <div key={i} style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 20, fontSize: '0.82rem', display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 600 }}>{t.topic}</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{t.subject}</span>
+                </div>
               ))}
             </div>
           )}
-        </Card>
+        </Section>
       </>)}
 
-      {/* ══ TRENDS ══ */}
-      {activeTab === 'trends' && (<>
-        <Card title="Grade trajectory" icon={<TrendingUp size={16} />}
-          right={
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <select className="select" style={{ width: 'auto' }} value={gradeSub} onChange={e => setGradeSub(e.target.value)}>
-                {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              {gradeTrend !== null && <TrendChip value={gradeTrend} format={v => `${v > 0 ? '+' : ''}${v} pts`} period="first attempt" />}
-            </div>
-          }>
+      {/* ══ GRADES TAB ══ */}
+      {activeTab === 'grades' && (<>
+
+        <Section title="Grade Trajectory" icon={<TrendingUp size={16}/>}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+            <select className="select" style={{ width: 'auto' }} value={gradeSub} onChange={e => setGradeSub(e.target.value)}>
+              {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            {gradeTrend !== null && (
+              <span className={`badge ${gradeTrend >= 0 ? 'badge-green' : 'badge-red'}`}>
+                {gradeTrend >= 0 ? '📈' : '📉'} {gradeTrend >= 0 ? '+' : ''}{gradeTrend}% since first attempt
+              </span>
+            )}
+          </div>
           {gradeTrajectory.length < 2 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>Log at least 2 papers for {gradeSub || 'this subject'} to see a trajectory</p></div>
+            <div className="empty-state" style={{ padding: '16px 0' }}><p>Log at least 2 papers for {gradeSub} to see your trajectory</p></div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={gradeTrajectory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={axisTick} unit="%" axisLine={false} tickLine={false} width={36} />
-                <Tooltip formatter={(v) => [`${v}%`, 'Score']} contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="percentage" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 4 }} activeDot={{ r: 6 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} unit="%" />
+                <Tooltip formatter={(v) => [`${v}%`, 'Score']} contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                <Line type="monotone" dataKey="percentage" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: 'var(--accent)', r: 5 }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
           )}
-        </Card>
+        </Section>
 
-        <Card title="Papers by subject" icon={<BookOpen size={16} />}>
-          {papersBySubject.length === 0 ? (
+        <Section title="Papers by Subject" icon={<BookOpen size={16}/>}>
+          {currentAttempts.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}><p>No papers logged yet — log papers in Past Papers</p></div>
-          ) : (
-            <ResponsiveContainer width="100%" height={170}>
-              <BarChart data={papersBySubject}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" tick={axisTick} axisLine={false} tickLine={false} />
-                <YAxis tick={axisTick} axisLine={false} tickLine={false} width={28} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
+          ) : (() => {
+            const bySubject = {}
+            currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
+            const data = Object.entries(bySubject).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count)
+            return (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                  <Bar dataKey="count" fill="var(--accent)" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )
+          })()}
+        </Section>
 
-        <Card title="Score distribution" icon={<BarChart2 size={16} />}>
-          {currentAttempts.filter(a => a.percentage != null).length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No percentage scores logged yet</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={scoreDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-                <YAxis tick={axisTick} axisLine={false} tickLine={false} width={28} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36}>
-                  {scoreDistribution.map((b, i) => <Cell key={i} fill={b.min >= 70 ? 'var(--success)' : b.min >= 50 ? 'var(--warning)' : 'var(--danger)'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </Card>
+        <Section title="Score Distribution" icon={<BarChart2 size={16}/>}>
+          {currentAttempts.filter(a => a.percentage).length === 0 ? (
+            <p style={{ color: 'var(--text-muted)' }}>No percentage scores logged yet</p>
+          ) : (() => {
+            const buckets = [
+              { label: '0–40%',  min: 0,  max: 40,  count: 0 },
+              { label: '40–50%', min: 40, max: 50,  count: 0 },
+              { label: '50–60%', min: 50, max: 60,  count: 0 },
+              { label: '60–70%', min: 60, max: 70,  count: 0 },
+              { label: '70–80%', min: 70, max: 80,  count: 0 },
+              { label: '80–90%', min: 80, max: 90,  count: 0 },
+              { label: '90–100%',min: 90, max: 101, count: 0 },
+            ]
+            currentAttempts.forEach(a => {
+              if (!a.percentage) return
+              const b = buckets.find(b => a.percentage >= b.min && a.percentage < b.max)
+              if (b) b.count++
+            })
+            return (
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={buckets}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                  <Bar dataKey="count" radius={[4,4,0,0]}>
+                    {buckets.map((b, i) => <Cell key={i} fill={b.min >= 70 ? 'var(--success)' : b.min >= 50 ? 'var(--warning)' : 'var(--danger)'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )
+          })()}
+        </Section>
+      </>)}
 
-        <Card title="Study summary" icon={<Star size={16} />}>
+      {/* ══ INSIGHTS TAB ══ */}
+      {activeTab === 'insights' && (<>
+
+        <Section title="Study Summary" icon={<Star size={16}/>}>
           <AIInsights
-            sessions={completedSessions} topics={currentTopics} attempts={currentAttempts} profile={profile}
-            dateRange={dateRange} avgDailyMinutes={avgDailyMinutes} weeklyPattern={weeklyPattern}
-            weakTopics={weakTopics} subjectBalance={subjectBalance} uid={user?.uid} />
-        </Card>
+            sessions={completedSessions}
+            topics={currentTopics}
+            attempts={currentAttempts}
+            profile={profile}
+            dateRange={dateRange}
+            recentMinutes={recentMinutes}
+            avgDailyMinutes={avgDailyMinutes}
+            weeklyPattern={weeklyPattern}
+            weakTopics={weakTopics}
+            subjectBalance={subjectBalance}
+            uid={user?.uid}
+          />
+        </Section>
 
-        <Card title="Study recommendations" icon={<Target size={16} />}>
-          <div>
+        <Section title="Study Recommendations" icon={<Target size={16}/>} defaultOpen={true}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {avgDailyMinutes < 30 && (
-              <Rec icon={<Clock size={16} />} colour="var(--warning)" title="Increase daily study time"
+              <Rec icon="⏱" colour="var(--warning)"
+                title="Increase daily study time"
                 desc={`You're averaging ${avgDailyMinutes}m/day this period. Aim for at least 45–60 minutes daily for consistent progress.`} />
             )}
             {weakTopics.length > 3 && (
-              <Rec icon={<Target size={16} />} colour="var(--danger)" title={`Focus on ${weakTopics.length} weak topics`}
-                desc={`Your lowest-confidence topics are: ${weakTopics.slice(0, 3).map(t => t.topic).join(', ')}. Prioritise these in your next sessions.`} />
+              <Rec icon="🎯" colour="var(--danger)"
+                title={`Focus on ${weakTopics.length} weak topics`}
+                desc={`Your lowest-confidence topics are: ${weakTopics.slice(0,3).map(t => t.topic).join(', ')}. Prioritise these in your next sessions.`} />
             )}
             {subjectBalance.some(s => s.pct < 40) && (
-              <Rec icon={<BarChart2 size={16} />} colour="var(--info)" title="Rebalance your subjects"
-                desc={`${subjectBalance.filter(s => s.pct < 40).map(s => s.name).join(', ')} ${subjectBalance.filter(s => s.pct < 40).length === 1 ? 'is' : 'are'} getting less than 40% of a fair share of study time.`} />
+              <Rec icon="⚖️" colour="var(--info)"
+                title="Rebalance your subjects"
+                desc={`${subjectBalance.filter(s => s.pct < 40).map(s => s.name).join(', ')} ${subjectBalance.filter(s => s.pct < 40).length === 1 ? 'is' : 'are'} getting less than 40% of your fair share of study time.`} />
             )}
             {completionRate < 70 && sessions.length > 5 && (
-              <Rec icon={<CheckCircle size={16} />} colour="var(--warning)" title="Improve session completion"
+              <Rec icon="✅" colour="var(--warning)"
+                title="Improve session completion"
                 desc={`Only ${completionRate}% of your sessions are marked complete. Try shorter sessions you can fully commit to.`} />
             )}
-            {(profile?.streak || 0) < 3 && (
-              <Rec icon={<Flame size={16} />} colour="var(--accent)" title="Build your streak"
-                desc="Short daily sessions beat long irregular ones. Even 20 minutes every day builds momentum and improves retention." />
+            {profile?.streak < 3 && (
+              <Rec icon="🔥" colour="var(--accent)"
+                title="Build your streak"
+                desc="Short daily sessions beat long irregular ones. Even 20 minutes every day will build momentum and improve retention." />
             )}
-            {weeklyPattern.some(d => d.hours === 0 && ['Sat', 'Sun'].includes(d.day)) && attempts.length > 0 && (
-              <Rec icon={<Calendar size={16} />} colour="#0d9488" title="Use weekends for papers"
+            {weeklyPattern.some(d => d.hours === 0 && ['Sat','Sun'].includes(d.day)) && attempts.length > 0 && (
+              <Rec icon="📅" colour="#0d9488"
+                title="Use weekends for papers"
                 desc="Weekends are great for timed past paper practice when you have longer uninterrupted blocks." />
             )}
             {weakTopics.length === 0 && avgDailyMinutes >= 45 && completionRate >= 80 && (
-              <div className="analytics-rec-positive">
-                <span className="analytics-rec-icon"><Award size={16} /></span>
-                <div>
-                  <div className="analytics-rec-title">You're doing great</div>
-                  <div className="analytics-rec-desc">Strong completion rate, good daily time, and no weak topics. Keep it up and focus on timed past papers to maximise exam performance.</div>
-                </div>
+              <div style={{ padding: '14px 16px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>🌟 You're doing great!</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Strong completion rate, good daily time, and no weak topics. Keep it up and focus on timed past papers to maximise exam performance.</div>
               </div>
             )}
           </div>
-        </Card>
+        </Section>
       </>)}
     </div>
   )
@@ -896,17 +759,14 @@ export default function Analytics() {
 
 function Rec({ icon, colour, title, desc }) {
   return (
-    <div className="analytics-rec" style={{ '--rec-colour': colour }}>
-      <span className="analytics-rec-icon">{icon}</span>
-      <div>
-        <div className="analytics-rec-title">{title}</div>
-        <div className="analytics-rec-desc">{desc}</div>
-      </div>
+    <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${colour}` }}>
+      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{icon} {title}</div>
+      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{desc}</div>
     </div>
   )
 }
 
-function AIInsights({ sessions, topics, attempts, profile, dateRange, avgDailyMinutes, weeklyPattern, weakTopics, subjectBalance, uid }) {
+function AIInsights({ sessions, topics, attempts, profile, dateRange, recentMinutes, avgDailyMinutes, weeklyPattern, weakTopics, subjectBalance, uid }) {
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(false)
   const [generated, setGenerated] = useState(false)
@@ -915,9 +775,9 @@ function AIInsights({ sessions, topics, attempts, profile, dateRange, avgDailyMi
     setLoading(true)
     try {
       const { callAI } = await import('../utils/ai')
-      const bestDay = [...weeklyPattern].sort((a, b) => b.hours - a.hours)[0]
-      const needsWork = weakTopics.slice(0, 3).map(t => t.topic).join(', ')
-      const lowSubs = subjectBalance.filter(s => s.pct < 50).map(s => s.name).join(', ')
+      const bestDay  = [...weeklyPattern].sort((a,b) => b.hours - a.hours)[0]
+      const needsWork = weakTopics.slice(0,3).map(t => t.topic).join(', ')
+      const lowSubs  = subjectBalance.filter(s => s.pct < 50).map(s => s.name).join(', ')
       const prompt = `You are a GCSE/A-Level revision coach. Write a personalised 3-paragraph study summary for this student. Be encouraging but honest and specific.
 
 Student data:
@@ -948,22 +808,29 @@ Keep it under 200 words total. Address them as "you". Don't use bullet points.`
   }
 
   if (!generated && !loading) return (
-    <div className="analytics-summary-empty">
-      <p>Get a personalised summary of your study patterns and recommendations</p>
-      <button className="btn btn-primary" onClick={generate}>Generate my study summary</button>
+    <div style={{ textAlign: 'center', padding: '16px 0' }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: 14, fontSize: '0.875rem' }}>
+        Get a personalised summary of your study patterns and recommendations
+      </p>
+      <button className="btn btn-primary" onClick={generate}>✨ Generate my study summary</button>
     </div>
   )
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <Skeleton height={16} /><Skeleton height={16} width="90%" /><Skeleton height={16} width="95%" /><Skeleton height={16} width="80%" />
+      <Skeleton height={16} />
+      <Skeleton height={16} width="90%" />
+      <Skeleton height={16} width="95%" />
+      <Skeleton height={16} width="80%" />
     </div>
   )
 
   return (
     <div>
-      <AIOutput text={summary} compact />
-      <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => { setSummary(''); setGenerated(false) }}>Regenerate</button>
+      <p style={{ lineHeight: 1.7, color: 'var(--text-primary)', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{summary}</p>
+      <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => { setSummary(''); setGenerated(false) }}>
+        ↺ Regenerate
+      </button>
     </div>
   )
 }
