@@ -1,5 +1,5 @@
 // src/pages/Timer.jsx — Professional Focus Timer
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTimer } from '../context/TimerContext'
 import { startSound, stopSound, setVolume as setSoundVolume } from '../utils/timerSounds'
 import { awardTimerXP, recordActivityStreak } from '../utils/firestore'
