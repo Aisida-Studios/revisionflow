@@ -549,7 +549,7 @@ export default function Topics() {
                         const pct = total>0?Math.round((mastered/total)*100):0
                         return (
                           <div>
-                            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'linear-gradient(135deg,var(--accent-pale),var(--bg-muted))',borderRadius:12,border:'1px solid var(--border-strong)'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'var(--accent-pale)',borderRadius:12,border:'1px solid var(--border-strong)'}}>
                               <div style={{textAlign:'center',minWidth:70}}>
                                 <div style={{fontSize:'2rem',fontWeight:800,color:'var(--accent-light)'}}>{pct}%</div>
                                 <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>Mastered</div>
