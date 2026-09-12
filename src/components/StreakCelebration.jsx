@@ -3,7 +3,6 @@
 // Usage: <StreakCelebration streak={7} onClose={() => setShowStreak(false)} />
 
 import { useState, useEffect } from 'react'
-import { Flame } from 'lucide-react'
 
 // Confetti piece
 function Piece({ colour, x, delay, duration, size }) {
