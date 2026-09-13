@@ -10,7 +10,7 @@ import {
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification, subjectColour } from '../data/subjects'
-import { getSubjectIcon, isBiologyLike } from '../utils/subjectIcons'
+import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
 import AIOutput from '../components/AIOutput'
@@ -18,8 +18,7 @@ import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
-import CellIllustration from '../components/illustrations/CellIllustration'
-import SeedlingIllustration from '../components/illustrations/SeedlingIllustration'
+import { componentForSubject } from '../data/illustrationThemes'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
@@ -32,13 +31,12 @@ import {
 } from 'lucide-react'
 import './Study.css'
 
-// Subject-aware hero illustration — reuses the two existing illustration components
-// exactly the way TopicDetail.jsx already does (biology -> cell, everything else ->
-// seedling) rather than inventing a new illustration style for Study.
+// Subject-aware hero illustration — delegates to the shared illustrationThemes.js
+// resolver also used by Dashboard.jsx, Topics.jsx and TopicDetail.jsx, so the same
+// subject renders the same illustration everywhere rather than just biology-or-generic.
 function SubjectIllustration({ subject, size = 64 }) {
-  return isBiologyLike(subject)
-    ? <CellIllustration size={size} />
-    : <SeedlingIllustration size={size} />
+  const Illustration = componentForSubject(subject)
+  return <Illustration size={size} />
 }
 
 // Flashcard sets only carry board+level when they're official/admin-generated
