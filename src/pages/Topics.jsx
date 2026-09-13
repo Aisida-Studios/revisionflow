@@ -477,7 +477,7 @@ export default function Topics() {
                         </button>
                       ))}
                     </div>
-                    <div className="tabs" style={{padding:3}}>
+                    <div className="tabs tabs--scroll" style={{padding:3}}>
                       <button className={`tab${view==='list'?' active':''}`} onClick={()=>setView('list')}><BarChart2 size={14}/> List</button>
                       <button className={`tab${view==='heat'?' active':''}`} onClick={()=>setView('heat')}><Grid size={14}/> Heatmap</button>
                       <button className={`tab${view==='priority'?' active':''}`} onClick={()=>setView('priority')}><Star size={14}/> Priority</button>
@@ -556,7 +556,7 @@ export default function Topics() {
                               </div>
                               <div style={{flex:1}}>
                                 <div style={{height:8,background:'var(--bg-hover)',borderRadius:4,overflow:'hidden'}}>
-                                  <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,var(--accent),var(--accent-light))',borderRadius:4,transition:'width 0.5s ease'}}/>
+                                  <div style={{height:'100%',width:`${pct}%`,background:'var(--accent)',borderRadius:4,transition:'width 0.5s ease'}}/>
                                 </div>
                                 <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:'0.72rem',color:'var(--text-muted)'}}>
                                   <span>{mastered} strong (4-5)</span><span>{total-mastered} to improve</span>
