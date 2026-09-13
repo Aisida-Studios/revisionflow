@@ -391,7 +391,7 @@ export default function TopicDetail() {
         </div>
       </div>
 
-      <div className="tabs" style={{ marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="tabs tabs--scroll" style={{ marginBottom: 20 }}>
         {TABS.map(t => (
           <button key={t.id} className={`tab${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
             <t.icon size={14} /> {t.label}
