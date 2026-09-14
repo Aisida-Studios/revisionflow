@@ -29,38 +29,17 @@ export default function PublicProfile() {
   useEffect(() => {
     if (!username) { setNotFound(true); setLoading(false); return }
 
-    // Strategy:
-    // 1. Try treating `username` as a uid (direct doc GET — always allowed, even without login)
-    // 2. If the doc exists and has a matching username field → show it
-    // 3. If the doc's username doesn't match, try a WHERE username==x query
-    //    (requires login under new Firestore rules)
-    // 4. Fall back to "not found"
+    // getUserByUsername (src/utils/firestore.js) now calls netlify/functions/public-data.js,
+    // which tries `username` as a uid first, then as a username field, and checks
+    // settings.profilePublic server-side — so a private profile's data never reaches the
+    // client at all, not just its rendering. No auth required, matching the existing
+    // "a logged-out visitor can open a shared profile link" behaviour.
     import('../utils/firestore').then(({ getUserByUsername }) => {
-      // First try direct uid lookup
-      import('firebase/firestore').then(({ doc, getDoc }) => {
-        import('../firebase').then(({ db }) => {
-          getDoc(doc(db, 'users', username)).then(snap => {
-            if (snap.exists()) {
-              const p = { uid: snap.id, ...snap.data() }
-              if (p.settings?.profilePublic !== false) {
-                setProfileData(p); setLoading(false)
-              } else {
-                setNotFound(true); setLoading(false)
-              }
-              return
-            }
-            // Not a uid — try username query (may require auth)
-            getUserByUsername(username).then(p => {
-              if (p && p.settings?.profilePublic !== false) {
-                setProfileData(p)
-              } else {
-                setNotFound(true)
-              }
-              setLoading(false)
-            }).catch(() => { setNotFound(true); setLoading(false) })
-          }).catch(() => { setNotFound(true); setLoading(false) })
-        })
-      })
+      getUserByUsername(username).then(p => {
+        if (p) setProfileData(p)
+        else setNotFound(true)
+        setLoading(false)
+      }).catch(() => { setNotFound(true); setLoading(false) })
     })
   }, [username])
 
