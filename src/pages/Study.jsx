@@ -46,8 +46,21 @@ function SubjectIllustration({ subject, size = 64 }) {
 // mirrors exactly how TopicNotesTab already resolves board/level per subject.
 function deriveSetBoardLevel(set, profile) {
   if (set.board && set.level) return { board: set.board, level: set.level }
+  // profile is only meaningful when deriving for the CURRENT user's own sets (see callers) — for
+  // someone else's public set with no stamped board/level, there's no honest source to derive
+  // from, so this deliberately falls through to {null, null} (shown as "any level") rather than
+  // guessing based on whoever happens to be viewing it.
+  if (!profile) return { board: null, level: null }
   const subjMeta = profile?.subjects?.find(s => s.name === set.subject)
   return { board: subjMeta?.board || null, level: subjMeta ? getSubjectQualification(subjMeta, profile) : null }
+}
+
+// Used at SAVE time (not view time) to stamp a new set with the saving user's own board/level for
+// that subject, so it has real data instead of needing to be derived/guessed later.
+function myQualificationFor(subject, profile) {
+  const subjMeta = profile?.subjects?.find(s => s.name === subject)
+  if (!subjMeta) return {}
+  return { board: subjMeta.board || undefined, level: getSubjectQualification(subjMeta, profile) || undefined }
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -1290,10 +1303,18 @@ function QuizTab({ mySets, uid, profile }) {
   // Subject is already filtered server-side (getPublicFlashcardSets query below) — board/level
   // filtered client-side here rather than adding where() clauses, to avoid needing a new
   // Firestore composite index for this collection.
+  //
+  // deriveSetBoardLevel(set, null) — NOT the viewer's own profile. Passing profile here was the
+  // bug: for any legacy set with no stamped board/level, it fell back to whatever qualification
+  // THE VIEWER happened to have for that subject, so every set always "matched" the viewer's own
+  // level and nothing else — an AS-Level Maths student could never see A-Level or GCSE Maths sets
+  // because deriving always handed back "AS-Level" regardless of the set's real origin. With no
+  // profile to derive from, an unstamped set's level comes back null and is treated as "any
+  // level" below rather than being mislabeled.
   const filteredPublic = publicSets.filter(set => {
-    const { board, level } = deriveSetBoardLevel(set, profile)
-    if (publicBoard && board !== publicBoard) return false
-    if (publicLevel && level !== publicLevel) return false
+    const { board, level } = deriveSetBoardLevel(set, null)
+    if (publicBoard && board && board !== publicBoard) return false
+    if (publicLevel && level && level !== publicLevel) return false
     return true
   })
 
@@ -2561,7 +2582,7 @@ export default function Study() {
 
   async function handleSaveSet({ title, isPublic }) {
     try {
-      await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic })
+      await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic, ...myQualificationFor(studySubj, profile) })
       toast.success('Set saved!' + (isPublic ? ' It\'s now public.' : ''))
       setShowSave(false)
       loadMySets()
@@ -2570,7 +2591,7 @@ export default function Study() {
 
   async function handleCreateSet({ title, subject, topic, cards, isPublic }) {
     try {
-      await saveFlashcardSet(user.uid, { title, subject, topic, cards, isPublic })
+      await saveFlashcardSet(user.uid, { title, subject, topic, cards, isPublic, ...myQualificationFor(subject, profile) })
       toast.success('Set created!')
       setShowCreate(false)
       loadMySets()
@@ -2602,7 +2623,7 @@ export default function Study() {
 
   async function handlePasteImport({ title, subject, cards }) {
     try {
-      await saveFlashcardSet(user.uid, { title, subject, topic: '', cards, isPublic: false })
+      await saveFlashcardSet(user.uid, { title, subject, topic: '', cards, isPublic: false, ...myQualificationFor(subject, profile) })
       toast.success(cards.length + ' cards saved to My Sets!')
       setShowPaste(false)
       loadMySets()
@@ -2882,6 +2903,7 @@ export default function Study() {
                                   topic: set.topic || '',
                                   cards: set.cards || [],
                                   isPublic: false,
+                                  ...(set.board && set.level ? { board: set.board, level: set.level } : myQualificationFor(set.subject, profile)),
                                 })
                                 toast.success('Saved to My Sets!')
                                 loadMySets()
