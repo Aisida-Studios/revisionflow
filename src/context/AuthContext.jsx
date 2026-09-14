@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
-import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
+import { onAuthStateChanged, signOut, updateProfile, getRedirectResult } from 'firebase/auth'
 import { doc, onSnapshot, updateDoc, setDoc, collection, query, where } from 'firebase/firestore'
 import {
   auth, db, loginWithEmail, signupWithEmail,
@@ -62,6 +62,17 @@ export function AuthProvider({ children }) {
     let profileUnsub = () => {}
     let requestsUnsub = () => {}
 
+    // Standalone/installed PWAs use signInWithRedirect for Google sign-in (see loginWithGoogle
+    // in firestore.js) because signInWithPopup's window.opener handoff doesn't reliably work once
+    // the app is running in its own standalone window rather than a normal browser tab — the
+    // popup either fails to open or never reports its result back. The redirect flow instead
+    // navigates the whole app to Google and back; onAuthStateChanged below picks up the resulting
+    // session automatically once the app reloads, this just surfaces an error if the redirect
+    // itself failed (e.g. an existing account with a different sign-in method).
+    getRedirectResult(auth).catch(e => {
+      console.error('[AuthContext] Google redirect sign-in failed:', e.code)
+    })
+
     const authUnsub = onAuthStateChanged(auth, async u => {
       setUser(u)
       profileUnsub()
@@ -102,7 +113,13 @@ export function AuthProvider({ children }) {
           if (data && prevStreakRef.current !== null) {
             const prev = prevStreakRef.current
             const curr = data.streak || 0
-            if (curr > prev && curr > 0 && readyForCelebrations) {
+            // A legitimate streak increase is always exactly +1 (one more day of activity since
+            // the last check). A jump bigger than that only happens when Firestore's local cache
+            // returns an old value first (e.g. a brand-new device with no cache yet, or a slow
+            // network) and the real value arrives a moment later — celebrating that as "you just
+            // extended your streak" is what was re-showing this popup on new devices for a streak
+            // the account already had.
+            if (curr === prev + 1 && curr > 0 && readyForCelebrations) {
               setStreakCelebration({ streak: curr })
             }
           }
@@ -115,8 +132,15 @@ export function AuthProvider({ children }) {
           if (data && prevBadgesRef.current !== null) {
             const prevBadges = prevBadgesRef.current
             const currBadges = data.badges || []
-            if (currBadges.includes('referral') && !prevBadges.includes('referral')) {
+            // referralRewardShown is the actual guard against repeats — the badges-array
+            // transition is just what decides WHEN to check it, so this still only evaluates once
+            // right after the badge appears rather than on every snapshot. Without the persisted
+            // flag, the same cache-race as streak/level could replay this on a new device: a
+            // stale first snapshot without 'referral' yet, followed by the true one that has it,
+            // looks identical to "just earned it" even when it was earned days ago on another device.
+            if (currBadges.includes('referral') && !prevBadges.includes('referral') && !data.referralRewardShown) {
               setReferralReward({ variant: 'referrer' })
+              updateDoc(doc(db, 'users', u.uid), { referralRewardShown: true }).catch(() => {})
             }
           }
           if (data) prevBadgesRef.current = data.badges || []
@@ -125,8 +149,9 @@ export function AuthProvider({ children }) {
           if (data && prevLevelRef.current !== null) {
             const prev = prevLevelRef.current
             const curr = data.level || 1
-            if (curr > prev && readyForCelebrations) {
+            if (curr > prev && curr > (data.highestCelebratedLevel || 0) && readyForCelebrations) {
               setLevelUp({ level: curr, title: LEVELS[curr - 1]?.title || 'Newcomer' })
+              updateDoc(doc(db, 'users', u.uid), { highestCelebratedLevel: curr }).catch(() => {})
             }
           }
           if (data) prevLevelRef.current = data.level || 1
