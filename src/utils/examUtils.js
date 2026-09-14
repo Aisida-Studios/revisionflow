@@ -3,15 +3,26 @@
 // EmergencyBanner, ExamDates, and upcoming exams sections.
 
 /**
+ * Parses a "YYYY-MM-DD" string as a LOCAL date (midnight local time), never new
+ * Date(dateString) — that parses as UTC midnight, which on a device set to a timezone behind
+ * UTC can display as the previous day. Returns null for anything falsy/unparseable.
+ */
+export function parseLocalDate(dateStr) {
+  if (!dateStr) return null
+  const parts = String(dateStr).slice(0, 10).split('-').map(Number)
+  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null
+  return new Date(parts[0], parts[1] - 1, parts[2])
+}
+
+/**
  * Returns true if an exam should be considered "done" and hidden.
  * An exam is done if:
  * - It was yesterday or earlier, OR
  * - It is today AND it is past 14:00 (2pm) local time
  */
 export function isExamDone(examDateStr) {
-  if (!examDateStr) return false
-  const parts   = String(examDateStr).slice(0, 10).split('-').map(Number)
-  const examDay = new Date(parts[0], parts[1] - 1, parts[2]) // local midnight on exam day
+  const examDay = parseLocalDate(examDateStr)
+  if (!examDay) return false
   const now     = new Date()
   const today   = new Date(); today.setHours(0, 0, 0, 0)
 
@@ -31,10 +42,9 @@ export function isExamDone(examDateStr) {
  * Always compares date-only — no time contamination.
  */
 export function daysUntilExam(examDateStr) {
-  if (!examDateStr) return null
-  const parts   = String(examDateStr).slice(0, 10).split('-').map(Number)
-  const examDay = new Date(parts[0], parts[1] - 1, parts[2])
-  const today   = new Date(); today.setHours(0, 0, 0, 0)
+  const examDay = parseLocalDate(examDateStr)
+  if (!examDay) return null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
   return Math.round((examDay - today) / 86400000)
 }
 
