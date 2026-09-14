@@ -3,7 +3,7 @@
 // When a new badge appears, fires either a toast (minor) or full-screen celebration (rare).
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { onSnapshot, doc } from 'firebase/firestore'
+import { onSnapshot, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 import { BADGE_MAP } from '../data/badges'
@@ -29,48 +29,64 @@ export function BadgeProvider({ children }) {
 
   useEffect(() => {
     if (!user) return
+    let cancelled = false
+    let unsub = () => {}
 
-    const unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
-      if (!snap.exists()) return
-      const current = snap.data().badges || []
-
-      // On first load, mark all current badges as seen in localStorage
-      if (knownBadgesRef.current === null) {
-        const stored = localStorage.getItem(`seen_badges_${user.uid}`)
-        const seenSet = stored ? new Set(JSON.parse(stored)) : new Set(current)
-        
-        // Add current to seen set to be sure (syncing DB with LocalStorage)
-        current.forEach(id => seenSet.add(id))
-        localStorage.setItem(`seen_badges_${user.uid}`, JSON.stringify([...seenSet]))
-        
-        knownBadgesRef.current = seenSet
-        return
+    async function init() {
+      // Read the account's seen-badges baseline ONCE, from Firestore, before comparing anything
+      // against it — this is what makes "have I shown this popup before" per-account instead of
+      // per-device. The old version seeded this baseline from whatever localStorage happened to
+      // have on THIS browser, which is empty on every new device/browser by definition, so a
+      // badge already celebrated elsewhere looked brand new again the first time this mounted on
+      // a second device.
+      let seenSet
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid))
+        const data = snap.exists() ? snap.data() : {}
+        if (Array.isArray(data.seenBadges)) {
+          seenSet = new Set(data.seenBadges)
+        } else {
+          // No seenBadges field yet (account predates this fix) — assume every badge already on
+          // the account has already been shown to the user at some point, rather than firing a
+          // popup for all of them at once the first time this runs. Persisted immediately so this
+          // one-time assumption only ever happens once per account, not once per device.
+          seenSet = new Set(data.badges || [])
+          updateDoc(doc(db, 'users', user.uid), { seenBadges: [...seenSet] }).catch(() => {})
+        }
+      } catch {
+        seenSet = new Set()
       }
+      if (cancelled) return
+      knownBadgesRef.current = seenSet
 
-      // Find badges in 'current' that aren't in our 'seen' set
-      const newBadges = current.filter(id => !knownBadgesRef.current.has(id))
-      
-      if (newBadges.length > 0) {
-        const updatedSet = new Set(knownBadgesRef.current)
-        newBadges.forEach(id => {
-          updatedSet.add(id)
-          const badge = BADGE_MAP[id]
-          if (!badge) return
+      unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
+        if (!snap.exists()) return
+        const current = snap.data().badges || []
+        const newBadges = current.filter(id => !knownBadgesRef.current.has(id))
 
-          if (RARE_BADGE_IDS.includes(id)) {
-            setCelebration(badge)
-          } else {
-            toast.custom((t) => (
-              <BadgeToast badge={badge} visible={t.visible} onDismiss={() => toast.dismiss(t.id)}/>
-            ), { duration: 5000 })
-          }
-        })
-        knownBadgesRef.current = updatedSet
-        localStorage.setItem(`seen_badges_${user.uid}`, JSON.stringify([...updatedSet]))
-      }
-    })
+        if (newBadges.length > 0) {
+          const updatedSet = new Set(knownBadgesRef.current)
+          newBadges.forEach(id => {
+            updatedSet.add(id)
+            const badge = BADGE_MAP[id]
+            if (!badge) return
 
-    return () => unsub()
+            if (RARE_BADGE_IDS.includes(id)) {
+              setCelebration(badge)
+            } else {
+              toast.custom((t) => (
+                <BadgeToast badge={badge} visible={t.visible} onDismiss={() => toast.dismiss(t.id)}/>
+              ), { duration: 5000 })
+            }
+          })
+          knownBadgesRef.current = updatedSet
+          updateDoc(doc(db, 'users', user.uid), { seenBadges: arrayUnion(...newBadges) }).catch(() => {})
+        }
+      })
+    }
+    init()
+
+    return () => { cancelled = true; unsub() }
   }, [user])
 
   return (
