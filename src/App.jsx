@@ -92,6 +92,7 @@ function GlobalOnboardingRecap() {
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const Landing       = lazy(() => import('./pages/Landing'))
+const NotFound      = lazy(() => import('./pages/NotFound'))
 const Login         = lazy(() => import('./pages/Login'))
 const Signup        = lazy(() => import('./pages/Signup'))
 const Onboarding    = lazy(() => import('./pages/Onboarding'))
@@ -214,12 +215,12 @@ export default function App() {
                     <Route path="/mastery"  element={<Navigate to="/topics" replace />} />
                     <Route path="/past-papers"   element={<Navigate to="/papers" replace />} />
                     <Route path="/exam-dates"    element={<Navigate to="/exams" replace />} />
-                    <Route path="/topic-mastery" element={<Navigate to="/mastery" replace />} />
+                    <Route path="/topic-mastery" element={<Navigate to="/topics" replace />} />
                     <Route path="/ai-advisor"    element={<Navigate to="/ai" replace />} />
                     <Route path="/tasks"         element={<Navigate to="/calendar" replace />} />
 
                     {/* Catch-all */}
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
                 <GlobalTooltipTour />
