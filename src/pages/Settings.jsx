@@ -34,7 +34,8 @@ function PortalButton({ uid }) {
     if (!uid) return
     setLoading(true)
     try {
-      const res  = await fetch('/api/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create-portal', uid }) })
+      const idToken = await auth.currentUser?.getIdToken()
+      const res  = await fetch('/api/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') }, body: JSON.stringify({ action: 'create-portal', uid }) })
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else throw new Error(data.error || 'Could not open portal')
@@ -837,9 +838,10 @@ function NotificationsSettings({ profile, user, onSave }) {
         ])
         const sub = await sw.pushManager.getSubscription()
         if (sub) {
+          const idToken = await auth.currentUser?.getIdToken()
           const res = await fetch('/api/notify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') },
             body: JSON.stringify({
               subscription: sub.toJSON(),
               title: 'RevisionFlow test',
