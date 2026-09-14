@@ -12,7 +12,7 @@ RevisionFlow gives you a personalised revision system — not just content. It k
 
 Most revision apps give you generic content. RevisionFlow builds around *you*.
 
-- **AI Revision Schedule** — generates a full revision timetable based on your subjects, exam dates, and availability
+- **Revision Schedule** — generates a full revision timetable based on your subjects, exam dates, and availability
 - **Topic Confidence Tracker** — rate every spec topic 1–5, see your weak spots at a glance, build a priority list
 - **Past Paper Tracker** — log scores with automatic grade boundaries for AQA, Edexcel, OCR and more
 - **AI Advisor** — chat with an AI tutor that knows your full profile: subjects, grades, weak topics, upcoming exams
@@ -46,7 +46,7 @@ Grading systems supported: 9–1, A*–E, Combined Science double grade (9-9 to 
 |---|---|
 | Frontend | React 18 + Vite |
 | Database & Auth | Firebase Firestore + Firebase Auth |
-| AI | Mistral AI (primary), Google Gemini (fallback) |
+| AI | Mistral AI (`mistral-small-latest`) |
 | Hosting | Netlify |
 | PWA | Service worker, installable on mobile |
 
