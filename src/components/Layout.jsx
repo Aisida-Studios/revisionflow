@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from './ProGate'
 import { resolveProfileIcon } from '../data/themes'
+import ScrollToTop from './ScrollToTop'
 
 /* Route list — every path here matches App.jsx exactly (canonical paths,
    not the legacy /exam-dates, /past-papers, /ai-advisor, /tasks redirects).
@@ -292,6 +293,7 @@ export default function Layout() {
         )}
         <Outlet />
       </main>
+      <ScrollToTop />
 
       {isMobile && (
         <nav className="mobile-bottom-nav" aria-label="Bottom navigation">
