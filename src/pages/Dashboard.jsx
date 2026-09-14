@@ -6,6 +6,18 @@ import {
   Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
   Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,
 } from 'lucide-react'
+// Same lucide badge-icon set as Profile.jsx (src/data/badges.js has a lucideIcon name on every
+// badge) — Trophy/Award/CalendarDays are already imported above, the rest are badge-only icons.
+import {
+  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal,
+  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+} from 'lucide-react'
+const BADGE_ICONS = {
+  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
+  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
+  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
+}
 
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
@@ -181,11 +193,14 @@ function BadgeShowcase({ earnedIds }) {
   }
   return (
     <div className="badge-showcase">
-      {earned.slice(0, 8).map((b) => (
-        <span key={b.id} className="badge-icon" title={`${b.name}${b.description ? ` — ${b.description}` : ''}`}>
-          {b.icon}
-        </span>
-      ))}
+      {earned.slice(0, 8).map((b) => {
+        const Icon = BADGE_ICONS[b.lucideIcon]
+        return (
+          <span key={b.id} className="badge-icon" title={`${b.name}${b.description ? ` — ${b.description}` : ''}`}>
+            {Icon ? <Icon size={16} /> : b.icon}
+          </span>
+        )
+      })}
       {earned.length > 8 && <span className="badge-icon badge-icon--more">+{earned.length - 8}</span>}
     </div>
   )
@@ -209,7 +224,6 @@ export default function Dashboard() {
     () => typeof window !== 'undefined' && localStorage.getItem('rf_beta_thanks_dismissed') === '1'
   )
 
-  useEffect(() => { document.title = 'Dashboard · RevisionFlow' }, [])
 
   function dismissBetaThanks() {
     localStorage.setItem('rf_beta_thanks_dismissed', '1')
