@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateUserProfile } from '../utils/firestore'
 import { countdownUrgency, daysUntilExam } from '../utils/calendar'
-import { isExamDone } from '../utils/examUtils'
+import { isExamDone, parseLocalDate } from '../utils/examUtils'
 import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
 import { isTiered } from '../data/examDates2026'
 import { getMergedExamDates } from '../data/overrides'
@@ -23,7 +23,7 @@ export default function ExamDates() {
   const [autoMatches, setAutoMatches] = useState([])
 
   const subjects  = profile?.subjects || []
-  const examDates = (profile?.examDates || []).sort((a,b) => new Date(a.examDate) - new Date(b.examDate))
+  const examDates = (profile?.examDates || []).sort((a,b) => parseLocalDate(a.examDate) - parseLocalDate(b.examDate))
 
   // Auto-lookup when subject/board/tier/level changes in single-subject panel
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function ExamDates() {
               {autoMatches.map(m => (
                 <div key={m.paper} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.875rem'}}>
                   <span>Paper {m.paper}{m.paperName ? ` — ${m.paperName}` : ''}</span>
-                  <span style={{fontWeight:600}}>{format(new Date(m.date), 'd MMM yyyy')}</span>
+                  <span style={{fontWeight:600}}>{format(parseLocalDate(m.date), 'd MMM yyyy')}</span>
                 </div>
               ))}
             </div>
@@ -209,7 +209,7 @@ export default function ExamDates() {
                   </div>
                   {e.paperName && <div style={{fontSize:'0.8rem',color:'var(--text-secondary)',marginBottom:2}}>{e.paperName}</div>}
                   <div style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>
-                    {isDone ? 'Completed' : 'Exam on'} {format(new Date(e.examDate), 'EEEE, d MMMM yyyy')}
+                    {isDone ? 'Completed' : 'Exam on'} {format(parseLocalDate(e.examDate), 'EEEE, d MMMM yyyy')}
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
