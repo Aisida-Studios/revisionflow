@@ -3,6 +3,7 @@
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -40,7 +41,17 @@ export { auth, db }
 
 const googleProvider = new GoogleAuthProvider()
 
-export const loginWithGoogle  = ()       => signInWithPopup(auth, googleProvider)
+// signInWithPopup relies on the popup window being able to message back to the window that
+// opened it. That relationship doesn't hold up once the app is running as an installed/standalone
+// PWA rather than a normal browser tab — the popup either fails to open or its result never makes
+// it back, which is why Google sign-in didn't work from the installed app. signInWithRedirect
+// sidesteps that entirely by navigating the whole app to Google and back instead of opening a
+// second window; AuthContext.jsx's getRedirectResult() call picks up the result once it returns.
+function isStandalonePWA() {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator?.standalone === true
+}
+export const loginWithGoogle  = ()       => isStandalonePWA() ? signInWithRedirect(auth, googleProvider) : signInWithPopup(auth, googleProvider)
 export const loginWithEmail   = (e, p)   => signInWithEmailAndPassword(auth, e, p)
 export const signupWithEmail  = (e, p)   => createUserWithEmailAndPassword(auth, e, p)
 export const resetPassword    = (e)      => sendPasswordResetEmail(auth, e)
@@ -374,78 +385,39 @@ function effectivePeriodXP(d, period) {
   return d.xp || 0
 }
 
+// ── netlify/functions/public-data.js client ─────────────────────────────────
+// Firestore rules only allow a user to read their OWN users/{uid} document now (see
+// firestore.rules) — reading anyone else's profile, for a leaderboard, a public profile page,
+// or friend search, goes through this instead. The function uses the Admin SDK server-side and
+// returns only a safe field subset (never email, stripe*, pushSubscription, exam dates, etc.).
+async function callPublicDataApi(action, params = {}, { requireAuth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (requireAuth) {
+    const idToken = await auth.currentUser?.getIdToken()
+    headers['Authorization'] = 'Bearer ' + (idToken || '')
+  }
+  const res = await fetch('/api/public-data', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, ...params }),
+  })
+  if (!res.ok) throw new Error('public-data request failed: ' + res.status)
+  return res.json()
+}
+
 export const getLeaderboard = async (friendUids, currentUid, period = 'allTime') => {
   if (!friendUids || friendUids.length === 0) return []
-
-  const uids     = [...new Set([...friendUids, currentUid].filter(Boolean))]
-  const profiles = await Promise.all(
-    uids.map(async uid => {
-      try {
-        const snap = await getDoc(doc(db, 'users', uid))
-        if (!snap.exists()) return null
-        const d = snap.data()
-        return {
-          uid,
-          displayName:             d.displayName || d.profile?.displayName || d.profile?.name || 'Anonymous',
-          avatarUrl:               d.avatarUrl || d.profile?.avatarUrl || '',
-          xp:                      d.xp || 0,
-          xpThisWeek:              effectivePeriodXP(d, 'week'),
-          xpThisMonth:             effectivePeriodXP(d, 'month'),
-          level:                   levelFromXP(d.xp || 0),
-          streak:                  d.streak || 0,
-          profileIcon:             d.profileIcon || null,
-          hideNameFromLeaderboard: d.hideNameFromLeaderboard || d.profile?.hideNameFromLeaderboard || false,
-          isCurrentUser:           uid === currentUid,
-        }
-      } catch { return null }
-    })
-  )
-
-  const field = { allTime: 'xp', week: 'xpThisWeek', month: 'xpThisMonth' }
-  const key   = field[period] || 'xp'
-  return profiles.filter(Boolean).sort((a, b) => b[key] - a[key])
+  try {
+    const profiles = await callPublicDataApi('leaderboard-friends')
+    const field = { allTime: 'xp', week: 'xpThisWeek', month: 'xpThisMonth' }
+    const key   = field[period] || 'xp'
+    return profiles.filter(Boolean).sort((a, b) => b[key] - a[key])
+  } catch { return [] }
 }
 
 export const getGlobalLeaderboard = async (maxResults = 100, period = 'allTime') => {
   try {
-    if (period === 'allTime') {
-      const q    = query(collection(db, 'users'), orderBy('xp', 'desc'), limit(maxResults))
-      const snap = await getDocs(q)
-      return snap.docs.map(d => {
-        const data = d.data()
-        return {
-          uid:                     d.id,
-          displayName:             data.displayName || data.profile?.displayName || data.profile?.name || 'Anonymous',
-          avatarUrl:               data.avatarUrl || data.profile?.avatarUrl || '',
-          xp:                      data.xp || 0,
-          streak:                  data.streak || 0,
-          profileIcon:             data.profileIcon || null,
-          hideNameFromLeaderboard: data.hideNameFromLeaderboard || data.profile?.hideNameFromLeaderboard || false,
-        }
-      })
-    }
-
-    // week/month: order by the raw stored counter to get a good candidate pool (anyone
-    // currently near the top by raw value is a plausible top performer), but the raw value can
-    // be stale for a user who was very active last period and has done nothing since it rolled
-    // over. Fetch a larger pool than requested, recompute the real (period-aware) value for
-    // each, drop anyone whose effective total is 0, re-sort, then trim to what was asked for.
-    const rawField = period === 'week' ? 'xpThisWeek' : 'xpThisMonth'
-    const q    = query(collection(db, 'users'), orderBy(rawField, 'desc'), limit(maxResults * 3))
-    const snap = await getDocs(q)
-    const withEffective = snap.docs.map(d => {
-      const data = d.data()
-      return {
-        uid:                     d.id,
-        displayName:             data.displayName || data.profile?.displayName || data.profile?.name || 'Anonymous',
-        avatarUrl:               data.avatarUrl || data.profile?.avatarUrl || '',
-        xp:                      effectivePeriodXP(data, period),
-        streak:                  data.streak || 0,
-        profileIcon:             data.profileIcon || null,
-        hideNameFromLeaderboard: data.hideNameFromLeaderboard || data.profile?.hideNameFromLeaderboard || false,
-      }
-    })
-    return withEffective.filter(u => u.xp > 0).sort((a, b) => b.xp - a.xp).slice(0, maxResults)
+    return await callPublicDataApi('leaderboard-global', { maxResults, period })
   } catch { return [] }
 }
 
@@ -934,56 +906,25 @@ export const removeFriend = async (friendUid) => {
 
 export const getFriendProfiles = async (friendUids) => {
   if (!friendUids || friendUids.length === 0) return []
-  const profiles = await Promise.all(
-    friendUids.map(async uid => {
-      try {
-        const snap = await getDoc(doc(db, 'users', uid))
-        if (!snap.exists()) return null
-        const d = snap.data()
-        return {
-          uid,
-          displayName: d.displayName || d.profile?.displayName || 'Anonymous',
-          avatarUrl:   d.avatarUrl || d.profile?.avatarUrl || '',
-          xp:          d.xp || 0,
-          level:       levelFromXP(d.xp || 0),
-          streak:      d.streak || 0,
-          profileIcon: d.profileIcon || null,
-        }
-      } catch { return null }
-    })
-  )
-  return profiles.filter(Boolean)
+  try {
+    const profiles = await callPublicDataApi('friend-profiles', { uids: friendUids })
+    return profiles.map(p => ({ ...p, level: levelFromXP(p.xp || 0) }))
+  } catch { return [] }
 }
 
-export const getUserByUsername = async (username) => {
-  if (!username) return null
+export const getUserByUsername = async (handle) => {
+  if (!handle) return null
   try {
-    // 1. Try exact username field match (set in Onboarding / Settings)
-    const q1    = query(collection(db, 'users'), where('username', '==', username), limit(1))
-    const snap1 = await getDocs(q1)
-    if (!snap1.empty) {
-      const d = snap1.docs[0]
-      return { uid: d.id, ...d.data() }
-    }
-    // 2. Fallback: treat as uid (profile URLs fall back to uid when no username is set)
-    const snap2 = await getDoc(doc(db, 'users', username))
-    if (snap2.exists()) return { uid: snap2.id, ...snap2.data() }
-    return null
+    const p = await callPublicDataApi('profile', { handle }, { requireAuth: false })
+    return { ...p, level: levelFromXP(p.xp || 0) }
   } catch { return null }
 }
 
 export const searchUsersByName = async (searchTerm) => {
   if (!searchTerm) return []
   try {
-    // Firestore doesn't support full-text search — fetch and filter client-side
-    // For a small user base this is fine; replace with Algolia if scale demands it
-    const q    = query(collection(db, 'users'), orderBy('displayName'), limit(50))
-    const snap = await getDocs(q)
-    const lower = searchTerm.toLowerCase()
-    return snap.docs
-      .map(d => ({ uid: d.id, ...d.data() }))
-      .filter(u => (u.displayName || '').toLowerCase().includes(lower))
-      .slice(0, 10)
+    const matches = await callPublicDataApi('search-users', { term: searchTerm })
+    return matches.map(u => ({ ...u, level: levelFromXP(u.xp || 0) }))
   } catch { return [] }
 }
 
@@ -1203,7 +1144,7 @@ export async function runBadgeAudit(uid) {
    Public sets also stored at: publicFlashcards/{id}
 ========================= */
 
-export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType }) => {  // Resolve display name for author
+export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType, board, level }) => {  // Resolve display name for author
   let resolvedAuthor = author
   if (!resolvedAuthor && uid) {
     try {
@@ -1221,6 +1162,12 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
+  // Only regular (non-official) saves need this — official sets already always pass both via
+  // saveOfficialFlashcardSet. Storing this at save time (rather than only ever guessing it later
+  // from whoever happens to be viewing the set) is what makes the public browser's level filter
+  // work for sets other than the viewer's own — see deriveSetBoardLevel in Study.jsx.
+  if (board) data.board = board
+  if (level) data.level = level
   let refId
   const isOfficial = authorType === 'official'
   if (uid && !isOfficial) {
