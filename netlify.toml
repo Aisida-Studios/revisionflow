@@ -93,6 +93,11 @@
   to     = "/.netlify/functions/friends"
   status = 200
 
+[[redirects]]
+  from   = "/api/public-data"
+  to     = "/.netlify/functions/public-data"
+  status = 200
+
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
   from   = "/*"
