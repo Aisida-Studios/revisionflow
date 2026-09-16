@@ -35,6 +35,9 @@ const MAX_TOKENS         = 5000    // hard server-side ceiling — enforced via 
 const AI_REQUEST_TIMEOUT = 45000   // ms. Comfortably below Netlify's fixed 60s limit, leaving
                                     // headroom for the auth + Firestore work that happens first.
 const FREE_LIMIT   = 150   // requests per 24h for free users
+const PRO_GENERAL_LIMIT = 2000   // requests per 24h for Pro/beta — a backstop against a
+                                   // compromised/malicious account, not a real ceiling for
+                                   // legitimate use (no student gets near this)
 
 // ── Firebase Admin — lazy singleton ──────────────────────────────────────────
 let _admin = null
@@ -75,12 +78,14 @@ async function checkRateLimit(uid) {
 
   const db = await getDb()
 
-  // Check if this user is Pro or beta — they get unlimited
+  // Check if this user is Pro or beta — they get a much higher ceiling, not literally none.
+  // A true unlimited pool means one compromised or malicious Pro/beta account could run
+  // unbounded Mistral costs with nothing to stop it. PRO_GENERAL_LIMIT is ~13x the free
+  // limit — no legitimate student comes close to it in a day, it only ever fires as a
+  // backstop against abuse.
   const userSnap = await db.collection('users').doc(uid).get()
-  if (userSnap.exists) {
-    const u = userSnap.data()
-    if (u.isPro || u.betaUser) return { allowed: true, remaining: Infinity, isPro: true }
-  }
+  const isPro = userSnap.exists && !!(userSnap.data().isPro || userSnap.data().betaUser)
+  const limit = isPro ? PRO_GENERAL_LIMIT : FREE_LIMIT
 
   const today   = new Date().toISOString().slice(0, 10)  // "YYYY-MM-DD"
   const ref     = db.collection('users').doc(uid).collection('usage').doc('aiCalls')
@@ -93,15 +98,21 @@ async function checkRateLimit(uid) {
     if (!data || data.date !== today) {
       // First call today — reset counter
       tx.set(ref, { date: today, count: 1 })
-      return { allowed: true, remaining: FREE_LIMIT - 1 }
+      return { allowed: true, remaining: limit - 1, isPro }
     }
 
-    if (data.count >= FREE_LIMIT) {
-      return { allowed: false, reason: "You've used today's AI help (" + FREE_LIMIT + '). More opens up tomorrow — Pro gets unlimited.' }
+    if (data.count >= limit) {
+      return {
+        allowed: false,
+        isPro,
+        reason: isPro
+          ? "You've hit an unusually high amount of AI use today — this resets tomorrow. If this doesn't seem right, get in touch."
+          : "You've used today's AI help (" + FREE_LIMIT + '). More opens up tomorrow — Pro gets a higher daily amount.',
+      }
     }
 
     tx.update(ref, { count: data.count + 1 })
-    return { allowed: true, remaining: FREE_LIMIT - (data.count + 1) }
+    return { allowed: true, remaining: limit - (data.count + 1), isPro }
   })
 
   return result
