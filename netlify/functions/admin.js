@@ -38,6 +38,20 @@ function respond(statusCode, body) {
   }
 }
 
+// ── Audit log ──────────────────────────────────────────────────────────────
+// Records every privileged write this function makes to adminAuditLog, so there's a trail
+// to check if something looks wrong later, or if the admin account itself is ever
+// compromised. Fire-and-forget on purpose — a logging failure should never block or delay
+// the actual admin action.
+function logAdminAction(db, action, details = {}) {
+  db.collection('adminAuditLog').add({
+    action,
+    actorEmail: ADMIN_EMAIL,
+    details,
+    timestamp: new Date().toISOString(),
+  }).catch(e => console.warn('[admin] audit log write failed:', e.message))
+}
+
 // ── Auth verification ─────────────────────────────────────────────────────────
 // Extracts the Bearer token from the Authorization header and verifies it
 // with Firebase Admin. Returns the decoded token or throws.
@@ -103,6 +117,7 @@ module.exports.handler = async function(event) {
         return respond(400, { error: 'Cannot write protected field: ' + field })
       }
       await db.collection('users').doc(targetUid).update({ [field]: value })
+      logAdminAction(db, 'setUserField', { targetUid, field, value })
       return respond(200, { ok: true })
     }
 
@@ -127,6 +142,7 @@ module.exports.handler = async function(event) {
         })
         await batch.commit()
       }
+      logAdminAction(db, 'bulkSetField', { targetUids, count: targetUids.length, field, value })
       return respond(200, { ok: true, updated: targetUids.length })
     }
 
@@ -177,6 +193,7 @@ module.exports.handler = async function(event) {
         site: site || name,
         createdAt: new Date().toISOString(),
       })
+      logAdminAction(db, 'addResourceLink', { subject, name, url })
       return respond(200, { ok: true, id: ref.id })
     }
 
@@ -209,6 +226,7 @@ module.exports.handler = async function(event) {
         })
         await batch.commit()
       }
+      logAdminAction(db, 'bulkAddResourceLinks', { added })
       return respond(200, { ok: true, added })
     }
 
@@ -224,6 +242,7 @@ module.exports.handler = async function(event) {
       const { linkId } = body
       if (!linkId) return respond(400, { error: 'linkId required' })
       await db.collection('topicResourceLinks').doc(linkId).delete()
+      logAdminAction(db, 'deleteResourceLink', { linkId })
       return respond(200, { ok: true })
     }
 
@@ -361,6 +380,7 @@ module.exports.handler = async function(event) {
         await db.collection('users').doc(fix.userId).update({ examDates: fix.keptExamDates })
       }
 
+      logAdminAction(db, 'archiveSupersededQualificationData', { targetUid: onlyUid || 'all users', totalArchived: toArchive.length })
       return respond(200, { ok: true, summary: { ...summary, totalArchived: toArchive.length } })
     }
 
