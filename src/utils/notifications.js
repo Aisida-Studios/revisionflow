@@ -2,7 +2,7 @@
 // Web Push notification system for RevisionFlow
 // Uses VAPID keys — VAPID_PUBLIC_KEY must be set in vite env as VITE_VAPID_PUBLIC_KEY
 
-import { auth } from '../firebase'
+import { auth, getAppCheckHeader } from '../firebase'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 
@@ -80,7 +80,7 @@ export async function sendPushToSelf(title, message, url = '/') {
     const idToken = await auth.currentUser?.getIdToken()
     await fetch('/api/notify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || ''), ...(await getAppCheckHeader()) },
       body: JSON.stringify({ subscription: sub, title, message, url }),
     })
   } catch(e) {}
