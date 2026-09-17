@@ -26,7 +26,7 @@ function respond(statusCode, body) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
     },
     body: JSON.stringify(body),
   }
@@ -56,12 +56,34 @@ async function verifyUserToken(event) {
   return admin.auth().verifyIdToken(token)
 }
 
+// ── App Check (bot protection) — monitor mode ───────────────────────────────
+// Logs whether the request carried a valid App Check token but never blocks on it unless
+// APP_CHECK_ENFORCE=true is set in Netlify's environment — that's the switch to flip once
+// Firebase Console shows real traffic verifying correctly (Console → App Check).
+async function checkAppCheck(event) {
+  const token = event.headers['x-firebase-appcheck']
+  if (!token) { console.log('[app-check] missing'); return false }
+  try {
+    const admin = await getAdmin()
+    await admin.appCheck().verifyToken(token)
+    return true
+  } catch (e) {
+    console.log('[app-check] invalid:', e.message)
+    return false
+  }
+}
+
 module.exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' }, body: '' }
+    return { statusCode: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck' }, body: '' }
   }
 
   if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
+
+  const appCheckValid = await checkAppCheck(event)
+  if (process.env.APP_CHECK_ENFORCE === 'true' && !appCheckValid) {
+    return respond(401, { error: 'Request verification failed.' })
+  }
 
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
     return respond(500, { error: 'VAPID keys not configured in Netlify environment variables' })
