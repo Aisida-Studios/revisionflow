@@ -47,9 +47,23 @@ function respond(statusCode, body) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
     },
     body: JSON.stringify(body),
+  }
+}
+
+// ── App Check (bot protection) — monitor mode, see notify.js for the full explanation.
+async function checkAppCheck(event) {
+  const token = event.headers['x-firebase-appcheck']
+  if (!token) { console.log('[app-check] missing'); return false }
+  try {
+    const admin = await getAdmin()
+    await admin.appCheck().verifyToken(token)
+    return true
+  } catch (e) {
+    console.log('[app-check] invalid:', e.message)
+    return false
   }
 }
 
@@ -117,12 +131,17 @@ module.exports.handler = async function (event) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
       },
       body: '',
     }
   }
   if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
+
+  const appCheckValid = await checkAppCheck(event)
+  if (process.env.APP_CHECK_ENFORCE === 'true' && !appCheckValid) {
+    return respond(401, { error: 'Request verification failed.' })
+  }
 
   let body
   try { body = JSON.parse(event.body || '{}') } catch (e) { return respond(400, { error: 'Invalid JSON' }) }
