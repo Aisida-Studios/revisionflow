@@ -530,6 +530,35 @@ export const getMistakes = async (uid) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+// Daily briefing cache — one doc per user, regenerated once per calendar
+// day rather than on every Dashboard load, which would mean an AI call
+// per page view. getDailyAdvice() itself (utils/ai.js) has no caching of
+// its own; this is that layer, at the same users/{uid}/dailyBriefing/latest
+// path the badge-check code already reads from.
+export const getCachedDailyBriefing = async (uid) => {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'dailyBriefing', 'latest'))
+    if (!snap.exists()) return null
+    const data = snap.data()
+    const generatedAt = data.generatedAt?.toDate ? data.generatedAt.toDate() : null
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    if (!generatedAt || generatedAt < today) return null // yesterday or older — stale
+    return data.text || null
+  } catch {
+    return null
+  }
+}
+
+export const saveDailyBriefing = async (uid, text) => {
+  try {
+    await setDoc(doc(db, 'users', uid, 'dailyBriefing', 'latest'), {
+      text, generatedAt: serverTimestamp(),
+    })
+  } catch {
+    // Non-fatal — the briefing still displays even if caching fails, it'll just regenerate next load.
+  }
+}
+
 export const resolveMistake = async (uid, id) => {
   await updateDoc(doc(db, 'users', uid, 'mistakes', id), { resolved: true })
   await awardXP(uid, 20, 'Mistake resolved')
