@@ -42,9 +42,25 @@ function respond(status, body) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
     },
     body: JSON.stringify(body),
+  }
+}
+
+// ── App Check (bot protection) — monitor mode, see notify.js for the full explanation.
+// Only ever checked on the browser-originated create-portal/create-checkout path below —
+// never on the webhook path, since that's server-to-server from Stripe itself and would
+// never carry an App Check token.
+async function checkAppCheck(event) {
+  const token = event.headers['x-firebase-appcheck']
+  if (!token) { console.log('[app-check] missing'); return false }
+  try {
+    await admin.appCheck().verifyToken(token)
+    return true
+  } catch (e) {
+    console.log('[app-check] invalid:', e.message)
+    return false
   }
 }
 
@@ -88,6 +104,11 @@ module.exports.handler = async (event) => {
   }
 
   // ── Regular API call ───────────────────────────────────────────────────────
+  const appCheckValid = await checkAppCheck(event)
+  if (process.env.APP_CHECK_ENFORCE === 'true' && !appCheckValid) {
+    return respond(401, { error: 'Request verification failed.' })
+  }
+
   let body
   try { body = JSON.parse(event.body || '{}') } catch { return respond(400, { error: 'Invalid JSON' }) }
 
