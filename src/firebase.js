@@ -26,33 +26,28 @@ export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const googleProvider = new GoogleAuthProvider()
 
-// ── App Check (bot protection) ───────────────────────────────────────────────
-// Entirely inert until VITE_RECAPTCHA_SITE_KEY is set in Netlify's environment variables —
-// initializeAppCheck() is simply never called without it, so nothing about how the app behaves
-// today changes until that's added. See the setup notes shared alongside this file for the
-// Google Cloud Console + Firebase Console steps, and why this should stay in monitor mode
-// (Firebase Console → App Check → Authentication → "Unenforced") until real traffic is
-// confirmed to be passing before switching it to "Enforced".
+// ── App Check (bot protection) — TEMPORARILY DISABLED ───────────────────────
+// initializeAppCheck() hooks into Firestore/Auth automatically — once called, every single
+// Firestore request first tries to fetch an App Check token, which depends on the reCAPTCHA
+// Enterprise script loading. The CSP in netlify.toml doesn't allow that script yet, so the
+// token-fetch hung, which hung every Firestore call in the app, which is what took the whole
+// site down. Left disabled here until the CSP is fixed AND verified working — re-enabling is a
+// one-line change (see below) once that's confirmed, not before.
 export let appCheck = null
-const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
-if (recaptchaSiteKey) {
-  // Debug token so App Check doesn't block your own `npm run dev` — without this, every
-  // request from localhost fails attestation since reCAPTCHA can't run the same way there.
-  // Firebase logs a fresh debug token to the browser console the first time this runs; add it
-  // to Firebase Console → App Check → Apps → (this app) → Manage debug tokens, or set
-  // VITE_APPCHECK_DEBUG_TOKEN once you have one so it's consistent across restarts.
-  if (import.meta.env.DEV) {
-    self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
-  }
-  try {
-    appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(recaptchaSiteKey),
-      isTokenAutoRefreshEnabled: true,
-    })
-  } catch (e) {
-    console.warn('App Check failed to initialize:', e.message)
-  }
-}
+// const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
+// if (recaptchaSiteKey) {
+//   if (import.meta.env.DEV) {
+//     self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
+//   }
+//   try {
+//     appCheck = initializeAppCheck(app, {
+//       provider: new ReCaptchaEnterpriseProvider(recaptchaSiteKey),
+//       isTokenAutoRefreshEnabled: true,
+//     })
+//   } catch (e) {
+//     console.warn('App Check failed to initialize:', e.message)
+//   }
+// }
 
 export default app
 
