@@ -28,10 +28,12 @@ import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
 import { componentForSubject } from '../data/illustrationThemes'
+import AIOutput from '../components/AIOutput'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
-  filterToCurrentQualification,
+  filterToCurrentQualification, getMistakes, getCachedDailyBriefing, saveDailyBriefing,
 } from '../utils/firestore'
+import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { computeSubjectPredictions, computeWeakTopics } from '../utils/gradeInsights'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
@@ -220,6 +222,8 @@ export default function Dashboard() {
   const [refBusy, setRefBusy] = useState(false)
   const [refError, setRefError] = useState('')
   const [refReward, setRefReward] = useState(null)
+  const [dailyBriefing, setDailyBriefing] = useState(null)
+  const [briefingLoading, setBriefingLoading] = useState(true)
   const [betaThanksDismissed, setBetaThanksDismissed] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem('rf_beta_thanks_dismissed') === '1'
   )
@@ -298,6 +302,40 @@ export default function Dashboard() {
       .map((s) => ({ ...s, _date: toJsDate(s.date) }))
       .filter((s) => s._date && s._date >= today && s._date < tomorrow)
   }, [sessions])
+
+  // Cached at users/{uid}/dailyBriefing/latest (getCachedDailyBriefing checks
+  // it was generated today, not just that it exists) so this calls the AI
+  // once per calendar day per user, not once per Dashboard load. Depends on
+  // [user] only — todaySessions/streak feed the prompt but shouldn't trigger
+  // a fresh AI call just because they changed after today's briefing was
+  // already generated.
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    setBriefingLoading(true)
+    getCachedDailyBriefing(user.uid).then(async (cached) => {
+      if (cancelled) return
+      if (cached) {
+        setDailyBriefing(cached)
+        setBriefingLoading(false)
+        return
+      }
+      try {
+        const mistakes = await getMistakes(user.uid)
+        const sessionsForPrompt = todaySessions.map((s) => ({ subject: s.subject, type: s.title || 'session' }))
+        const text = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, mistakes)
+        if (cancelled) return
+        setDailyBriefing(text)
+        saveDailyBriefing(user.uid, text)
+      } catch {
+        if (!cancelled) setDailyBriefing(null)
+      } finally {
+        if (!cancelled) setBriefingLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const todayMinutes = useMemo(
     () => todaySessions.filter((s) => s.completed).reduce((sum, s) => sum + (s.duration || 0), 0),
@@ -645,6 +683,13 @@ export default function Dashboard() {
         </div>
         <div className="card"><DailyQuests /></div>
       </div>
+
+      {(briefingLoading || dailyBriefing) && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <p className="card-eyebrow">Daily briefing</p>
+          {briefingLoading ? <Skeleton height={70} /> : <AIOutput text={dailyBriefing} compact />}
+        </div>
+      )}
 
       <div className="dash-row-3" style={{ marginTop: 16 }}>
         <div className="card">
