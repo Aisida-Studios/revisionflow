@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
-import { auth } from '../firebase'
+import { auth, getAppCheckHeader } from '../firebase'
 import { Check, Lock, Crown, ArrowLeft, RotateCcw, Code2, GraduationCap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import './AccountPages.css'
@@ -63,7 +63,7 @@ async function startCheckout(uid, plan) {
   const idToken = await auth.currentUser?.getIdToken()
   const res = await fetch('/api/stripe', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || ''), ...(await getAppCheckHeader()) },
     body: JSON.stringify({ action: 'create-checkout', uid, plan }),
   })
   const data = await res.json()
