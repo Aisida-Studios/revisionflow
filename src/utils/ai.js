@@ -3,7 +3,7 @@
 // The Mistral API key is server-side only: MISTRAL_API_KEY in Netlify env vars.
 // Never use VITE_MISTRAL_API_KEY — the key must never be in the browser bundle.
 import { recordActivityStreak } from './firestore'
-import { auth } from '../firebase'
+import { auth, getAppCheckHeader } from '../firebase'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -23,7 +23,8 @@ const AI_TIMEOUT_MS = 49000
 async function authedHeaders() {
   if (!auth.currentUser) return null
   const idToken = await auth.currentUser.getIdToken()
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken }
+  const appCheckHeader = await getAppCheckHeader()
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken, ...appCheckHeader }
 }
 
 const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level, A-Level and BTEC revision.
