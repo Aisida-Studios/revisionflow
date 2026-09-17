@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
-import { db, auth } from '../firebase'
+import { db, auth, getAppCheckHeader } from '../firebase'
 import { getPaperAttempts, getMistakes } from '../utils/firestore'
 import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
@@ -43,7 +43,7 @@ function ManageSubButton({ uid }) {
       const idToken = await auth.currentUser?.getIdToken()
       const res  = await fetch('/api/stripe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || ''), ...(await getAppCheckHeader()) },
         body: JSON.stringify({ action: 'create-portal', uid }),
       })
       const data = await res.json()
