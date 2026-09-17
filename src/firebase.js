@@ -55,3 +55,17 @@ if (recaptchaSiteKey) {
 }
 
 export default app
+
+// Used by every fetch() call to a Netlify function to attach the App Check token, when App
+// Check is configured — returns {} harmlessly otherwise, so every call site stays safe whether
+// or not VITE_RECAPTCHA_SITE_KEY has been set.
+export async function getAppCheckHeader() {
+  if (!appCheck) return {}
+  try {
+    const { getToken } = await import('firebase/app-check')
+    const result = await getToken(appCheck, false)
+    return { 'X-Firebase-AppCheck': result.token }
+  } catch (e) {
+    return {}
+  }
+}
