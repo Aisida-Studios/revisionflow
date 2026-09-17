@@ -1,6 +1,6 @@
 // src/utils/referrals.js
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db, auth } from '../firebase'
+import { db, auth, getAppCheckHeader } from '../firebase'
 
 export function generateReferralCode(uid) {
   return uid.slice(0, 8).toUpperCase()
@@ -21,7 +21,7 @@ async function callReferralApi(action, params = {}) {
   try {
     const res = await fetch('/api/referral', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken, ...(await getAppCheckHeader()) },
       body: JSON.stringify({ action, ...params }),
     })
     return await res.json()
