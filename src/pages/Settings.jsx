@@ -12,7 +12,7 @@ import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
 import toast from 'react-hot-toast'
 import { useIsPro } from '../components/ProGate'
-import { auth } from '../firebase'
+import { auth, getAppCheckHeader } from '../firebase'
 import {
   Sun, Moon, Plus, X, Trash2, Crown, User, BookOpen, Palette,
   Shield, Bell, BarChart2, FileText, LogOut
@@ -35,7 +35,7 @@ function PortalButton({ uid }) {
     setLoading(true)
     try {
       const idToken = await auth.currentUser?.getIdToken()
-      const res  = await fetch('/api/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') }, body: JSON.stringify({ action: 'create-portal', uid }) })
+      const res  = await fetch('/api/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || ''), ...(await getAppCheckHeader()) }, body: JSON.stringify({ action: 'create-portal', uid }) })
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else throw new Error(data.error || 'Could not open portal')
@@ -841,7 +841,7 @@ function NotificationsSettings({ profile, user, onSave }) {
           const idToken = await auth.currentUser?.getIdToken()
           const res = await fetch('/api/notify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || '') },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (idToken || ''), ...(await getAppCheckHeader()) },
             body: JSON.stringify({
               subscription: sub.toJSON(),
               title: 'RevisionFlow test',
