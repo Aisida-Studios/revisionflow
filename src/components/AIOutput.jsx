@@ -4,7 +4,7 @@ import { callAI } from '../utils/ai'
 
 // Converts **bold**, *italic*, `code`, and [text](url) inline
 function inlineFormat(text) {
-  if (!text) return null
+  if (typeof text !== 'string' || !text) return null
   const parts = []
   // Pattern: **bold** | *italic* | `code` | [text](url)
   const re = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|\[(.+?)\]\((https?:\/\/[^\s)]+)\))/g
@@ -26,6 +26,10 @@ function inlineFormat(text) {
 
 function renderMarkdown(text) {
   if (!text) return null
+  if (typeof text !== 'string') {
+    console.warn('[AIOutput] renderMarkdown got a non-string value:', text)
+    text = Array.isArray(text) ? text.join('\n') : String(text)
+  }
   const elements = []
   const lines = text.split('\n')
   let i = 0
