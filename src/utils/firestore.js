@@ -26,7 +26,7 @@ import {
   limit,
   writeBatch
 } from 'firebase/firestore'
-import { auth, db } from '../firebase'
+import { auth, db, getAppCheckHeader } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
 import { getDailyQuests } from '../data/badges'
 import { levelFromXP } from '../data/subjects'
@@ -391,7 +391,7 @@ function effectivePeriodXP(d, period) {
 // or friend search, goes through this instead. The function uses the Admin SDK server-side and
 // returns only a safe field subset (never email, stripe*, pushSubscription, exam dates, etc.).
 async function callPublicDataApi(action, params = {}, { requireAuth = true } = {}) {
-  const headers = { 'Content-Type': 'application/json' }
+  const headers = { 'Content-Type': 'application/json', ...(await getAppCheckHeader()) }
   if (requireAuth) {
     const idToken = await auth.currentUser?.getIdToken()
     headers['Authorization'] = 'Bearer ' + (idToken || '')
@@ -556,6 +556,34 @@ export const saveDailyBriefing = async (uid, text) => {
     })
   } catch {
     // Non-fatal — the briefing still displays even if caching fails, it'll just regenerate next load.
+  }
+}
+
+// Cached AI-generated quiz distractors for a saved flashcard SET, keyed by the set's own doc
+// id. Reuses flashcardCache (already writable by any signed-in user, no rules change needed) —
+// whoever quizzes on a given public/official set first generates it once; everyone after gets
+// the cached version instantly instead of waiting on a fresh AI call. cardCount is stored
+// alongside so an edited set (cards added/removed) is correctly treated as stale rather than
+// silently returning mismatched distractors.
+export const getCachedDistractors = async (setId, cardCount) => {
+  try {
+    const snap = await getDoc(doc(db, 'flashcardCache', 'distractors_' + setId))
+    if (!snap.exists()) return null
+    const data = snap.data()
+    if (data.cardCount !== cardCount) return null
+    return data.distractors || null
+  } catch {
+    return null
+  }
+}
+
+export const saveCachedDistractors = async (setId, cardCount, distractors) => {
+  try {
+    await setDoc(doc(db, 'flashcardCache', 'distractors_' + setId), {
+      cardCount, distractors, generatedAt: serverTimestamp(),
+    })
+  } catch {
+    // Non-fatal — the quiz still works, it just regenerates for the next person too.
   }
 }
 
@@ -906,7 +934,7 @@ async function callFriendsApi(action, params = {}) {
 
   const res = await fetch('/api/friends', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken, ...(await getAppCheckHeader()) },
     body: JSON.stringify({ action, ...params }),
   })
   const data = await res.json()
