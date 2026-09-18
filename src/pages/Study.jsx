@@ -447,29 +447,41 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone, uid, timePerQuestion }) {
-  // AI generates plausible wrong answers for MC questions
-  async function buildWithAI() {
-    // Build initial deck with real-card distractors as fallback
+function TestMode({ cards, onDone, uid, timePerQuestion, setId }) {
+  // Builds the deck using OTHER REAL ANSWERS from the same set as options — used as the
+  // fallback if AI generation fails or times out, never shown to the user as the default
+  // anymore (see init() below).
+  function buildFallbackDeck() {
     const shuffled = [...cards].sort(() => Math.random() - 0.5)
-    const deck = shuffled.map((card, i) => {
+    return shuffled.map((card, i) => {
       if (i % 3 === 2) return { type: 'write', card, answer: '', checked: null, opts: [] }
       const realWrong = cards.filter(c => c.a !== card.a).sort(() => Math.random() - 0.5).slice(0, 3)
       const opts = [...realWrong, card].sort(() => Math.random() - 0.5)
       return { type: 'mc', card, opts, selected: null, checked: null, aiOpts: false }
     })
-    return deck
   }
 
-  async function loadAIDistractors(deck, setQs) {
-    // For each MC question, generate AI distractors in the background
+  // Pure — merges a { [cardIndex]: [wrong1,wrong2,wrong3] } map (cardIndex is the card's
+  // position in the original, unshuffled `cards` array — the stable key both cache and
+  // generation use, since these cards have no id of their own) into a deck's MC questions.
+  function applyDistractors(deck, distractorsByCardIdx) {
+    return deck.map(q => {
+      if (q.type !== 'mc') return q
+      const cardIdx = cards.indexOf(q.card)
+      const wrongs = distractorsByCardIdx[cardIdx]
+      if (!Array.isArray(wrongs) || wrongs.length < 3) return q
+      const opts = [...wrongs.slice(0, 3).map(a => ({ ...q.card, a })), q.card].sort(() => Math.random() - 0.5)
+      return { ...q, opts, aiOpts: true }
+    })
+  }
+
+  async function generateDistractors(deck) {
     const mcIndices = deck.map((q, i) => q.type === 'mc' ? i : -1).filter(i => i >= 0)
-    if (!mcIndices.length) return
-    try {
-      const { callAI } = await import('../utils/ai')
-      // Batch all questions into one AI call for efficiency
-      const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
-      const prompt = `You are generating multiple choice distractors for a flashcard quiz. For each question below, generate exactly 3 wrong answer options.
+    if (!mcIndices.length) return {}
+    const { callAI } = await import('../utils/ai')
+    // Batch all questions into one AI call for efficiency
+    const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
+    const prompt = `You are generating multiple choice distractors for a flashcard quiz. For each question below, generate exactly 3 wrong answer options.
 
 RULES for good distractors:
 - Same length and style as the real answer (if the answer is 2 sentences, make distractors 2 sentences)
@@ -484,31 +496,17 @@ Return ONLY a valid JSON array of arrays — no markdown, no explanation, no bac
 
 Questions and correct answers:
 ${questions}`
-      const res = await callAI(prompt, null, 600, uid)
-      if (res.error || !res.text) return
-      const text = res.text.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(text)
-      if (!Array.isArray(parsed)) return
-      // Functional update: read live state (not the pre-AI-call deck snapshot), since the
-      // user may already have answered one of these questions while the AI call was in
-      // flight. Skip upgrading any question that's already checked — swapping the option
-      // text out from under an answer that's already showing as right/wrong is confusing
-      // and would leave the user's selected option matching nothing in the new list.
-      setQs(current => {
-        const updated = [...current]
-        mcIndices.forEach((deckIdx, arrayIdx) => {
-          if (!updated[deckIdx] || updated[deckIdx].checked !== null) return
-          const wrongs = parsed[arrayIdx]
-          if (!Array.isArray(wrongs) || wrongs.length < 3) return
-          const opts = [
-            ...wrongs.slice(0, 3).map(a => ({ ...updated[deckIdx].card, a })),
-            updated[deckIdx].card,
-          ].sort(() => Math.random() - 0.5)
-          updated[deckIdx] = { ...updated[deckIdx], opts, aiOpts: true }
-        })
-        return updated
-      })
-    } catch(e) { /* silently use fallback distractors */ }
+    const res = await callAI(prompt, null, 600, uid)
+    if (res.error || !res.text) return {}
+    const text = res.text.replace(/```json|```/g, '').trim()
+    const parsed = JSON.parse(text)
+    if (!Array.isArray(parsed)) return {}
+    const byCardIdx = {}
+    mcIndices.forEach((deckIdx, arrayIdx) => {
+      const wrongs = parsed[arrayIdx]
+      if (Array.isArray(wrongs) && wrongs.length >= 3) byCardIdx[cards.indexOf(deck[deckIdx].card)] = wrongs
+    })
+    return byCardIdx
   }
 
   const [qs, setQs]         = useState([])
@@ -518,11 +516,47 @@ ${questions}`
   const [timeLeft, setTimeLeft] = useState(timePerQuestion || null)
 
   useEffect(() => {
-    buildWithAI().then(deck => {
-      setQs(deck)
+    let cancelled = false
+
+    async function init() {
+      const fallbackDeck = buildFallbackDeck()
+
+      // A saved set's distractors may already be cached from someone else's quiz on the same
+      // set — used instantly, no AI call, no wait.
+      if (setId) {
+        try {
+          const { getCachedDistractors } = await import('../utils/firestore')
+          const cached = await getCachedDistractors(setId, cards.length)
+          if (cached && !cancelled) {
+            setQs(applyDistractors(fallbackDeck, cached))
+            setBuilding(false)
+            return
+          }
+        } catch (e) {}
+      }
+
+      // No cache — generate now, before showing the quiz. Timeboxed so a slow or failed AI
+      // call still starts the quiz (with real-card options) rather than leaving the student
+      // stuck on a loading screen.
+      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 8000))
+      const generated = await Promise.race([generateDistractors(fallbackDeck).catch(() => null), timeout])
+      if (cancelled) return
+
+      if (generated && Object.keys(generated).length > 0) {
+        setQs(applyDistractors(fallbackDeck, generated))
+        if (setId) {
+          import('../utils/firestore').then(({ saveCachedDistractors }) => {
+            saveCachedDistractors(setId, cards.length, generated)
+          })
+        }
+      } else {
+        setQs(fallbackDeck) // AI timed out or failed — quiz still starts, just with real-card options
+      }
       setBuilding(false)
-      loadAIDistractors(deck, setQs)
-    })
+    }
+
+    init()
+    return () => { cancelled = true }
   }, [])
 
   // Timed Challenge mode only — resets the clock every time the question changes.
@@ -571,7 +605,7 @@ ${questions}`
 
   if (building || !qs.length) return (
     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '0.9rem' }}>Building your test…</div>
+      <div style={{ fontSize: '0.9rem' }}>Generating your questions…</div>
     </div>
   )
   if (finished) return null
@@ -943,7 +977,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   if (mode==='write') return <div className="rf-session-shell"><TopBar /><WriteMode cards={cards} onDone={handleSubDone} uid={uid} /></div>
   if (mode==='spell') return <div className="rf-session-shell"><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
   if (mode==='match') return <div className="rf-session-shell"><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='test')  return <div className="rf-session-shell"><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} /></div>
+  if (mode==='test')  return <div className="rf-session-shell"><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} setId={setId} /></div>
   return null
 }
 
@@ -1427,7 +1461,7 @@ function QuizTab({ mySets, uid, profile }) {
         </div>
         {(quizMode === 'mc' || quizMode === 'mixed') && (
           <TestMode cards={quizCards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
-            onDone={handleQuizDone} />
+            setId={selectedSet?.id} onDone={handleQuizDone} />
         )}
         {quizMode === 'write' && (
           <WriteMode cards={quizCards} uid={uid}
