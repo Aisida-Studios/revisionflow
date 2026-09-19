@@ -323,10 +323,16 @@ export default function Dashboard() {
       try {
         const mistakes = await getMistakes(user.uid)
         const sessionsForPrompt = todaySessions.map((s) => ({ subject: s.subject, type: s.title || 'session' }))
-        const text = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, mistakes)
+        const result = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, mistakes)
         if (cancelled) return
-        setDailyBriefing(text)
-        saveDailyBriefing(user.uid, text)
+        // getDailyAdvice returns {provider, remaining, text, error} like every other ai.js
+        // function — .text is the actual briefing, not the object itself.
+        if (result?.error || !result?.text) {
+          setDailyBriefing(null)
+        } else {
+          setDailyBriefing(result.text)
+          saveDailyBriefing(user.uid, result.text)
+        }
       } catch {
         if (!cancelled) setDailyBriefing(null)
       } finally {
