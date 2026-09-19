@@ -115,11 +115,91 @@ function fmtTime(minutes) {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
 }
 
+function getWeekMon(d) {
+  return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+}
+
+// ── MULTI-WINDOW AVAILABILITY ─────────────────────────────────────────────────
+// A day can now have more than one study window (e.g. 15:00–17:00 AND 19:00–22:00), not
+// just a single start/end. rangeToMinutes/getBaseWindows/getFreePeriodWindows/mergeWindows/
+// getDayWindows turn whatever shape availability + the school timetable are in into one
+// sorted, non-overlapping list of {start,end} minute windows for a given date — everything
+// downstream (the day loop) just walks that list, so it behaves exactly as before when
+// there's only one window.
+function rangeToMinutes(range) {
+  const [sh, sm] = String(range.start).split(':').map(Number)
+  const [eh, em] = String(range.end).split(':').map(Number)
+  return { start: sh * 60 + sm, end: eh * 60 + em }
+}
+
+function getBaseWindows(date, availability, useExtended) {
+  const dow     = date.getDay()
+  const dayName = DAY_NAMES[dow]
+  const avail   = availability[dayName]
+  if (!avail || !avail.enabled) return []
+
+  if (Array.isArray(avail.ranges) && avail.ranges.length) {
+    const ranges = avail.ranges
+      .filter(r => r && r.start && r.end)
+      .map(rangeToMinutes)
+      .sort((a, b) => a.start - b.start)
+    if (!ranges.length) return []
+    // Extended-hours floor (study leave) only pushes out the LAST window of the day — it
+    // stretches the final finish time, it doesn't also stretch an earlier, separate block
+    // like a lunchtime slot.
+    if (useExtended) {
+      const last = ranges[ranges.length - 1]
+      last.end = Math.max(last.end, 22 * 60)
+    }
+    return ranges
+  }
+
+  // Legacy single startTime/endTime fields — unchanged behaviour via the existing helpers,
+  // so availability saved before multi-range support still works exactly as before.
+  const start = dayStartMin(date, availability)
+  if (start === null) return []
+  const end = dayEndMin(date, availability, useExtended)
+  return [{ start, end }]
+}
+
+function getFreePeriodWindows(date, timetable) {
+  if (!timetable) return []
+  const dayName = DAY_NAMES[date.getDay()]
+  const periods = timetable[dayName]
+  if (!Array.isArray(periods)) return []
+  return periods
+    .filter(p => p && p.type === 'free' && p.startTime && p.endTime)
+    .map(p => rangeToMinutes({ start: p.startTime, end: p.endTime }))
+}
+
+function mergeWindows(windows) {
+  if (!windows.length) return []
+  const sorted = [...windows].sort((a, b) => a.start - b.start)
+  const merged = [{ ...sorted[0] }]
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1]
+    const w    = sorted[i]
+    if (w.start <= last.end) last.end = Math.max(last.end, w.end)
+    else merged.push({ ...w })
+  }
+  return merged
+}
+
+// includeFreePeriods gates whether the student's school-timetable free periods count as
+// extra study windows on top of their normal evening/weekend availability — independent of
+// that day being "enabled" in availability, since a free period exists at school regardless
+// of whether the student also revises that same evening.
+function getDayWindows(date, availability, timetable, includeFreePeriods, useExtended) {
+  const base = getBaseWindows(date, availability, useExtended)
+  const free = includeFreePeriods ? getFreePeriodWindows(date, timetable) : []
+  return mergeWindows([...base, ...free])
+}
+
 // ── MAIN GENERATOR ────────────────────────────────────────────────────────────
 export function generateSchedule(options) {
   const {
     subjects,          // [{ name, board, tier, papers: [1,2,3], ratio: [2,1], examDates: [{paper, date}] }]
-    availability,      // { Monday: { enabled, startTime, endTime }, ... }
+    availability,      // { Monday: { enabled, ranges: [{start,end}, ...] }, ... } — or legacy { enabled, startTime, endTime }
     startDate,         // Date
     endDate,           // Date
     holidays = [],     // [{ start, end }] — full blackout dates, zero sessions scheduled
@@ -133,6 +213,8 @@ export function generateSchedule(options) {
     extendedFromDate = null, // Date from which end time has a 22:00 floor (not just a fallback)
     dynamicRatio = false,  // NEW: bias a subject toward more exam practice as its exam nears
     topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } — optional, from real confidence data
+    timetable = null,          // NEW: { Monday: [{ type:'lesson'|'free', label, startTime, endTime }], ... }
+    includeFreePeriods = false, // NEW: also treat the timetable's free periods as extra study windows
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -198,10 +280,6 @@ export function generateSchedule(options) {
 
   // Week subject round-robin
   const weekSubjSeen = {}
-
-  function getWeekMon(d) {
-    return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd')
-  }
 
   function activePapers(subjName) {
     const s = subjects.find(x => x.name === subjName)
@@ -329,23 +407,19 @@ export function generateSchedule(options) {
       if (edate < current) completed.add(key.replace('-', '-'))
     })
 
-    const startMin = dayStartMin(current, availability)
-    if (startMin === null && !isSunday) {
-      current = addDays(current, 1)
-      continue
-    }
-
     // Holiday / unavailable period — a genuine blackout now. Previously this only
     // softened the day-cap rule on the specific capped weekday and did nothing on any
     // other day, so declaring a holiday barely changed what got scheduled. Skips
-    // everything for the day, including emergency sessions — an explicitly-declared
-    // unavailable period (e.g. a family trip) takes precedence over an exam being close.
+    // everything for the day, including emergency sessions and free periods — an
+    // explicitly-declared unavailable period (e.g. a family trip) takes precedence over
+    // an exam being close.
     if (isHoliday(current, holidays)) {
       current = addDays(current, 1)
       continue
     }
 
-    // Sunday: emergency sessions only
+    // Sunday: emergency sessions only — a fixed window, not part of the multi-range
+    // availability system (free periods don't apply on a Sunday either).
     if (isSunday) {
       const emergencies = emergencyMap[dateStr] || []
       if (!emergencies.length) { current = addDays(current, 1); continue }
@@ -359,27 +433,29 @@ export function generateSchedule(options) {
       continue
     }
 
-    const endMin = dayEndMin(current, availability,
+    // One or more study windows for today: normal availability (a single legacy range, or
+    // the new multi-range list) plus, when the toggle is on, the school timetable's free
+    // periods. Everything below walks this list instead of one fixed start/end, so a day
+    // with a single window behaves exactly as before.
+    const windows = getDayWindows(current, availability, timetable, includeFreePeriods,
       extendedFromDate && current >= new Date(extendedFromDate))
+    if (!windows.length) {
+      current = addDays(current, 1)
+      continue
+    }
 
     // Day cap(s) — was a single hardcoded Tuesday-only rule; now any number of days can
     // each have their own max, and an optional flat maxSessionsPerDay applies everywhere.
+    // The cap is per DAY, so it's tracked once here and shared across all of today's windows.
     const dayCapForToday = dayCapMap[dow]
     const effectiveCap = [dayCapForToday, maxSessionsPerDay].filter(v => v != null)
     const isDayCapped = effectiveCap.length > 0
     const capLimit = isDayCapped ? Math.min(...effectiveCap) : Infinity
 
-    let curMin = startMin
     let slotsUsed = 0
-
-    // Emergency sessions first
-    const emergencies = emergencyMap[dateStr] || []
-    emergencies.forEach(({ subj, paper }) => {
-      if (isDayCapped && slotsUsed >= capLimit) return
-      if (curMin >= endMin) return
-      const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
-      if (result) { sessions.push(result.session); curMin = result.newMin; slotsUsed++ }
-    })
+    // Emergencies are shifted off the front as they're placed — one that doesn't fit in
+    // the current window is retried in the next window rather than lost for the day.
+    let emergencies = [...(emergencyMap[dateStr] || [])]
 
     // Active subjects (not all papers completed, and not paused via ratio [0,0])
     const activeSubjects = subjects.filter(s => {
@@ -397,87 +473,293 @@ export function generateSchedule(options) {
       preExamPapersMap[e.subj].push(e.paper)
     })
 
-    if (preExamSubjs.length > 0) {
-      let i = 0
-      while (curMin + CONTENT_DUR <= endMin) {
-        if (isDayCapped && slotsUsed >= capLimit) break
-        const subj = preExamSubjs[i % preExamSubjs.length]
-        const ap = activePapers(subj).filter(p => preExamPapersMap[subj]?.includes(p))
-        if (!ap.length) { i++; if (i > preExamSubjs.length * 3) break; continue }
-        const stype = nextSessionType(subj)
-        const paper = pickPaper(subj, stype, current, ap)
-        if (!paper) { i++; continue }
-        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj, paper, subjMeta(subj)?.board, subjMeta(subj)?.tier, subjMeta(subj)?.qualification)
-        if (curMin + dur > endMin) {
-          if (curMin + CONTENT_DUR <= endMin) {
-            const result = placeSession(current, curMin, endMin, subj, paper, 'content')
-            if (result) { sessions.push(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
-          }
-          break
-        }
-        const result = placeSession(current, curMin, endMin, subj, paper, stype)
-        if (result) {
-          sessions.push(result.session)
-          curMin = result.newMin
-          typePtr[subj]++
-          slotsUsed++
-        }
-        i++
-        if (i > 40) break
-      }
-    } else {
-      // Normal sessions
-      const wmon = getWeekMon(current)
-      if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
+    const examsToday = examsByDate[dateStr] || []
+    const examsTodayMap = {}
+    examsToday.forEach(e => {
+      if (!examsTodayMap[e.subj]) examsTodayMap[e.subj] = []
+      examsTodayMap[e.subj].push(e.paper)
+    })
 
-      const examsToday = examsByDate[dateStr] || []
-      const examsTodayMap = {}
-      examsToday.forEach(e => {
-        if (!examsTodayMap[e.subj]) examsTodayMap[e.subj] = []
-        examsTodayMap[e.subj].push(e.paper)
-      })
+    const wmon = getWeekMon(current)
+    if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
 
+    // Built once per day, then walked across as many windows as it takes rather than
+    // restarting per window — each subject still gets at most one placement attempt per day.
+    let ordered = []
+    if (preExamSubjs.length === 0) {
       const notSeen = activeSubjects
         .filter(s => !weekSubjSeen[wmon].has(s.name))
         .sort((a,b) => (a.priority?0:1)-(b.priority?0:1))
       const seen = activeSubjects
         .filter(s => weekSubjSeen[wmon].has(s.name))
         .sort((a,b) => (a.priority?0:1)-(b.priority?0:1))
-      const ordered = [...notSeen, ...seen]
+      ordered = [...notSeen, ...seen]
+    }
+    let orderedIdx = 0
+    let preExamI   = 0
 
-      for (const subj of ordered) {
+    for (const win of windows) {
+      if (isDayCapped && slotsUsed >= capLimit) break
+      let curMin = win.start
+      const endMin = win.end
+
+      // Emergency sessions first, this window
+      while (emergencies.length && curMin < endMin && !(isDayCapped && slotsUsed >= capLimit)) {
+        const { subj, paper } = emergencies[0]
+        const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
+        if (!result) break // doesn't fit here — leave it for the next window
+        sessions.push(result.session)
+        curMin = result.newMin
+        slotsUsed++
+        emergencies.shift()
+      }
+
+      if (preExamSubjs.length > 0) {
+        while (curMin + CONTENT_DUR <= endMin) {
+          if (isDayCapped && slotsUsed >= capLimit) break
+          const subj = preExamSubjs[preExamI % preExamSubjs.length]
+          const ap = activePapers(subj).filter(p => preExamPapersMap[subj]?.includes(p))
+          if (!ap.length) { preExamI++; if (preExamI > preExamSubjs.length * 3) break; continue }
+          const stype = nextSessionType(subj)
+          const paper = pickPaper(subj, stype, current, ap)
+          if (!paper) { preExamI++; continue }
+          const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj, paper, subjMeta(subj)?.board, subjMeta(subj)?.tier, subjMeta(subj)?.qualification)
+          if (curMin + dur > endMin) {
+            if (curMin + CONTENT_DUR <= endMin) {
+              const result = placeSession(current, curMin, endMin, subj, paper, 'content')
+              if (result) { sessions.push(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
+            }
+            break // window exhausted — move to the next one, preExamI carries over
+          }
+          const result = placeSession(current, curMin, endMin, subj, paper, stype)
+          if (result) {
+            sessions.push(result.session)
+            curMin = result.newMin
+            typePtr[subj]++
+            slotsUsed++
+          }
+          preExamI++
+          if (preExamI > 200) break
+        }
+      } else {
+        while (orderedIdx < ordered.length) {
+          if (curMin + CONTENT_DUR > endMin) break // window exhausted — same subject retried next window
+          if (isDayCapped && slotsUsed >= capLimit) break
+
+          const subj = ordered[orderedIdx]
+          orderedIdx++
+
+          const ap = activePapers(subj.name)
+          if (!ap.length) continue
+
+          const ratioToday = effectiveRatio(subj.name, subj.ratio, current)
+          let stype = nextSessionType(subj.name, ratioToday)
+          let paper = pickPaper(subj.name, stype, current)
+          if (!paper) continue
+
+          // Skip paper if its exam is today
+          if (examsTodayMap[subj.name]?.includes(paper)) {
+            const alts = ap.filter(p => !examsTodayMap[subj.name]?.includes(p))
+            if (!alts.length) continue
+            paper = alts[(stype === 'content' ? contentPtr[subj.name] : examPtr[subj.name]) % alts.length]
+          }
+
+          const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj.name, paper, subj.board, subj.tier, subj.qualification)
+          if (curMin + dur > endMin) {
+            if (stype === 'exam' && curMin + CONTENT_DUR <= endMin) stype = 'content'
+            else continue
+          }
+
+          const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
+          if (result) {
+            sessions.push(result.session)
+            curMin = result.newMin
+            typePtr[subj.name]++
+            advancePaperPtr(subj.name, result.stype, current)
+            weekSubjSeen[wmon].add(subj.name)
+            slotsUsed++
+          }
+        }
+      }
+    }
+
+    current = addDays(current, 1)
+  }
+
+  return sessions
+}
+
+// ── FREE PERIOD SCHEDULER ──────────────────────────────────────────────────────
+// Deliberately a separate function rather than folded into generateSchedule()'s day loop:
+// free periods are a supplementary, opt-in layer sourced from the school timetable (not the
+// Availability step), and keeping it independent means the "use my free periods" toggle is
+// just "call this too, and merge its output in" — turning it on or off never touches
+// generateSchedule's own day-caps, emergency handling, or paper-rotation state.
+//
+// Its paper-rotation pointers are intentionally separate from generateSchedule's own —
+// a free-period session and an evening session on the same day can occasionally cover the
+// same paper. That's an accepted trade-off for keeping the two passes independent rather
+// than threading shared mutable state between two functions called from two different places.
+export function scheduleFreePeriods(options) {
+  const {
+    subjects,          // same shape as generateSchedule's `subjects`, incl. per-subject ratio
+    timetable,         // { Monday: [{ type:'lesson'|'free', label, startTime, endTime }], ... }
+    startDate,         // Date
+    endDate,           // Date
+    holidays = [],     // same full-day blackout list generateSchedule uses
+    contentDuration = 45,
+    sessionGap = 30,
+    topicFocus = {},
+  } = options
+
+  const CONTENT_DUR = contentDuration || 45
+  const GAP_MINUTES  = sessionGap ?? 30
+
+  const sessions  = []
+  const counters  = {}
+  const completed = new Set()
+
+  const contentPtr = {}
+  const examPtr    = {}
+  const typePtr    = {}
+  subjects.forEach(s => {
+    contentPtr[s.name] = 0
+    examPtr[s.name]    = 0
+    typePtr[s.name]    = 0
+  })
+
+  const examDateMap = {}
+  const examsByDate = {}
+  subjects.forEach(s => {
+    (s.examDates || []).forEach(ed => {
+      const key = `${s.name}-${ed.paper}`
+      const d   = new Date(ed.date)
+      examDateMap[key] = d
+      const ds = format(d, 'yyyy-MM-dd')
+      if (!examsByDate[ds]) examsByDate[ds] = []
+      examsByDate[ds].push({ subj: s.name, paper: ed.paper })
+    })
+  })
+
+  function activePapers(subjName) {
+    const s = subjects.find(x => x.name === subjName)
+    if (!s) return []
+    return (s.papers || [1, 2]).filter(p => !completed.has(`${subjName}-${p}`))
+  }
+  function subjMeta(subjName) { return subjects.find(x => x.name === subjName) }
+
+  function pickPaper(subjName, stype) {
+    const ap = activePapers(subjName)
+    if (!ap.length) return null
+    return stype === 'content' ? ap[contentPtr[subjName] % ap.length] : ap[examPtr[subjName] % ap.length]
+  }
+  function nextSessionType(subjName, ratio) {
+    const total = ratio[0] + ratio[1]
+    if (total === 0) return 'exam'
+    return typePtr[subjName] % total < ratio[0] ? 'content' : 'exam'
+  }
+  function advancePaperPtr(subjName, stype) {
+    const ap = activePapers(subjName)
+    if (!ap.length) return
+    if (stype === 'content') contentPtr[subjName] = (contentPtr[subjName] + 1) % ap.length
+    else examPtr[subjName] = (examPtr[subjName] + 1) % ap.length
+  }
+
+  function placeSession(date, currentMin, endMin, subjName, paper, stype) {
+    const meta = subjMeta(subjName)
+    let dur = stype === 'content' ? CONTENT_DUR
+      : getExamDuration(subjName, paper, meta?.board, meta?.tier, meta?.qualification)
+    if (currentMin + dur > endMin) {
+      if (stype === 'exam' && currentMin + CONTENT_DUR <= endMin) { stype = 'content'; dur = CONTENT_DUR }
+      else return null
+    }
+    const name = getSessionName(subjName, paper, stype, counters, topicFocus[`${subjName}-${paper}`])
+    const session = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      subject: subjName,
+      paper,
+      type: stype === 'content' ? 'Content Revision' : 'Exam Practice',
+      title: name,
+      date: format(date, 'yyyy-MM-dd'),
+      start: fmtTime(currentMin),
+      end:   fmtTime(currentMin + dur),
+      startTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
+        Math.floor(currentMin / 60), currentMin % 60).toISOString(),
+      endTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
+        Math.floor((currentMin + dur) / 60), (currentMin + dur) % 60).toISOString(),
+      duration: dur,
+      isEmergency: false,
+      completed: false,
+      source: 'generated',
+      // Distinguishes these for display only — same 'generated' source, so the existing
+      // "replace previously generated sessions" logic in CalendarGenerator.jsx still cleans
+      // these up too when the student regenerates their schedule.
+      viaFreePeriod: true,
+    }
+    return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
+  }
+
+  let current = new Date(startDate)
+  const end   = new Date(endDate)
+  const weekSubjSeen = {}
+
+  while (current <= end) {
+    Object.entries(examDateMap).forEach(([key, edate]) => { if (edate < current) completed.add(key) })
+
+    if (isHoliday(current, holidays)) { current = addDays(current, 1); continue }
+
+    const dayName = DAY_NAMES[current.getDay()]
+    const periods = (timetable?.[dayName] || []).filter(p => p && p.type === 'free' && p.startTime && p.endTime)
+    if (!periods.length) { current = addDays(current, 1); continue }
+
+    const dateStr = format(current, 'yyyy-MM-dd')
+    const examsTodayMap = {}
+    ;(examsByDate[dateStr] || []).forEach(e => {
+      if (!examsTodayMap[e.subj]) examsTodayMap[e.subj] = []
+      examsTodayMap[e.subj].push(e.paper)
+    })
+
+    const activeSubjects = subjects.filter(s => {
+      const r = s.ratio || [2, 1]
+      if (r[0] === 0 && r[1] === 0) return false
+      return activePapers(s.name).length > 0
+    })
+    if (!activeSubjects.length) { current = addDays(current, 1); continue }
+
+    const wmon = getWeekMon(current)
+    if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
+    const notSeen = activeSubjects.filter(s => !weekSubjSeen[wmon].has(s.name))
+    const seen    = activeSubjects.filter(s => weekSubjSeen[wmon].has(s.name))
+    const ordered = [...notSeen, ...seen]
+    let orderedIdx = 0
+
+    const windows = mergeWindows(periods.map(p => rangeToMinutes({ start: p.startTime, end: p.endTime })))
+
+    for (const win of windows) {
+      let curMin = win.start
+      const endMin = win.end
+      while (orderedIdx < ordered.length) {
         if (curMin + CONTENT_DUR > endMin) break
-        if (isDayCapped && slotsUsed >= capLimit) break
-
+        const subj = ordered[orderedIdx]
+        orderedIdx++
         const ap = activePapers(subj.name)
         if (!ap.length) continue
-
-        const ratioToday = effectiveRatio(subj.name, subj.ratio, current)
-        let stype = nextSessionType(subj.name, ratioToday)
-        let paper = pickPaper(subj.name, stype, current)
+        const ratio = subj.ratio || [2, 1]
+        let stype = nextSessionType(subj.name, ratio)
+        let paper = pickPaper(subj.name, stype)
         if (!paper) continue
-
-        // Skip paper if its exam is today
         if (examsTodayMap[subj.name]?.includes(paper)) {
           const alts = ap.filter(p => !examsTodayMap[subj.name]?.includes(p))
           if (!alts.length) continue
-          paper = alts[(stype === 'content' ? contentPtr[subj.name] : examPtr[subj.name]) % alts.length]
+          paper = alts[0]
         }
-
-        const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj.name, paper, subj.board, subj.tier, subj.qualification)
-        if (curMin + dur > endMin) {
-          if (stype === 'exam' && curMin + CONTENT_DUR <= endMin) stype = 'content'
-          else continue
-        }
-
         const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
         if (result) {
           sessions.push(result.session)
           curMin = result.newMin
           typePtr[subj.name]++
-          advancePaperPtr(subj.name, result.stype, current)
+          advancePaperPtr(subj.name, result.stype)
           weekSubjSeen[wmon].add(subj.name)
-          slotsUsed++
         }
       }
     }
