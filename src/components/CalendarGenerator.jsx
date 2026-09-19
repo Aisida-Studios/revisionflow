@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
-import { generateSchedule, buildSubjectsFromProfile } from '../utils/scheduler'
-import { downloadICS } from '../utils/calendar'
+import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods } from '../utils/scheduler'
+import { getUserTimetable } from '../utils/firestore'
+import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
 import { format, addMonths, addWeeks } from 'date-fns'
 import toast from 'react-hot-toast'
-import { X, ChevronRight, ChevronLeft, Download, Check, Clock, Calendar, AlertCircle, Plus, Trash2 } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, Download, Check, Clock, Calendar, AlertCircle, Plus, Trash2, Coffee } from 'lucide-react'
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 
@@ -22,7 +23,26 @@ const STEP_LABELS = [
   'Result',
 ]
 
-export default function CalendarGenerator({ onClose, onGenerated }) {
+// Availability used to be a single { enabled, startTime, endTime } per day. It can now hold
+// multiple ranges — { enabled, ranges: [{start,end}, ...] } — so a profile saved before that
+// change, or the hardcoded defaults below, both get normalised into the new shape here. The
+// generator (and scheduler.js) never has to deal with the old shape directly.
+function normalizeAvailability(avail) {
+  if (!avail) return null
+  const out = {}
+  for (const day of DAYS) {
+    const d = avail[day]
+    if (!d) { out[day] = { enabled: false, ranges: [{ start: '17:00', end: '21:00' }] }; continue }
+    if (Array.isArray(d.ranges) && d.ranges.length) {
+      out[day] = { enabled: !!d.enabled, ranges: d.ranges.map(r => ({ start: r.start, end: r.end })) }
+    } else {
+      out[day] = { enabled: !!d.enabled, ranges: [{ start: d.startTime || '17:00', end: d.endTime || '21:00' }] }
+    }
+  }
+  return out
+}
+
+export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetable }) {
   const { user, profile } = useAuth()
   const [step,    setStep]    = useState(0)
   const [loading, setLoading] = useState(false)
@@ -42,14 +62,36 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
   const [extendedDate,  setExtendedDate]  = useState('')
 
   // ── Step 2: Availability ────────────────────────────────────────────────
-  const defaultAvail = profile?.availability || Object.fromEntries(
+  const defaultAvail = normalizeAvailability(profile?.availability) || Object.fromEntries(
     DAYS.map(d => [d, {
       enabled:   d !== 'Sunday',
-      startTime: d === 'Wednesday' ? '16:00' : d === 'Saturday' ? '12:00' : '17:00',
-      endTime:   '21:00'
+      ranges: [{
+        start: d === 'Wednesday' ? '16:00' : d === 'Saturday' ? '12:00' : '17:00',
+        end:   '21:00'
+      }]
     }])
   )
   const [availability, setAvailability] = useState(defaultAvail)
+
+  function updateRange(day, idx, field, value) {
+    setAvailability(a => {
+      const ranges = [...(a[day]?.ranges || [{ start:'17:00', end:'21:00' }])]
+      ranges[idx] = { ...ranges[idx], [field]: value }
+      return { ...a, [day]: { ...a[day], ranges } }
+    })
+  }
+  function addRange(day) {
+    setAvailability(a => ({
+      ...a,
+      [day]: { ...a[day], ranges: [...(a[day]?.ranges || []), { start: '19:00', end: '22:00' }] }
+    }))
+  }
+  function removeRange(day, idx) {
+    setAvailability(a => {
+      const ranges = (a[day]?.ranges || []).filter((_, i) => i !== idx)
+      return { ...a, [day]: { ...a[day], ranges: ranges.length ? ranges : [{ start:'17:00', end:'21:00' }] } }
+    })
+  }
 
   // ── Step 3: Session preferences ─────────────────────────────────────────
   const [contentRatio,    setContentRatio]    = useState(2)
@@ -80,6 +122,28 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
   )
   const [prioritySubjects, setPrioritySubjects] = useState([])
 
+  // ── Free periods (school timetable) ──────────────────────────────────────
+  const hasSixthForm = subjects.some(s => s.qualification === 'A-Level' || s.qualification === 'AS-Level')
+  const [timetable,       setTimetable]       = useState({})
+  const [timetableLoaded, setTimetableLoaded] = useState(false)
+  const [includeFreePeriods, setIncludeFreePeriods] = useState(false)
+
+  React.useEffect(() => {
+    if (!user) return
+    getUserTimetable(user.uid)
+      .then(days => setTimetable(days || {}))
+      .catch(() => {}) // no timetable set up yet — freePeriods list is just empty
+      .finally(() => setTimetableLoaded(true))
+  }, [user])
+
+  const freePeriods = Object.values(timetable).flat().filter(p => p && p.type === 'free')
+  const hasFreePeriods = freePeriods.length > 0
+  const freePeriodMinutes = freePeriods.reduce((sum, p) => {
+    const [sh, sm] = String(p.startTime || '0:0').split(':').map(Number)
+    const [eh, em] = String(p.endTime   || '0:0').split(':').map(Number)
+    return sum + Math.max(0, (eh * 60 + em) - (sh * 60 + sm))
+  }, 0)
+
   // Load saved preferences
   React.useEffect(() => {
     if (!user) return
@@ -101,6 +165,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
           if (d.subjectRatios) setSubjectRatios(d.subjectRatios)
           if (d.subjectRatioValues) setSubjectRatioValues(d.subjectRatioValues)
           if (d.prioritySubjects) setPrioritySubjects(d.prioritySubjects)
+          if (d.includeFreePeriods !== undefined) setIncludeFreePeriods(d.includeFreePeriods)
         }
       } catch (err) { console.error('Failed to load prefs', err) }
     }
@@ -153,7 +218,7 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
       } catch (e) { /* graceful degradation — generation still works without topic focus */ }
     }
 
-    const sessions = generateSchedule({
+    let sessions = generateSchedule({
       subjects: builtSubjects,
       availability,
       startDate:          new Date(startDate),
@@ -170,6 +235,31 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
       dynamicRatio,
       topicFocus,
     })
+
+    // Free periods are a separate, additive pass (see scheduleFreePeriods in scheduler.js) —
+    // merged in here and re-sorted chronologically so the preview reads as one schedule.
+    // Free periods are normally school-hours (~9am-3pm) and availability is normally
+    // after-school, so in practice they don't collide — but availability start/end times
+    // are freely editable, so a student COULD configure an overlapping window. Rather than
+    // assume that never happens, skip any free-period session that would land at the exact
+    // same date+start as one the main scheduler already placed.
+    if (includeFreePeriods && hasFreePeriods) {
+      const rawFreeSessions = scheduleFreePeriods({
+        subjects: builtSubjects,
+        timetable,
+        startDate: new Date(startDate),
+        endDate:   new Date(endDate),
+        holidays,
+        contentDuration,
+        sessionGap,
+        topicFocus,
+      })
+      const takenSlots = new Set(sessions.map(s => `${s.date}|${s.start}`))
+      const freeSessions = rawFreeSessions.filter(s => !takenSlots.has(`${s.date}|${s.start}`))
+      sessions = [...sessions, ...freeSessions].sort((a, b) =>
+        (a.date + a.start).localeCompare(b.date + b.start))
+    }
+
     setLoading(false)
     setPreview(sessions)
     setStep(6)
@@ -215,7 +305,8 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
           contentRatio, examRatio, contentDuration, sessionGap, emergencySessions,
           dayCaps, maxSessionsPerDay: maxSessionsPerDay === '' ? null : parseInt(maxSessionsPerDay),
           dynamicRatio, useTopicFocus,
-          subjectRatios, subjectRatioValues, prioritySubjects: prioritySubjects || []
+          subjectRatios, subjectRatioValues, prioritySubjects: prioritySubjects || [],
+          includeFreePeriods,
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
 
@@ -233,6 +324,12 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
     emergency: preview.filter(s => s.isEmergency).length,
     subjects:  [...new Set(preview.map(s => s.subject))].length,
   } : null
+
+  // Total scheduled minutes per subject, across the whole generated range — same
+  // "Scheduled hours" breakdown shown per-week on the main Calendar page (via the same
+  // hoursBySubject helper), here shown for the schedule that's about to be (or was just)
+  // created.
+  const subjectHours = preview ? hoursBySubject(preview) : []
 
   const canProceed = {
     0: true,
@@ -372,28 +469,80 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
         {step === 2 && (
           <div>
             <h4 style={{marginBottom:4}}>When are you available to revise?</h4>
-            <p style={{fontSize:'0.82rem',marginBottom:14}}>Set your start and end time for each day. Leave a day unticked for rest days.</p>
+            <p style={{fontSize:'0.82rem',marginBottom:14}}>
+              Set one or more time ranges for each day — e.g. 15:00–17:00 and 19:00–22:00. Leave a day unticked for rest days.
+            </p>
             <div style={{display:'flex',flexDirection:'column',gap:6}}>
               {DAYS.map(day => (
-                <div key={day} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-                  <input type="checkbox" checked={availability[day]?.enabled||false}
-                    onChange={e=>setAvailability(a=>({...a,[day]:{...a[day],enabled:e.target.checked}}))}
-                    style={{width:15,height:15,accentColor:'var(--accent)',flexShrink:0}}/>
-                  <span style={{width:92,fontWeight:500,fontSize:'0.85rem',flexShrink:0}}>{day}</span>
-                  {availability[day]?.enabled ? (
-                    <>
-                      <input type="time" className="input" style={{flex:1,padding:'3px 6px',fontSize:'0.82rem'}}
-                        value={availability[day]?.startTime||'17:00'}
-                        onChange={e=>setAvailability(a=>({...a,[day]:{...a[day],startTime:e.target.value}}))}/>
-                      <span style={{color:'var(--text-muted)',fontSize:'0.78rem'}}>to</span>
-                      <input type="time" className="input" style={{flex:1,padding:'3px 6px',fontSize:'0.82rem'}}
-                        value={availability[day]?.endTime||'21:00'}
-                        onChange={e=>setAvailability(a=>({...a,[day]:{...a[day],endTime:e.target.value}}))}/>
-                    </>
-                  ) : <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Rest day</span>}
+                <div key={day} style={{padding:'8px 12px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input type="checkbox" checked={availability[day]?.enabled||false}
+                      onChange={e=>setAvailability(a=>({...a,[day]:{...a[day],enabled:e.target.checked}}))}
+                      style={{width:15,height:15,accentColor:'var(--accent)',flexShrink:0}}/>
+                    <span style={{width:92,fontWeight:500,fontSize:'0.85rem',flexShrink:0}}>{day}</span>
+                    {!availability[day]?.enabled && <span style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Rest day</span>}
+                  </div>
+                  {availability[day]?.enabled && (
+                    <div style={{display:'flex',flexDirection:'column',gap:6,marginTop:8,marginLeft:23}}>
+                      {(availability[day]?.ranges||[]).map((r,ri)=>(
+                        <div key={ri} style={{display:'flex',alignItems:'center',gap:8}}>
+                          <input type="time" className="input" style={{flex:1,padding:'3px 6px',fontSize:'0.82rem'}}
+                            value={r.start} onChange={e=>updateRange(day,ri,'start',e.target.value)}/>
+                          <span style={{color:'var(--text-muted)',fontSize:'0.78rem'}}>to</span>
+                          <input type="time" className="input" style={{flex:1,padding:'3px 6px',fontSize:'0.82rem'}}
+                            value={r.end} onChange={e=>updateRange(day,ri,'end',e.target.value)}/>
+                          {(availability[day]?.ranges||[]).length>1 && (
+                            <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)',flexShrink:0}}
+                              onClick={()=>removeRange(day,ri)} aria-label="Remove time range">
+                              <Trash2 size={12}/>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button className="btn btn-ghost btn-sm" style={{alignSelf:'flex-start',fontSize:'0.75rem',padding:'3px 8px'}}
+                        onClick={()=>addRange(day)}>
+                        <Plus size={11}/> Add another time range
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
+            {/* Free periods — only surfaced for students who could actually have them */}
+            {hasSixthForm && (
+              <div style={{marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
+                <label className="label" style={{display:'flex',alignItems:'center',gap:6}}>
+                  <Coffee size={14}/> Free periods
+                </label>
+                {!timetableLoaded ? (
+                  <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Checking your timetable…</p>
+                ) : hasFreePeriods ? (
+                  <>
+                    <p style={{fontSize:'0.82rem',color:'var(--text-muted)',marginBottom:8}}>
+                      You've got {freePeriods.length} free period{freePeriods.length!==1?'s':''} a week ({formatDuration(freePeriodMinutes)} total) set up in your Timetable.
+                    </p>
+                    <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+                      <input type="checkbox" checked={includeFreePeriods}
+                        onChange={e=>setIncludeFreePeriods(e.target.checked)}
+                        style={{width:15,height:15,accentColor:'var(--accent)',flexShrink:0}}/>
+                      <span style={{fontSize:'0.85rem'}}>Also schedule revision inside my free periods</span>
+                    </label>
+                  </>
+                ) : (
+                  <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>
+                    No free periods set up yet — add your school timetable on the{' '}
+                    {onOpenTimetable ? (
+                      <button type="button" onClick={() => { onOpenTimetable(); onClose() }}
+                        style={{background:'none',border:'none',padding:0,color:'var(--accent)',fontWeight:600,cursor:'pointer',font:'inherit',textDecoration:'underline'}}>
+                        Timetable tab
+                      </button>
+                    ) : 'Timetable tab'}
+                    {' '}of the Calendar to revise during free periods too.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -607,6 +756,12 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
               {[
                 ['Date range', `${startDate} → ${endDate}`],
                 ['Available days', Object.entries(availability).filter(([,v])=>v.enabled).map(([k])=>k.slice(0,3)).join(', ')],
+                ...(hasSixthForm ? [[
+                  'Free periods',
+                  includeFreePeriods
+                    ? `Yes — ${freePeriods.length} free period${freePeriods.length!==1?'s':''} included`
+                    : (hasFreePeriods ? 'Set up, not included' : 'None set up'),
+                ]] : []),
                 ['Ratio', `${contentRatio} content : ${examRatio} exam practice`],
                 ['Session length', `${contentDuration} minutes`],
                 ['Session gap', `${sessionGap} minutes`],
@@ -659,12 +814,29 @@ export default function CalendarGenerator({ onClose, onGenerated }) {
               ))}
             </div>
 
+            {subjectHours.length > 0 && (
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:'0.72rem',fontWeight:700,color:'var(--text-muted)',marginBottom:6,textTransform:'uppercase',letterSpacing:'0.03em'}}>
+                  Scheduled hours by subject
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                  {subjectHours.map(([subject,mins])=>(
+                    <div key={subject} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 10px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.8rem'}}>
+                      <span>{subject}</span>
+                      <span style={{fontWeight:700}}>{formatDuration(mins)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{maxHeight:200,overflowY:'auto',marginBottom:14,borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
               {preview.slice(0,10).map((s,i)=>(
                 <div key={i} style={{display:'flex',gap:10,padding:'5px 10px',borderBottom:'1px solid var(--border)',fontSize:'0.78rem',alignItems:'center'}}>
                   <span style={{color:'var(--text-muted)',flexShrink:0,minWidth:68}}>{s.date}</span>
                   <span style={{color:'var(--text-muted)',flexShrink:0,minWidth:42}}>{s.start}</span>
                   <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:s.isEmergency?'var(--danger)':'var(--text-primary)',fontStyle:s.isEmergency?'italic':'normal'}}>{s.title}</span>
+                  {s.viaFreePeriod && <Coffee size={12} color="var(--text-muted)" style={{flexShrink:0}} aria-label="Free period"/>}
                 </div>
               ))}
               {preview.length>10&&<div style={{padding:'4px 10px',fontSize:'0.72rem',color:'var(--text-muted)'}}>…and {preview.length-10} more sessions</div>}
