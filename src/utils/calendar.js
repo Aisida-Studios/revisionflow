@@ -318,6 +318,29 @@ export function sessionsForDay(sessions, date) {
   })
 }
 
+// Minutes -> "1h 30m" / "45m" / "2h". Shared so the Calendar page's weekly hours-by-subject
+// card and the generator's own hours-by-subject breakdown never quietly drift apart.
+export function formatDuration(mins) {
+  if (!mins) return '0m'
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (h && m) return `${h}h ${m}m`
+  if (h) return `${h}h`
+  return `${m}m`
+}
+
+// Sums `duration` (minutes) per subject across any list of session objects, sorted with the
+// most-scheduled subject first. Callers filter the list first (e.g. exclude tasks, restrict
+// to a date range) — this just does the grouping, so it stays identical wherever it's used.
+export function hoursBySubject(sessionList) {
+  const totals = {}
+  for (const s of sessionList || []) {
+    if (!s || !s.subject) continue
+    totals[s.subject] = (totals[s.subject] || 0) + (s.duration || 0)
+  }
+  return Object.entries(totals).sort((a, b) => b[1] - a[1])
+}
+
 // ── COUNTDOWN HELPERS ─────────────────────────────────────────────────────────
 // Canonical day difference — always date-only, no time contamination.
 // Exam dates stored as YYYY-MM-DD parse as midnight UTC which in BST (UTC+1)
