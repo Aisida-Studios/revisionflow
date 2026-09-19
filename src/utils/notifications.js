@@ -4,6 +4,14 @@
 
 import { auth, getAppCheckHeader } from '../firebase'
 
+// setTimeout's delay is stored as a 32-bit signed integer internally — the largest value it can
+// hold is 2,147,483,647ms (~24.8 days). Pass anything bigger and it overflows and wraps around to
+// a small/negative number, which browsers then fire almost immediately instead of waiting. This
+// is exactly what was making exam reminders fire on every login for any exam more than ~25 days
+// away: the "night before"/"morning of" delay for an exam months out is billions of ms, which
+// overflowed every single time this ran. Kept well under the real ~24.8-day limit for safety.
+const MAX_SAFE_TIMEOUT_MS = 20 * 24 * 60 * 60 * 1000 // 20 days
+
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 
 // ── Permission ────────────────────────────────────────────────────
@@ -125,28 +133,30 @@ export function scheduleExamReminders(examDates) {
     // Night before reminder (8pm the evening before)
     const nightBefore = new Date(year, month - 1, day - 1)
     nightBefore.setHours(20, 0, 0, 0)
-    if (nightBefore > now) {
+    const eveDelay = nightBefore.getTime() - now.getTime()
+    if (eveDelay > 0 && eveDelay <= MAX_SAFE_TIMEOUT_MS) {
       const id = setTimeout(() => {
         sendLocalNotification(
           `📝 Exam tomorrow: ${exam.subject}`,
           `${exam.subject} — ${exam.board || ''} ${exam.paper ? 'Paper ' + exam.paper : ''}. Good luck!`,
           { tag: `exam-eve-${exam.id}`, requireInteraction: true }
         )
-      }, nightBefore.getTime() - now.getTime())
+      }, eveDelay)
       ids.push(id)
     }
 
     // Morning of exam (7am)
     const morning = new Date(year, month - 1, day)
     morning.setHours(7, 0, 0, 0)
-    if (morning > now) {
+    const dayDelay = morning.getTime() - now.getTime()
+    if (dayDelay > 0 && dayDelay <= MAX_SAFE_TIMEOUT_MS) {
       const id = setTimeout(() => {
         sendLocalNotification(
           `🎯 Exam today: ${exam.subject}`,
           `Your ${exam.subject} exam is today. You've got this!`,
           { tag: `exam-day-${exam.id}`, requireInteraction: true }
         )
-      }, morning.getTime() - now.getTime())
+      }, dayDelay)
       ids.push(id)
     }
   })
@@ -190,7 +200,7 @@ export function scheduleSessionReminder(session, minutesBefore = 5) {
   const sessionTime = session.startTime ? new Date(session.startTime) : null
   if (!sessionTime) return null
   const delay = sessionTime.getTime() - minutesBefore * 60000 - Date.now()
-  if (delay <= 0) return null
+  if (delay <= 0 || delay > MAX_SAFE_TIMEOUT_MS) return null
   return setTimeout(() => {
     sendLocalNotification(
       `Revision starting in ${minutesBefore} minutes`,
