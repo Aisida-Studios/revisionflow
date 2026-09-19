@@ -107,6 +107,23 @@
 }
 .rf-side-back:hover { color: var(--accent); }
 
+/* "Scheduled hours this week" — always the real current week, shown above whatever else
+   the sidebar is displaying (upcoming list or a selected day's detail). */
+.rf-week-hours { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.rf-week-hours h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 0.88rem; }
+.rf-week-hours-list { display: flex; flex-direction: column; gap: 5px; }
+.rf-week-hours-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+  border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+.rf-week-hours-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rf-week-hours-subject { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.rf-week-hours-value { font-weight: 800; color: var(--text-primary); flex-shrink: 0; }
+.rf-week-hours-total { background: var(--accent-pale); border-color: var(--accent); }
+.rf-week-hours-total .rf-week-hours-subject,
+.rf-week-hours-total .rf-week-hours-value { color: var(--accent-light); }
+
 .rf-upcoming-list, .rf-day-list { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
 .rf-upcoming-item {
@@ -157,7 +174,7 @@
 .rf-backlog-title { font-weight: 600; font-size: 0.83rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rf-backlog-meta { font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; }
 
-/* ── Event-kind toggle (Add/Edit event modal) ──────────────────────────── */
+/* ── Event-kind toggle (Add/Edit event modal; reused by the Timetable's period modal) ── */
 .rf-kind-toggle { display: flex; gap: 8px; margin-bottom: 6px; }
 .rf-kind-btn {
   flex: 1; padding: 10px; border-radius: var(--radius-lg); border: 1.5px solid var(--border);
@@ -165,6 +182,26 @@
   display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-primary);
 }
 .rf-kind-btn.is-active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-light); }
+
+/* ── Timetable tab: school timetable + free periods ────────────────────── */
+.rf-timetable-panel { display: flex; flex-direction: column; gap: 18px; }
+.rf-timetable-intro { padding: 14px 18px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); }
+.rf-timetable-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; align-items: start; }
+.rf-timetable-day-card { padding: 14px 16px; min-width: 0; }
+.rf-timetable-day-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rf-timetable-day-head h5 { margin: 0; font-size: 0.88rem; font-weight: 800; color: var(--text-primary); }
+.rf-timetable-empty { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+.rf-timetable-period-list { display: flex; flex-direction: column; gap: 6px; }
+.rf-timetable-period {
+  display: flex; align-items: center; gap: 7px; padding: 7px 9px; min-width: 0;
+  border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-surface);
+  font-size: 0.76rem; color: var(--text-secondary);
+}
+.rf-timetable-period svg { flex-shrink: 0; color: var(--text-muted); }
+.rf-timetable-period.is-free { border-color: var(--accent); background: var(--accent-bg); }
+.rf-timetable-period.is-free svg { color: var(--accent-light); }
+.rf-timetable-period-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--text-primary); }
+.rf-timetable-period-time { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
