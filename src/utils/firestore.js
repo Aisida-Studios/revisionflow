@@ -114,6 +114,24 @@ export const unlockReferralIcon = async (uid) => {
 }
 
 /* =========================
+   TIMETABLE (school timetable — lesson + free periods)
+========================= */
+// Same users/{uid}/settings/{docId} subcollection CalendarGenerator.jsx already reads/writes
+// for 'calendarPrefs' — a new document in an existing, already-permitted subcollection, not a
+// new top-level collection, so it needs no separate security rule.
+
+export const getUserTimetable = async (uid) => {
+  const snap = await getDoc(doc(db, 'users', uid, 'settings', 'timetable'))
+  return snap.exists() ? (snap.data().days || {}) : {}
+}
+
+// `days`: { Monday: [{ id, type:'lesson'|'free', label, startTime, endTime }], ... }
+export const saveUserTimetable = async (uid, days) => {
+  await setDoc(doc(db, 'users', uid, 'settings', 'timetable'),
+    { days, updatedAt: serverTimestamp() }, { merge: true })
+}
+
+/* =========================
    STREAK
 ========================= */
 
