@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
-import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods } from '../utils/scheduler'
+import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate } from '../utils/scheduler'
 import { getUserTimetable } from '../utils/firestore'
 import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
 import { format, addMonths, addWeeks } from 'date-fns'
@@ -124,20 +124,25 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
 
   // ── Free periods (school timetable) ──────────────────────────────────────
   const hasSixthForm = subjects.some(s => s.qualification === 'A-Level' || s.qualification === 'AS-Level')
-  const [timetable,       setTimetable]       = useState({})
-  const [timetableLoaded, setTimetableLoaded] = useState(false)
+  const [timetable,         setTimetable]         = useState({})
+  const [timetableRotation, setTimetableRotation]  = useState({ enabled: false, evenWeekLabel: 'A' })
+  const [timetableLoaded,   setTimetableLoaded]   = useState(false)
   const [includeFreePeriods, setIncludeFreePeriods] = useState(false)
 
   React.useEffect(() => {
     if (!user) return
     getUserTimetable(user.uid)
-      .then(days => setTimetable(days || {}))
+      .then(({ days, rotation }) => { setTimetable(days || {}); setTimetableRotation(rotation || { enabled: false, evenWeekLabel: 'A' }) })
       .catch(() => {}) // no timetable set up yet — freePeriods list is just empty
       .finally(() => setTimetableLoaded(true))
   }, [user])
 
-  const freePeriods = Object.values(timetable).flat().filter(p => p && p.type === 'free')
-  const hasFreePeriods = freePeriods.length > 0
+  const allFreePeriods = Object.values(timetable).flat().filter(p => p && p.type === 'free')
+  const hasFreePeriods = allFreePeriods.length > 0
+  // For the hint text: how many of those free periods actually apply THIS week — with
+  // rotation on, a period tagged for the other week doesn't count toward "this week".
+  const todayWeekLabel = weekLabelForDate(new Date(), timetableRotation)
+  const freePeriods = allFreePeriods.filter(p => !p.week || !todayWeekLabel || p.week === todayWeekLabel)
   const freePeriodMinutes = freePeriods.reduce((sum, p) => {
     const [sh, sm] = String(p.startTime || '0:0').split(':').map(Number)
     const [eh, em] = String(p.endTime   || '0:0').split(':').map(Number)
@@ -253,6 +258,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
         contentDuration,
         sessionGap,
         topicFocus,
+        rotation: timetableRotation,
       })
       const takenSlots = new Set(sessions.map(s => `${s.date}|${s.start}`))
       const freeSessions = rawFreeSessions.filter(s => !takenSlots.has(`${s.date}|${s.start}`))
@@ -520,7 +526,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
                 ) : hasFreePeriods ? (
                   <>
                     <p style={{fontSize:'0.82rem',color:'var(--text-muted)',marginBottom:8}}>
-                      You've got {freePeriods.length} free period{freePeriods.length!==1?'s':''} a week ({formatDuration(freePeriodMinutes)} total) set up in your Timetable.
+                      You've got {freePeriods.length} free period{freePeriods.length!==1?'s':''} {timetableRotation.enabled ? 'this week' : 'a week'} ({formatDuration(freePeriodMinutes)} total) set up in your Timetable{timetableRotation.enabled ? ` (Week ${todayWeekLabel})` : ''}.
                     </p>
                     <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
                       <input type="checkbox" checked={includeFreePeriods}
