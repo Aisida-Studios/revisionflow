@@ -120,15 +120,29 @@ export const unlockReferralIcon = async (uid) => {
 // for 'calendarPrefs' — a new document in an existing, already-permitted subcollection, not a
 // new top-level collection, so it needs no separate security rule.
 
+const DEFAULT_TIMETABLE_ROTATION = { enabled: false, evenWeekLabel: 'A' }
+
+// Returns { days, rotation } — NOT just the days map (changed when fortnight rotation was
+// added). rotation: { enabled, evenWeekLabel } — see weekLabelForDate in scheduler.js for
+// how evenWeekLabel is used; defaults to "no rotation" for any timetable saved before this
+// existed, so old data reads back exactly as it did (every period applies every week).
 export const getUserTimetable = async (uid) => {
   const snap = await getDoc(doc(db, 'users', uid, 'settings', 'timetable'))
-  return snap.exists() ? (snap.data().days || {}) : {}
+  if (!snap.exists()) return { days: {}, rotation: DEFAULT_TIMETABLE_ROTATION }
+  const data = snap.data()
+  return {
+    days: data.days || {},
+    rotation: data.rotation || DEFAULT_TIMETABLE_ROTATION,
+  }
 }
 
-// `days`: { Monday: [{ id, type:'lesson'|'free', label, startTime, endTime }], ... }
-export const saveUserTimetable = async (uid, days) => {
-  await setDoc(doc(db, 'users', uid, 'settings', 'timetable'),
-    { days, updatedAt: serverTimestamp() }, { merge: true })
+// `days`: { Monday: [{ id, type:'lesson'|'free', label, startTime, endTime, week? }], ... }
+// `week` on a period is 'A' | 'B' | absent (absent = every week — untouched by rotation).
+// `rotation`: { enabled, evenWeekLabel } — omit to leave rotation settings unchanged.
+export const saveUserTimetable = async (uid, days, rotation) => {
+  const update = { days, updatedAt: serverTimestamp() }
+  if (rotation !== undefined) update.rotation = rotation
+  await setDoc(doc(db, 'users', uid, 'settings', 'timetable'), update, { merge: true })
 }
 
 /* =========================
