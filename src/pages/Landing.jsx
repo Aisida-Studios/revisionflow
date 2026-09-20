@@ -7,29 +7,14 @@ import {
   BarChart2, CheckSquare, MessageSquare, Sun, Moon,
   ArrowRight, Timer, Code2, GraduationCap, ClipboardCheck,
   Layers, Lock, ShieldCheck, Trash2, UserCheck, Eye, Mail,
-  Leaf, FlaskConical, Atom, Sigma, Landmark, Cpu, TrendingUp,
-  BookOpen,
+  Leaf, FlaskConical, TrendingUp,
 } from 'lucide-react'
 import './Landing.css'
 
-// Real per-subject colours, pulled from src/data/subjects.js's
-// SUBJECT_COLOURS rather than invented — a small, visually varied subset
-// for the landing page, not the full 38-subject list.
-const SUBJECTS_PREVIEW = [
-  { name:'Biology',            icon:Leaf,         hex:'#27ae60', rgb:'39,174,96' },
-  { name:'Chemistry',          icon:FlaskConical, hex:'#8e44ad', rgb:'142,68,173' },
-  { name:'Physics',            icon:Atom,         hex:'#2980b9', rgb:'41,128,185' },
-  { name:'Mathematics',        icon:Sigma,        hex:'#e74c3c', rgb:'231,76,60' },
-  { name:'English Literature', icon:BookOpen,     hex:'#d35400', rgb:'211,84,0' },
-  { name:'History',            icon:Landmark,     hex:'#795548', rgb:'121,85,72' },
-  { name:'Computer Science',   icon:Cpu,          hex:'#3498db', rgb:'52,152,219' },
-  { name:'Psychology',         icon:Brain,        hex:'#5e35b1', rgb:'94,53,177' },
-]
-
 const FEATURES_MAJOR = [
   { icon:Calendar,      title:'Smart Calendar',            desc:'AI-generated revision schedules with exam-paper rotation, a 2:1 content-to-practice ratio, and automatic locking as exams approach.' },
-  { icon:Brain,         title:'Topic Confidence Tracker',  desc:'Rate your confidence topic by topic, spot weak spots on a heatmap, and get a clear suggestion for what to revise next.' },
   { icon:FileText,      title:'Past Paper Tracker',        desc:'Log your marks and get your grade calculated from real, board-published grade boundaries — plus analysis of where marks were lost.' },
+  { icon:Brain,         title:'Topic Confidence Tracker',  desc:'Rate your confidence topic by topic, spot weak spots on a heatmap, and get a clear suggestion for what to revise next.' },
   { icon:Layers,        title:'Flashcards',                desc:'Generate topic flashcards or build your own sets, then revise with spaced repetition that brings back the cards you keep missing.' },
   { icon:MessageSquare, title:'AI Revision Advisor',       desc:'Chat through a topic, get a predicted grade, or ask for a personalised study plan — powered by Mistral AI.' },
   { icon:BarChart2,     title:'Progress Analytics',        desc:'Grade progression graphs, subject averages, and a predicted final grade based on your actual trajectory.' },
@@ -152,26 +137,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Subject colour strip */}
-      <section className="lp-subjects-section">
-        <div className="lp-subjects-head">
-          <h2>A colour for every subject</h2>
-          <p style={{color:'var(--text-secondary)'}}>Consistent subject colours across the whole app, so your calendar, topics and progress are easy to scan at a glance.</p>
-        </div>
-        <div className="lp-subjects-row">
-          {SUBJECTS_PREVIEW.map(s=>(
-            <div key={s.name} className="lp-subject-chip">
-              <span className="lp-subject-chip-icon" style={{background:`rgba(${s.rgb},0.14)`}}>
-                <s.icon size={15} color={s.hex}/>
-              </span>
-              <span className="lp-subject-chip-name">{s.name}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Features — a spotlight feature, a grid of major features, then a compact list */}
-      <section id="features" style={{padding:'8px 24px 88px',maxWidth:1100,margin:'0 auto'}}>
+      <section id="features" style={{padding:'32px 24px 88px',maxWidth:1100,margin:'0 auto'}}>
         <div className="lp-features-head">
           <h2>Everything you need to get a 9</h2>
           <p>Built by a student, for students. Every feature is designed around how revision actually works.</p>
