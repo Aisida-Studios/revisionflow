@@ -10,7 +10,7 @@
 // - Tuesday caps
 // - Sunday emergency-only sessions
 
-import { addDays, format, startOfWeek, isSameDay, differenceInDays } from 'date-fns'
+import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek } from 'date-fns'
 import { getPaperSpec } from '../data/paperDatabase'
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -162,13 +162,29 @@ function getBaseWindows(date, availability, useExtended) {
   return [{ start, end }]
 }
 
-function getFreePeriodWindows(date, timetable) {
+// Fortnight (Week A / Week B) rotation. A period with no `week` field applies every week —
+// that's what every period saved before this feature existed already looks like, so an
+// un-migrated timetable keeps behaving exactly as it did with a single repeating week.
+// `rotation`: { enabled: bool, evenWeekLabel: 'A'|'B' } — which label applies on ISO weeks
+// with an even week number; the other label applies on odd ones. ISO week number (not a
+// hand-picked anchor date) is what makes this well-defined for any date, past or future,
+// from a single one-off "is this week A or B?" answer at setup time.
+export function weekLabelForDate(date, rotation) {
+  if (!rotation?.enabled) return null
+  const evenLabel = rotation.evenWeekLabel === 'B' ? 'B' : 'A'
+  const oddLabel  = evenLabel === 'A' ? 'B' : 'A'
+  return getISOWeek(date) % 2 === 0 ? evenLabel : oddLabel
+}
+
+function getFreePeriodWindows(date, timetable, rotation) {
   if (!timetable) return []
   const dayName = DAY_NAMES[date.getDay()]
   const periods = timetable[dayName]
   if (!Array.isArray(periods)) return []
+  const label = weekLabelForDate(date, rotation)
   return periods
     .filter(p => p && p.type === 'free' && p.startTime && p.endTime)
+    .filter(p => !p.week || !label || p.week === label)
     .map(p => rangeToMinutes({ start: p.startTime, end: p.endTime }))
 }
 
@@ -189,9 +205,9 @@ function mergeWindows(windows) {
 // extra study windows on top of their normal evening/weekend availability — independent of
 // that day being "enabled" in availability, since a free period exists at school regardless
 // of whether the student also revises that same evening.
-function getDayWindows(date, availability, timetable, includeFreePeriods, useExtended) {
+function getDayWindows(date, availability, timetable, includeFreePeriods, useExtended, rotation) {
   const base = getBaseWindows(date, availability, useExtended)
-  const free = includeFreePeriods ? getFreePeriodWindows(date, timetable) : []
+  const free = includeFreePeriods ? getFreePeriodWindows(date, timetable, rotation) : []
   return mergeWindows([...base, ...free])
 }
 
@@ -213,8 +229,9 @@ export function generateSchedule(options) {
     extendedFromDate = null, // Date from which end time has a 22:00 floor (not just a fallback)
     dynamicRatio = false,  // NEW: bias a subject toward more exam practice as its exam nears
     topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } — optional, from real confidence data
-    timetable = null,          // NEW: { Monday: [{ type:'lesson'|'free', label, startTime, endTime }], ... }
+    timetable = null,          // NEW: { Monday: [{ type:'lesson'|'free', label, startTime, endTime, week? }], ... }
     includeFreePeriods = false, // NEW: also treat the timetable's free periods as extra study windows
+    rotation = null,           // NEW: { enabled, evenWeekLabel } — fortnight Week A/B rotation for the timetable
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -438,7 +455,7 @@ export function generateSchedule(options) {
     // periods. Everything below walks this list instead of one fixed start/end, so a day
     // with a single window behaves exactly as before.
     const windows = getDayWindows(current, availability, timetable, includeFreePeriods,
-      extendedFromDate && current >= new Date(extendedFromDate))
+      extendedFromDate && current >= new Date(extendedFromDate), rotation)
     if (!windows.length) {
       current = addDays(current, 1)
       continue
@@ -603,13 +620,14 @@ export function generateSchedule(options) {
 export function scheduleFreePeriods(options) {
   const {
     subjects,          // same shape as generateSchedule's `subjects`, incl. per-subject ratio
-    timetable,         // { Monday: [{ type:'lesson'|'free', label, startTime, endTime }], ... }
+    timetable,         // { Monday: [{ type:'lesson'|'free', label, startTime, endTime, week? }], ... }
     startDate,         // Date
     endDate,           // Date
     holidays = [],     // same full-day blackout list generateSchedule uses
     contentDuration = 45,
     sessionGap = 30,
     topicFocus = {},
+    rotation = null,   // { enabled, evenWeekLabel } — fortnight Week A/B rotation for the timetable
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -709,7 +727,10 @@ export function scheduleFreePeriods(options) {
     if (isHoliday(current, holidays)) { current = addDays(current, 1); continue }
 
     const dayName = DAY_NAMES[current.getDay()]
-    const periods = (timetable?.[dayName] || []).filter(p => p && p.type === 'free' && p.startTime && p.endTime)
+    const weekLabel = weekLabelForDate(current, rotation)
+    const periods = (timetable?.[dayName] || [])
+      .filter(p => p && p.type === 'free' && p.startTime && p.endTime)
+      .filter(p => !p.week || !weekLabel || p.week === weekLabel)
     if (!periods.length) { current = addDays(current, 1); continue }
 
     const dateStr = format(current, 'yyyy-MM-dd')
