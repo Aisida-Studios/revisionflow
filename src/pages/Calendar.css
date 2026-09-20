@@ -202,6 +202,23 @@
 .rf-timetable-period.is-free svg { color: var(--accent-light); }
 .rf-timetable-period-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--text-primary); }
 .rf-timetable-period-time { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+.rf-timetable-period-week {
+  font-size: 0.65rem; font-weight: 800; color: var(--accent-light); background: var(--accent-pale);
+  border-radius: 999px; padding: 1px 6px; flex-shrink: 0; white-space: nowrap;
+}
+
+/* Fortnight (Week A/B) rotation setup, inside the Timetable intro card */
+.rf-timetable-rotation { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rf-timetable-rotation-toggle {
+  display: flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 600;
+  color: var(--text-primary); cursor: pointer;
+}
+.rf-timetable-rotation-setup { display: flex; flex-direction: column; gap: 8px; }
+.rf-timetable-rotation-setup > span {
+  display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-secondary);
+}
+.rf-timetable-rotation-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.rf-timetable-week-toggle { margin-bottom: 4px; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
