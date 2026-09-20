@@ -29,6 +29,30 @@ export function addDaysStr(days) {
   return dateToStr(d)
 }
 
+// Monday of the week containing the given YYYY-MM-DD string, itself as a YYYY-MM-DD
+// string — same Monday-start convention the calendar's week view/generator already use,
+// so "this week" means the same thing everywhere in the app.
+function weekMondayStr(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay() // 0=Sun..6=Sat
+  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day))
+  return dateToStr(date)
+}
+
+// A card's schedule only stores which box it's in and when it's next due — not when it
+// was last reviewed. Since dueDate = (review day) + LEITNER_INTERVALS_DAYS[box-1], the
+// review day is recoverable by subtracting that same interval back out, so "was this
+// reviewed this week" needs no new field alongside box/dueDate.
+function lastReviewedStr(schedule) {
+  if (!schedule?.dueDate || !schedule?.box) return null
+  const interval = LEITNER_INTERVALS_DAYS[schedule.box - 1] ?? 0
+  const [y, m, d] = schedule.dueDate.split('-').map(Number)
+  const reviewed = new Date(y, m - 1, d)
+  reviewed.setDate(reviewed.getDate() - interval)
+  return dateToStr(reviewed)
+}
+
 // schedule may be undefined (never practiced) — treated as due now.
 export function isDue(schedule) {
   if (!schedule || !schedule.dueDate) return true
@@ -64,9 +88,25 @@ export function practiceSortCompare(a, b) {
   return daysOverdue(b.schedule) - daysOverdue(a.schedule)
 }
 
-// Builds a flat, priority-sorted queue of due cards across every set.
+// Builds a flat, priority-sorted queue of due cards across every set — with a weekly
+// rotation on top of the existing box/overdue priority: due cards from a subject that
+// hasn't had ANY card reviewed yet this week are surfaced before due cards from a subject
+// that has. Box/overdue priority alone never rotates — a subject a student finds hard
+// (lots of low-box cards) would otherwise dominate the front of every session indefinitely,
+// crowding out a subject that's just as due but sits in higher boxes. Within each of those
+// two groups, cards are still ordered by the same box/overdue rule as before.
 // sets: [{ id, title, subject, cards: [{q,a}], cardSchedule }]
 export function buildDueQueue(sets) {
+  const thisMonday = weekMondayStr(todayStr())
+  const seenThisWeek = new Set()
+  for (const set of sets || []) {
+    const schedule = set.cardSchedule || {}
+    for (const card of set.cards || []) {
+      const reviewed = lastReviewedStr(schedule[card.q])
+      if (reviewed && reviewed >= thisMonday) { seenThisWeek.add(set.subject); break }
+    }
+  }
+
   const queue = []
   for (const set of sets || []) {
     const schedule = set.cardSchedule || {}
@@ -76,5 +116,8 @@ export function buildDueQueue(sets) {
       queue.push({ setId: set.id, setTitle: set.title, subject: set.subject, card, schedule: cardSchedule })
     }
   }
-  return queue.sort(practiceSortCompare)
+
+  const notSeen = queue.filter(item => !seenThisWeek.has(item.subject)).sort(practiceSortCompare)
+  const seen    = queue.filter(item =>  seenThisWeek.has(item.subject)).sort(practiceSortCompare)
+  return [...notSeen, ...seen]
 }
