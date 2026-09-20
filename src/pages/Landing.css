@@ -177,24 +177,6 @@
 .lp-stat-value { font-size: 1.5rem; font-weight: 800; color: var(--accent-light); line-height: 1.15; }
 .lp-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
-/* ── Subject strip ───────────────────────────────────────────────────── */
-.lp-subjects-section { padding: 0 24px 64px; max-width: 1000px; margin: 0 auto; }
-.lp-subjects-head { text-align: center; margin-bottom: 26px; }
-.lp-subjects-head h2 { margin-bottom: 8px; }
-.lp-subjects-head p { max-width: 500px; margin: 0 auto; }
-.lp-subjects-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.lp-subject-chip {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 16px 7px 7px;
-  border-radius: var(--r-full);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-}
-.lp-subject-chip-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.lp-subject-chip-name { font-weight: 700; font-size: 0.85rem; color: var(--text-primary); }
-
 /* ── Features: three tiers, not one repeated grid ────────────────────── */
 .lp-features-head { text-align: center; max-width: 520px; margin: 0 auto 40px; }
 .lp-features-head h2 { margin-bottom: 10px; }
