@@ -18,6 +18,7 @@ import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
+import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { componentForSubject } from '../data/illustrationThemes'
 import toast from 'react-hot-toast'
 import {
@@ -1027,6 +1028,7 @@ function CustomSetEditor({ subjects, onSave, onClose }) {
   const [isPublic, setIsPublic] = useState(false)
   const [cards, setCards] = useState([{ q: '', a: '' }])
   const [saving, setSaving] = useState(false)
+  const fieldRefs = useRef({})
 
   function addCard() { setCards(cs => [...cs, { q: '', a: '' }]) }
   function removeCard(i) { setCards(cs => cs.filter((_, j) => j !== i)) }
@@ -1070,8 +1072,16 @@ function CustomSetEditor({ subjects, onSave, onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto' }}>
               {cards.map((card, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} placeholder="Question…" /></div>
-                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} placeholder="Answer…" /></div>
+                  <div>
+                    <label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label>
+                    <textarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} placeholder="Question…" />
+                    <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-q'] }} value={card.q} onChange={val => updateCard(i, 'q', val)} />
+                  </div>
+                  <div>
+                    <label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label>
+                    <textarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} placeholder="Answer…" />
+                    <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-a'] }} value={card.a} onChange={val => updateCard(i, 'a', val)} />
+                  </div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
                 </div>
               ))}
@@ -1095,6 +1105,7 @@ function EditSetModal({ set, subjects, onSave, onClose }) {
   const [isPublic, setIsPublic] = useState(set.isPublic || false)
   const [cards,    setCards]    = useState(set.cards?.length ? set.cards.map(c => ({ q: c.q || '', a: c.a || '' })) : [{ q: '', a: '' }])
   const [saving,   setSaving]   = useState(false)
+  const fieldRefs = useRef({})
 
   function addCard() { setCards(cs => [...cs, { q: '', a: '' }]) }
   function removeCard(i) { setCards(cs => cs.filter((_, j) => j !== i)) }
@@ -1138,8 +1149,16 @@ function EditSetModal({ set, subjects, onSave, onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 380, overflowY: 'auto' }}>
               {cards.map((card, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} /></div>
-                  <div><label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label><textarea className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} /></div>
+                  <div>
+                    <label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label>
+                    <textarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} />
+                    <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-q'] }} value={card.q} onChange={val => updateCard(i, 'q', val)} />
+                  </div>
+                  <div>
+                    <label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label>
+                    <textarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} />
+                    <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-a'] }} value={card.a} onChange={val => updateCard(i, 'a', val)} />
+                  </div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
                 </div>
               ))}
