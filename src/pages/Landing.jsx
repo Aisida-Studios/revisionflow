@@ -2,12 +2,12 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
+import CellIllustration from '../components/illustrations/CellIllustration'
 import {
   Zap, Calendar, Brain, Trophy, Users, FileText,
   BarChart2, CheckSquare, MessageSquare, Sun, Moon,
   ArrowRight, Timer, Code2, GraduationCap, ClipboardCheck,
   Layers, Lock, ShieldCheck, Trash2, UserCheck, Eye, Mail,
-  Leaf, FlaskConical, TrendingUp,
 } from 'lucide-react'
 import './Landing.css'
 
@@ -17,15 +17,15 @@ const FEATURES_MAJOR = [
   { icon:Brain,         title:'Topic Confidence Tracker',  desc:'Rate your confidence topic by topic, spot weak spots on a heatmap, and get a clear suggestion for what to revise next.' },
   { icon:Layers,        title:'Flashcards',                desc:'Generate topic flashcards or build your own sets, then revise with spaced repetition that brings back the cards you keep missing.' },
   { icon:MessageSquare, title:'AI Revision Advisor',       desc:'Chat through a topic, get a predicted grade, or ask for a personalised study plan — powered by Mistral AI.' },
-  { icon:BarChart2,     title:'Progress Analytics',        desc:'Grade progression graphs, subject averages, and a predicted final grade based on your actual trajectory.' },
+  { icon:BarChart2,     title:'Progress Analytics',        desc:'See when and how long you actually study, your personal records and streaks, and how your past paper scores are trending over time.' },
 ]
 
 const FEATURES_LIST = [
-  { icon:GraduationCap, title:'AI Tutor', pro:true, desc:"A Maths step-by-step solver and structured English essay feedback, built around how each subject is actually marked." },
+  { icon:Timer,         title:'Study Timer',        desc:'Countdown timer, stopwatch and alarm clock, with ambient sounds and a fullscreen focus mode.' },
+  { icon:CheckSquare,   title:'Tasks & Deadlines',  desc:"Add tasks with due dates and priorities — dated ones show right on your calendar, undated ones sit in a backlog until you're ready." },
   { icon:Trophy,        title:'Gamification',       desc:'Earn XP, level up, unlock 14 badges, and keep a streak going — without it getting in the way of revising.' },
   { icon:Users,         title:'Social Features',    desc:'Add friends, compare streaks and XP, and keep each other accountable.' },
-  { icon:Timer,         title:'Study Timer',        desc:'Countdown timer, stopwatch and alarm clock — pop it out as a floating widget while you work.' },
-  { icon:CheckSquare,   title:'Tasks & Deadlines',  desc:'A to-do list with due dates, priorities and subject tags. Overdue tasks are flagged automatically.' },
+  { icon:GraduationCap, title:'AI Tutor', pro:true, desc:"A Maths step-by-step solver and structured English essay feedback, built around how each subject is actually marked." },
 ]
 
 const STATS = [
@@ -86,8 +86,8 @@ export default function Landing() {
             </h1>
 
             <p className="lp-hero-sub">
-              Exam calendars, past paper tracking, topic confidence heatmaps and AI-assisted
-              study tools — matched exactly to your board. Free to use.
+              Exam calendars, accurate grade tracking and examiner-style answer marking
+              — matched exactly to your board. Free to use.
             </p>
 
             <div className="lp-hero-cta">
@@ -99,29 +99,19 @@ export default function Landing() {
           </div>
 
           <div className="lp-hero-visual">
-            <div className="lp-preview-card lp-preview-card--back">
-              <div className="lp-preview-head">
-                <span className="lp-preview-icon" style={{background:'rgba(142,68,173,0.14)'}}>
-                  <FlaskConical size={16} color="#8e44ad"/>
-                </span>
-                <span className="lp-preview-subject">Chemistry</span>
+            <div className="lp-preview-card">
+              <div className="lp-preview-label">Your next session</div>
+              <div className="lp-preview-body">
+                <div>
+                  <div className="lp-preview-subject">Biology</div>
+                  <div className="lp-preview-topic">Cell Biology</div>
+                  <div className="lp-preview-meta">45 min</div>
+                </div>
+                <CellIllustration size={88} style={{flexShrink:0}}/>
               </div>
-              <div className="lp-preview-topic">Organic Chemistry</div>
-            </div>
-
-            <div className="lp-preview-card lp-preview-card--front">
-              <div className="lp-preview-head">
-                <span className="lp-preview-icon" style={{background:'rgba(39,174,96,0.14)'}}>
-                  <Leaf size={16} color="#27ae60"/>
-                </span>
-                <span className="lp-preview-subject">Biology</span>
-              </div>
-              <div className="lp-preview-topic">Cell Biology</div>
-              <div className="lp-preview-confidence">
-                <span className="lp-preview-pct">72%</span>
-                <span className="lp-preview-trend"><TrendingUp size={12}/> +8% this month</span>
-              </div>
-              <div className="lp-mock-track"><div className="lp-mock-fill" style={{width:'72%'}}/></div>
+              <Link to="/signup" className="btn btn-primary btn-sm" style={{width:'100%',justifyContent:'center'}}>
+                Start revising <ArrowRight size={14}/>
+              </Link>
             </div>
           </div>
         </div>
