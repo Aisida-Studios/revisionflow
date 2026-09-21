@@ -113,14 +113,10 @@
 @media (max-width: 900px) { .lp-hero-cta { align-items: center; } }
 .lp-hero-microcopy { margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
 
-/* Product-preview mockup: two layered cards built from real subject data
-   (icons + colours from subjects.js), not a literal screenshot claim — a
-   stylised example of the topic-confidence tracking feature. */
-.lp-hero-visual {
-  position: relative;
-  max-width: 320px;
-  margin: 0 0 40px auto;
-}
+/* Product-preview card: matches the "next session" card pattern from the
+   approved reference mockups — a real coded illustration (not a lucide icon,
+   not a literal screenshot) alongside real session info. */
+.lp-hero-visual { max-width: 320px; margin: 0 0 40px auto; }
 @media (max-width: 900px) { .lp-hero-visual { margin: 0 auto 52px; } }
 
 .lp-preview-card {
@@ -128,33 +124,16 @@
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-md);
-  padding: 22px;
+  padding: 24px;
 }
-.lp-preview-card--back {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  width: 100%;
-  transform: rotate(5deg);
-  opacity: 0.9;
-  z-index: 1;
-}
-.lp-preview-card--front { position: relative; transform: rotate(-2deg); z-index: 2; }
-@media (max-width: 900px) {
-  .lp-preview-card--back { display: none; }
-  .lp-preview-card--front { transform: none; }
-}
+.lp-preview-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+.lp-preview-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.lp-preview-subject { font-weight: 800; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 3px; }
+.lp-preview-topic { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px; }
+.lp-preview-meta { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
 
-.lp-preview-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.lp-preview-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.lp-preview-subject { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
-.lp-preview-topic { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; }
-.lp-preview-confidence { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
-.lp-preview-pct { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-.lp-preview-trend { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--accent-light); font-weight: 700; }
-
-/* Shared thin progress-bar mini-component, reused by the hero preview card
-   and the Answer Marker feature mockup below. */
+/* Shared thin progress-bar mini-component, used by the Answer Marker feature
+   mockup below. */
 .lp-mock-track { height: 6px; background: var(--bg-hover); border-radius: 99px; overflow: hidden; }
 .lp-mock-fill { height: 100%; background: var(--accent-light); border-radius: 99px; }
 
