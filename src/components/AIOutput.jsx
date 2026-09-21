@@ -2,6 +2,59 @@
 import React, { useState } from 'react'
 import { callAI } from '../utils/ai'
 
+const SUPERSCRIPT_MAP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺' }
+const SUBSCRIPT_MAP   = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉' }
+const GREEK_LETTERS = {
+  pi: 'π', theta: 'θ', alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ',
+  epsilon: 'ε', lambda: 'λ', mu: 'μ', sigma: 'σ', omega: 'ω', phi: 'φ', rho: 'ρ',
+}
+
+function toSuperscript(s) { return s.split('').map(c => SUPERSCRIPT_MAP[c] ?? c).join('') }
+function toSubscript(s)   { return s.split('').map(c => SUBSCRIPT_MAP[c] ?? c).join('') }
+
+// Converts plain-text maths notation (x^2, sqrt(x), <=, pi, ...) into real symbols. Applied
+// per-segment (see formatMathSymbols below) so it never touches text inside backtick code
+// spans — a Computer Science answer showing actual code with ^ or _ in it shouldn't get
+// "corrected" into superscripts/subscripts.
+function convertMathNotation(text) {
+  let out = text
+
+  // Square roots: sqrt(x+y) -> √(x+y), sqrt(x) -> √x, sqrtx / sqrt 9 -> √x / √9
+  out = out.replace(/sqrt\(([^()]+)\)/gi, (_, inner) => '√(' + inner + ')')
+  out = out.replace(/sqrt\s?([a-zA-Z0-9]+)/gi, (_, inner) => '√' + inner)
+
+  // Exponents: x^2 -> x², x^(2+3) -> x⁽²⁺³⁾, x^-1 -> x⁻¹
+  out = out.replace(/\^\(([^()]+)\)/g, (_, inner) => '⁽' + toSuperscript(inner) + '⁾')
+  out = out.replace(/\^(-?\d+)/g, (_, digits) => toSuperscript(digits))
+
+  // Simple chemistry-style subscripts after a letter — H_2O -> H₂O. Deliberately narrow (only
+  // letter-then-underscore-then-digits) so it doesn't touch snake_case identifiers in code.
+  out = out.replace(/([A-Za-z])_(\d+)(?![a-zA-Z_])/g, (_, letter, digits) => letter + toSubscript(digits))
+
+  // Comparison / arithmetic
+  out = out
+    .replace(/<=/g, '≤')
+    .replace(/>=/g, '≥')
+    .replace(/(?<![!=])!=/g, '≠')
+    .replace(/\+\/-|\+-/g, '±')
+    .replace(/-->/g, '→')
+
+  // Greek letters — whole word only
+  for (const [word, symbol] of Object.entries(GREEK_LETTERS)) {
+    out = out.replace(new RegExp('\\b' + word + '\\b', 'g'), symbol)
+  }
+
+  return out
+}
+
+// Splits on ```code blocks``` and `inline code`, converts maths notation in everything else,
+// leaves code segments completely untouched, then reassembles in the original order.
+function formatMathSymbols(text) {
+  if (typeof text !== 'string' || !text) return text
+  const segments = text.split(/(```[\s\S]*?```|`[^`]*`)/g)
+  return segments.map(seg => (seg.startsWith('`') ? seg : convertMathNotation(seg))).join('')
+}
+
 // Converts **bold**, *italic*, `code`, and [text](url) inline
 function inlineFormat(text) {
   if (typeof text !== 'string' || !text) return null
@@ -30,6 +83,7 @@ function renderMarkdown(text) {
     console.warn('[AIOutput] renderMarkdown got a non-string value:', text)
     text = Array.isArray(text) ? text.join('\n') : String(text)
   }
+  text = formatMathSymbols(text)
   const elements = []
   const lines = text.split('\n')
   let i = 0
