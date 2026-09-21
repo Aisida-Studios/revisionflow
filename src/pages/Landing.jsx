@@ -1,5 +1,5 @@
 // src/pages/Landing.jsx
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import CellIllustration from '../components/illustrations/CellIllustration'
@@ -8,6 +8,7 @@ import {
   BarChart2, CheckSquare, MessageSquare, Sun, Moon,
   ArrowRight, Timer, Code2, GraduationCap, ClipboardCheck,
   Layers, Lock, ShieldCheck, Trash2, UserCheck, Eye, Mail,
+  Menu, X,
 } from 'lucide-react'
 import './Landing.css'
 
@@ -23,7 +24,7 @@ const FEATURES_MAJOR = [
 const FEATURES_LIST = [
   { icon:Timer,         title:'Study Timer',        desc:'Countdown timer, stopwatch and alarm clock, with ambient sounds and a fullscreen focus mode.' },
   { icon:CheckSquare,   title:'Tasks & Deadlines',  desc:"Add tasks with due dates and priorities — dated ones show right on your calendar, undated ones sit in a backlog until you're ready." },
-  { icon:Trophy,        title:'Gamification',       desc:'Earn XP, level up, unlock 14 badges, and keep a streak going — without it getting in the way of revising.' },
+  { icon:Trophy,        title:'Gamification',       desc:'Earn XP, level up, unlock 30 badges, and keep a streak going — without it getting in the way of revising.' },
   { icon:Users,         title:'Social Features',    desc:'Add friends, compare streaks and XP, and keep each other accountable.' },
   { icon:GraduationCap, title:'AI Tutor', pro:true, desc:"A Maths step-by-step solver and structured English essay feedback, built around how each subject is actually marked." },
 ]
@@ -46,6 +47,7 @@ const TRUST = [
 
 export default function Landing() {
   const { theme, toggle } = useTheme()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="lp-page">
@@ -68,10 +70,26 @@ export default function Landing() {
             <button className="btn btn-ghost btn-icon" onClick={toggle} aria-label="Toggle theme">
               {theme==='dark' ? <Sun size={18}/> : <Moon size={18}/>}
             </button>
+            <button
+              className="btn btn-ghost btn-icon lp-nav-menu-btn"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X size={18}/> : <Menu size={18}/>}
+            </button>
             <Link to="/login" className="lp-nav-signin">Sign in</Link>
             <Link to="/signup" className="btn btn-primary btn-sm">Get started</Link>
           </div>
         </div>
+
+        {menuOpen && (
+          <div className="lp-mobile-menu">
+            <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
+            <Link to="/pro" onClick={() => setMenuOpen(false)}>Pricing</Link>
+            <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
+          </div>
+        )}
       </nav>
 
       {/* Hero — two columns: copy, then a real-data product-preview mockup */}
@@ -185,7 +203,7 @@ export default function Landing() {
         <div className="lp-about-grid">
           <div>
             <div className="lp-avatar">F</div>
-            <div className="lp-about-name">Oluwafemi Aisida</div>
+            <h2 className="lp-about-name">Oluwafemi Aisida</h2>
             <div className="lp-about-role">Founded by a GCSE student</div>
             <div className="lp-about-badges">
               <span className="lp-badge-accent"><Code2 size={13}/> React + Firebase + Mistral AI</span>
@@ -227,7 +245,7 @@ export default function Landing() {
             Read our full{' '}
             <Link to="/privacy" style={{color:'var(--accent-light)',fontWeight:600}}>Privacy Policy</Link>
             {' '}· Complaints to the{' '}
-            <a href="https://ico.org.uk" target="_blank" rel="noreferrer" style={{color:'var(--accent-light)'}}>ICO</a>
+            <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer" style={{color:'var(--accent-light)'}}>ICO</a>
             {' '}· Contact:{' '}
             <a href="mailto:admin@revisionflow.co.uk" style={{color:'var(--accent-light)'}}>admin@revisionflow.co.uk</a>
           </p>
