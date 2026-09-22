@@ -1,11 +1,12 @@
 // src/pages/Mistakes.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { addMistake, getMistakes, resolveMistake } from '../utils/firestore'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { SUBJECT_COLOURS } from '../data/subjects'
 import toast from 'react-hot-toast'
+import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { Plus, X, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react'
 
 export default function Mistakes() {
@@ -15,6 +16,7 @@ export default function Mistakes() {
   const [showAdd, setShowAdd] = useState(false)
   const [selected, setSelected] = useState([])
   const [form, setForm] = useState({ subject:'', topic:'', description:'', source:'', priority:'medium' })
+  const descriptionRef = useRef(null)
 
   const subjects = profile?.subjects?.map(s=>s.name)||[]
 
@@ -124,7 +126,9 @@ export default function Mistakes() {
                   </select></div>
                 <div><label className="label">Topic</label><input className="input" placeholder="e.g. Integration" value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}/></div>
               </div>
-              <div><label className="label">What went wrong?</label><textarea className="textarea" value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Describe the mistake and correct approach…" required/></div>
+              <div><label className="label">What went wrong?</label><textarea ref={descriptionRef} className="textarea" value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Describe the mistake and correct approach…" required/>
+                <MathSymbolToolbar fieldRef={descriptionRef} value={form.description} onChange={val=>setForm(f=>({...f,description:val}))} />
+              </div>
               <div className="grid-2" style={{gap:10}}>
                 <div><label className="label">Source</label><input className="input" placeholder="e.g. AQA 2023 P2 Q5" value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}/></div>
                 <div><label className="label">Priority</label>
