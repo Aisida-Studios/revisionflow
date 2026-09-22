@@ -14,6 +14,7 @@ import {
 import { checkAndAwardBadge } from '../utils/firestore'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
+import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'
 import './AccountPages.css'
@@ -32,6 +33,7 @@ export default function AIAdvisor() {
   const { isPro, isBeta } = useIsPro()
   const [messages,    setMessages]    = useState([])
   const [input,       setInput]       = useState('')
+  const inputFieldRef = useRef(null)
   const [loading,     setLoading]     = useState(false)
   const [tab,         setTab]         = useState('chat')
   const [resources,   setResources]   = useState({})
@@ -305,8 +307,12 @@ export default function AIAdvisor() {
           <div style={{padding:'10px 12px 0',display:'flex',gap:6,flexWrap:'wrap'}}>
             {QUICK_PROMPTS.map(p=><button key={p} className="ap-chat-chip" onClick={()=>sendMessage(p)}>{p}</button>)}
           </div>
+          <div style={{padding:'4px 12px 0'}}>
+            <MathSymbolToolbar fieldRef={inputFieldRef} value={input} onChange={setInput} />
+          </div>
           <div className="ap-chat-inputbar">
             <textarea
+              ref={inputFieldRef}
               rows={1}
               value={input}
               onChange={e=>setInput(e.target.value)}
