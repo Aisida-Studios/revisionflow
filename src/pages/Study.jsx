@@ -310,6 +310,7 @@ function WriteMode({ cards, onDone, uid }) {
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
+        {!checked && <MathSymbolToolbar fieldRef={inputRef} value={input} onChange={setInput} />}
         {/* AI marking shown once answer is submitted */}
         {checked && (
           <div style={{ marginTop:10 }}>
@@ -437,6 +438,7 @@ function SpellMode({ cards, onDone }) {
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if((e.key==='Enter'||e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
           placeholder="Spell out the full definition… (Enter to check)" disabled={!!checked} />
+        {!checked && <MathSymbolToolbar fieldRef={inputRef} value={input} onChange={setInput} />}
         {checked==='wrong'&&<div style={{ marginTop:10, fontSize:'0.85rem', color:'var(--danger)', padding:'8px 12px', background:'var(--danger-pale)', borderRadius:8, border:'1px solid var(--danger-border)' }}>
           Correct spelling: <strong>{card.a}</strong>
         </div>}
@@ -2197,8 +2199,10 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   const [mkBoard,   setMkBoard]   = React.useState('AQA')
   const [mkLevel,   setMkLevel]   = React.useState('GCSE')
   const [mkQ,       setMkQ]       = React.useState('')
+  const mkQRef = useRef(null)
   const [mkMarks,   setMkMarks]   = React.useState('6')
   const [mkAnswer,  setMkAnswer]  = React.useState('')
+  const mkAnswerRef = useRef(null)
   const [mkResult,  setMkResult]  = React.useState(null)
   const [mkLoading, setMkLoading] = React.useState(false)
   const [mkHistory, setMkHistory] = React.useState([])
@@ -2422,8 +2426,9 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               </div>
               <div>
                 <label className="label">The question</label>
-                <textarea className="textarea" rows={3} placeholder="Paste or type the exam question here..."
+                <textarea ref={mkQRef} className="textarea" rows={3} placeholder="Paste or type the exam question here..."
                   value={mkQ} onChange={e => setMkQ(e.target.value)} />
+                <MathSymbolToolbar fieldRef={mkQRef} value={mkQ} onChange={setMkQ} />
                 <div style={{ marginTop:8 }}>
                   <PhotoCapture uid={uid} kind="question" onExtracted={setMkQ} label="or scan the question" />
                 </div>
@@ -2431,8 +2436,9 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               </div>
               <div>
                 <label className="label">Your answer</label>
-                <textarea className="textarea" rows={6} placeholder="Type or paste your answer here..."
+                <textarea ref={mkAnswerRef} className="textarea" rows={6} placeholder="Type or paste your answer here..."
                   value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} />
+                <MathSymbolToolbar fieldRef={mkAnswerRef} value={mkAnswer} onChange={setMkAnswer} />
                 <div style={{ marginTop:8 }}>
                   <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="or scan your handwritten answer" />
                 </div>
