@@ -1,11 +1,12 @@
 // src/pages/Tutor.jsx
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ProGate from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import { solveMathsProblem, parseMathsSteps, getEssayFeedback } from '../utils/ai'
 import { autoCompleteQuest } from '../utils/firestore'
 import PhotoCapture from '../components/PhotoCapture'
+import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { Calculator, PenTool } from 'lucide-react'
 
 const MATHS_LEVELS = ['GCSE', 'A-Level', 'Further Maths']
@@ -52,6 +53,7 @@ function MathsSolver({ uid, profile }) {
   const mathsSubj = (profile?.subjects || []).find(s => /math/i.test(s.name))
   const [level, setLevel] = useState(mathsSubj?.qualification || 'GCSE')
   const [problem, setProblem] = useState('')
+  const problemFieldRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [steps, setSteps] = useState(null)
   const [finalAnswer, setFinalAnswer] = useState('')
@@ -91,8 +93,9 @@ function MathsSolver({ uid, profile }) {
         </div>
 
         <label className="label">The problem</label>
-        <textarea className="textarea" rows={3} placeholder="e.g. Solve 2x^2 - 5x - 3 = 0"
+        <textarea ref={problemFieldRef} className="textarea" rows={3} placeholder="e.g. Solve 2x^2 - 5x - 3 = 0"
           value={problem} onChange={e => setProblem(e.target.value)} />
+        <MathSymbolToolbar fieldRef={problemFieldRef} value={problem} onChange={setProblem} />
         <div style={{ marginTop:8 }}>
           <PhotoCapture uid={uid} kind="question" onExtracted={setProblem} label="scans straight into the box above — check it before solving" />
         </div>
