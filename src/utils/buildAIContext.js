@@ -3,6 +3,7 @@
 // Every AI call should include this so outputs are personalised and in sync
 
 import { filterToCurrentQualification } from './firestore'
+import { daysUntilExam } from './examUtils'
 
 /**
  * Builds a comprehensive context string from all available student data.
@@ -45,16 +46,16 @@ export function buildAIContext(profile, opts = {}) {
   }
 
   // ── Exam dates ───────────────────────────────────────────────────
-  const today = new Date()
   const upcoming = (profile.examDates || [])
-    .filter(e => e.examDate && new Date(e.examDate) > today)
-    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
+    .filter(e => e.examDate)
+    .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+    .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
 
   if (upcoming.length) {
     lines.push('\n=== UPCOMING EXAMS ===')
     upcoming.slice(0, 10).forEach(e => {
-      const daysLeft = Math.ceil((new Date(e.examDate) - today) / 86400000)
-      lines.push(`• ${e.subject} – ${e.paper || 'Exam'}: ${e.examDate} (${daysLeft} days)`)
+      lines.push(`• ${e.subject} – ${e.paper || 'Exam'}: ${e.examDate} (${e.daysLeft} days)`)
     })
   }
 
