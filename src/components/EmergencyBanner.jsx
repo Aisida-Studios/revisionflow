@@ -1,5 +1,4 @@
 // src/components/EmergencyBanner.jsx
-// Paste this near the top of Dashboard.jsx
 // Shows automatically when an exam is within 7 days
 
 import { useMemo } from 'react'
@@ -16,7 +15,7 @@ export default function EmergencyBanner() {
   const nextUrgentExam = useMemo(() => {
     return (profile?.examDates || [])
       .filter(g => !isExamDone(g.examDate) && daysUntilExam(g.examDate) <= 7)
-      .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))[0]
+      .sort((a, b) => daysUntilExam(a.examDate) - daysUntilExam(b.examDate))[0]
   }, [profile])
 
   if (!nextUrgentExam) return null
