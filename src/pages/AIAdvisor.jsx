@@ -16,6 +16,7 @@ import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
+import { daysUntilExam } from '../utils/examUtils'
 import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'
 import './AccountPages.css'
 
@@ -105,7 +106,7 @@ export default function AIAdvisor() {
         `Student: ${profile.displayName}`,
         `Level: ${profile.level||1} | XP: ${profile.xp||0} | Streak: ${profile.streak||0} days`,
         `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, ${getSubjectQualification(s, profile)}, target: ${s.targetGrade||9})`).join(', ')}`,
-        `Upcoming exams: ${(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
+        `Upcoming exams: ${(profile.examDates||[]).map(e=>({...e,daysLeft:daysUntilExam(e.examDate)})).filter(e=>e.daysLeft!=null&&e.daysLeft>=0).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
         weakTopics.length   ? `Weak topics: ${weakTopics.join(', ')}`          : '',
         recentPapers.length ? `Recent papers: ${recentPapers.join(', ')}`      : '',
         topMistakes.length  ? `Unresolved mistakes: ${topMistakes.join(', ')}` : '',
@@ -153,12 +154,13 @@ export default function AIAdvisor() {
     if (!planPrefs.confirmed) { setPlanPrefs(p=>({...p, showForm:true})); return }
     setPlanLoading(true)
     const upcomingExams = (profile?.examDates||[])
-      .filter(e => new Date(e.examDate) > new Date())
-      .sort((a,b) => new Date(a.examDate) - new Date(b.examDate))
+      .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+      .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+      .sort((a,b) => a.daysLeft - b.daysLeft)
     const firstExam = upcomingExams[0]
     const lastExam  = upcomingExams[upcomingExams.length-1]
     const weeksUntilFirst = firstExam
-      ? Math.max(1, Math.ceil((new Date(firstExam.examDate)-new Date())/(7*86400000)))
+      ? Math.max(1, Math.ceil(firstExam.daysLeft / 7))
       : 12
     const res = await generateStudyPlan({
       subjects:       profile?.subjects||[],
@@ -480,7 +482,7 @@ export default function AIAdvisor() {
               {(profile?.examDates||[]).length > 0 ? (
                 <div style={{display:'flex',alignItems:'flex-start',gap:8,padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--success-pale)',border:'1.5px solid var(--success-border)',color:'var(--success)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
                   <Check size={13} style={{flexShrink:0,marginTop:2}}/>
-                  <span>{(profile.examDates||[]).filter(e=>new Date(e.examDate)>new Date()).length} upcoming exam dates found — plan will be capped to your exam period</span>
+                  <span>{(profile.examDates||[]).filter(e=>daysUntilExam(e.examDate)!=null&&daysUntilExam(e.examDate)>=0).length} upcoming exam dates found — plan will be capped to your exam period</span>
                 </div>
               ) : (
                 <div style={{padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--warning-pale)',border:'1.5px solid var(--warning-border)',color:'var(--warning)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
@@ -606,11 +608,12 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
     subjects.forEach((subj, si) => {
       if (!studyPlan.toLowerCase().includes(subj.toLowerCase())) return
       const examEntry = examDates
-        .filter(e => e.subject === subj && new Date(e.examDate) > today)
-        .sort((a,b) => new Date(a.examDate) - new Date(b.examDate))[0]
-      const examDate  = examEntry ? new Date(examEntry.examDate) : null
-      const weeksAway = examDate
-        ? Math.max(1, Math.ceil((examDate - today) / (7*86400000)))
+        .filter(e => e.subject === subj)
+        .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+        .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+        .sort((a,b) => a.daysLeft - b.daysLeft)[0]
+      const weeksAway = examEntry
+        ? Math.max(1, Math.ceil(examEntry.daysLeft / 7))
         : maxWeek
       const sessionsPerSubj = Math.max(2, Math.floor(weeksAway * 2 / Math.max(subjects.length, 1)))
       const intervalDays    = Math.max(1, Math.floor((weeksAway * 7) / sessionsPerSubj))
