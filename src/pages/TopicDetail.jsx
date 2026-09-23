@@ -24,9 +24,10 @@ import {
   getTopicNoteFromCache, generateTopicNote, saveTopicNoteToCache, incrementTopicNoteViews,
 } from '../utils/ai'
 import {
-  getNotes, saveNote, deleteNote, getPaperAttempts, autoCompleteQuest, awardXP,
+  getNotes, saveNote, deleteNote, getPaperAttempts, getMistakes, autoCompleteQuest, awardXP,
   runBadgeAudit, checkTopicNoteLimit, incrementTopicNoteUsage,
 } from '../utils/firestore'
+import { computeTopicRecommendations } from '../utils/recommendations'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { subjectColour } from '../data/subjects'
 import { componentForSubject } from '../data/illustrationThemes'
@@ -37,7 +38,7 @@ import toast from 'react-hot-toast'
 import {
   ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote, Pencil,
   ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,
-  BookOpen, RotateCcw, Eye, EyeOff,
+  BookOpen, RotateCcw, Eye, EyeOff, Target,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import './Topics.css'
@@ -117,6 +118,7 @@ export default function TopicDetail() {
   const [tab, setTab] = useState('overview')
   const [notes, setNotes] = useState([])
   const [attempts, setAttempts] = useState([])
+  const [mistakes, setMistakes] = useState([])
 
   const [advice, setAdvice] = useState('')
   const [loadingAdvice, setLoadingAdvice] = useState(false)
@@ -151,12 +153,14 @@ export default function TopicDetail() {
     setLoading(true)
     const snap = await getDoc(doc(db, 'users', user.uid, 'topics', topicId))
     setTopic(snap.exists() ? { id: snap.id, ...snap.data() } : null)
-    const [allNotes, allAttempts] = await Promise.all([
+    const [allNotes, allAttempts, allMistakes] = await Promise.all([
       getNotes(user.uid),
       getPaperAttempts(user.uid),
+      getMistakes(user.uid, null),
     ])
     setNotes(allNotes.filter(n => n.topicId === topicId))
     setAttempts(allAttempts)
+    setMistakes(allMistakes)
     setLoading(false)
   }
 
@@ -312,6 +316,12 @@ export default function TopicDetail() {
   const trend = computeTrend(history)
   const paperLabel = topic.paper != null && topic.paper !== '' ? paperName(topicBoard, topicLevel, topic.subjectId, String(topic.paper)) : null
 
+  // Same deterministic scorer Calendar.jsx's "Recommended topics" uses — called here with just
+  // this one topic so the reasons are specific to it, not a re-derivation of the logic.
+  const recommendation = computeTopicRecommendations({
+    topics: [topic], mistakes, examDates: profile?.examDates || [], limit: 1,
+  })[0]
+
   // Best-effort cross-reference: past-paper questions the student tagged with a
   // topic string that overlaps this one. Free-text tagging means this is fuzzy,
   // not authoritative — labelled as such in the UI.
@@ -402,6 +412,23 @@ export default function TopicDetail() {
       {tab === 'overview' && (
         <div className="topic-overview-grid">
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Recommended next action — only shown when computeTopicRecommendations finds a
+                real reason (low confidence, exam proximity, unresolved mistake, or staleness).
+                No reason found means no card, rather than a manufactured "you're all good". */}
+            {recommendation && (
+              <div className="card" style={{ borderColor: 'var(--accent)', borderWidth: 1.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Target size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Why this topic matters right now</span>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {recommendation.reasons.map((r, i) => (
+                    <li key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Confidence */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
