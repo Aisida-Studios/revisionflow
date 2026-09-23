@@ -2,6 +2,11 @@
 // All badge definitions for RevisionFlow
 // NOTE: exports BADGE_LIST and BADGE_MAP (not BADGES) to avoid name clash with subjects.js
 
+// daysUntilExam parses "YYYY-MM-DD" as a local date — never new Date(examDate) here, which
+// parses as UTC midnight and (in BST) is already in the past by the time anyone in the UK
+// checks it, so a same-day exam would never trigger the exam_week XP multiplier below.
+import { daysUntilExam } from '../utils/examUtils'
+
 export const BADGE_LIST = [
   // ── Milestones ──────────────────────────────────────────────────────────────
   { id: 'first_session',    name: 'First Step',       icon: '🚀', lucideIcon: 'Rocket',        xp: 50,   desc: 'Log your first revision session',                   category: 'milestone', hint: 'Go to Calendar and log a session' },
@@ -80,9 +85,10 @@ export function calculateXPWithMultipliers(baseXP, profile) {
   if ([0, 6].includes(new Date().getDay())) multiplier *= XP_MULTIPLIERS.weekend
 
   const nextExam = (profile?.examDates || [])
-    .filter(e => new Date(e.examDate) > new Date())
-    .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))[0]
-  if (nextExam && (new Date(nextExam.examDate) - new Date()) / 86400000 <= 7)
+    .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+    .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)[0]
+  if (nextExam && nextExam.daysLeft <= 7)
     multiplier *= XP_MULTIPLIERS.exam_week
 
   return Math.round(baseXP * multiplier)
