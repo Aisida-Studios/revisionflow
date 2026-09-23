@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format, startOfWeek, addDays } from 'date-fns'
+import { daysUntilExam, parseLocalDate } from './examUtils'
 
 const ACCENT = [20,83,45]
 const DARK   = [20,28,24]
@@ -35,8 +36,9 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
 
   // ── Exam Dates section — full table ────────────────────────────────────────
   const upcoming = (examDates||[])
-    .filter(e=>new Date(e.examDate)>=new Date())
-    .sort((a,b)=>new Date(a.examDate)-new Date(b.examDate))
+    .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+    .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+    .sort((a,b) => a.daysLeft - b.daysLeft)
 
   if (upcoming.length) {
     doc.setFillColor(...ACCENT)
@@ -60,7 +62,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     y += 5.5
 
     upcoming.forEach((e,idx)=>{
-      const days = Math.ceil((new Date(e.examDate)-new Date())/86400000)
+      const days = e.daysLeft
       const daysLabel = days <= 0 ? 'TODAY!' : days === 1 ? 'Tomorrow' : `${days} days`
       const isToday = days <= 0
       const isUrgent = days <= 7
@@ -80,7 +82,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
         e.subject || '–',
         e.board || '–',
         `Paper ${e.paper}${e.paperName ? ` (${e.paperName})` : ''}`,
-        format(new Date(e.examDate), 'd MMM yyyy'),
+        format(parseLocalDate(e.examDate), 'd MMM yyyy'),
         daysLabel,
         e.targetGrade ? `Target: ${e.targetGrade}` : '–',
       ]
