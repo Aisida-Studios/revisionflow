@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { filterToCurrentQualification } from './firestore'
+import { daysUntilExam, parseLocalDate } from './examUtils'
 
 const ACCENT  = [20, 83, 45]
 const DARK    = [20, 28, 24]
@@ -134,12 +135,12 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   if ((examDates||[]).length > 0) {
     checkSpace(20)
     sectionHeader('Exam Countdown')
-    const upcoming=(examDates||[]).filter(e=>new Date(e.examDate)>=new Date()).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)).slice(0,10)
+    const upcoming=(examDates||[]).map(e=>({...e,daysLeft:daysUntilExam(e.examDate)})).filter(e=>e.daysLeft!=null&&e.daysLeft>=0).sort((a,b)=>a.daysLeft-b.daysLeft).slice(0,10)
     if(upcoming.length){
       doc.autoTable({
         startY:y,
         head:[['Subject','Paper','Date','Days']],
-        body:upcoming.map(e=>{const d=Math.ceil((new Date(e.examDate)-new Date())/86400000);return[e.subject,`Paper ${e.paper}`,format(new Date(e.examDate),'d MMM yyyy'),d<=0?'Today!':d===1?'Tomorrow':`${d} days`]}),
+        body:upcoming.map(e=>{const d=e.daysLeft;return[e.subject,`Paper ${e.paper}`,format(parseLocalDate(e.examDate),'d MMM yyyy'),d<=0?'Today!':d===1?'Tomorrow':`${d} days`]}),
         margin:{left:M,right:M},
         styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
         headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
