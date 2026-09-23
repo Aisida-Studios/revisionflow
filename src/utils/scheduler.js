@@ -12,6 +12,7 @@
 
 import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek } from 'date-fns'
 import { getPaperSpec } from '../data/paperDatabase'
+import { parseLocalDate } from './examUtils'
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 // Fallback only — getExamDuration checks the real per-board/tier paper database
@@ -264,7 +265,7 @@ export function generateSchedule(options) {
   subjects.forEach(s => {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
-      const d   = new Date(ed.date)
+      const d   = parseLocalDate(ed.date) // never new Date(ed.date) — that's UTC midnight, which in BST can land the exam on the wrong local day and shift every session placed relative to it
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
@@ -651,7 +652,7 @@ export function scheduleFreePeriods(options) {
   subjects.forEach(s => {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
-      const d   = new Date(ed.date)
+      const d   = parseLocalDate(ed.date) // see note on the equivalent block above — same fix
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
