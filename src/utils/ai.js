@@ -4,6 +4,7 @@
 // Never use VITE_MISTRAL_API_KEY — the key must never be in the browser bundle.
 import { recordActivityStreak } from './firestore'
 import { auth, getAppCheckHeader } from '../firebase'
+import { daysUntilExam } from './examUtils'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -240,7 +241,7 @@ export async function generateStudyPlan(userData, uid, isPro) {
 STUDENT DETAILS:
 Subjects: ${subjects?.map(s => `${s.name} (${s.board}, current: ${s.currentGrade || '?'}, target: ${s.targetGrade || 9})`).join(', ')}
 Exam period: ${windowDesc}
-Upcoming exams: ${examDates?.filter(e => new Date(e.examDate) > new Date()).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)).slice(0,12).map(e => `${e.subject} P${e.paper} on ${e.examDate}`).join(', ') || 'Not specified'}
+Upcoming exams: ${(examDates || []).map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) })).filter(e => e.daysLeft != null && e.daysLeft >= 0).sort((a,b) => a.daysLeft - b.daysLeft).slice(0,12).map(e => `${e.subject} P${e.paper} on ${e.examDate}`).join(', ') || 'Not specified'}
 Available hours per week: ${availableHours || 10}
 Focus preference: ${preferences || 'Balanced content and exam practice'}
 
@@ -381,8 +382,11 @@ Provide:
 export async function suggestNextTopic(subject, topicConfidences, examDates, qualification, uid) {
   const qual = qualification || 'GCSE'
   const subjectTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.qualification || qual) === qual) || []
-  const nextExam = examDates?.filter(e => e.subject === subject && new Date(e.examDate) > new Date())
-    .sort((a,b) => new Date(a.examDate) - new Date(b.examDate))[0]
+  const nextExam = (examDates || [])
+    .filter(e => e.subject === subject)
+    .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
+    .filter(e => e.daysLeft != null && e.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)[0]
   const prompt = `Suggest the single most important topic for this student to revise next:
 Subject: ${subject}
 Next exam: ${nextExam ? `${nextExam.examDate} (Paper ${nextExam.paper})` : 'Not specified'}
