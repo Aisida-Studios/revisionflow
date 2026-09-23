@@ -7,6 +7,7 @@ import { db } from '../firebase'
 import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate } from '../utils/scheduler'
 import { getUserTimetable } from '../utils/firestore'
 import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
+import { parseLocalDate } from '../utils/examUtils'
 import { format, addMonths, addWeeks } from 'date-fns'
 import toast from 'react-hot-toast'
 import { X, ChevronRight, ChevronLeft, Download, Check, Clock, Calendar, AlertCircle, Plus, Trash2, Coffee } from 'lucide-react'
@@ -54,7 +55,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
 
   // ── Step 1: Date range ───────────────────────────────────────────────────
   const defaultEnd = examDates.length
-    ? format(new Date(Math.max(...examDates.map(e => new Date(e.examDate)))), 'yyyy-MM-dd')
+    ? format(new Date(Math.max(...examDates.map(e => parseLocalDate(e.examDate)))), 'yyyy-MM-dd')
     : format(addMonths(new Date(), 3), 'yyyy-MM-dd')
 
   const [startDate,     setStartDate]     = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -226,8 +227,8 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
     let sessions = generateSchedule({
       subjects: builtSubjects,
       availability,
-      startDate:          new Date(startDate),
-      endDate:            new Date(endDate),
+      startDate:          parseLocalDate(startDate),
+      endDate:            parseLocalDate(endDate),
       holidays,
       contentRatio,
       examRatio,
@@ -235,7 +236,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
       sessionGap,
       dayCaps,
       maxSessionsPerDay: maxSessionsPerDay === '' ? null : parseInt(maxSessionsPerDay),
-      extendedFromDate:   extendedDate ? new Date(extendedDate) : null,
+      extendedFromDate:   parseLocalDate(extendedDate),
       includeEmergency:   emergencySessions,
       dynamicRatio,
       topicFocus,
@@ -252,8 +253,8 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
       const rawFreeSessions = scheduleFreePeriods({
         subjects: builtSubjects,
         timetable,
-        startDate: new Date(startDate),
-        endDate:   new Date(endDate),
+        startDate: parseLocalDate(startDate),
+        endDate:   parseLocalDate(endDate),
         holidays,
         contentDuration,
         sessionGap,
