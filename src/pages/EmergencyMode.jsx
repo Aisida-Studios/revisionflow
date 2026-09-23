@@ -11,6 +11,7 @@ import { checkAndAwardBadge } from '../utils/firestore'
 import { callAI } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
 import { daysUntilExam } from '../utils/calendar'
+import { parseLocalDate } from '../utils/examUtils'
 import AIOutput from '../components/AIOutput'
 import { AlertTriangle, Zap, ChevronLeft, Clock, Target, Brain, FileText } from 'lucide-react'
 
@@ -19,7 +20,11 @@ import { AlertTriangle, Zap, ChevronLeft, Clock, Target, Brain, FileText } from 
 function getDaysUntil(dateStr) { return daysUntilExam(dateStr) }
 
 function getHoursUntil(dateStr) {
-  return Math.round((new Date(dateStr) - new Date()) / 3600000)
+  // parseLocalDate, not new Date(dateStr) — a "YYYY-MM-DD" exam date parses as UTC midnight,
+  // which in BST is an hour out and can flip which side of midnight "today" falls on.
+  const examDay = parseLocalDate(dateStr)
+  if (!examDay) return null
+  return Math.round((examDay - new Date()) / 3600000)
 }
 
 // ── AI call ──────────────────────────────────────────────────────────────────
@@ -118,7 +123,7 @@ export default function EmergencyMode() {
         const d = getDaysUntil(e.examDate)
         return d >= 0 && d <= 7
       })
-      .sort((a, b) => new Date(a.examDate) - new Date(b.examDate))
+      .sort((a, b) => getDaysUntil(a.examDate) - getDaysUntil(b.examDate))
   }, [profile])
 
   // Auto-select the closest exam
