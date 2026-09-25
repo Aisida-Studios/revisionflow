@@ -8,10 +8,10 @@ import {
   getResourceRecommendations,
   generateStudyPlan,
   getTopicAdvice,
-  predictGrade,
-  suggestNextTopic,
 } from '../utils/ai'
-import { checkAndAwardBadge } from '../utils/firestore'
+import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, filterToCurrentQualification } from '../utils/firestore'
+import { computeSubjectPredictions } from '../utils/gradeInsights'
+import { computeTopicRecommendations } from '../utils/recommendations'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
@@ -51,13 +51,11 @@ export default function AIAdvisor() {
 
   // Grade predictor
   const [gradeSubj,   setGradeSubj]   = useState('')
-  const [gradePred,   setGradePred]   = useState('')
-  const [gradeLoad,   setGradeLoad]   = useState(false)
+  const [gradePred,   setGradePred]   = useState(null)
 
   // Next topic suggestion
   const [nextSubj,    setNextSubj]    = useState('')
-  const [nextTopic,   setNextTopic]   = useState('')
-  const [nextLoad,    setNextLoad]    = useState(false)
+  const [nextTopic,   setNextTopic]   = useState(null)
 
   // Techniques
   const [techSubj,    setTechSubj]    = useState('')
@@ -66,6 +64,31 @@ export default function AIAdvisor() {
 
   const bottomRef = useRef()
   const [userContext, setUserContext] = useState('')
+
+  // Real data for Grade Predictor / Next Topic below -- same fetch shape Dashboard.jsx and
+  // Emergency Mode use, so a subject can't show a different estimate in different places.
+  const [topics,        setTopics]        = useState([])
+  const [paperAttempts, setPaperAttempts] = useState([])
+  const [quizResults,   setQuizResults]   = useState([])
+  const [mistakes,      setMistakes]      = useState([])
+
+  useEffect(() => {
+    if (!user || !profile) return
+    Promise.all([
+      getTopicsWithConfidence(user.uid, profile?.subjects || []),
+      getPaperAttempts(user.uid),
+      getQuizResults(user.uid),
+      getMistakes(user.uid),
+    ]).then(([t, p, q, m]) => {
+      setTopics(t || []); setPaperAttempts(p || []); setQuizResults(q || []); setMistakes(m || [])
+    }).catch(() => {})
+  }, [user, profile])
+
+  const currentPapers  = filterToCurrentQualification(paperAttempts, profile?.subjects || [])
+  const currentQuizzes = filterToCurrentQualification(quizResults, profile?.subjects || [])
+  // Same call, same inputs, as Dashboard.jsx's own predicted-grade widget -- a lookup into
+  // the one shared calculation, not a second estimate that could disagree with it.
+  const allPredictions = profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []
 
   useEffect(() => { buildContext() }, [profile, user])
 
@@ -188,37 +211,19 @@ export default function AIAdvisor() {
     setPlanLoading(false)
   }
 
-  async function handleGradePredict() {
+  function handleGradePredict() {
     if (!gradeSubj) return
-    setGradeLoad(true)
-    // Fetch paper attempts and topic confidences for this subject
-    let papers = [], topics = []
-    try {
-      const [ps, ts] = await Promise.all([
-        getDocs(collection(db,'users',user.uid,'paperAttempts')),
-        getDocs(collection(db,'users',user.uid,'topics')),
-      ])
-      papers = ps.docs.map(d=>d.data())
-      topics = ts.docs.map(d=>d.data())
-    } catch(e) {}
-    const subj = profile?.subjects?.find(s=>s.name===gradeSubj)
-    const res = await predictGrade(gradeSubj, papers, topics, getSubjectQualification(subj, profile), user?.uid)
-    setGradePred(res.text||res.error||'')
-    setGradeLoad(false)
+    setGradePred(allPredictions.find(p => p.subject === gradeSubj) || null)
   }
 
-  async function handleNextTopic() {
+  function handleNextTopic() {
     if (!nextSubj) return
-    setNextLoad(true)
-    let topics = [], examDates = profile?.examDates || []
-    try {
-      const ts = await getDocs(collection(db,'users',user.uid,'topics'))
-      topics = ts.docs.map(d=>d.data())
-    } catch(e) {}
-    const subj = profile?.subjects?.find(s => s.name === nextSubj)
-    const res = await suggestNextTopic(nextSubj, topics, examDates, getSubjectQualification(subj, profile), user?.uid)
-    setNextTopic(res.text||res.error||'')
-    setNextLoad(false)
+    const subjectTopics = topics.filter(t => t.subjectId === nextSubj)
+    const subjectMistakes = mistakes.filter(m => m.subject === nextSubj && !m.resolved)
+    const rec = computeTopicRecommendations({
+      topics: subjectTopics, mistakes: subjectMistakes, examDates: profile?.examDates || [], limit: 1,
+    })[0]
+    setNextTopic(rec || null)
   }
 
   async function handleTechniques() {
@@ -340,14 +345,27 @@ export default function AIAdvisor() {
                 {subjects.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleGradePredict} disabled={gradeLoad||!gradeSubj}>
-              {gradeLoad?'Predicting…':'Predict grade'}
+            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleGradePredict} disabled={!gradeSubj}>
+              Show estimate
             </button>
           </div>
           <div className="ap-tool-output">
-            {gradeLoad && <div className="loading-center"><div className="spinner"/></div>}
-            {gradePred && <AIOutput text={gradePred} label="Grade Prediction" />}
-            {!gradeLoad && !gradePred && (
+            {gradePred && (
+              <div className="card" style={{padding:'20px 22px'}}>
+                <div style={{fontSize:'2.2rem',fontWeight:800,color:'var(--success)',marginBottom:6}}>{gradePred.grade}</div>
+                <p style={{margin:0,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
+                  {gradePred.percentage}% blended estimate, based on your RevisionFlow data
+                  ({gradePred.sources.papers} paper{gradePred.sources.papers!==1?'s':''}, {gradePred.sources.quizzes} quiz{gradePred.sources.quizzes!==1?'zes':''}, {gradePred.sources.topicsRated} rated topic{gradePred.sources.topicsRated!==1?'s':''}). Not an official prediction — ask in Chat for ideas on what would move it.
+                </p>
+              </div>
+            )}
+            {gradeSubj && !gradePred && (
+              <div className="ap-tool-output-empty">
+                <Target size={30} style={{opacity:0.3}} />
+                Not enough data yet for {gradeSubj} — log a past paper, quiz, or rate a few topics' confidence first
+              </div>
+            )}
+            {!gradeSubj && (
               <div className="ap-tool-output-empty">
                 <Target size={30} style={{opacity:0.3}} />
                 Pick a subject and predict your likely grade
@@ -362,7 +380,7 @@ export default function AIAdvisor() {
         <div className="ap-tool-layout">
           <div className="card">
             <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Brain size={18} color="var(--accent-light)"/> What Should I Revise Next?</h4>
-            <p style={{marginBottom:16,fontSize:'0.875rem'}}>AI picks your highest-priority topic based on confidence ratings, exam proximity, and recent mistakes.</p>
+            <p style={{marginBottom:16,fontSize:'0.875rem'}}>Uses your confidence ratings, exam proximity, and recent mistakes — the same calculation your Calendar recommendations use.</p>
             <div className="form-group">
               <label className="label">Subject</label>
               <select className="select" value={nextSubj} onChange={e=>setNextSubj(e.target.value)}>
@@ -370,14 +388,26 @@ export default function AIAdvisor() {
                 {subjects.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleNextTopic} disabled={nextLoad||!nextSubj}>
-              {nextLoad?'Thinking…':'Suggest topic'}
+            <button className="btn btn-primary" style={{width:'100%'}} onClick={handleNextTopic} disabled={!nextSubj}>
+              Suggest topic
             </button>
           </div>
           <div className="ap-tool-output">
-            {nextLoad && <div className="loading-center"><div className="spinner"/></div>}
-            {nextTopic && <AIOutput text={nextTopic} label="Topic Suggestion" />}
-            {!nextLoad && !nextTopic && (
+            {nextTopic && (
+              <div className="card" style={{padding:'20px 22px'}}>
+                <div style={{fontWeight:800,fontSize:'1.1rem',marginBottom:8}}>{nextTopic.topic}</div>
+                <ul style={{margin:0,paddingLeft:18,display:'flex',flexDirection:'column',gap:4}}>
+                  {nextTopic.reasons.map((r,i)=><li key={i} style={{fontSize:'0.85rem',color:'var(--text-secondary)'}}>{r}</li>)}
+                </ul>
+              </div>
+            )}
+            {nextSubj && !nextTopic && (
+              <div className="ap-tool-output-empty">
+                <Brain size={30} style={{opacity:0.3}} />
+                Nothing stands out for {nextSubj} right now — rate a few topics' confidence to get suggestions here
+              </div>
+            )}
+            {!nextSubj && (
               <div className="ap-tool-output-empty">
                 <Brain size={30} style={{opacity:0.3}} />
                 Pick a subject to get your next topic
