@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { useAuth } from '../context/AuthContext'
 import {
-  checkAndAwardBadge, autoCompleteQuest,
+  checkAndAwardBadge, autoCompleteQuest, getTopicsWithConfidence,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
@@ -12,7 +12,8 @@ import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashc
 import { getSubjectQualification, subjectColour } from '../data/subjects'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
-import { buildDueQueue, nextSchedule, daysOverdue } from '../utils/spacedRepetition'
+import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'
+import { generateFlashcardsPDF } from '../utils/pdfFlashcards'
 import AIOutput from '../components/AIOutput'
 import CommandWordHint from '../components/CommandWordHint'
 import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
@@ -1733,7 +1734,8 @@ function QuizTab({ mySets, uid, profile }) {
 // StudySession already reads and writes, so nothing else in the app needs to change to
 // pick this data up (the mastery filter dropdown, the "struggling" memory-aid nudge).
 function PracticeTab({ mySets, uid }) {
-  const [queue, setQueue] = useState(() => buildDueQueue(mySets))
+  const [batchSize, setBatchSize] = useState(25)
+  const [queue, setQueue] = useState(() => buildDueQueue(mySets).slice(0,25))
   const [idx, setIdx] = useState(0)
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
@@ -1741,10 +1743,10 @@ function PracticeTab({ mySets, uid }) {
   const progressRef = useRef({})
 
   useEffect(() => {
-    setQueue(buildDueQueue(mySets))
+    setQueue(buildDueQueue(mySets).slice(0,batchSize))
     setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
     progressRef.current = {}
-  }, [mySets])
+  }, [mySets, batchSize])
 
   function getProgress(setId) {
     if (!progressRef.current[setId]) {
@@ -1777,7 +1779,7 @@ function PracticeTab({ mySets, uid }) {
   }
 
   function restart() {
-    setQueue(buildDueQueue(mySets)); setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
+    setQueue(buildDueQueue(mySets).slice(0,batchSize)); setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
   }
 
   if (!mySets || !mySets.length) {
@@ -1857,6 +1859,7 @@ function PracticeTab({ mySets, uid }) {
   }
 
   // ── Summary / start screen ──
+  const fullDueCount = buildDueQueue(mySets).length
   const subjectCounts = {}
   queue.forEach(q => { const s = q.subject || 'Other'; subjectCounts[s] = (subjectCounts[s] || 0) + 1 })
   const overdueCount = queue.filter(q => daysOverdue(q.schedule) > 0).length
@@ -1873,8 +1876,13 @@ function PracticeTab({ mySets, uid }) {
         ) : (
           <>
             <Repeat size={26} style={{ color: 'var(--accent-light)', marginBottom: 10 }} />
-            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--accent)', marginBottom: 4 }}>{queue.length}</div>
-            <p style={{ fontWeight: 600, marginBottom: 4 }}>card{queue.length === 1 ? '' : 's'} due for practice</p>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--accent)', marginBottom: 4 }}>{Math.min(fullDueCount,batchSize)}</div>
+            <p style={{ fontWeight: 600, marginBottom: 4 }}>cards in this practice batch</p>
+            {fullDueCount > batchSize && <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', marginBottom:10 }}>{fullDueCount} due overall · the rest can wait for another session</p>}
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,marginBottom:12}}>
+              <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>Batch size</span>
+              {[10,20,25,30].map(n => <button key={n} className={'btn btn-sm '+(batchSize===n?'btn-primary':'btn-secondary')} onClick={()=>setBatchSize(n)}>{n}</button>)}
+            </div>
             {overdueCount > 0 && <p style={{ fontSize: '0.78rem', color: 'var(--warning)', marginBottom: 14 }}>{overdueCount} overdue — these get priority</p>}
             <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
               {Object.entries(subjectCounts).map(([s, n]) => (
@@ -2546,6 +2554,7 @@ export default function Study() {
   const [fcTopic, setFcTopic] = useState('')
   const [fcCount, setFcCount] = useState(10)
   const [fcLoading, setFcLoading] = useState(false)
+  const [weakTopics, setWeakTopics] = useState([])
 
   // My sets
   const [mySets, setMySets] = useState([])
@@ -2595,6 +2604,12 @@ export default function Study() {
   }, [subjects.length])
 
   useEffect(() => { if (user) loadMySets() }, [user])
+  useEffect(() => {
+    if (!user || !profile?.subjects?.length) return
+    getTopicsWithConfidence(user.uid, profile.subjects).then(rows => {
+      setWeakTopics((rows || []).filter(t => t.confidence > 0 && t.confidence <= 2).sort((a,b) => a.confidence-b.confidence).slice(0,8))
+    }).catch(() => setWeakTopics([]))
+  }, [user, profile?.subjects])
   useEffect(() => { if (flashTab === 'public') loadPublicSets() }, [flashTab])
 
   async function loadMySets() {
@@ -2781,6 +2796,18 @@ export default function Study() {
         </div>
       </div>
 
+      {(() => {
+        const untouched = subjectsNotPracticedThisWeek(mySets)
+        if (!untouched.length) return null
+        return (
+          <div className="card" style={{ marginBottom:16, padding:'10px 14px', display:'flex', alignItems:'center', gap:9, borderColor:'var(--border)' }}>
+            <Repeat size={15} color="var(--accent)" />
+            <span style={{fontSize:'0.8rem'}}><strong>Not touched this week:</strong> {untouched.slice(0,3).join(', ')}{untouched.length>3 ? ` +${untouched.length-3} more` : ''}.</span>
+            <button className="btn btn-secondary btn-sm" style={{marginLeft:'auto'}} onClick={()=>setTab('practice')}>Review now</button>
+          </div>
+        )
+      })()}
+
       {/* Main tabs */}
       <div className="rf-tabs-scroll">
         <div className="tabs" style={{ marginBottom: 24, padding: 4 }}>
@@ -2813,6 +2840,18 @@ export default function Study() {
             <div className="card" style={{ maxWidth: 560 }}>
               <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} color="var(--accent-light)" /> Flashcard Generator</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {weakTopics.length > 0 && (
+                  <div style={{padding:'10px 12px',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',background:'var(--bg-surface-2)'}}>
+                    <div style={{fontSize:'0.75rem',fontWeight:700,marginBottom:6}}>Low-confidence topic</div>
+                    <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                      {weakTopics.slice(0,4).map(t => (
+                        <button key={t.id || t.subjectId+t.name} className="btn btn-secondary btn-sm" onClick={()=>{setFcSubject(t.subjectId);setFcTopic(t.name)}}>
+                          {t.subjectId} · {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div><label className="label">Subject</label>
                   <select className="select" value={fcSubject} onChange={e => setFcSubject(e.target.value)}>
                     <option value="">Select…</option>
@@ -2891,6 +2930,7 @@ export default function Study() {
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                            <button className="btn btn-ghost btn-icon btn-sm" title="Export / print PDF" onClick={() => generateFlashcardsPDF(set)}><Download size={13} /></button>
                             <button className="btn btn-ghost btn-icon btn-sm" title="Edit set" onClick={() => setShowEdit(set)}><Edit3 size={13} /></button>
                             <button className="btn btn-ghost btn-icon btn-sm" title={set.isPublic ? 'Make private' : 'Make public'} onClick={() => handleTogglePublic(set)}>
                               {set.isPublic ? <Globe size={13} style={{ color: 'var(--success)' }} /> : <Lock size={13} />}
