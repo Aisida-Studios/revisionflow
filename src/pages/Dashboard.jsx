@@ -20,7 +20,7 @@ const BADGE_ICONS = {
 }
 
 import { useAuth } from '../context/AuthContext'
-import ProGate, { useIsPro } from '../components/ProGate'
+import { useIsPro } from '../components/ProGate'
 import Skeleton from '../components/Skeleton'
 import DailyQuests from '../components/DailyQuests'
 import EmergencyBanner from '../components/EmergencyBanner'
@@ -35,8 +35,7 @@ import {
 } from '../utils/firestore'
 import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
-import { computeSubjectPredictions } from '../utils/gradeInsights'
-import { computeTopicRecommendations } from '../utils/recommendations'
+import { computeSubjectPredictions, computeWeakTopics } from '../utils/gradeInsights'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
 import { gradeColour } from '../utils/calendar'
 import { LEVELS, levelFromXP, SUBJECT_COLOURS } from '../data/subjects'
@@ -217,7 +216,6 @@ export default function Dashboard() {
   const [paperAttempts, setPaperAttempts] = useState([])
   const [quizResults, setQuizResults] = useState([])
   const [topics, setTopics] = useState([])
-  const [mistakes, setMistakes] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
 
   const [refCode, setRefCode] = useState('')
@@ -245,14 +243,12 @@ export default function Dashboard() {
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getTopicsWithConfidence(user.uid, profile?.subjects || []),
-      getMistakes(user.uid),
-    ]).then(([s, p, q, t, m]) => {
+    ]).then(([s, p, q, t]) => {
       if (cancelled) return
       setSessions(s || [])
       setPaperAttempts(p || [])
       setQuizResults(q || [])
       setTopics(t || [])
-      setMistakes(m || [])
       setDataLoading(false)
     }).catch(() => { if (!cancelled) setDataLoading(false) })
     return () => { cancelled = true }
@@ -270,14 +266,7 @@ export default function Dashboard() {
     () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []),
     [topics, currentPapers, currentQuizzes, profile]
   )
-  // Same engine every other "what should I revise" surface in the app uses (Calendar's
-  // recommendations panel, TopicDetail's "why this matters", Emergency Mode, AI Advisor's
-  // Next Topic tab) -- confidence alone was the old signal; this also weighs exam proximity,
-  // unresolved mistakes and staleness, with an explained reason per topic.
-  const recommendations = useMemo(
-    () => computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 4 }),
-    [topics, mistakes, profile?.examDates, sessions]
-  )
+  const weakTopics = useMemo(() => computeWeakTopics(topics, 4), [topics])
   const upcomingExams = useMemo(() => filterUpcomingExams(profile?.examDates || []).slice(0, 4), [profile?.examDates])
 
   const avgConfidence = useMemo(() => {
@@ -288,7 +277,7 @@ export default function Dashboard() {
   }, [topics])
 
   // Grouped by subjectId — the real raw field name on topic docs (confirmed
-  // via computeTopicRecommendations/getTopicsWithConfidence, which both read it
+  // via computeWeakTopics/getTopicsWithConfidence, which both read it
   // directly), not the `.subject` field some older code assumed.
   const subjectOverview = useMemo(() => {
     const bySubject = {}
@@ -332,9 +321,9 @@ export default function Dashboard() {
         return
       }
       try {
-        const freshMistakes = await getMistakes(user.uid)
+        const mistakes = await getMistakes(user.uid)
         const sessionsForPrompt = todaySessions.map((s) => ({ subject: s.subject, type: s.title || 'session' }))
-        const result = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, freshMistakes)
+        const result = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, mistakes)
         if (cancelled) return
         // getDailyAdvice returns {provider, remaining, text, error} like every other ai.js
         // function — .text is the actual briefing, not the object itself.
@@ -576,30 +565,25 @@ export default function Dashboard() {
 
         <div className="card">
           <p className="card-eyebrow">Needs attention</p>
-          {dataLoading ? <Skeleton height={130} /> : (
-            <ProGate feature="priority topics" compact>
-              {recommendations.length ? (
-                <>
-                  <p className="card-sub-line">{recommendations.length} topic{recommendations.length === 1 ? '' : 's'} flagged as priority</p>
-                  <ul className="plain-list">
-                    {recommendations.map((t) => (
-                      <li key={t.id} className="progress-row">
-                        <div className="progress-row-top">
-                          <span>{t.topic}</span>
-                          <span>{t.confidence ? `${t.confidence * 20}%` : '--'}</span>
-                        </div>
-                        <div className="thin-progress">
-                          <div className="thin-progress-fill" style={{ width: `${(t.confidence || 0) * 20}%` }} />
-                        </div>
-                        <p className="plain-row-sub" style={{ marginTop: 3 }}>{t.reasons.join(' - ')}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <EmptyMini text="Nothing flagged — nice work staying on top of things." />
-              )}
-            </ProGate>
+          {dataLoading ? <Skeleton height={130} /> : weakTopics.length ? (
+            <>
+              <p className="card-sub-line">{weakTopics.length} topic{weakTopics.length === 1 ? ' is' : 's are'} below 60% confidence</p>
+              <ul className="plain-list">
+                {weakTopics.map((t) => (
+                  <li key={t.id} className="progress-row">
+                    <div className="progress-row-top">
+                      <span>{t.name}</span>
+                      <span>{t.confidence * 20}%</span>
+                    </div>
+                    <div className="thin-progress">
+                      <div className="thin-progress-fill" style={{ width: `${t.confidence * 20}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <EmptyMini text="Nothing flagged — nice work staying on top of things." />
           )}
           <Link to="/topics" className="card-footer-link">View all weak topics <ArrowRight size={13} /></Link>
         </div>
