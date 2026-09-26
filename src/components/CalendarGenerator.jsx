@@ -133,7 +133,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
   React.useEffect(() => {
     if (!user) return
     getUserTimetable(user.uid)
-      .then(({ days, rotation, holidays: savedHolidays }) => { setTimetable(days || {}); setTimetableRotation(rotation || { enabled: false, evenWeekLabel: 'A' }); setHolidays(Array.isArray(savedHolidays) ? savedHolidays : []) })
+      .then(({ days, rotation }) => { setTimetable(days || {}); setTimetableRotation(rotation || { enabled: false, evenWeekLabel: 'A' }) })
       .catch(() => {}) // no timetable set up yet — freePeriods list is just empty
       .finally(() => setTimetableLoaded(true))
   }, [user])
