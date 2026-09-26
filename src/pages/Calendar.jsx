@@ -869,7 +869,7 @@ export default function Calendar() {
         <div className="card rf-missed-panel">
           <div className="rf-backlog-head">
             <h4><AlertTriangle size={15} color="var(--warning)"/> Missed sessions</h4>
-            <span style={{fontSize:"0.75rem",color:"var(--text-muted)"}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
+            <span style={{fontSize:'0.75rem',color:'var(--text-muted')}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
           </div>
           <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 10px'}}>
             These are still on your calendar but their scheduled time has passed. Move one forward instead of leaving it stranded.
