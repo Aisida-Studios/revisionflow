@@ -14,8 +14,8 @@ import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek }
 import { getPaperSpec } from '../data/paperDatabase'
 import { parseLocalDate } from './examUtils'
 
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
-// Fallback only — getExamDuration checks the real per-board/tier paper database
+// â”€â”€ CONSTANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Fallback only â€” getExamDuration checks the real per-board/tier paper database
 // (paperDatabase.js's getPaperSpec) first. This table only kicks in when that
 // specific board/tier/paper combination isn't in the database.
 const EXAM_DURATIONS = {
@@ -49,7 +49,7 @@ function getExamDuration(subject, paper, board, tier, level = 'GCSE') {
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 
-// ── SESSION NAMING ────────────────────────────────────────────────────────────
+// â”€â”€ SESSION NAMING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const EXAM_YEARS = [2024, 2023, 2022, 2021, 2019, 2018, 2017, 2016]
 
 function getSessionName(subject, paper, stype, counters, focusTopic) {
@@ -59,15 +59,15 @@ function getSessionName(subject, paper, stype, counters, focusTopic) {
 
   if (stype === 'content') {
     return focusTopic
-      ? `${subject} Paper ${paper} – ${focusTopic}`
-      : `${subject} Paper ${paper} – Content Revision`
+      ? `${subject} Paper ${paper} â€“ ${focusTopic}`
+      : `${subject} Paper ${paper} â€“ Content Revision`
   } else {
     const yr = EXAM_YEARS[idx % EXAM_YEARS.length]
-    return `${subject} Paper ${paper} – Exam Practice: ${yr} Paper`
+    return `${subject} Paper ${paper} â€“ Exam Practice: ${yr} Paper`
   }
 }
 
-// ── TIME HELPERS ──────────────────────────────────────────────────────────────
+// â”€â”€ TIME HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function dayStartMin(date, availability) {
   const dow = date.getDay() // 0=Sun
   const dayName = DAY_NAMES[dow]
@@ -93,7 +93,7 @@ function dayEndMin(date, availability, useExtended) {
     ? (() => { const [h, m] = avail.endTime.split(':').map(Number); return h * 60 + m })()
     : null
   if (useExtended) {
-    // A floor, not a fallback — respects a later custom end time if the student already
+    // A floor, not a fallback â€” respects a later custom end time if the student already
     // set one, but guarantees at least 22:00 during study leave even if their normal
     // setting for this day is earlier (e.g. a normal 19:00 finish becomes 22:00).
     return Math.max(explicit ?? 0, 22 * 60)
@@ -103,10 +103,15 @@ function dayEndMin(date, availability, useExtended) {
 
 function isHoliday(date, holidays) {
   if (!holidays) return false
+  const day = new Date(date)
+  day.setHours(0,0,0,0)
   return holidays.some(h => {
-    const start = new Date(h.start)
-    const end   = new Date(h.end)
-    return date >= start && date <= end
+    if (!h?.start || !h?.end) return false
+    const [sy, sm, sd] = String(h.start).slice(0,10).split('-').map(Number)
+    const [ey, em, ed] = String(h.end).slice(0,10).split('-').map(Number)
+    const start = new Date(sy, sm-1, sd); start.setHours(0,0,0,0)
+    const end = new Date(ey, em-1, ed); end.setHours(23,59,59,999)
+    return day >= start && day <= end
   })
 }
 
@@ -120,11 +125,11 @@ function getWeekMon(d) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd')
 }
 
-// ── MULTI-WINDOW AVAILABILITY ─────────────────────────────────────────────────
-// A day can now have more than one study window (e.g. 15:00–17:00 AND 19:00–22:00), not
+// â”€â”€ MULTI-WINDOW AVAILABILITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// A day can now have more than one study window (e.g. 15:00â€“17:00 AND 19:00â€“22:00), not
 // just a single start/end. rangeToMinutes/getBaseWindows/getFreePeriodWindows/mergeWindows/
 // getDayWindows turn whatever shape availability + the school timetable are in into one
-// sorted, non-overlapping list of {start,end} minute windows for a given date — everything
+// sorted, non-overlapping list of {start,end} minute windows for a given date â€” everything
 // downstream (the day loop) just walks that list, so it behaves exactly as before when
 // there's only one window.
 function rangeToMinutes(range) {
@@ -145,7 +150,7 @@ function getBaseWindows(date, availability, useExtended) {
       .map(rangeToMinutes)
       .sort((a, b) => a.start - b.start)
     if (!ranges.length) return []
-    // Extended-hours floor (study leave) only pushes out the LAST window of the day — it
+    // Extended-hours floor (study leave) only pushes out the LAST window of the day â€” it
     // stretches the final finish time, it doesn't also stretch an earlier, separate block
     // like a lunchtime slot.
     if (useExtended) {
@@ -155,7 +160,7 @@ function getBaseWindows(date, availability, useExtended) {
     return ranges
   }
 
-  // Legacy single startTime/endTime fields — unchanged behaviour via the existing helpers,
+  // Legacy single startTime/endTime fields â€” unchanged behaviour via the existing helpers,
   // so availability saved before multi-range support still works exactly as before.
   const start = dayStartMin(date, availability)
   if (start === null) return []
@@ -163,10 +168,10 @@ function getBaseWindows(date, availability, useExtended) {
   return [{ start, end }]
 }
 
-// Fortnight (Week A / Week B) rotation. A period with no `week` field applies every week —
+// Fortnight (Week A / Week B) rotation. A period with no `week` field applies every week â€”
 // that's what every period saved before this feature existed already looks like, so an
 // un-migrated timetable keeps behaving exactly as it did with a single repeating week.
-// `rotation`: { enabled: bool, evenWeekLabel: 'A'|'B' } — which label applies on ISO weeks
+// `rotation`: { enabled: bool, evenWeekLabel: 'A'|'B' } â€” which label applies on ISO weeks
 // with an even week number; the other label applies on odd ones. ISO week number (not a
 // hand-picked anchor date) is what makes this well-defined for any date, past or future,
 // from a single one-off "is this week A or B?" answer at setup time.
@@ -203,7 +208,7 @@ function mergeWindows(windows) {
 }
 
 // includeFreePeriods gates whether the student's school-timetable free periods count as
-// extra study windows on top of their normal evening/weekend availability — independent of
+// extra study windows on top of their normal evening/weekend availability â€” independent of
 // that day being "enabled" in availability, since a free period exists at school regardless
 // of whether the student also revises that same evening.
 function getDayWindows(date, availability, timetable, includeFreePeriods, useExtended, rotation) {
@@ -212,27 +217,27 @@ function getDayWindows(date, availability, timetable, includeFreePeriods, useExt
   return mergeWindows([...base, ...free])
 }
 
-// ── MAIN GENERATOR ────────────────────────────────────────────────────────────
+// â”€â”€ MAIN GENERATOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function generateSchedule(options) {
   const {
     subjects,          // [{ name, board, tier, papers: [1,2,3], ratio: [2,1], examDates: [{paper, date}] }]
-    availability,      // { Monday: { enabled, ranges: [{start,end}, ...] }, ... } — or legacy { enabled, startTime, endTime }
+    availability,      // { Monday: { enabled, ranges: [{start,end}, ...] }, ... } â€” or legacy { enabled, startTime, endTime }
     startDate,         // Date
     endDate,           // Date
-    holidays = [],     // [{ start, end }] — full blackout dates, zero sessions scheduled
+    holidays = [],     // [{ start, end }] â€” full blackout dates, zero sessions scheduled
     contentRatio = 2,  // default content sessions per exam session
     examRatio = 1,
     contentDuration = 45,
     sessionGap = 30,
-    dayCaps = [],          // [{ day: 'Tuesday', max: 1 }, ...] — was a single day, now any number
+    dayCaps = [],          // [{ day: 'Tuesday', max: 1 }, ...] â€” was a single day, now any number
     maxSessionsPerDay = null, // NEW: a flat cap applying to every day, independent of dayCaps
     includeEmergency = true,
     extendedFromDate = null, // Date from which end time has a 22:00 floor (not just a fallback)
     dynamicRatio = false,  // NEW: bias a subject toward more exam practice as its exam nears
-    topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } — optional, from real confidence data
+    topicFocus = {},   // { 'Subject-paper': 'Weakest topic name' } â€” optional, from real confidence data
     timetable = null,          // NEW: { Monday: [{ type:'lesson'|'free', label, startTime, endTime, week? }], ... }
     includeFreePeriods = false, // NEW: also treat the timetable's free periods as extra study windows
-    rotation = null,           // NEW: { enabled, evenWeekLabel } — fortnight Week A/B rotation for the timetable
+    rotation = null,           // NEW: { enabled, evenWeekLabel } â€” fortnight Week A/B rotation for the timetable
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -247,7 +252,7 @@ export function generateSchedule(options) {
   const counters    = {}  // session name counters
   const completed   = new Set()  // (subj, paper) whose exam has passed
 
-  // Paper rotation pointers — separate for content and exam
+  // Paper rotation pointers â€” separate for content and exam
   const contentPtr = {}
   const examPtr    = {}
   const typePtr    = {}  // overall content/exam cycle position
@@ -265,7 +270,7 @@ export function generateSchedule(options) {
   subjects.forEach(s => {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
-      const d   = parseLocalDate(ed.date) // never new Date(ed.date) — that's UTC midnight, which in BST can land the exam on the wrong local day and shift every session placed relative to it
+      const d   = parseLocalDate(ed.date) // never new Date(ed.date) â€” that's UTC midnight, which in BST can land the exam on the wrong local day and shift every session placed relative to it
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
@@ -273,7 +278,7 @@ export function generateSchedule(options) {
     })
   })
 
-  // Emergency sessions map: prevDay -> [{subj, paper}]. Gated behind includeEmergency —
+  // Emergency sessions map: prevDay -> [{subj, paper}]. Gated behind includeEmergency â€”
   // left empty when the toggle is off, which naturally makes both the "emergency first"
   // block below and Sunday's emergency-only handling no-ops (nothing to place).
   const emergencyMap = {}
@@ -352,7 +357,7 @@ export function generateSchedule(options) {
   }
 
   // NEW: when dynamicRatio is on, a subject's content:exam balance shifts toward exam
-  // practice as its real exam date gets close — grounded in the same examDateMap used
+  // practice as its real exam date gets close â€” grounded in the same examDateMap used
   // for emergency sessions, not a guess. Falls back to the subject's normal/base ratio
   // whenever there's no exam data or the feature is off.
   function effectiveRatio(subjName, baseRatio, date) {
@@ -387,7 +392,7 @@ export function generateSchedule(options) {
     }
 
     const name = isEmergency
-      ? `EMERGENCY: ${subjName} Paper ${paper} – Final Revision`
+      ? `EMERGENCY: ${subjName} Paper ${paper} â€“ Final Revision`
       : getSessionName(subjName, paper, stype, counters, topicFocus[`${subjName}-${paper}`])
 
     const session = {
@@ -411,7 +416,7 @@ export function generateSchedule(options) {
     return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
   }
 
-  // ── Day loop ────────────────────────────────────────────────────────────
+  // â”€â”€ Day loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   let current = new Date(startDate)
   const end   = new Date(endDate)
 
@@ -425,10 +430,10 @@ export function generateSchedule(options) {
       if (edate < current) completed.add(key.replace('-', '-'))
     })
 
-    // Holiday / unavailable period — a genuine blackout now. Previously this only
+    // Holiday / unavailable period â€” a genuine blackout now. Previously this only
     // softened the day-cap rule on the specific capped weekday and did nothing on any
     // other day, so declaring a holiday barely changed what got scheduled. Skips
-    // everything for the day, including emergency sessions and free periods — an
+    // everything for the day, including emergency sessions and free periods â€” an
     // explicitly-declared unavailable period (e.g. a family trip) takes precedence over
     // an exam being close.
     if (isHoliday(current, holidays)) {
@@ -436,7 +441,7 @@ export function generateSchedule(options) {
       continue
     }
 
-    // Sunday: emergency sessions only — a fixed window, not part of the multi-range
+    // Sunday: emergency sessions only â€” a fixed window, not part of the multi-range
     // availability system (free periods don't apply on a Sunday either).
     if (isSunday) {
       const emergencies = emergencyMap[dateStr] || []
@@ -462,7 +467,7 @@ export function generateSchedule(options) {
       continue
     }
 
-    // Day cap(s) — was a single hardcoded Tuesday-only rule; now any number of days can
+    // Day cap(s) â€” was a single hardcoded Tuesday-only rule; now any number of days can
     // each have their own max, and an optional flat maxSessionsPerDay applies everywhere.
     // The cap is per DAY, so it's tracked once here and shared across all of today's windows.
     const dayCapForToday = dayCapMap[dow]
@@ -471,7 +476,7 @@ export function generateSchedule(options) {
     const capLimit = isDayCapped ? Math.min(...effectiveCap) : Infinity
 
     let slotsUsed = 0
-    // Emergencies are shifted off the front as they're placed — one that doesn't fit in
+    // Emergencies are shifted off the front as they're placed â€” one that doesn't fit in
     // the current window is retried in the next window rather than lost for the day.
     let emergencies = [...(emergencyMap[dateStr] || [])]
 
@@ -502,7 +507,7 @@ export function generateSchedule(options) {
     if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
 
     // Built once per day, then walked across as many windows as it takes rather than
-    // restarting per window — each subject still gets at most one placement attempt per day.
+    // restarting per window â€” each subject still gets at most one placement attempt per day.
     let ordered = []
     if (preExamSubjs.length === 0) {
       const notSeen = activeSubjects
@@ -525,7 +530,7 @@ export function generateSchedule(options) {
       while (emergencies.length && curMin < endMin && !(isDayCapped && slotsUsed >= capLimit)) {
         const { subj, paper } = emergencies[0]
         const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
-        if (!result) break // doesn't fit here — leave it for the next window
+        if (!result) break // doesn't fit here â€” leave it for the next window
         sessions.push(result.session)
         curMin = result.newMin
         slotsUsed++
@@ -547,7 +552,7 @@ export function generateSchedule(options) {
               const result = placeSession(current, curMin, endMin, subj, paper, 'content')
               if (result) { sessions.push(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
             }
-            break // window exhausted — move to the next one, preExamI carries over
+            break // window exhausted â€” move to the next one, preExamI carries over
           }
           const result = placeSession(current, curMin, endMin, subj, paper, stype)
           if (result) {
@@ -561,7 +566,7 @@ export function generateSchedule(options) {
         }
       } else {
         while (orderedIdx < ordered.length) {
-          if (curMin + CONTENT_DUR > endMin) break // window exhausted — same subject retried next window
+          if (curMin + CONTENT_DUR > endMin) break // window exhausted â€” same subject retried next window
           if (isDayCapped && slotsUsed >= capLimit) break
 
           const subj = ordered[orderedIdx]
@@ -607,14 +612,14 @@ export function generateSchedule(options) {
   return sessions
 }
 
-// ── FREE PERIOD SCHEDULER ──────────────────────────────────────────────────────
+// â”€â”€ FREE PERIOD SCHEDULER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Deliberately a separate function rather than folded into generateSchedule()'s day loop:
 // free periods are a supplementary, opt-in layer sourced from the school timetable (not the
 // Availability step), and keeping it independent means the "use my free periods" toggle is
-// just "call this too, and merge its output in" — turning it on or off never touches
+// just "call this too, and merge its output in" â€” turning it on or off never touches
 // generateSchedule's own day-caps, emergency handling, or paper-rotation state.
 //
-// Its paper-rotation pointers are intentionally separate from generateSchedule's own —
+// Its paper-rotation pointers are intentionally separate from generateSchedule's own â€”
 // a free-period session and an evening session on the same day can occasionally cover the
 // same paper. That's an accepted trade-off for keeping the two passes independent rather
 // than threading shared mutable state between two functions called from two different places.
@@ -628,7 +633,7 @@ export function scheduleFreePeriods(options) {
     contentDuration = 45,
     sessionGap = 30,
     topicFocus = {},
-    rotation = null,   // { enabled, evenWeekLabel } — fortnight Week A/B rotation for the timetable
+    rotation = null,   // { enabled, evenWeekLabel } â€” fortnight Week A/B rotation for the timetable
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -652,7 +657,7 @@ export function scheduleFreePeriods(options) {
   subjects.forEach(s => {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
-      const d   = parseLocalDate(ed.date) // see note on the equivalent block above — same fix
+      const d   = parseLocalDate(ed.date) // see note on the equivalent block above â€” same fix
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
@@ -710,7 +715,7 @@ export function scheduleFreePeriods(options) {
       isEmergency: false,
       completed: false,
       source: 'generated',
-      // Distinguishes these for display only — same 'generated' source, so the existing
+      // Distinguishes these for display only â€” same 'generated' source, so the existing
       // "replace previously generated sessions" logic in CalendarGenerator.jsx still cleans
       // these up too when the student regenerates their schedule.
       viaFreePeriod: true,
@@ -792,7 +797,7 @@ export function scheduleFreePeriods(options) {
   return sessions
 }
 
-// ── PREFERENCE DEFAULTS ───────────────────────────────────────────────────────
+// â”€â”€ PREFERENCE DEFAULTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const SCHEDULE_DEFAULTS = {
   contentRatio: 2,
   examRatio: 1,
