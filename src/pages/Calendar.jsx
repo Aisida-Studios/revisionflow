@@ -13,7 +13,7 @@ import { collection, getDocs, deleteDoc, doc, addDoc, serverTimestamp, writeBatc
 import { db } from '../firebase'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV, hoursBySubject, formatDuration } from '../utils/calendar'
-import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
+import { filterUpcomingExams, countdownLabel, countdownUrgency, daysUntilExam } from '../utils/examUtils'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import CalendarGenerator from '../components/CalendarGenerator'
@@ -72,6 +72,7 @@ export default function Calendar() {
   const [importParsed, setImportParsed] = useState([])
   const [importing,    setImporting]    = useState(false)
   const [clearing,     setClearing]     = useState(false)
+  const [draggingId, setDraggingId] = useState(null)
   const [loading,      setLoading]      = useState(true)
   // Recommendations default ON (matches the brief's checked "Include recommendations") but
   // are fully controllable — persisted to the profile so the choice survives across devices,
@@ -340,6 +341,71 @@ export default function Calendar() {
     }
   }
 
+  function isPastSession(s) {
+    if (s.isTask || s.completed || !s.date) return false
+    const nowDateStr = localDateStr(new Date())
+    if (s.date < nowDateStr) return true
+    if (s.date > nowDateStr) return false
+    return !!s.start && s.start < format(new Date(), 'HH:mm')
+  }
+
+  const missedSessions = sessions
+    .filter(isPastSession)
+    .sort((a,b) => (a.date+a.start).localeCompare(b.date+b.start))
+
+  async function recoverSession(session, targetDate = localDateStr(new Date())) {
+    try {
+      const duration = parseInt(session.duration) || 45
+      const start = session.start || '17:00'
+      const startDt = new Date(`${targetDate}T${start}`)
+      await updateSession(user.uid, session.id, {
+        date: targetDate,
+        start,
+        startTime: startDt.toISOString(),
+        endTime: new Date(startDt.getTime() + duration * 60000).toISOString(),
+      })
+      await loadSessions()
+      toast.success(`Moved "${session.title || session.subject}" to ${format(parseLocalDate(targetDate), 'd MMM')}`)
+    } catch (err) {
+      toast.error('Could not reschedule session: ' + err.message)
+    }
+  }
+
+  async function handleDropOnDate(e, date) {
+    e.preventDefault()
+    if (view !== 'week') return
+    const raw = e.dataTransfer.getData('text/plain')
+    if (!raw) return
+    const dragged = sessions.find(s => (s._docId || s.id) === raw)
+    if (!dragged) return
+    setDraggingId(null)
+    const targetDate = format(date, 'yyyy-MM-dd')
+    try {
+      if (dragged.isTask) {
+        const oldStart = dragged.taskStartDate || dragged.date
+        const oldEnd = dragged.taskEndDate || dragged.date
+        const diff = Math.round((parseLocalDate(oldEnd)-parseLocalDate(oldStart))/86400000)
+        const newEnd = format(new Date(parseLocalDate(targetDate).getTime()+diff*86400000), 'yyyy-MM-dd')
+        await updateTask(user.uid, dragged.id, { startDate: targetDate, dueDate: newEnd })
+      } else {
+        const start = dragged.start || '17:00'
+        const startDt = new Date(`${targetDate}T${start}`)
+        const duration = parseInt(dragged.duration) || 45
+        await updateSession(user.uid, dragged.id, {
+          date: targetDate,
+          start,
+          startTime: startDt.toISOString(),
+          endTime: new Date(startDt.getTime()+duration*60000).toISOString(),
+        })
+      }
+      await loadSessions()
+      setSelected(date)
+      toast.success('Event rescheduled')
+    } catch (err) {
+      toast.error('Could not reschedule: ' + err.message)
+    }
+  }
+
   // ── Navigation ────────────────────────────────────────────────────────────
   function navigate(dir) {
     if (view === 'month') setCurrent(dir > 0 ? addMonths(current, 1) : subMonths(current, 1))
@@ -400,6 +466,8 @@ export default function Calendar() {
   const upcomingItems = [...upcomingExams, ...upcomingLogged]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
+
+  const examStrip = upcomingExams.slice(0,4)
 
   const recommendations = (recsEnabled && (isPro || isBeta))
     ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
@@ -468,6 +536,24 @@ export default function Calendar() {
         )}
       </div>
 
+
+      {view !== 'timetable' && examStrip.length > 0 && (
+        <div className="rf-cal-exam-strip">
+          <span className="rf-cal-exam-strip-label">Upcoming exams</span>
+          {examStrip.map(e => {
+            const days = daysUntilExam(e.date)
+            return (
+              <button key={e.id} className="rf-cal-exam-strip-item" onClick={() => setSelected(parseLocalDate(e.date))}>
+                <span className="rf-cal-exam-strip-dot" style={{background:subjectColour(e.subject)}} />
+                <strong>{e.subject}</strong>
+                <span>{e.meta}</span>
+                <span className={days <= 7 ? 'is-urgent' : ''}>{countdownLabel(e.date)}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {view === 'timetable' ? (
         <CalendarTimetable user={user} profile={profile} />
       ) : (
@@ -488,7 +574,9 @@ export default function Calendar() {
               return (
                 <div key={i}
                   className={`rf-cal-cell${isToday(date)?' is-today':''}${otherMonth?' is-other-month':''}${isSel?' is-selected':''}`}
-                  onClick={()=>setSelected(date)}>
+                  onClick={()=>setSelected(date)}
+                  onDragOver={view === 'week' ? e => e.preventDefault() : undefined}
+                  onDrop={view === 'week' ? e => handleDropOnDate(e, date) : undefined}>
                   <span className="rf-cal-date">{format(date,'d')}</span>
 
                   {dayExams.length > 0 && (
@@ -541,13 +629,17 @@ export default function Calendar() {
                           <span className="t">Exam</span><span className="s">{e.subject} · Paper {e.paper}</span>
                         </div>
                       ))}
-                      {ds.slice(0,2).map((s,si)=>(
-                        <div key={si} className="rf-cal-week-item" style={{borderLeftColor:s.isTask?s.taskColor:subjectColour(s.subject)}}>
+                      {ds.slice(0, view==='week' ? ds.length : 2).map((s,si)=>(
+                        <div key={si} className="rf-cal-week-item"
+                          draggable
+                          onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('text/plain', s._docId || s.id); setDraggingId(s._docId || s.id) }}
+                          onDragEnd={() => setDraggingId(null)}
+                          style={{borderLeftColor:s.isTask?s.taskColor:subjectColour(s.subject), cursor:'grab', opacity:draggingId === (s._docId || s.id) ? 0.45 : 1}}>
                           <span className="t">{s.isTask ? 'Task' : (s.start || s.type || 'Session')}</span>
                           <span className="s">{s.title || s.subject}</span>
                         </div>
                       ))}
-                      {(dayExams.length+ds.length) > 3 && <span className="rf-cal-more">+{(dayExams.length+ds.length)-3} more</span>}
+                      {view !== 'week' && (dayExams.length+ds.length) > 3 && <span className="rf-cal-more">+{(dayExams.length+ds.length)-3} more</span>}
                     </div>
                   )}
                 </div>
@@ -772,6 +864,30 @@ export default function Calendar() {
           </>
         )}
       </div>
+
+      {missedSessions.length > 0 && (
+        <div className="card rf-missed-panel">
+          <div className="rf-backlog-head">
+            <h4><AlertTriangle size={15} color="var(--warning)"/> Missed sessions</h4>
+            <span style={{fontSize:'0.75rem',color:'var(--text-muted')}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
+          </div>
+          <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 10px'}}>
+            These are still on your calendar but their scheduled time has passed. Move one forward instead of leaving it stranded.
+          </p>
+          <div className="rf-backlog-list">
+            {missedSessions.slice(0,6).map(s => (
+              <div key={s.id} className="rf-backlog-item">
+                <div style={{width:7,height:7,borderRadius:'50%',background:subjectColour(s.subject),flexShrink:0}}/>
+                <span className="rf-backlog-title">{s.title || s.subject}</span>
+                <span className="rf-backlog-meta">{format(parseLocalDate(s.date),'d MMM')}</span>
+                <button className="btn btn-secondary btn-sm" onClick={() => recoverSession(s)}>
+                  Move to today
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Backlog — tasks with no date, and unresolved mistakes, absorbed from Tasks.jsx /
           Mistakes.jsx so they're manageable here without needing a separate page. */}
