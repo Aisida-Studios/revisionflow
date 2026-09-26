@@ -7,9 +7,8 @@ import { getISOWeek } from 'date-fns'
 import { getUserTimetable, saveUserTimetable } from '../utils/firestore'
 import { weekLabelForDate } from '../utils/scheduler'
 import { formatDuration } from '../utils/calendar'
-import { generateSchoolTimetablePDF } from '../utils/pdfTimetable'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, X, BookOpen, Coffee, Repeat, CalendarOff, Download } from 'lucide-react'
+import { Plus, Trash2, Pencil, X, BookOpen, Coffee, Repeat } from 'lucide-react'
 
 const DEFAULT_ROTATION = { enabled: false, evenWeekLabel: 'A' }
 
@@ -28,8 +27,6 @@ function makeId() {
 export default function CalendarTimetable({ user, profile }) {
   const [timetable, setTimetable] = useState({})
   const [rotation,  setRotation]  = useState(DEFAULT_ROTATION)
-  const [holidays, setHolidays] = useState([])
-  const [holidayForm, setHolidayForm] = useState({ start: '', end: '', label: '' })
   const [viewingWeek, setViewingWeek] = useState('A') // which week's periods are shown/edited
   const [loading,   setLoading]   = useState(true)
   const [editing,   setEditing]   = useState(null) // { day, period? } | null
@@ -37,11 +34,10 @@ export default function CalendarTimetable({ user, profile }) {
   useEffect(() => {
     if (!user) return
     getUserTimetable(user.uid)
-      .then(({ days, rotation: savedRotation, holidays: savedHolidays }) => {
+      .then(({ days, rotation: savedRotation }) => {
         setTimetable(days || {})
         const r = savedRotation || DEFAULT_ROTATION
         setRotation(r)
-        setHolidays(Array.isArray(savedHolidays) ? savedHolidays : [])
         // Default to whichever week it actually is today, so opening the tab shows the
         // relevant week's periods first rather than always defaulting to "A".
         if (r.enabled) setViewingWeek(weekLabelForDate(new Date(), r) || 'A')
@@ -90,35 +86,6 @@ export default function CalendarTimetable({ user, profile }) {
     updateRotation({ ...rotation, enabled: false })
   }
 
-  async function saveHolidays(next) {
-    const cleaned = next
-      .filter(h => h?.start && h?.end && h.end >= h.start)
-      .sort((a, b) => a.start.localeCompare(b.start))
-    setHolidays(cleaned)
-    try {
-      await saveUserTimetable(user.uid, timetable, undefined, cleaned)
-    } catch {
-      toast.error('Could not save holiday dates — please try again')
-    }
-  }
-
-  function addHoliday(e) {
-    e.preventDefault()
-    if (!holidayForm.start || !holidayForm.end || holidayForm.end < holidayForm.start) return
-    const next = [...holidays, {
-      id: makeId(),
-      start: holidayForm.start,
-      end: holidayForm.end,
-      label: holidayForm.label.trim() || 'School holiday',
-    }]
-    setHolidayForm({ start: '', end: '', label: '' })
-    saveHolidays(next)
-  }
-
-  function deleteHoliday(id) {
-    saveHolidays(holidays.filter(h => h.id !== id))
-  }
-
   function savePeriod(day, period) {
     const existing = timetable[day] || []
     const alreadyThere = existing.some(p => p.id === period.id)
@@ -147,17 +114,7 @@ export default function CalendarTimetable({ user, profile }) {
   return (
     <div className="rf-timetable-panel">
       <div className="rf-timetable-intro">
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
-          <h4 style={{ marginBottom: 4 }}>Your school timetable</h4>
-          <div style={{display:'flex',gap:6}}>
-            <button className="btn btn-secondary btn-sm" onClick={() => generateSchoolTimetablePDF(profile, timetable, rotation, holidays)}>
-              <Download size={13}/> Print / PDF
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => generateSchoolTimetablePDF(profile, timetable, rotation, holidays, true)}>
-              Blank template
-            </button>
-          </div>
-        </div>
+        <h4 style={{ marginBottom: 4 }}>Your school timetable</h4>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 0 }}>
           Log your lessons and free periods for each day.
           {hasSixthForm && ' Mark study or free periods as "Free period" so the schedule generator can offer to revise in them.'}
@@ -190,32 +147,6 @@ export default function CalendarTimetable({ user, profile }) {
           <button className={`tab${viewingWeek === 'B' ? ' active' : ''}`} onClick={() => setViewingWeek('B')}>Week B</button>
         </div>
       )}
-
-      <div className="card rf-timetable-holidays" style={{ marginBottom: 16 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-          <CalendarOff size={15} color="var(--accent)" />
-          <h5 style={{ margin:0 }}>Term & holiday weeks</h5>
-        </div>
-        <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:'0 0 12px' }}>
-          Add a holiday once and the schedule generator will skip it automatically, including free-period revision.
-        </p>
-        <form onSubmit={addHoliday} style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr)) auto', gap:8, alignItems:'end' }}>
-          <div><label className="label">Start</label><input className="input" type="date" value={holidayForm.start} onChange={e=>setHolidayForm(f=>({...f,start:e.target.value}))} required /></div>
-          <div><label className="label">End</label><input className="input" type="date" value={holidayForm.end} onChange={e=>setHolidayForm(f=>({...f,end:e.target.value}))} required /></div>
-          <div><label className="label">Name</label><input className="input" value={holidayForm.label} onChange={e=>setHolidayForm(f=>({...f,label:e.target.value}))} placeholder="Half term" /></div>
-          <button className="btn btn-secondary btn-sm" type="submit"><Plus size={13}/> Add</button>
-        </form>
-        {holidays.length > 0 && (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:10 }}>
-            {holidays.map(h => (
-              <span key={h.id || h.start+h.end} className="badge badge-grey" style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
-                {h.label || 'School holiday'} · {h.start}–{h.end}
-                <button type="button" className="btn btn-ghost btn-icon" style={{ width:18,height:18,padding:0 }} onClick={()=>deleteHoliday(h.id)} aria-label={`Remove ${h.label || 'holiday'}`}><X size={11}/></button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
 
       <div className="rf-timetable-days">
         {DAYS.map(day => {
