@@ -773,33 +773,6 @@ export default function Calendar() {
         )}
       </div>
 
-<<<<<<< HEAD
-=======
-      {missedSessions.length > 0 && (
-        <div className="card rf-missed-panel">
-          <div className="rf-backlog-head">
-            <h4><AlertTriangle size={15} color="var(--warning)"/> Missed sessions</h4>
-            <span style={{fontSize:'0.75rem',color:'var(--text-muted')}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
-          </div>
-          <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 10px'}}>
-            These are still on your calendar but their scheduled time has passed. Move one forward instead of leaving it stranded.
-          </p>
-          <div className="rf-backlog-list">
-            {missedSessions.slice(0,6).map(s => (
-              <div key={s.id} className="rf-backlog-item">
-                <div style={{width:7,height:7,borderRadius:'50%',background:subjectColour(s.subject),flexShrink:0}}/>
-                <span className="rf-backlog-title">{s.title || s.subject}</span>
-                <span className="rf-backlog-meta">{format(parseLocalDate(s.date),'d MMM')}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => recoverSession(s)}>
-                  Move to today
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
->>>>>>> parent of 7b909d5 (Fix formatting of missed sessions message)
       {/* Backlog — tasks with no date, and unresolved mistakes, absorbed from Tasks.jsx /
           Mistakes.jsx so they're manageable here without needing a separate page. */}
       <div className="rf-backlog-panel">

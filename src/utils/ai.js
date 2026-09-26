@@ -352,55 +352,6 @@ export async function chatWithAI(messages, userContext, uid) {
   return callAIChat(messages.slice(-10), systemWithContext, uid, 'advisorChat', 2000)
 }
 
-export async function predictGrade(subject, paperAttempts, topicConfidences, qualification, uid) {
-  const qual = qualification || 'GCSE'
-  // Attempts from a subject's previous qualification are archived rather than deleted (see
-  // qualificationSwitch.js) — exclude them so a GCSE paper can't feed into an AS-Level/A-Level
-  // prediction. Same reasoning for topics logged before the switch.
-  const subjectAttempts = paperAttempts?.filter(a => a.subject === subject && !a.archived) || []
-  const weakTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.qualification || qual) === qual && (t.confidence||3) <= 2) || []
-  const exampleRange = qual === 'GCSE' ? 'e.g. grade 7-8' : qual === 'AS-Level' ? 'e.g. B-C' : 'e.g. B-C'
-  const scaleNote = qual === 'GCSE'
-    ? 'Grades are numeric 9 (highest) to 1 (lowest).'
-    : qual === 'AS-Level'
-      ? 'Grades are A (highest) to E (lowest) — AS-Level does not award an A*.'
-      : 'Grades are A* (highest) to E (lowest).'
-  const prompt = `Predict the likely ${qual} final grade for this student:
-Subject: ${subject}
-Qualification: ${qual}. ${scaleNote}
-Paper attempts: ${JSON.stringify(subjectAttempts.slice(0,6).map(a => ({year:a.year,paper:a.paper,percentage:a.percentage,grade:a.grade})))}
-Weak topics (confidence ≤2/5): ${weakTopics.map(t => t.name).join(', ') || 'None logged'}
-
-Provide:
-1. Predicted grade range (${exampleRange}) with confidence level
-2. What would push the grade up
-3. What risks pulling it down
-4. The single most impactful thing to work on right now`
-  return callAI(prompt, SYSTEM, 1800, uid)
-}
-
-export async function suggestNextTopic(subject, topicConfidences, examDates, qualification, uid) {
-  const qual = qualification || 'GCSE'
-  const subjectTopics = topicConfidences?.filter(t => t.subjectId === subject && (t.qualification || qual) === qual) || []
-  const nextExam = (examDates || [])
-    .filter(e => e.subject === subject)
-    .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
-    .filter(e => e.daysLeft != null && e.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft)[0]
-  const prompt = `Suggest the single most important topic for this student to revise next:
-Subject: ${subject}
-Next exam: ${nextExam ? `${nextExam.examDate} (Paper ${nextExam.paper})` : 'Not specified'}
-Topic confidence ratings:
-${subjectTopics.sort((a,b)=>(a.confidence||3)-(b.confidence||3)).slice(0,15).map(t => `- ${t.name}: ${t.confidence||3}/5`).join('\n')}
-
-Recommend ONE specific topic and explain:
-1. Why this topic should be next (exam proximity + confidence gap)
-2. How to structure a 45-minute revision session on it
-3. Specific resources to use
-4. What a grade 9 answer looks like for exam questions on this topic`
-  return callAI(prompt, SYSTEM, 1800, uid)
-}
-
 export async function markAnswer(subject, board, level, paper, question, markAllocation, studentAnswer, uid) {
   const isLevelBased = markAllocation >= 6
   const isMaths = subject === 'Mathematics' || subject === 'Further Mathematics'
