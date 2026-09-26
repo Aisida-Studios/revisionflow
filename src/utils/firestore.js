@@ -525,25 +525,11 @@ export const deleteTask = (uid, id) =>
 ========================= */
 
 export const saveNote = async (uid, note) => {
-  const { id, ...data } = note
-  if (id) {
-    // Editing an existing note. Previously this always went through addDoc below, which
-    // ignored the id field entirely (addDoc always creates a new document) — every "edit"
-    // was silently creating a duplicate note and awarding another +10 XP for it, leaving the
-    // original note orphaned in Firestore. Update in place instead; no XP for editing your
-    // own existing note, since that isn't a new piece of revision activity.
-    await updateDoc(doc(db, 'users', uid, 'notes', id), data)
-    return id
-  }
   const ref = await addDoc(collection(db, 'users', uid, 'notes'), {
-    ...data,
+    ...note,
     createdAt: serverTimestamp(),
   })
-  // A trivial/empty note shouldn't earn the same XP as a real one — previously this fired
-  // unconditionally on every save with no length check at all.
-  if ((data.content || '').trim().length >= 20) {
-    await awardXP(uid, 10, 'Note saved')
-  }
+  await awardXP(uid, 10, 'Note saved')
   await autoCompleteQuest(uid, 'add_note')
   await recordActivityStreak(uid)
   return ref.id
