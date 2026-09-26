@@ -1,6 +1,6 @@
 /* src/pages/Calendar.css
    Page-scoped styles for the Calendar redesign. All colour, radius, shadow and type
-   tokens are read from styles/globals.css — nothing here redefines a shared primitive
+   tokens are read from styles/globals.css â€” nothing here redefines a shared primitive
    (.btn/.card/.modal/.input/.badge/.tabs etc.), it only adds calendar-specific layout
    classes so the page doesn't have to live entirely in inline styles. Every accent use
    goes through var(--accent*) so the 10-theme system in data/themes.js still applies. */
@@ -13,7 +13,7 @@
 .rf-cal-subtitle { color: var(--text-muted); font-size: 0.875rem; }
 .rf-cal-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-/* ── Toolbar: month/week nav + view toggle ─────────────────────────────── */
+/* â”€â”€ Toolbar: month/week nav + view toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-cal-toolbar {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin-bottom: 16px; padding: 8px 10px 8px 14px;
@@ -28,7 +28,7 @@
 .rf-cal-view-toggle { margin-left: auto; flex-shrink: 0; }
 .rf-cal-count { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
-/* ── Two-column layout ─────────────────────────────────────────────────── */
+/* â”€â”€ Two-column layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 336px; gap: 18px; align-items: start; }
 @media (max-width: 1024px) { .rf-cal-layout { grid-template-columns: 1fr; } }
 
@@ -78,7 +78,7 @@
 .rf-cal-dot.is-exam { width: 7px; height: 7px; box-shadow: 0 0 0 1.5px var(--bg-surface), 0 0 0 2.5px currentColor; }
 .rf-cal-more { font-size: 0.58rem; color: var(--text-muted); font-weight: 700; line-height: 1; }
 
-/* Week view — taller cells, small agenda beneath the same dot summary used in month view */
+/* Week view â€” taller cells, small agenda beneath the same dot summary used in month view */
 .rf-cal-grid.is-week .rf-cal-cell { min-height: 190px; }
 .rf-cal-week-agenda { display: none; flex-direction: column; gap: 3px; margin-top: 2px; }
 .rf-cal-week-item {
@@ -97,7 +97,7 @@
 .rf-cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--text-muted); }
 .rf-cal-legend-swatch { width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
 
-/* ── Sidebar ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-side-card { padding: 18px; display: flex; flex-direction: column; min-height: 300px; }
 .rf-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; min-height: 30px; }
 .rf-side-head h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.95rem; }
@@ -107,7 +107,7 @@
 }
 .rf-side-back:hover { color: var(--accent); }
 
-/* "Scheduled hours this week" — always the real current week, shown above whatever else
+/* "Scheduled hours this week" â€” always the real current week, shown above whatever else
    the sidebar is displaying (upcoming list or a selected day's detail). */
 .rf-week-hours { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
 .rf-week-hours h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 0.88rem; }
@@ -143,7 +143,7 @@
 
 .rf-side-footer { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 
-/* ── Recommended topics panel ──────────────────────────────────────────── */
+/* â”€â”€ Recommended topics panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-recs-panel { margin-top: 18px; padding: 18px 20px; }
 .rf-recs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
 .rf-recs-head h4 { display: flex; align-items: center; gap: 8px; margin: 0; }
@@ -159,7 +159,7 @@
 .rf-rec-reason { font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: flex-start; gap: 6px; line-height: 1.45; }
 .rf-rec-reason svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
 
-/* ── Backlog: undated tasks + unresolved mistakes ──────────────────────── */
+/* â”€â”€ Backlog: undated tasks + unresolved mistakes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-backlog-panel { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .rf-backlog-panel { grid-template-columns: 1fr; } }
 .rf-backlog-card { padding: 18px 20px; }
@@ -174,7 +174,7 @@
 .rf-backlog-title { font-weight: 600; font-size: 0.83rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rf-backlog-meta { font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; }
 
-/* ── Event-kind toggle (Add/Edit event modal; reused by the Timetable's period modal) ── */
+/* â”€â”€ Event-kind toggle (Add/Edit event modal; reused by the Timetable's period modal) â”€â”€ */
 .rf-kind-toggle { display: flex; gap: 8px; margin-bottom: 6px; }
 .rf-kind-btn {
   flex: 1; padding: 10px; border-radius: var(--radius-lg); border: 1.5px solid var(--border);
@@ -183,7 +183,7 @@
 }
 .rf-kind-btn.is-active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-light); }
 
-/* ── Timetable tab: school timetable + free periods ────────────────────── */
+/* â”€â”€ Timetable tab: school timetable + free periods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .rf-timetable-panel { display: flex; flex-direction: column; gap: 18px; }
 .rf-timetable-intro { padding: 14px 18px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); }
 .rf-timetable-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; align-items: start; }
@@ -220,7 +220,7 @@
 .rf-timetable-rotation-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .rf-timetable-week-toggle { margin-bottom: 4px; }
 
-/* ── Responsive ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 600px) {
   .rf-cal-toolbar { padding: 6px 8px; gap: 6px; }
   .rf-cal-toolbar-title { font-size: 0.85rem; min-width: 0; flex: 1; }
@@ -228,9 +228,28 @@
   .rf-cal-grid, .rf-cal-weekdays { gap: 3px; }
   .rf-cal-cell { min-height: 50px; padding: 4px 2px 4px; border-radius: 8px; gap: 2px; }
   .rf-cal-date { width: 19px; height: 19px; font-size: 0.7rem; }
-  .rf-cal-chips { display: none; } /* not enough room for text chips — dots carry the info */
+  .rf-cal-chips { display: none; } /* not enough room for text chips â€” dots carry the info */
   .rf-cal-dots { justify-content: center; }
   .rf-cal-weekday { font-size: 0.58rem; padding: 2px 0; }
   .rf-cal-grid.is-week .rf-cal-cell { min-height: 50px; }
   .rf-cal-legend { gap: 10px; }
+}
+
+/* Calendar follow-up features */
+.rf-cal-exam-strip{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:8px 10px;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-surface)}
+.rf-cal-exam-strip-label{font-size:.72rem;font-weight:700;color:var(--text-muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.rf-cal-exam-strip-item{display:flex;align-items:center;gap:6px;border:0;background:var(--bg-surface-2);border-radius:999px;padding:6px 9px;white-space:nowrap;font:inherit;color:var(--text-primary);cursor:pointer;font-size:.72rem}
+.rf-cal-exam-strip-item>span:not(.rf-cal-exam-strip-dot){color:var(--text-muted)}
+.rf-cal-exam-strip-item .is-urgent{color:var(--danger);font-weight:700}
+.rf-cal-exam-strip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rf-missed-panel{margin-bottom:16px}
+@media(max-width:700px){
+  .rf-cal-exam-strip-label{display:none}
+  .rf-cal-exam-strip-item{font-size:.68rem}
+}
+
+@media(max-width:700px){
+  .rf-timetable-holidays form{grid-template-columns:1fr 1fr !important}
+  .rf-timetable-holidays form>div:nth-child(3){grid-column:1 / -1}
+  .rf-timetable-holidays form>button{grid-column:1 / -1}
 }
