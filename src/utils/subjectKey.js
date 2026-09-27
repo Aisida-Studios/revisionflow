@@ -1,154 +1,123 @@
 // src/utils/subjectKey.js
 // ─────────────────────────────────────────────────────────────────────────────
-// Canonical "subject instance" key.
+// Canonical "subject instance" key: one stable identifier for a single
+// board + qualification + subject + tier combination — e.g. AQA GCSE Physics
+// Higher is a different subject instance from OCR GCSE Physics Higher, and
+// from AQA AS-Level Physics. Plain subject NAME ("Physics") is not enough on
+// its own anywhere in this app; this is the thing every record that belongs
+// to one specific subject should carry so it can never be silently blended
+// with another board/qualification/tier's data for the same subject name.
 //
-// A subject instance is board + qualification + subject + tier. The same subject NAME can
-// legitimately mean several different, unrelated things for one student (a different
-// specification, a different set of past papers, a different grade scale) — nothing in this
-// app should treat them as the same bucket of data just because the name string matches.
+// Deliberately reuses utils/topicId.js's qualification tokens rather than
+// re-deriving GCSE/AS-Level/A-Level/BTEC handling a second, slightly
+// different way — topic IDs are already board+qualification-scoped; this is
+// the same idea one level up, without a topic name in it.
 //
-// Format: `${board}|${qualification}|${subject}|${tier}`
-//   'AQA|GCSE|Physics|Higher'   is a different instance from
-//   'OCR|GCSE|Physics|Higher'   and from
-//   'AQA|AS-Level|Physics|N/A'  and from
-//   'AQA|A-Level|Physics|N/A'
+// WJEC/Eduqas note: this file resolves both aliases to one shared board token
+// (EDUQAS_WJEC) purely so a record's subjectKey is stable no matter which of
+// the two names it was originally stored under. This does NOT change how
+// data/topics.js or data/examDates2026.js look up their own board-keyed data
+// — those already have their own working (if inconsistent with each other)
+// WJEC/Eduqas alias tables, and rewriting either is a separate, larger job
+// that needs its own careful verification, not bundled into this file.
+// 'Cambridge' is intentionally left as its own distinct token — never merged
+// into OCR or any other board — so legacy Cambridge records stay identifiable
+// as their own (unsupported) thing rather than being silently corrupted into
+// a supported board's data.
 //
-// Deliberately NOT the client-generated `profile.subjects[i].id` — that's an arbitrary id
-// assigned when the subject was added to this one student's profile, not a description of
-// what the subject actually IS, so it's neither stable nor comparable across records or
-// students.
-//
-// Tier only genuinely exists for some GCSE subjects (Foundation/Higher — see isTiered() in
-// data/subjects.js); AS-Level and A-Level are never tiered. Callers that don't have tier data
-// at all (e.g. flashcard sets — see deriveSetBoardLevel below, which never captures tier)
-// should build/compare keys with { includeTier: false } rather than let a genuinely-missing
-// tier field default to "N/A" and mismatch against a real tier value on the other side of
-// the comparison.
-//
-// This module does NOT canonicalise board-name aliases (e.g. 'WJEC' vs 'Eduqas', or the
-// currently-offered-but-unsupported 'Cambridge' board) — it keys on whatever board string a
-// record already carries. Unifying board aliases app-wide is separate, larger work; once
-// that lands, feed its canonical board value in here rather than a raw stored string.
-//
-// STATUS: this module is currently wired into spacedRepetition.js's
-// subjectsNotPracticedThisWeek() only. Rolling it out to topics, paper attempts, quiz
-// results, sessions, mistakes, notes, exam dates, calendar items, recommendations,
-// analytics, predicted grades, AI context, scheduler state, paper structures and question
-// attempts is tracked separately and not yet done — see the delivery notes.
+// A client-generated subject `id` (profile.subjects[i].id, if one is ever
+// added) must NEVER be used here: it isn't guaranteed stable across edits or
+// a subject being removed and re-added. board+qualification+subject+tier is
+// the only part of a subject that's actually meaningful and worth keying on.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getSubjectQualification } from '../data/subjects'
+import { normalizeQualificationToken } from './topicId'
 
-export const NO_TIER = 'N/A'
-
-function clean(value) {
-  return value === undefined || value === null ? '' : String(value).trim()
+// Local-only alias resolution for key-building — see file header note above.
+const KEY_BOARD_ALIASES = {
+  'WJEC': 'EDUQAS_WJEC', 'wjec': 'EDUQAS_WJEC',
+  'Eduqas': 'EDUQAS_WJEC', 'eduqas': 'EDUQAS_WJEC',
+  'Eduqas/WJEC': 'EDUQAS_WJEC', 'Eduqas / WJEC': 'EDUQAS_WJEC',
 }
 
-function normalizeTier(tier) {
-  const t = clean(tier)
-  return t || NO_TIER
+function sanitize(str) {
+  return String(str || '').replace(/[^a-zA-Z0-9_]/g, '_')
 }
 
-/**
- * Builds the canonical subject-instance key from explicit parts. Returns null if board,
- * qualification or subject is missing — there's no honest key to build from partial data,
- * and silently returning e.g. '|GCSE|Physics|N/A' would risk matching records that don't
- * actually share a board.
- */
-export function buildSubjectKey({ board, qualification, subject, tier } = {}, { includeTier = true } = {}) {
-  const b = clean(board)
-  const q = clean(qualification)
-  const s = clean(subject)
-  if (!b || !q || !s) return null
-  return includeTier ? `${b}|${q}|${s}|${normalizeTier(tier)}` : `${b}|${q}|${s}`
+function boardToken(board) {
+  const raw = String(board || 'AQA').trim()
+  return sanitize(KEY_BOARD_ALIASES[raw] || raw)
 }
 
 /**
- * The subject-instance key for one of the student's own profile.subjects entries. Goes
- * through getSubjectQualification() for the qualification (never reads subject.qualification
- * or profile.qualification directly), so this can never disagree with the rest of the app
- * about what qualification a given profile subject is at.
+ * Builds the canonical subject-instance key. Accepts either a profile.subjects[i]
+ * entry ({ name, board, qualification, tier }) or a Firestore record that already
+ * carries the same information under the names those records commonly use
+ * (subjectId instead of name is typical for topics/mistakes/paper attempts).
+ *
+ * Tier uses the same 'N/A' sentinel already established on profile.subjects[i].tier
+ * (see data/subjects.js's getGradeOptions and every scheduler.js call site) rather
+ * than null/undefined, so a subject with no tier still produces a stable key.
  */
-export function subjectKeyForProfileSubject(subjectEntry, profile, options) {
-  if (!subjectEntry) return null
-  return buildSubjectKey({
-    board: subjectEntry.board,
-    qualification: getSubjectQualification(subjectEntry, profile),
-    subject: subjectEntry.name,
-    tier: subjectEntry.tier,
-  }, options)
+export function buildSubjectKey({ board, qualification, subject, subjectId, name, tier } = {}) {
+  const subjectName = subject || subjectId || name
+  if (!subjectName) return null
+  const qualTok = normalizeQualificationToken(qualification)
+  const tierTok = tier && tier !== 'N/A' ? sanitize(tier) : 'NA'
+  return `${boardToken(board)}|${qualTok}|${sanitize(subjectName)}|${tierTok}`
 }
 
 /**
- * The set of subject-instance keys for every subject the student is CURRENTLY doing — the
- * canonical "current subject instances" that other current-data filters should compare
- * records against, rather than each re-deriving its own notion of "current".
+ * The set of subject-instance keys for everything currently in profile.subjects —
+ * what "is this record current?" checks compare against. qualification/tier fall
+ * back the same way getSubjectQualification (data/subjects.js) already does.
  */
-export function getCurrentSubjectKeys(profile, options) {
-  const keys = new Set()
-  for (const s of profile?.subjects || []) {
-    const key = subjectKeyForProfileSubject(s, profile, options)
-    if (key) keys.add(key)
+export function currentSubjectKeys(profile) {
+  return new Set(
+    (profile?.subjects || [])
+      .map(s => buildSubjectKey({
+        board: s.board,
+        qualification: s.qualification || profile?.qualification,
+        subject: s.name,
+        tier: s.tier,
+      }))
+      .filter(Boolean)
+  )
+}
+
+/**
+ * Whether a record belongs to one of the student's CURRENT subject instances.
+ * - A record that already carries subjectKey is compared directly (cheapest,
+ *   and the only reliable path once records are actually written with one).
+ * - A record with enough fields to derive a key (board/subject + qualification)
+ *   has one derived and compared — this is the bridge for existing records
+ *   written before subjectKey existed.
+ * - A record with neither is never guessed into matching. It's legacy/
+ *   unclassified, not current — callers that need to preserve it for history
+ *   should do so in a separate legacy view, not current-subject analytics.
+ */
+export function isCurrentSubjectInstance(record, profile) {
+  if (!record) return false
+  const keys = currentSubjectKeys(profile)
+  if (record.subjectKey) return keys.has(record.subjectKey)
+  const subjectName = record.subject || record.subjectId || record.name
+  if (subjectName && record.qualification) {
+    return keys.has(buildSubjectKey({ ...record, subject: subjectName }))
   }
-  return keys
+  return false
 }
 
 /**
- * Best-effort subject-instance key for an arbitrary record (a session, mistake, paper
- * attempt, flashcard set, etc.) — uses an explicit record.subjectKey if present, otherwise
- * derives one from record.board/qualification/subject/tier. Returns null when neither is
- * available: callers must treat a null key as "unclassified", never as "belongs to some
- * other qualification" — there's no honest basis to guess either way. A record whose
- * qualification is stored under a different field name (e.g. flashcard sets' `level`) needs
- * that mapped to `qualification` before calling this — see deriveSetBoardLevel below for
- * that specific case.
+ * Filters a list of records down to only the student's current subject
+ * instances, using isCurrentSubjectInstance's same rules. Intended as the
+ * eventual single replacement for the qualification-only
+ * filterToCurrentQualification() — not yet wired in anywhere, since swapping
+ * every call site over needs each one checked against what fields its
+ * records actually carry first (many pre-date subjectKey and only have
+ * board+qualification, some have neither and would silently drop out here
+ * rather than the softer legacy handling filterToCurrentQualification
+ * currently gives them).
  */
-export function deriveRecordSubjectKey(record, options) {
-  if (!record) return null
-  if (record.subjectKey) return clean(record.subjectKey) || null
-  if (record.board && record.qualification && record.subject) {
-    return buildSubjectKey({
-      board: record.board,
-      qualification: record.qualification,
-      subject: record.subject,
-      tier: record.tier,
-    }, options)
-  }
-  return null
-}
-
-/**
- * Whether `record` belongs to one of the student's CURRENT subject instances. Pass a
- * precomputed `currentKeys` (from getCurrentSubjectKeys) when checking many records in a
- * loop, so the profile isn't re-walked on every call.
- */
-export function isCurrentSubjectInstance(record, profile, currentKeys, options) {
-  const keys = currentKeys || getCurrentSubjectKeys(profile, options)
-  const key = deriveRecordSubjectKey(record, options)
-  return !!key && keys.has(key)
-}
-
-// ── Flashcard-set board/qualification derivation ────────────────────────────────────────
-// Relocated verbatim from Study.jsx (previously a local, unexported function) so
-// spacedRepetition.js's subjectsNotPracticedThisWeek() can use the exact same derivation,
-// rather than a second, possibly-drifting copy of this logic, to decide whether a set
-// belongs to a current subject instance. Behaviour is unchanged from the original; only the
-// location moved — Study.jsx now imports this instead of defining it locally.
-//
-// Flashcard sets only carry board+level when they're official/admin-generated
-// (saveOfficialFlashcardSet stamps both) — a regular user's own saveFlashcardSet call never
-// captures them (see firestore.js), so for "my sets" the only honest source is the
-// board/qualification already on that subject's entry in the student's own profile.
-//
-// profile is only meaningful when deriving for the CURRENT user's own sets — for someone
-// else's public set with no stamped board/level, there's no honest source to derive from, so
-// this deliberately falls through to {board: null, level: null} (shown as "any level") rather
-// than guessing based on whoever happens to be viewing it. Callers showing another user's
-// public set must pass null for profile, never the viewer's own.
-export function deriveSetBoardLevel(set, profile) {
-  if (set.board && set.level) return { board: set.board, level: set.level }
-  if (!profile) return { board: null, level: null }
-  const subjMeta = profile?.subjects?.find(s => s.name === set.subject)
-  return { board: subjMeta?.board || null, level: subjMeta ? getSubjectQualification(subjMeta, profile) : null }
+export function filterToCurrentSubjectInstance(records, profile) {
+  return (records || []).filter(r => isCurrentSubjectInstance(r, profile))
 }
