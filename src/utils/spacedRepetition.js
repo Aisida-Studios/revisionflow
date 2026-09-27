@@ -10,6 +10,8 @@
 // so "is this due today" never shifts around a timezone boundary, and so lexicographic
 // string comparison ('2026-08-09' <= '2026-08-10') is also correct chronological order.
 
+import { buildSubjectKey, getCurrentSubjectKeys, deriveSetBoardLevel } from './subjectKey'
+
 export const LEITNER_INTERVALS_DAYS = [0, 1, 3, 7, 16] // index 0 = box 1
 export const MAX_BOX = LEITNER_INTERVALS_DAYS.length
 
@@ -120,4 +122,44 @@ export function buildDueQueue(sets) {
   const notSeen = queue.filter(item => !seenThisWeek.has(item.subject)).sort(practiceSortCompare)
   const seen    = queue.filter(item =>  seenThisWeek.has(item.subject)).sort(practiceSortCompare)
   return [...notSeen, ...seen]
+}
+
+// Subject NAMES (for display in the Study Tools nudge) that the student has at least one
+// flashcard set for, but hasn't actually PRACTICED — completed a flashcard study/practice
+// session on, not merely opened — since the start of this week.
+//
+// "Practiced" means the set's lastStudiedAt (a local YYYY-MM-DD string, stamped only when a
+// student finishes a flashcard study/practice session in any of the six modes — see
+// markSetStudied()/saveMastery() in Study.jsx) falls on or after this Monday. A set with no
+// lastStudiedAt at all has never been practiced, so it counts as not-touched.
+//
+// Only considers sets belonging to one of the student's CURRENT subject instances (matched
+// on board + qualification + subject, via subjectKey — tier is excluded because flashcard
+// sets never carry tier data; see deriveSetBoardLevel). A set left over from a board or
+// qualification the student has since switched away from is silently excluded rather than
+// nagging them about revision that no longer applies, and can never keep a subject name off
+// this list just because a *different*, current-instance set of the same name was touched.
+//
+// sets/profile mirror exactly what Study.jsx already has in scope (mySets, profile) —
+// nothing extra is fetched here.
+export function subjectsNotPracticedThisWeek(sets, profile) {
+  const thisMonday = weekMondayStr(todayStr())
+  const currentKeys = getCurrentSubjectKeys(profile, { includeTier: false })
+
+  // subject NAME -> has at least one current-instance set for that name been practiced this
+  // week? Sticky-true: once any set for a name is touched, later untouched sets of the same
+  // name don't flip it back.
+  const touchedByName = new Map()
+
+  for (const set of sets || []) {
+    if (!set?.subject) continue
+    const { board, level } = deriveSetBoardLevel(set, profile)
+    const key = buildSubjectKey({ board, qualification: level, subject: set.subject }, { includeTier: false })
+    if (!key || !currentKeys.has(key)) continue // not a current subject instance — skip
+
+    const touched = !!set.lastStudiedAt && set.lastStudiedAt >= thisMonday
+    touchedByName.set(set.subject, touched || !!touchedByName.get(set.subject))
+  }
+
+  return [...touchedByName.keys()].filter(name => !touchedByName.get(name)).sort()
 }
