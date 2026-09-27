@@ -156,7 +156,7 @@ export default function Onboarding() {
         const id = buildTopicId(s.board, subjQual, s.name, t.name)
         await setDoc(doc(db,'users',uid,'topics',id), {
           name:t.name, paper:t.paper, subjectId:s.name, board:s.board, qualification:subjQual,
-          confidence:3, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
+          confidence:null, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
         }, { merge:true })
       }
     }
