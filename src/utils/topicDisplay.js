@@ -5,8 +5,12 @@
 // the kind of thing that quietly drifts apart after a few edits in only one file. Kept in
 // one place instead.
 
-export const CONF_LABELS  = ['', 'Struggling', 'Needs work', 'Getting there', 'Good', 'Strong']
-export const CONF_COLOURS = ['', 'var(--danger)', '#f97316', 'var(--warning)', '#84cc16', 'var(--success)']
+// Index 0 is a genuine "not yet rated" state (topic.confidence is null/0/undefined) —
+// not the same as a real confidence-3 self-rating. Every consumer should look this up via
+// `topic.confidence || 0` (never `|| 3`) so an unrated topic gets this neutral treatment
+// instead of silently being displayed/counted as if the student had rated it "OK".
+export const CONF_LABELS  = ['Not rated', 'Struggling', 'Needs work', 'Getting there', 'Good', 'Strong']
+export const CONF_COLOURS = ['var(--text-muted)', 'var(--danger)', '#f97316', 'var(--warning)', '#84cc16', 'var(--success)']
 
 // 'B1 – Cell Structure: Eukaryotic and Prokaryotic Cells' -> 'Cell Structure'.
 // Many (not all) topic names in src/data/topics.js follow this "unit – category: specific"
