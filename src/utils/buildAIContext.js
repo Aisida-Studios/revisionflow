@@ -68,10 +68,12 @@ export function buildAIContext(profile, opts = {}) {
       bySubject[t.subjectId].push(t)
     })
     Object.entries(bySubject).forEach(([subj, ts]) => {
-      const weak = ts.filter(t => t.confidence <= 2).map(t => t.name).slice(0, 5)
-      const strong = ts.filter(t => t.confidence >= 5).map(t => t.name).slice(0, 3)
-      const avg = (ts.reduce((s, t) => s + (t.confidence || 3), 0) / ts.length).toFixed(1)
-      lines.push(`${subj} (avg ${avg}/5):`)
+      const rated = ts.filter(t => t.confidence > 0)
+      const weak = rated.filter(t => t.confidence <= 2).map(t => t.name).slice(0, 5)
+      const strong = rated.filter(t => t.confidence >= 5).map(t => t.name).slice(0, 3)
+      const unratedCount = ts.length - rated.length
+      const avgLabel = rated.length ? `avg ${(rated.reduce((s, t) => s + t.confidence, 0) / rated.length).toFixed(1)}/5` : 'not yet rated'
+      lines.push(`${subj} (${avgLabel}${unratedCount ? `, ${unratedCount} topic${unratedCount === 1 ? '' : 's'} not rated` : ''}):`)
       if (weak.length) lines.push(`  Weak: ${weak.join(', ')}`)
       if (strong.length) lines.push(`  Strong: ${strong.join(', ')}`)
     })
