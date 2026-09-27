@@ -39,9 +39,9 @@ export function confidenceToPercent(confidence) {
 }
 
 // topics: raw docs from getTopicsWithConfidence — { subjectId, confidence, name, board,
-// qualification, updatedAt, ... }. Only confidence <= 2 counts as "weak" — 3 is the
-// default every topic is seeded at (see Topics.jsx handleSeedTopics), not necessarily a
-// genuine self-rating, so treating it as "weak" would flood this list with unrated topics.
+// qualification, updatedAt, ... }. confidence is null/0 until the student actually rates
+// a topic (see Topics.jsx handleSeedTopics) — only a genuine 1-5 rating counts here, so an
+// unrated topic never gets treated as "weak".
 export function computeWeakTopics(topics, limit = 6) {
   return (topics || [])
     .filter(t => (t.confidence || 0) > 0 && t.confidence <= 2 && t.subjectId)
@@ -55,9 +55,8 @@ export function computeWeakTopics(topics, limit = 6) {
 
 // Blends quiz history + past paper scores + confidence ratings into a rough predicted
 // grade, per subject the student has actually done something in. Requires at least one
-// real quiz or paper result — confidence alone (especially the untouched default of 3)
-// isn't real evidence, so a subject with nothing but default-rated topics gets no
-// prediction rather than a fabricated-looking one.
+// real quiz or paper result — confidence alone isn't real evidence on its own (a subject
+// with nothing but unrated topics gets no prediction rather than a fabricated-looking one).
 // Only predicts for the student's CURRENTLY active subjects — a subject dropped entirely (no
 // current entry in profile.subjects, same name or otherwise) is skipped outright, however much
 // history it has. paperAttempts/quizResults/topics should already be filtered to each subject's
@@ -82,7 +81,7 @@ export function computeSubjectPredictions(topics, paperAttempts, quizResults, pr
     const subjTopics = (topics || []).filter(t => t.subjectId === subject)
     const board = subjProfile.board || subjTopics[0]?.board || papers[0]?.board || 'AQA'
 
-    const ratedTopics = subjTopics.filter(t => (t.confidence || 0) > 0 && t.confidence !== 3)
+    const ratedTopics = subjTopics.filter(t => (t.confidence || 0) > 0)
     const confidencePct = ratedTopics.length
       ? ratedTopics.reduce((s, t) => s + confidenceToPercent(t.confidence), 0) / ratedTopics.length
       : null
