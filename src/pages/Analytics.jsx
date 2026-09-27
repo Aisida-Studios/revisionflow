@@ -194,7 +194,7 @@ export default function Analytics() {
   }, [currentTopics])
 
   const weakTopics = useMemo(() =>
-    currentTopics.filter(t => t.confidence <= 2).slice(0, 8)
+    currentTopics.filter(t => t.confidence > 0 && t.confidence <= 2).slice(0, 8)
       .map(t => ({ subject: t.subjectId || '–', topic: t.name || t.topicName || t.topic || t.id, confidence: t.confidence || 1 }))
   , [currentTopics])
 
