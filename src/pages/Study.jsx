@@ -12,7 +12,8 @@ import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashc
 import { getSubjectQualification, subjectColour } from '../data/subjects'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
-import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'
+import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek, todayStr } from '../utils/spacedRepetition'
+import { deriveSetBoardLevel } from '../utils/subjectKey'
 import { generateFlashcardsPDF } from '../utils/pdfFlashcards'
 import AIOutput from '../components/AIOutput'
 import CommandWordHint from '../components/CommandWordHint'
@@ -41,21 +42,11 @@ function SubjectIllustration({ subject, size = 64 }) {
   return <Illustration size={size} />
 }
 
-// Flashcard sets only carry board+level when they're official/admin-generated
-// (saveOfficialFlashcardSet stamps both) — a regular user's own saveFlashcardSet call
-// never captures them (see firestore.js), so for "my sets" the only honest source is the
-// board/qualification already on that subject's entry in the student's own profile. This
-// mirrors exactly how TopicNotesTab already resolves board/level per subject.
-function deriveSetBoardLevel(set, profile) {
-  if (set.board && set.level) return { board: set.board, level: set.level }
-  // profile is only meaningful when deriving for the CURRENT user's own sets (see callers) — for
-  // someone else's public set with no stamped board/level, there's no honest source to derive
-  // from, so this deliberately falls through to {null, null} (shown as "any level") rather than
-  // guessing based on whoever happens to be viewing it.
-  if (!profile) return { board: null, level: null }
-  const subjMeta = profile?.subjects?.find(s => s.name === set.subject)
-  return { board: subjMeta?.board || null, level: subjMeta ? getSubjectQualification(subjMeta, profile) : null }
-}
+// deriveSetBoardLevel now lives in ../utils/subjectKey (imported above) so
+// spacedRepetition.js's subjectsNotPracticedThisWeek() can share the exact same derivation
+// instead of a second, possibly-drifting copy. Behaviour is unchanged — see that file for
+// the full explanation. This mirrors exactly how TopicNotesTab already resolves board/level
+// per subject.
 
 // Used at SAVE time (not view time) to stamp a new set with the saving user's own board/level for
 // that subject, so it has real data instead of needing to be derived/guessed later.
@@ -769,9 +760,25 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
     try {
       const { updateDoc, doc } = await import('firebase/firestore')
       const { db } = await import('../firebase')
-      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery, cardSchedule: schedule })
+      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery, cardSchedule: schedule, lastStudiedAt: todayStr() })
       setCardMastery(mastery)
       setCardSchedule(schedule)
+    } catch(e) {}
+  }
+
+  // Stamps lastStudiedAt for the four modes that don't otherwise write to the set doc on
+  // completion (Learn/Write/Spell/Match/Test — flash mode stamps it as part of saveMastery
+  // above instead, to avoid a second write). Deliberately only called from handleSubDone,
+  // which only fires once a mode's cards are actually finished (see the onDone callsites in
+  // LearnMode/WriteMode/MatchMode/SpellMode/TestMode below) — never on merely opening a set,
+  // per the spec's "not just open" requirement. Errors are swallowed like saveMastery's own
+  // write: a failed stamp shouldn't block the student seeing their results.
+  async function markSetStudied() {
+    if (!uid || !setId) return
+    try {
+      const { updateDoc, doc } = await import('firebase/firestore')
+      const { db } = await import('../firebase')
+      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { lastStudiedAt: todayStr() })
     } catch(e) {}
   }
 
@@ -823,7 +830,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       clearProgress()
     }
   }
-  function handleSubDone(correct,total,missed) { setResults({got:correct,total,mode,missed:missed||[]}); setMode('results') }
+  function handleSubDone(correct,total,missed) { setResults({got:correct,total,mode,missed:missed||[]}); setMode('results'); markSetStudied() }
   function restart(m) { setIdx(0); setScores([]); setResults(null); setMode(m||'select'); clearProgress() }
   function shuffle() { setCards(c=>[...c].sort(()=>Math.random()-.5)); setIdx(0); setScores([]) }
   function quizletCopy() { navigator.clipboard.writeText(cards.map(c=>c.q+'\t'+c.a).join('\n')); setCopied(true); toast.success('Copied!'); setTimeout(()=>setCopied(false),3000) }
@@ -2757,7 +2764,7 @@ export default function Study() {
   // If studying a set
   if (studyCards) return (
     <div className="fade-in">
-      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => { setStudyCards(null); setStudySetId(null) }} onSave={() => setShowSave(true)} uid={user?.uid} setId={studySetId} />
+      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => { setStudyCards(null); setStudySetId(null); loadMySets() }} onSave={() => setShowSave(true)} uid={user?.uid} setId={studySetId} />
       {showSave && <SaveSetModal cards={studyCards} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
     </div>
   )
@@ -2797,7 +2804,7 @@ export default function Study() {
       </div>
 
       {(() => {
-        const untouched = subjectsNotPracticedThisWeek(mySets)
+        const untouched = subjectsNotPracticedThisWeek(mySets, profile)
         if (!untouched.length) return null
         return (
           <div className="card" style={{ marginBottom:16, padding:'10px 14px', display:'flex', alignItems:'center', gap:9, borderColor:'var(--border)' }}>
