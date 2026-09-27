@@ -205,6 +205,23 @@ export default function Calendar() {
     }
   }
 
+  // ── Recover a missed session by moving it to today ────────────────────────
+  // Reschedules onto today's date rather than requiring delete-and-recreate, so the
+  // session keeps its id (and whatever it's already linked to) — only the date changes.
+  async function recoverSession(session) {
+    try {
+      const docId = session._docId || session.id
+      if (!docId) { toast.error('Cannot reschedule: missing ID'); return }
+      const today = localDateStr(new Date())
+      await updateSession(user.uid, docId, { date: today })
+      setSessions(s => s.map(x => (x._docId || x.id) === docId ? { ...x, date: today } : x))
+      toast.success('Moved to today')
+    } catch (err) {
+      toast.error('Could not reschedule: ' + err.message)
+      console.error(err)
+    }
+  }
+
   // ── Clear calendar ────────────────────────────────────────────────────────
   async function clearCalendar(mode) {
     if (!user) { toast.error('Not logged in'); return }
@@ -400,6 +417,14 @@ export default function Calendar() {
   const upcomingItems = [...upcomingExams, ...upcomingLogged]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
+
+  // Study sessions (not tasks — those have their own "no date" backlog panel below, and a
+  // dated-but-overdue task still just shows on its calendar day) that were scheduled for a
+  // day that's already passed and never marked complete, so they don't just quietly slip
+  // into the past unnoticed.
+  const missedSessions = sessions
+    .filter(s => !s.isTask && !s.completed && s.date && s.date < todayStr)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 
   const recommendations = (recsEnabled && (isPro || isBeta))
     ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
@@ -773,13 +798,11 @@ export default function Calendar() {
         )}
       </div>
 
-<<<<<<< HEAD
-=======
       {missedSessions.length > 0 && (
         <div className="card rf-missed-panel">
           <div className="rf-backlog-head">
             <h4><AlertTriangle size={15} color="var(--warning)"/> Missed sessions</h4>
-            <span style={{fontSize:'0.75rem',color:'var(--text-muted')}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
+            <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{missedSessions.length} unfinished past session{missedSessions.length !== 1 ? 's' : ''}</span>
           </div>
           <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 10px'}}>
             These are still on your calendar but their scheduled time has passed. Move one forward instead of leaving it stranded.
@@ -799,7 +822,7 @@ export default function Calendar() {
         </div>
       )}
 
->>>>>>> parent of 7b909d5 (Fix formatting of missed sessions message)
+
       {/* Backlog — tasks with no date, and unresolved mistakes, absorbed from Tasks.jsx /
           Mistakes.jsx so they're manageable here without needing a separate page. */}
       <div className="rf-backlog-panel">
