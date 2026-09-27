@@ -302,7 +302,7 @@ export default function TopicDetail() {
     )
   }
 
-  const conf = topic.confidence || 3
+  const conf = topic.confidence || 0
   const subtopics = topic.subtopics || []
   const subtopicsDone = subtopics.filter(s => s.done).length
   const category = parseCategory(topic.name)
@@ -378,7 +378,7 @@ export default function TopicDetail() {
       {/* Stat row — visible on every tab, not just Overview */}
       <div className="topic-stat-row" style={{ marginBottom: 20 }}>
         <div className="card topic-stat-card">
-          <div className="topic-stat-val" style={{ color: CONF_COLOURS[conf] }}>{conf * 20}%</div>
+          <div className="topic-stat-val" style={{ color: CONF_COLOURS[conf], fontSize: conf ? undefined : '1.1rem' }}>{conf ? `${conf * 20}%` : 'Not rated'}</div>
           <div className="topic-stat-label">Confidence</div>
           {trend && (
             <div className="topic-stat-trend" style={{ color: trend.dir === 'up' ? 'var(--success)' : 'var(--danger)' }}>
@@ -658,10 +658,10 @@ export default function TopicDetail() {
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: CONF_COLOURS[conf] }}>{conf * 20}%</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: CONF_COLOURS[conf] }}>{conf ? `${conf * 20}%` : 'Not rated'}</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Current confidence</div>
             </div>
-            {topic.updatedAt?.toDate && (
+            {conf > 0 && topic.updatedAt?.toDate && (
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 Last rated {format(topic.updatedAt.toDate(), 'd MMM yyyy')}
               </div>
