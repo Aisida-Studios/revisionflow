@@ -105,8 +105,8 @@ export default function Calendar() {
         const start = data.startDate || data.dueDate
         const end   = data.dueDate || data.startDate
         if (!start) { undated.push({ _docId: d.id, ...data, id: d.id, isTask: true }); return }
-        const startDate = new Date(start)
-        const endDate   = new Date(end)
+        const startDate = parseLocalDate(start)
+        const endDate   = parseLocalDate(end)
         // Create one entry per day in the task range
         const current = new Date(startDate)
         while (current <= endDate) {
@@ -115,7 +115,7 @@ export default function Calendar() {
             isTask: true,
             isMultiDay: start !== end,
             taskStartDate: start, taskEndDate: end,
-            date: current.toISOString().slice(0, 10),
+            date: localDateStr(current),
             title: data.title,
             type: 'Task',
             taskColor: data.priority === 'high' ? 'var(--danger)' : data.priority === 'medium' ? 'var(--warning)' : 'var(--success)',
@@ -185,6 +185,21 @@ export default function Calendar() {
     setShowComplete(null)
   }
 
+  // ── Move a missed (past, not completed) session to today ───────────────────
+  async function handleRecoverSession(session) {
+    const docId = session._docId || session.id
+    if (!docId) return
+    const today = localDateStr(new Date())
+    try {
+      await updateSession(user.uid, docId, { date: today })
+      setSessions(s => s.map(x => (x._docId || x.id) === docId ? { ...x, date: today } : x))
+      toast.success('Moved to today')
+    } catch (err) {
+      toast.error('Could not move session: ' + err.message)
+      console.error(err)
+    }
+  }
+
   // ── Delete a single session ───────────────────────────────────────────────
   async function handleDeleteSession(session) {
     try {
@@ -201,23 +216,6 @@ export default function Calendar() {
       }
     } catch (err) {
       toast.error('Delete failed: ' + err.message)
-      console.error(err)
-    }
-  }
-
-  // ── Recover a missed session by moving it to today ────────────────────────
-  // Reschedules onto today's date rather than requiring delete-and-recreate, so the
-  // session keeps its id (and whatever it's already linked to) — only the date changes.
-  async function recoverSession(session) {
-    try {
-      const docId = session._docId || session.id
-      if (!docId) { toast.error('Cannot reschedule: missing ID'); return }
-      const today = localDateStr(new Date())
-      await updateSession(user.uid, docId, { date: today })
-      setSessions(s => s.map(x => (x._docId || x.id) === docId ? { ...x, date: today } : x))
-      toast.success('Moved to today')
-    } catch (err) {
-      toast.error('Could not reschedule: ' + err.message)
       console.error(err)
     }
   }
@@ -418,14 +416,6 @@ export default function Calendar() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
 
-  // Study sessions (not tasks — those have their own "no date" backlog panel below, and a
-  // dated-but-overdue task still just shows on its calendar day) that were scheduled for a
-  // day that's already passed and never marked complete, so they don't just quietly slip
-  // into the past unnoticed.
-  const missedSessions = sessions
-    .filter(s => !s.isTask && !s.completed && s.date && s.date < todayStr)
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-
   const recommendations = (recsEnabled && (isPro || isBeta))
     ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
     : []
@@ -434,6 +424,11 @@ export default function Calendar() {
     : recommendations
   const recSubjectOptions = [...new Set(recommendations.map(r => r.subject))]
   const unresolvedMistakes = mistakes.filter(m => !m.resolved)
+  // Real sessions (not tasks — those have their own "no date" backlog panel below)
+  // whose scheduled day has already passed and were never marked complete.
+  const missedSessions = sessions
+    .filter(s => !s.isTask && !s.completed && s.date && s.date < todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
 
   return (
     <div className="fade-in">
@@ -809,11 +804,11 @@ export default function Calendar() {
           </p>
           <div className="rf-backlog-list">
             {missedSessions.slice(0,6).map(s => (
-              <div key={s.id} className="rf-backlog-item">
+              <div key={s._docId || s.id} className="rf-backlog-item">
                 <div style={{width:7,height:7,borderRadius:'50%',background:subjectColour(s.subject),flexShrink:0}}/>
                 <span className="rf-backlog-title">{s.title || s.subject}</span>
                 <span className="rf-backlog-meta">{format(parseLocalDate(s.date),'d MMM')}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => recoverSession(s)}>
+                <button className="btn btn-secondary btn-sm" onClick={() => handleRecoverSession(s)}>
                   Move to today
                 </button>
               </div>
@@ -821,7 +816,6 @@ export default function Calendar() {
           </div>
         </div>
       )}
-
 
       {/* Backlog — tasks with no date, and unresolved mistakes, absorbed from Tasks.jsx /
           Mistakes.jsx so they're manageable here without needing a separate page. */}
