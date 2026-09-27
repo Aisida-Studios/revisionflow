@@ -66,8 +66,8 @@ export function computeTopicRecommendations({ topics, mistakes = [], examDates =
   }
 
   const scored = (topics || [])
-    // Same "3 is the unrated default, not real evidence" rule computeWeakTopics uses —
-    // a topic nobody has actually rated shouldn't show up as a confident recommendation.
+    // A topic that's never been rated (confidence null/0) shouldn't show up as a
+    // confident recommendation.
     .filter(t => t.subjectId && (t.confidence || 0) > 0)
     .map(t => {
       const reasons = []
@@ -75,7 +75,7 @@ export function computeTopicRecommendations({ topics, mistakes = [], examDates =
 
       // Weakness — the dominant signal. confidence*20 matches the exact percentage
       // language already shown elsewhere in the app (Dashboard's weak-topics widget).
-      const confPct = (t.confidence || 3) * 20
+      const confPct = t.confidence * 20
       if (t.confidence <= 2) {
         score += (3 - t.confidence) * 30
         reasons.push(`${confPct}% confidence — one of your lower-rated topics in ${t.subjectId}`)
@@ -96,10 +96,11 @@ export function computeTopicRecommendations({ topics, mistakes = [], examDates =
         reasons.push(`You logged ${topicMistakes.length > 1 ? topicMistakes.length + ' unresolved mistakes' : 'an unresolved mistake'} here`)
       }
 
-      // Staleness — only meaningful once a topic has actually been rated (updatedAt on a
-      // never-touched default-3 topic is just whenever it was seeded, not "last revised").
+      // Staleness — every topic reaching this point has already been rated at least once
+      // (the filter above excludes never-rated topics), so updatedAt is a genuine
+      // "last touched" signal here, not just a seeding timestamp.
       const idleDays = daysSince(t.updatedAt?.seconds)
-      if (idleDays != null && idleDays >= 14 && t.confidence !== 3) {
+      if (idleDays != null && idleDays >= 14) {
         score += Math.min(15, Math.floor(idleDays / 7) * 3)
         reasons.push(`Not revisited in ${idleDays >= 21 ? Math.floor(idleDays / 7) + ' weeks' : idleDays + ' days'}`)
       }
