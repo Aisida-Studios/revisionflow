@@ -204,7 +204,8 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
       doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...MID)
       doc.text(subj,M,y);y+=5
       const st=activeTopics.filter(t=>t.subjectId===subj)
-      const counts=[1,2,3,4,5].map(c=>st.filter(t=>(t.confidence||3)===c).length)
+      const ratedSt=st.filter(t=>t.confidence>0)
+      const counts=[1,2,3,4,5].map(c=>ratedSt.filter(t=>t.confidence===c).length)
       const maxVal=Math.max(...counts,1)
       const barW=(W-M*2)/5-3,barMaxH=14
       counts.forEach((count,i)=>{
@@ -216,7 +217,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
         doc.setFont('helvetica','normal');doc.setFontSize(5.5)
         doc.text(['1','2','3','4','5'][i],bx+barW/2,y+barMaxH+4,{align:'center'})
       })
-      const weak=st.filter(t=>(t.confidence||3)<=2).slice(0,5)
+      const weak=ratedSt.filter(t=>t.confidence<=2).slice(0,5)
       if(weak.length){doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(38,42,39);doc.text('Weakest:',M,y+8);doc.setFont('helvetica','normal');doc.setTextColor(...DANGER);weak.forEach((t,i)=>doc.text(`• ${t.name}`,M+2,y+13+i*4.5))}
       y+=barMaxH+22
     }
