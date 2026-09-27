@@ -157,14 +157,14 @@ export default function Topics() {
   const [openResources, setOpenResources] = useState(null)
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState([])
-  const [newTopic, setNewTopic] = useState({ name:'', confidence:3, notes:'' })
+  const [newTopic, setNewTopic] = useState({ name:'', confidence:null, notes:'' })
   const [loading, setLoading] = useState(false)
   const [notes, setNotes] = useState([])
   const [noteForm, setNoteForm] = useState({ title:'', content:'' })
   const [editingNote, setEditingNote] = useState(null)
   const [noteSaving, setNoteSaving] = useState(false)
   const [search, setSearch] = useState('')
-  const [confFilter, setConfFilter] = useState(null) // 'weak' | 'mid' | 'strong' | null
+  const [confFilter, setConfFilter] = useState(null) // 'weak' | 'mid' | 'strong' | 'unrated' | null
   const [specTotals, setSpecTotals] = useState({})   // { [subjectName]: total spec topic count }
 
   const subjects   = profile?.subjects?.map(s=>s.name) || []
@@ -261,7 +261,7 @@ export default function Topics() {
       const id = buildTopicId(subj?.board||'AQA', subjQual, selSubj, t.name)
       await setDoc(doc(db,'users',user.uid,'topics',id), {
         name:t.name, paper:t.paper, subjectId:selSubj, board:subj?.board||'AQA', qualification:subjQual,
-        confidence:3, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
+        confidence:null, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
       }, { merge:true })
     }
     await loadTopics()
@@ -277,7 +277,7 @@ export default function Topics() {
     }, { merge:true })
     await awardXP(user.uid, 10, 'Topic added')
     await loadTopics()
-    setNewTopic({ name:'', confidence:3, notes:'' })
+    setNewTopic({ name:'', confidence:null, notes:'' })
     setShowAdd(false)
     toast.success('Topic added +10 XP')
   }
@@ -326,23 +326,26 @@ export default function Topics() {
 
   const subjectSummaries = subjects.map(name => {
     const docs = topicsForSubject(name)
-    const pct = docs.length ? Math.round(docs.reduce((s,t)=>s+(t.confidence||3),0)/docs.length*20) : 0
-    return { name, count: docs.length, total: specTotals[name], pct, subj: profile?.subjects?.find(s=>s.name===name) }
+    const ratedDocs = docs.filter(t => t.confidence > 0)
+    const pct = ratedDocs.length ? Math.round(ratedDocs.reduce((s,t)=>s+t.confidence,0)/ratedDocs.length*20) : null
+    return { name, count: docs.length, total: specTotals[name], pct, ratedCount: ratedDocs.length, subj: profile?.subjects?.find(s=>s.name===name) }
   })
   const visibleSubjectSummaries = searching
     ? subjectSummaries.filter(s => s.name.toLowerCase().includes(searchLower))
     : subjectSummaries
 
-  const weak   = topics.filter(t=>(t.confidence||3)<=2)
-  const mid    = topics.filter(t=>(t.confidence||3)===3)
-  const strong = topics.filter(t=>(t.confidence||3)>=4)
+  const weak    = topics.filter(t=>t.confidence>0 && t.confidence<=2)
+  const mid     = topics.filter(t=>t.confidence===3)
+  const strong  = topics.filter(t=>t.confidence>=4)
+  const unrated = topics.filter(t=>!t.confidence)
 
   let filteredTopics = topics
   if (searching) filteredTopics = filteredTopics.filter(t => t.name.toLowerCase().includes(searchLower) || displayTopicName(t.name).toLowerCase().includes(searchLower))
-  if (confFilter === 'weak')   filteredTopics = filteredTopics.filter(t=>(t.confidence||3)<=2)
-  if (confFilter === 'mid')    filteredTopics = filteredTopics.filter(t=>(t.confidence||3)===3)
-  if (confFilter === 'strong') filteredTopics = filteredTopics.filter(t=>(t.confidence||3)>=4)
-  const sortedFiltered = [...filteredTopics].sort((a,b)=>(a.confidence||3)-(b.confidence||3))
+  if (confFilter === 'weak')    filteredTopics = filteredTopics.filter(t=>t.confidence>0 && t.confidence<=2)
+  if (confFilter === 'mid')     filteredTopics = filteredTopics.filter(t=>t.confidence===3)
+  if (confFilter === 'strong')  filteredTopics = filteredTopics.filter(t=>t.confidence>=4)
+  if (confFilter === 'unrated') filteredTopics = filteredTopics.filter(t=>!t.confidence)
+  const sortedFiltered = [...filteredTopics].sort((a,b)=>(a.confidence||0)-(b.confidence||0))
   const paperGroups = groupTopicsByPaper(sortedFiltered).map(g => {
     const realName = /^\d+$/.test(g.key) ? paperName(selBoard, selLevel, selSubj, g.key) : null
     return realName ? { ...g, label: `${g.label} — ${realName}` } : g
@@ -417,7 +420,7 @@ export default function Topics() {
                 {visibleSubjectSummaries.map(s => {
                   const Illustration = componentForSubject(s.name)
                   const colour = subjectColour(s.name)
-                  const band = s.count ? CONF_COLOURS[Math.max(1,Math.min(5,Math.round(s.pct/20)))] : 'var(--text-muted)'
+                  const band = s.pct != null ? CONF_COLOURS[Math.max(1,Math.min(5,Math.round(s.pct/20)))] : 'var(--text-muted)'
                   return (
                     <button key={s.name} className="card card-interactive subject-summary-card" onClick={()=>{setSelSubj(s.name);setSelected([]);setSearch('')}}>
                       <div className="subject-summary-top">
@@ -428,9 +431,9 @@ export default function Topics() {
                           <div className="subject-summary-name">{s.name}</div>
                           <div className="subject-summary-meta">{s.subj?.board||'AQA'} · {getSubjectQualification(s.subj, profile)}</div>
                         </div>
-                        <div className="subject-summary-pct" style={{color:band}}>{s.count ? `${s.pct}%` : '—'}</div>
+                        <div className="subject-summary-pct" style={{color:band}}>{!s.count ? '—' : s.pct != null ? `${s.pct}%` : 'Not rated'}</div>
                       </div>
-                      <div className="thin-progress"><div className="thin-progress-fill" style={{width:`${s.pct}%`,background:colour}}/></div>
+                      <div className="thin-progress"><div className="thin-progress-fill" style={{width:`${s.pct||0}%`,background:colour}}/></div>
                       <div className="subject-summary-foot">
                         {s.total!=null ? `${Math.min(s.count,s.total)} of ${s.total} spec topics tracked` : `${s.count} topic${s.count!==1?'s':''} tracked`}
                       </div>
@@ -470,7 +473,7 @@ export default function Topics() {
                   {/* Confidence filter chips + view toggle */}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:12}}>
                     <div className="conf-filter-row">
-                      {[{k:'weak',l:'Struggling',c:weak.length,col:'var(--danger)'},{k:'mid',l:'Building',c:mid.length,col:'var(--warning)'},{k:'strong',l:'Strong',c:strong.length,col:'var(--success)'}].map(s=>(
+                      {[{k:'weak',l:'Struggling',c:weak.length,col:'var(--danger)'},{k:'mid',l:'Building',c:mid.length,col:'var(--warning)'},{k:'strong',l:'Strong',c:strong.length,col:'var(--success)'},{k:'unrated',l:'Not rated',c:unrated.length,col:'var(--text-muted)'}].map(s=>(
                         <button key={s.k} className={`conf-filter-chip${confFilter===s.k?' active':''}`} style={{color:s.col}} onClick={()=>setConfFilter(f=>f===s.k?null:s.k)} title={`Show only ${s.l.toLowerCase()} topics`}>
                           <span className="conf-filter-chip-num">{s.c}</span>
                           <span className="conf-filter-chip-label">{s.l}</span>
@@ -545,7 +548,7 @@ export default function Topics() {
                     <div>
                       {(() => {
                         const total = filteredTopics.length
-                        const mastered = filteredTopics.filter(t=>(t.confidence||3)>=4).length
+                        const mastered = filteredTopics.filter(t=>t.confidence>=4).length
                         const pct = total>0?Math.round((mastered/total)*100):0
                         return (
                           <div>
@@ -564,13 +567,13 @@ export default function Topics() {
                               </div>
                             </div>
                             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:6}}>
-                              {[5,4,3,2,1].map(conf=>{
-                                const confTopics = filteredTopics.filter(t=>(t.confidence||3)===conf)
+                              {[5,4,3,2,1,0].map(conf=>{
+                                const confTopics = filteredTopics.filter(t=>(t.confidence||0)===conf)
                                 if(!confTopics.length) return null
-                                const confCols={5:'var(--success)',4:'#84cc16',3:'var(--warning)',2:'#f97316',1:'var(--danger)'}
+                                const confCols={5:'var(--success)',4:'#84cc16',3:'var(--warning)',2:'#f97316',1:'var(--danger)',0:'var(--text-muted)'}
                                 return confTopics.map(t=>(
                                   <div key={t.id} style={{padding:'8px 10px',borderRadius:8,background:`${confCols[conf]}15`,border:`1px solid ${confCols[conf]}40`,cursor:'pointer'}}
-                                    onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={`${displayTopicName(t.name)} — click to increase confidence`}>
+                                    onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={conf===0?`${displayTopicName(t.name)} — not rated yet`:`${displayTopicName(t.name)} — click to increase confidence`}>
                                     <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:4,marginBottom:3}}>
                                       <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3}}>{displayTopicName(t.name)}</div>
                                       <Link to={`/topics/${t.id}`} onClick={e=>e.stopPropagation()} title="Open topic"
@@ -578,7 +581,7 @@ export default function Topics() {
                                         <ExternalLink size={11}/>
                                       </Link>
                                     </div>
-                                    <div style={{display:'flex',gap:2}}>{[1,2,3,4,5].map(n=>(
+                                    <div style={{display:'flex',gap:2}}>{conf===0 ? <span style={{fontSize:'0.68rem',color:'var(--text-muted)'}}>Not rated</span> : [1,2,3,4,5].map(n=>(
                                       <div key={n} style={{width:7,height:7,borderRadius:2,background:conf>=n?confCols[conf]:'var(--bg-hover)'}}/>
                                     ))}</div>
                                   </div>
@@ -593,9 +596,9 @@ export default function Topics() {
                     <div>
                       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:6}}>
                         {sortedFiltered.map(t=>{
-                          const conf = t.confidence||3
-                          const bg = conf===1?'rgba(239,68,68,0.25)':conf===2?'rgba(249,115,22,0.2)':conf===3?'rgba(245,158,11,0.15)':conf===4?'rgba(132,204,22,0.15)':'rgba(34,197,94,0.2)'
-                          const border = conf===1?'rgba(239,68,68,0.5)':conf===2?'rgba(249,115,22,0.4)':conf===3?'rgba(245,158,11,0.3)':conf===4?'rgba(132,204,22,0.3)':'rgba(34,197,94,0.4)'
+                          const conf = t.confidence||0
+                          const bg = conf===0?'var(--bg-hover)':conf===1?'rgba(239,68,68,0.25)':conf===2?'rgba(249,115,22,0.2)':conf===3?'rgba(245,158,11,0.15)':conf===4?'rgba(132,204,22,0.15)':'rgba(34,197,94,0.2)'
+                          const border = conf===0?'var(--border)':conf===1?'rgba(239,68,68,0.5)':conf===2?'rgba(249,115,22,0.4)':conf===3?'rgba(245,158,11,0.3)':conf===4?'rgba(132,204,22,0.3)':'rgba(34,197,94,0.4)'
                           return (
                             <div key={t.id} style={{padding:'8px 10px',borderRadius:'var(--radius-md)',background:bg,border:`1px solid ${border}`,cursor:'pointer',position:'relative'}}
                               title={`${displayTopicName(t.name)} — ${CONF_LABELS[conf]}`}>
@@ -613,7 +616,7 @@ export default function Topics() {
                         })}
                       </div>
                       <div style={{display:'flex',gap:16,marginTop:16,flexWrap:'wrap',fontSize:'0.78rem',color:'var(--text-muted)'}}>
-                        {[[1,'Struggling','var(--danger)'],[2,'Needs work','#f97316'],[3,'Getting there','var(--warning)'],[4,'Good','#84cc16'],[5,'Strong','var(--success)']].map(([n,l,c])=>(
+                        {[[0,'Not rated','var(--text-muted)'],[1,'Struggling','var(--danger)'],[2,'Needs work','#f97316'],[3,'Getting there','var(--warning)'],[4,'Good','#84cc16'],[5,'Strong','var(--success)']].map(([n,l,c])=>(
                           <div key={n} style={{display:'flex',alignItems:'center',gap:4}}>
                             <div style={{width:10,height:10,borderRadius:2,background:c,opacity:0.7}}/>
                             {l}
@@ -679,7 +682,7 @@ export default function Topics() {
                       onClick={()=>setNewTopic(t=>({...t,confidence:n}))} title={CONF_LABELS[n]} aria-label={CONF_LABELS[n]} aria-pressed={newTopic.confidence>=n}/>
                   ))}
                 </div>
-                <span style={{fontSize:'0.78rem',color:CONF_COLOURS[newTopic.confidence],marginTop:4,display:'block'}}>{CONF_LABELS[newTopic.confidence]}</span>
+                <span style={{fontSize:'0.78rem',color:CONF_COLOURS[newTopic.confidence||0],marginTop:4,display:'block'}}>{CONF_LABELS[newTopic.confidence||0]}</span>
               </div>
               <div><label className="label">Notes</label><textarea className="textarea" style={{minHeight:60}} value={newTopic.notes} onChange={e=>setNewTopic(t=>({...t,notes:e.target.value}))}/></div>
               <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
@@ -697,7 +700,7 @@ export default function Topics() {
 // ── Topic row (List view) ───────────────────────────────────────────────────
 function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSetConfidence, onOpenAdvice, loadingAdvice, advice, onToggleResources, resourcesOpen, onDelete }) {
   const navigate = useNavigate()
-  const conf = topic.confidence || 3
+  const conf = topic.confidence || 0
   const cleanName = displayTopicName(topic.name)
   const showRaw = cleanName !== topic.name
   const Icon = getSubjectIcon(subject)
@@ -716,7 +719,7 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
       </div>
       <div className="topic-row-right">
         <div className="topic-row-conf">
-          <span className="confidence-pct" style={{color:CONF_COLOURS[conf]}}>{conf*20}%</span>
+          <span className="confidence-pct" style={{color:CONF_COLOURS[conf]}}>{conf>0 ? `${conf*20}%` : 'Not rated'}</span>
           <div className="conf-dots" role="radiogroup" aria-label="Confidence rating">
             {[1,2,3,4,5].map(n=>(
               <button key={n} type="button" className={`conf-dot${conf>=n?` active-${n}`:''}`}
