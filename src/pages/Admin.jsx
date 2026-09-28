@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { getSubjectList } from '../data/subjects'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
 import AdminDataEditor from '../components/AdminDataEditor'
+import AdminMetricsTab from '../components/AdminMetricsTab'
 import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
@@ -391,12 +392,13 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
+        {['metrics', 'users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
       </div>
 
+      {tab === 'metrics' && <AdminMetricsTab />}
       {tab === 'users' && <UsersTab email={user.email} />}
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
