@@ -1,0 +1,234 @@
+// netlify/functions/admin-metrics.js
+// Read-only admin analytics: revenue, growth, activation/funnel, engagement, churn risk.
+//
+// Deliberately a SEPARATE function from admin.js (own file, own route) rather than a new
+// action bolted onto admin.js — that file may be under active work elsewhere, and this is a
+// clean, additive, read-only surface with no reason to share a file with privileged writes.
+// It duplicates admin.js's auth/response/audit-log helpers rather than importing them,
+// matching this codebase's existing convention of self-contained Netlify functions (there's
+// no shared lib module between netlify/functions/*.js currently).
+//
+// WHY THIS EXISTS: the admin panel's existing StatsTab computes stats client-side over
+// listUsers' results, which are capped at 500 docs — past that, every stat silently
+// undercounts with no indication anything was truncated. This function aggregates
+// server-side, paginating through the ENTIRE users collection with no cap, so the numbers
+// are actually correct regardless of how many users exist.
+//
+// SCALING NOTE: this still does a full collection scan on every call, field-masked with
+// .select() to keep it cheap, which is fine at the pre-launch/beta scale this app is at
+// today. It will NOT scale indefinitely — past a few thousand users (or once Netlify's
+// function execution timeout becomes a real risk), replace this with a scheduled job that
+// writes a precomputed `adminStats/daily` document instead of scanning live on every
+// dashboard load. Flagging this now rather than silently building something that quietly
+// breaks later.
+//
+// CommonJS — netlify/functions/package.json sets "type":"commonjs"
+
+const ADMIN_EMAIL = 'femiaisida1@gmail.com'
+
+// Pricing used only to ESTIMATE MRR from stored subscription status — this is a planning
+// number, not an accounting one. Update these if RevisionFlow's prices change; there's no
+// live Stripe price lookup here (see PRICING note below for why).
+const MONTHLY_PRICE_GBP = 3.99
+const ANNUAL_PRICE_GBP  = 29.99
+
+let _admin = null
+async function getAdmin() {
+  if (_admin) return _admin
+  const admin = require('firebase-admin')
+  if (!admin.apps.length) {
+    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}')
+    admin.initializeApp({ credential: admin.credential.cert(sa) })
+  }
+  _admin = admin
+  return admin
+}
+
+function respond(statusCode, body) {
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
+    },
+    body: JSON.stringify(body),
+  }
+}
+
+async function verifyAdminToken(event) {
+  const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) throw new Error('No authorization token provided')
+  const admin = await getAdmin()
+  const decoded = await admin.auth().verifyIdToken(token)
+  if (decoded.email !== ADMIN_EMAIL) throw new Error('Forbidden: not an admin account')
+  return decoded
+}
+
+function logAdminAction(db, action, details = {}) {
+  db.collection('adminAuditLog').add({
+    action,
+    actorEmail: ADMIN_EMAIL,
+    details,
+    timestamp: new Date().toISOString(),
+  }).catch(e => console.warn('[admin-metrics] audit log write failed:', e.message))
+}
+
+// Local calendar-day string (UK), not UTC — a signup at 00:30 BST shouldn't land on
+// yesterday's bucket. Firestore Admin SDK timestamps carry a real Date via .toDate().
+function ukDayStr(date) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+}
+
+// Paginates through the ENTIRE users collection, field-masked to only what's aggregated
+// below — no 500-doc cap, no silent undercounting. Returns the full doc-data array; fine at
+// current scale (see SCALING NOTE above), not intended to stay this way forever.
+async function fetchAllUserFields(db) {
+  const FIELDS = [
+    'createdAt', 'isPro', 'betaUser', 'stripePlan', 'stripeSubStatus',
+    'stripePaymentFailed', 'stripeCurrentPeriodEnd', 'onboardingComplete',
+    'xp', 'streak', 'lastLogin', 'qualification',
+  ]
+  const PAGE = 1000
+  let all = []
+  let last = null
+  for (;;) {
+    let q = db.collection('users').orderBy('__name__').select(...FIELDS).limit(PAGE)
+    if (last) q = q.startAfter(last)
+    const snap = await q.get()
+    if (snap.empty) break
+    all = all.concat(snap.docs.map(d => d.data()))
+    last = snap.docs[snap.docs.length - 1]
+    if (snap.docs.length < PAGE) break
+  }
+  return all
+}
+
+function computeMetrics(users) {
+  const now = new Date()
+  const todayStr = ukDayStr(now)
+  const daysAgoStr = n => ukDayStr(new Date(now.getTime() - n * 86400000))
+  const since7  = daysAgoStr(7)
+  const since30 = daysAgoStr(30)
+
+  let totalUsers = 0
+  let betaCount = 0
+  let payingCount = 0
+  let monthlyPayers = 0
+  let annualPayers = 0
+  let paymentFailedCount = 0
+  let onboardedCount = 0
+  let signups7 = 0
+  let signups30 = 0
+  let activeLast7 = 0 // by lastLogin, if present
+  let totalXp = 0
+  let usersWithStreak = 0
+  const signupsByDay = {} // 'YYYY-MM-DD' -> count, last 30 days
+
+  for (const u of users) {
+    totalUsers++
+
+    const createdAtDate = u.createdAt?.toDate ? u.createdAt.toDate() : null
+    if (createdAtDate) {
+      const day = ukDayStr(createdAtDate)
+      if (day >= since30) signupsByDay[day] = (signupsByDay[day] || 0) + 1
+      if (day >= since7) signups7++
+      if (day >= since30) signups30++
+    }
+
+    const isBeta = !!u.betaUser
+    // Matches ProGate.jsx's own isStripe definition exactly: isPro true AND not a beta grant —
+    // i.e. an actual paying subscriber, not lifetime-free-Pro from the beta cohort.
+    const isPaying = !!u.isPro && !isBeta
+    if (isBeta) betaCount++
+    if (isPaying) {
+      payingCount++
+      if (u.stripePlan === 'annual') annualPayers++
+      else monthlyPayers++ // default bucket — stripePlan defaults to 'monthly' in the webhook too
+    }
+    if (u.stripePaymentFailed) paymentFailedCount++
+    if (u.onboardingComplete) onboardedCount++
+
+    const lastLoginDate = u.lastLogin?.toDate ? u.lastLogin.toDate() : (typeof u.lastLogin === 'string' ? new Date(u.lastLogin) : null)
+    if (lastLoginDate && ukDayStr(lastLoginDate) >= since7) activeLast7++
+
+    if (typeof u.xp === 'number') totalXp += u.xp
+    if (typeof u.streak === 'number' && u.streak > 0) usersWithStreak++
+  }
+
+  const mrr = monthlyPayers * MONTHLY_PRICE_GBP + annualPayers * (ANNUAL_PRICE_GBP / 12)
+  const arr = mrr * 12
+
+  return {
+    generatedAt: now.toISOString(),
+    totals: {
+      totalUsers, betaCount, payingCount,
+      freeCount: totalUsers - betaCount - payingCount,
+    },
+    revenue: {
+      // Estimated from stored subscription status, not a live Stripe query — see PRICING
+      // note at the top of this file if prices change and this drifts from reality.
+      mrrGbp: Math.round(mrr * 100) / 100,
+      arrGbp: Math.round(arr * 100) / 100,
+      monthlyPayers, annualPayers,
+      paymentFailedCount,
+      conversionRate: totalUsers ? Math.round((payingCount / totalUsers) * 1000) / 10 : 0,
+    },
+    growth: {
+      signupsLast7: signups7,
+      signupsLast30: signups30,
+      signupsByDay, // sparse — only days with at least one signup
+    },
+    activation: {
+      onboardingCompletionRate: totalUsers ? Math.round((onboardedCount / totalUsers) * 1000) / 10 : 0,
+      onboardedCount,
+      // best-effort — lastLogin isn't stamped everywhere yet (see note in the response), so
+      // this likely undercounts rather than overcounts real activity
+      activeLast7Estimate: activeLast7,
+    },
+    engagement: {
+      avgXp: totalUsers ? Math.round(totalXp / totalUsers) : 0,
+      usersWithActiveStreak: usersWithStreak,
+    },
+    notes: [
+      'Revenue is estimated from stored subscription status (isPro/stripePlan), not a live Stripe query.',
+      'activeLast7Estimate relies on profile.lastLogin, which may not be stamped on every login path — treat as a lower bound, not exact.',
+      'No signup-source/channel field exists yet, so growth cannot be broken down by marketing channel. Add capture at signup (e.g. a UTM param written into ensureUser\'s initialData) before running paid acquisition, or this will be unattributable in hindsight.',
+    ],
+  }
+}
+
+module.exports.handler = async function (event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
+      },
+      body: '',
+    }
+  }
+  if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
+
+  try {
+    await verifyAdminToken(event)
+  } catch (e) {
+    console.warn('[admin-metrics] auth failed:', e.message)
+    return respond(403, { error: 'Forbidden' })
+  }
+
+  try {
+    const admin = await getAdmin()
+    const db = admin.firestore()
+    const users = await fetchAllUserFields(db)
+    const metrics = computeMetrics(users)
+    logAdminAction(db, 'viewMetrics', { totalUsers: metrics.totals.totalUsers })
+    return respond(200, metrics)
+  } catch (e) {
+    console.error('[admin-metrics] error:', e)
+    return respond(500, { error: 'Failed to compute metrics: ' + e.message })
+  }
+}
