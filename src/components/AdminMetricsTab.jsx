@@ -14,7 +14,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import {
-  PoundSterling, Users, TrendingUp, UserCheck, AlertTriangle, RefreshCw, Info,
+  PoundSterling, Users, TrendingUp, UserCheck, AlertTriangle, RefreshCw, Info, Bot, History,
 } from 'lucide-react'
 
 async function fetchMetrics() {
@@ -100,6 +100,7 @@ export default function AdminMetricsTab() {
   const g = data?.growth || {}
   const a = data?.activation || {}
   const e = data?.engagement || {}
+  const ai = data?.aiUsage || null
   const series = buildDailySeries(g.signupsByDay, 30)
 
   return (
@@ -168,6 +169,70 @@ export default function AdminMetricsTab() {
             Average XP per user: <strong>{e.avgXp ?? 0}</strong> · Users with an active streak: <strong>{e.usersWithActiveStreak ?? 0}</strong> ·
             Active in last 7 days (estimate): <strong>{a.activeLast7Estimate ?? 0}</strong>
           </p>
+        )}
+      </Section>
+
+      <Section title="AI usage" icon={<Bot size={16} />}>
+        {loading ? <Skeleton height={80} /> : !ai?.available ? (
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Couldn't load AI usage ({ai?.error || 'unknown error'}) — if this persists, it likely means Firestore needs a composite
+            index for the collection-group query this reads from; the real server log will name the console link to create it.
+          </p>
+        ) : (
+          <>
+            <div className="grid-3" style={{ gap: 10, marginBottom: 14 }}>
+              <StatCard icon={<Bot size={16} />} colour="var(--info)" val={ai.totalCallsToday ?? 0} label="AI calls today" />
+              <StatCard icon={<Bot size={16} />} colour="var(--accent)" val={ai.totalCallsWeek ?? 0} label="AI calls (7d)" />
+              <StatCard icon={<UserCheck size={16} />} colour="var(--accent)" val={ai.activeAiUsersToday ?? 0} label="Students using AI today" />
+            </div>
+            {ai.byFeatureWeek?.length > 0 ? (
+              <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                    <th style={{ padding: '4px 8px 4px 0' }}>Feature</th>
+                    <th style={{ padding: '4px 8px' }}>Today</th>
+                    <th style={{ padding: '4px 8px' }}>Last 7 days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ai.byFeatureWeek.map(f => {
+                    const todayEntry = ai.byFeatureToday.find(t => t.key === f.key)
+                    return (
+                      <tr key={f.key} style={{ borderTop: '1px solid var(--border)' }}>
+                        <td style={{ padding: '6px 8px 6px 0' }}>{f.label}</td>
+                        <td style={{ padding: '6px 8px' }}>{todayEntry?.count ?? 0}</td>
+                        <td style={{ padding: '6px 8px' }}>{f.count}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No AI usage recorded in the last 7 days.</p>
+            )}
+          </>
+        )}
+      </Section>
+
+      <Section title="Recent admin activity" icon={<History size={16} />} defaultOpen={false}>
+        {loading ? <Skeleton height={80} /> : !data?.auditLog?.length ? (
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No audit log entries yet.</p>
+        ) : (
+          <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+            {data.auditLog.map(entry => (
+              <div key={entry.id} style={{ padding: '7px 0', borderTop: '1px solid var(--border)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <span>
+                  <strong>{entry.action}</strong>
+                  {entry.details && Object.keys(entry.details).length > 0 && (
+                    <span style={{ color: 'var(--text-muted)' }}> — {Object.entries(entry.details).map(([k, v]) => `${k}: ${v}`).join(', ')}</span>
+                  )}
+                </span>
+                <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  {entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </Section>
 
