@@ -105,6 +105,75 @@ async function fetchAllUserFields(db) {
   return all
 }
 
+// AI feature usage is tracked per-user at users/{uid}/usage/{featureKey} by tutor.js's rate
+// limiter (see checkRateLimit/checkFeatureLimit there) as { date: 'YYYY-MM-DD', count: N },
+// reset per day. A collectionGroup query reads every user's usage docs in one pass rather
+// than iterating each user's subcollection individually. This is CALL COUNTS only, not
+// tokens or £ cost — Mistral bills by token, and a photo scan or essay-feedback call uses
+// far more tokens than a quick chat message, so a cost figure derived from counts alone
+// would be misleading rather than just imprecise. Real cost needs either Mistral's own
+// usage dashboard or token-count logging added to tutor.js — neither exists yet.
+const AI_FEATURE_LABELS = {
+  aiCalls:       'AI Advisor / general chat (daily cap)',
+  imageScans:    'Photo scans',
+  advisorChats:  'AI Advisor messages',
+  essayFeedback: 'Essay feedback requests',
+}
+
+async function fetchAiUsage(db) {
+  const now = new Date()
+  const days = []
+  for (let i = 0; i < 7; i++) {
+    days.push(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now.getTime() - i * 86400000)))
+  }
+  try {
+    // 'in' queries support up to 30 values — 7 is comfortably inside that.
+    const snap = await db.collectionGroup('usage').where('date', 'in', days).get()
+    const byFeature = {} // featureKey -> total calls across all users, last 7 days
+    const byFeatureToday = {} // same, today only
+    const today = days[0]
+    let totalCallsWeek = 0
+    let totalCallsToday = 0
+    let activeUsersToday = new Set()
+    for (const doc of snap.docs) {
+      const featureKey = doc.id // doc id IS the featureKey (see tutor.js)
+      const data = doc.data()
+      const count = typeof data.count === 'number' ? data.count : 0
+      byFeature[featureKey] = (byFeature[featureKey] || 0) + count
+      totalCallsWeek += count
+      if (data.date === today) {
+        byFeatureToday[featureKey] = (byFeatureToday[featureKey] || 0) + count
+        totalCallsToday += count
+        const uid = doc.ref.parent.parent?.id
+        if (uid) activeUsersToday.add(uid)
+      }
+    }
+    return {
+      available: true,
+      totalCallsToday, totalCallsWeek,
+      activeAiUsersToday: activeUsersToday.size,
+      byFeatureToday: Object.entries(byFeatureToday).map(([key, count]) => ({ key, label: AI_FEATURE_LABELS[key] || key, count })).sort((a, b) => b.count - a.count),
+      byFeatureWeek: Object.entries(byFeature).map(([key, count]) => ({ key, label: AI_FEATURE_LABELS[key] || key, count })).sort((a, b) => b.count - a.count),
+    }
+  } catch (e) {
+    // Most likely cause: the collection-group query needs a composite index Firestore
+    // hasn't been asked to build yet — the real error names the console URL to create it.
+    // Fail soft rather than take the whole metrics endpoint down over this one section.
+    console.warn('[admin-metrics] AI usage query failed:', e.message)
+    return { available: false, error: e.message }
+  }
+}
+
+async function fetchRecentAuditLog(db, limitN = 50) {
+  try {
+    const snap = await db.collection('adminAuditLog').orderBy('timestamp', 'desc').limit(limitN).get()
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch (e) {
+    console.warn('[admin-metrics] audit log fetch failed:', e.message)
+    return []
+  }
+}
+
 function computeMetrics(users) {
   const now = new Date()
   const todayStr = ukDayStr(now)
@@ -194,6 +263,7 @@ function computeMetrics(users) {
     notes: [
       'Revenue is estimated from stored subscription status (isPro/stripePlan), not a live Stripe query.',
       'activeLast7Estimate relies on profile.lastLogin, which may not be stamped on every login path — treat as a lower bound, not exact.',
+      'AI usage below is call counts, not £ cost or tokens — Mistral bills by token, and different features use very different amounts of it. Check Mistral\'s own usage dashboard for actual spend.',
       'No signup-source/channel field exists yet, so growth cannot be broken down by marketing channel. Add capture at signup (e.g. a UTM param written into ensureUser\'s initialData) before running paid acquisition, or this will be unattributable in hindsight.',
     ],
   }
@@ -223,8 +293,14 @@ module.exports.handler = async function (event) {
   try {
     const admin = await getAdmin()
     const db = admin.firestore()
-    const users = await fetchAllUserFields(db)
+    const [users, aiUsage, auditLog] = await Promise.all([
+      fetchAllUserFields(db),
+      fetchAiUsage(db),
+      fetchRecentAuditLog(db, 50),
+    ])
     const metrics = computeMetrics(users)
+    metrics.aiUsage = aiUsage
+    metrics.auditLog = auditLog
     logAdminAction(db, 'viewMetrics', { totalUsers: metrics.totals.totalUsers })
     return respond(200, metrics)
   } catch (e) {
