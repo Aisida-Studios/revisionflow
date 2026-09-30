@@ -269,6 +269,65 @@ function computeMetrics(users) {
   }
 }
 
+// Per-user drill-down for the admin user-detail view. Uses count() aggregation queries
+// (firebase-admin v13 supports these) rather than fetching full subcollections — a handful
+// of small counting queries per lookup, not a bulk document read, and only ever run for one
+// user at a time when an admin actually opens their detail view, not in bulk like the
+// collection-group AI-usage query above.
+async function fetchUserDetail(db, uid) {
+  const userSnap = await db.collection('users').doc(uid).get()
+  if (!userSnap.exists) return null
+  const u = userSnap.data()
+
+  const countOf = async (sub, filterFn) => {
+    let q = db.collection('users').doc(uid).collection(sub)
+    if (filterFn) q = filterFn(q)
+    const snap = await q.count().get()
+    return snap.data().count
+  }
+
+  const [sessionsCount, paperAttemptsCount, quizResultsCount, mistakesCount, unresolvedMistakesCount, notesCount] = await Promise.all([
+    countOf('sessions', q => q.where('completed', '==', true)),
+    countOf('paperAttempts'),
+    countOf('quizResults'),
+    countOf('mistakes'),
+    countOf('mistakes', q => q.where('resolved', '==', false)),
+    countOf('notes'),
+  ])
+
+  return {
+    profile: {
+      name: u.displayName || null,
+      email: u.email || null,
+      createdAt: u.createdAt?.toDate ? u.createdAt.toDate().toISOString() : null,
+      qualification: u.qualification || null,
+      subjects: (u.subjects || []).map(s => ({ name: s.name, board: s.board || null })),
+      xp: u.xp || 0,
+      level: u.level || 1,
+      streak: u.streak || 0,
+      onboardingComplete: !!u.onboardingComplete,
+      lastLogin: u.lastLogin?.toDate ? u.lastLogin.toDate().toISOString() : (typeof u.lastLogin === 'string' ? u.lastLogin : null),
+    },
+    subscription: {
+      isPro: !!u.isPro,
+      betaUser: !!u.betaUser,
+      stripePlan: u.stripePlan || null,
+      stripeSubStatus: u.stripeSubStatus || null,
+      stripeCurrentPeriodEnd: u.stripeCurrentPeriodEnd || null,
+      stripePaymentFailed: !!u.stripePaymentFailed,
+      proActivatedAt: u.proActivatedAt || null,
+    },
+    activity: {
+      sessionsCompleted: sessionsCount,
+      paperAttempts: paperAttemptsCount,
+      quizResults: quizResultsCount,
+      mistakesLogged: mistakesCount,
+      mistakesUnresolved: unresolvedMistakesCount,
+      notesWritten: notesCount,
+    },
+  }
+}
+
 module.exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -290,9 +349,24 @@ module.exports.handler = async function (event) {
     return respond(403, { error: 'Forbidden' })
   }
 
+  let body = {}
+  try { body = JSON.parse(event.body || '{}') } catch (_) {}
+
   try {
     const admin = await getAdmin()
     const db = admin.firestore()
+
+    // Per-user drill-down — a distinct, cheap, on-demand action, kept in this file rather
+    // than a new one since it's the same admin-analytics concern as everything else here.
+    if (body.action === 'userDetail') {
+      if (!body.uid) return respond(400, { error: 'uid required' })
+      const detail = await fetchUserDetail(db, body.uid)
+      if (!detail) return respond(404, { error: 'User not found' })
+      logAdminAction(db, 'viewUserDetail', { uid: body.uid })
+      return respond(200, detail)
+    }
+
+    // Default (no action / existing behaviour, unchanged) — full metrics dashboard.
     const [users, aiUsage, auditLog] = await Promise.all([
       fetchAllUserFields(db),
       fetchAiUsage(db),
@@ -305,6 +379,6 @@ module.exports.handler = async function (event) {
     return respond(200, metrics)
   } catch (e) {
     console.error('[admin-metrics] error:', e)
-    return respond(500, { error: 'Failed to compute metrics: ' + e.message })
+    return respond(500, { error: 'Failed: ' + e.message })
   }
 }
