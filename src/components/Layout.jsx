@@ -22,6 +22,7 @@ import {
   subscribeToNotifications, markNotificationRead, markAllNotificationsRead,
 } from '../utils/notificationFeed'
 import ScrollToTop from './ScrollToTop'
+import AnnouncementBanner from './AnnouncementBanner'
 
 /* Route list — every path here matches App.jsx exactly (canonical paths,
    not the legacy /exam-dates, /past-papers, /ai-advisor, /tasks redirects).
@@ -498,6 +499,7 @@ export default function Layout() {
             </Link>
           </div>
         )}
+        <AnnouncementBanner />
         <Outlet />
       </main>
       <ScrollToTop />
