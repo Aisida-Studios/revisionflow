@@ -4,10 +4,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getSubjectList } from '../data/subjects'
+import { canonicalBoard } from '../data/boards'
+import BoardOptions from '../components/BoardOptions'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
 import AdminDataEditor from '../components/AdminDataEditor'
-import AdminMetricsTab from '../components/AdminMetricsTab'
-import AdminAnnouncementsTab from '../components/AdminAnnouncementsTab'
 import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
@@ -230,14 +230,12 @@ function ContentTab({ email }) {
               <option value="GCSE">GCSE</option>
               <option value="AS-Level">AS-Level</option>
               <option value="A-Level">A-Level</option>
-              <option value="BTEC-L2">BTEC (L2)</option>
-              <option value="BTEC-L3">BTEC (L3)</option>
             </select>
           </div>
           <div>
             <label className="label">Board</label>
-            <select className="select" value={board} onChange={e => setBoard(e.target.value)}>
-              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+            <select className="select" value={canonicalBoard(board)} onChange={e => setBoard(e.target.value)}>
+              <BoardOptions current={board} />
             </select>
           </div>
           <div>
@@ -393,14 +391,12 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['metrics', 'announcements', 'users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
+        {['users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
       </div>
 
-      {tab === 'metrics' && <AdminMetricsTab />}
-      {tab === 'announcements' && <AdminAnnouncementsTab />}
       {tab === 'users' && <UsersTab email={user.email} />}
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
@@ -714,7 +710,7 @@ function UsersTab({ email }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {u.displayName || '(no name)'}
-                    {u.betaUser && <span className="badge badge-accent" style={{ fontSize: '0.65rem' }}>Beta</span>}
+                    {u.betaUser && <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>Beta</span>}
                     {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
                   </div>
                   <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2 }}>
