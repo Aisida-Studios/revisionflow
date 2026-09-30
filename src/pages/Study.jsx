@@ -10,6 +10,8 @@ import {
 } from '../utils/firestore'
 import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification, subjectColour } from '../data/subjects'
+import { canonicalBoard, boardLabel } from '../data/boards'
+import BoardOptions from '../components/BoardOptions'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'
@@ -1553,9 +1555,9 @@ function QuizTab({ mySets, uid, profile }) {
               <option value="">All subjects</option>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select className="select" value={publicBoard} onChange={e => setPublicBoard(e.target.value)}>
+            <select className="select" value={canonicalBoard(publicBoard)} onChange={e => setPublicBoard(e.target.value)}>
               <option value="">All boards</option>
-              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+              <BoardOptions current={publicBoard} />
             </select>
             <select className="select" value={publicLevel} onChange={e => setPublicLevel(e.target.value)}>
               <option value="">All levels</option>
@@ -1570,9 +1572,9 @@ function QuizTab({ mySets, uid, profile }) {
               <option value="">All subjects</option>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select className="select" value={myBoardFilter} onChange={e => setMyBoardFilter(e.target.value)}>
+            <select className="select" value={canonicalBoard(myBoardFilter)} onChange={e => setMyBoardFilter(e.target.value)}>
               <option value="">All boards</option>
-              {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+              <BoardOptions current={myBoardFilter} />
             </select>
             <select className="select" value={myLevelFilter} onChange={e => setMyLevelFilter(e.target.value)}>
               <option value="">All levels</option>
@@ -1606,7 +1608,7 @@ function QuizTab({ mySets, uid, profile }) {
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
-                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${deriveSetBoardLevel(set, profile).board}` : ''} · {set.cards?.length || 0} cards
+                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards
                         </div>
                       </div>
                     </div>
@@ -1643,7 +1645,7 @@ function QuizTab({ mySets, uid, profile }) {
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
-                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${deriveSetBoardLevel(set, profile).board}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
+                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
                         </div>
                       </div>
                     </div>
@@ -2044,11 +2046,9 @@ function TopicNotesTab({ profile, uid }) {
             <>
               <div>
                 <label className="label">Board</label>
-                <select className="select" value={selectedSubject?.board || board}
+                <select className="select" value={canonicalBoard(selectedSubject?.board || board)}
                   onChange={e => setBoard(e.target.value)}>
-                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
+                  <BoardOptions current={selectedSubject?.board || board} />
                 </select>
               </div>
               <div>
@@ -2411,8 +2411,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 </div>
                 <div>
                   <label className="label">Exam board</label>
-                  <select className="select" value={mkBoard} onChange={e => setMkBoard(e.target.value)}>
-                    {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                  <select className="select" value={canonicalBoard(mkBoard)} onChange={e => setMkBoard(e.target.value)}>
+                    <BoardOptions current={mkBoard} />
                   </select>
                 </div>
               </div>
@@ -2882,9 +2882,9 @@ export default function Study() {
                     <option value="">All subjects</option>
                     {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <select className="select" value={myFcBoardFilter} onChange={e => setMyFcBoardFilter(e.target.value)}>
+                  <select className="select" value={canonicalBoard(myFcBoardFilter)} onChange={e => setMyFcBoardFilter(e.target.value)}>
                     <option value="">All boards</option>
-                    {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                    <BoardOptions current={myFcBoardFilter} />
                   </select>
                   <select className="select" value={myFcLevelFilter} onChange={e => setMyFcLevelFilter(e.target.value)}>
                     <option value="">All levels</option>
@@ -2926,7 +2926,7 @@ export default function Study() {
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + deriveSetBoardLevel(set, profile).board : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
@@ -2957,9 +2957,9 @@ export default function Study() {
                 </select>
               </div>
               <div className="rf-config-grid" style={{ marginBottom: 16 }}>
-                <select className="select" value={pubBoardFilter} onChange={e => setPubBoardFilter(e.target.value)}>
+                <select className="select" value={canonicalBoard(pubBoardFilter)} onChange={e => setPubBoardFilter(e.target.value)}>
                   <option value="">All boards</option>
-                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                  <BoardOptions current={pubBoardFilter} />
                 </select>
                 <select className="select" value={pubLevelFilter} onChange={e => setPubLevelFilter(e.target.value)}>
                   <option value="">All levels</option>
@@ -2984,7 +2984,7 @@ export default function Study() {
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                            {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + deriveSetBoardLevel(set, profile).board : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
+                            {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
                             {set.author && <span style={{ marginLeft: 4, fontWeight: 600, color: set.author === 'RevisionFlow' ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                               {set.author === 'RevisionFlow' ? '✦ RevisionFlow' : '· ' + set.author}
                             </span>}
@@ -3059,8 +3059,8 @@ export default function Study() {
               </div>
               <div>
                 <label className="label">Exam board</label>
-                <select className="select" value={eqBoard} onChange={e => setEqBoard(e.target.value)}>
-                  {['AQA','Edexcel','OCR','WJEC','Eduqas','CCEA'].map(b => <option key={b} value={b}>{b}</option>)}
+                <select className="select" value={canonicalBoard(eqBoard)} onChange={e => setEqBoard(e.target.value)}>
+                  <BoardOptions current={eqBoard} />
                 </select>
               </div>
               <div>
