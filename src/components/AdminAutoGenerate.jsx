@@ -15,8 +15,13 @@
 import React, { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 
+import { SUPPORTED_BOARDS, boardLabel } from '../data/boards'
+
 const LEVELS = ['GCSE', 'AS-Level', 'A-Level']
-const BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'Eduqas', 'CCEA']
+// Eduqas and WJEC are one dataset (see data/topics.js) — SUPPORTED_BOARDS lists each supported
+// board exactly once, so a run can no longer be told to (re)generate the same content twice under
+// two names, and Cambridge (no curriculum data at all) is no longer offered here either.
+const BOARDS = SUPPORTED_BOARDS.map(b => b.value)
 const MAX_ATTEMPTS = 3
 const BATCH_SIZE = 5
 const DELAY_MS = 1600 // rate-limit pacing — applied once per batch, and only when that batch actually hit the API (all-cached batches don't pace)
@@ -320,7 +325,7 @@ export default function AdminAutoGenerate() {
                   border: `1px solid ${boards.includes(b) ? 'var(--accent)' : 'var(--border)'}`,
                   background: boards.includes(b) ? 'rgba(34,197,94,0.15)' : 'transparent',
                   color: boards.includes(b) ? 'var(--accent-light)' : 'var(--text-muted)' }}>
-                {b}
+                {boardLabel(b)}
               </button>
             ))}
           </div>
