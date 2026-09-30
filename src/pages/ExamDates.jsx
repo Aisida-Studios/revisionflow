@@ -4,7 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import { updateUserProfile } from '../utils/firestore'
 import { countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone, parseLocalDate } from '../utils/examUtils'
-import { EXAM_BOARDS, getSubjectQualification } from '../data/subjects'
+import { getSubjectQualification } from '../data/subjects'
+import { canonicalBoard, boardLabel } from '../data/boards'
+import BoardOptions from '../components/BoardOptions'
 import { isTiered } from '../data/examDates2026'
 import { getMergedExamDates } from '../data/overrides'
 import toast from 'react-hot-toast'
@@ -43,7 +45,7 @@ export default function ExamDates() {
     const existing = profile?.examDates || []
     const newDates = autoMatches.map(m => ({
       id: `${m.board}-${m.subject}-${m.tier}-P${m.paper}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      subject: m.subject, board: m.board, tier: m.tier, qualification: m.level,
+      subject: m.subject, board: canonicalBoard(m.board), tier: m.tier, qualification: m.level,
       paper: String(m.paper), paperName: m.paperName, examDate: m.date,
     }))
     await updateUserProfile(user.uid, { examDates: [...existing, ...newDates] })
@@ -132,9 +134,9 @@ export default function ExamDates() {
           </div>
           <div>
             <label className="label">Board</label>
-            <select className="select" value={autoSubj.board}
+            <select className="select" value={canonicalBoard(autoSubj.board)}
               onChange={e => setAutoSubj(s => ({...s, board:e.target.value}))}>
-              {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+              <BoardOptions current={autoSubj.board} />
             </select>
           </div>
           <div>
@@ -161,7 +163,7 @@ export default function ExamDates() {
 
         {autoSubj.name && autoMatches.length === 0 && (
           <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>
-            No 2027 dates found for {autoSubj.name} ({autoSubj.board}, {autoSubj.qualification||'GCSE'}). Try a different board or add manually.
+            No 2027 dates found for {autoSubj.name} ({boardLabel(autoSubj.board)}, {autoSubj.qualification||'GCSE'}). Try a different board or add manually.
           </p>
         )}
 
@@ -202,9 +204,9 @@ export default function ExamDates() {
                 <div style={{flex:1}}>
                   <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3,flexWrap:'wrap'}}>
                     <span style={{fontWeight:700}}>{e.subject}</span>
-                    <span className="badge badge-purple">{e.qualification||'GCSE'}</span>
-                    <span className="badge badge-grey">{e.board}</span>
-                    {e.tier && e.tier !== 'N/A' && <span className="badge badge-purple">{e.tier}</span>}
+                    <span className="badge badge-accent">{e.qualification||'GCSE'}</span>
+                    <span className="badge badge-grey">{boardLabel(e.board)}</span>
+                    {e.tier && e.tier !== 'N/A' && <span className="badge badge-accent">{e.tier}</span>}
                     <span className="badge badge-grey">Paper {e.paper}</span>
                   </div>
                   {e.paperName && <div style={{fontSize:'0.8rem',color:'var(--text-secondary)',marginBottom:2}}>{e.paperName}</div>}
@@ -268,8 +270,8 @@ export default function ExamDates() {
                     {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
                   </select></div>
                 <div><label className="label">Board</label>
-                  <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
-                    {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  <select className="select" value={canonicalBoard(form.board)} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
+                    <BoardOptions current={form.board} />
                   </select></div>
                 <div><label className="label">Level</label>
                   <select className="select" value={form.qualification} onChange={e=>setForm(f=>({...f,qualification:e.target.value}))}>
@@ -322,7 +324,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
       const allRows = results.flatMap(({ subject: s, matches }) => matches.map(m => ({
         id:        `fill-${s.name}-P${m.paper}-${Math.random().toString(36).slice(2)}`,
         subject:   m.subject,
-        board:     m.board,
+        board:     canonicalBoard(m.board),
         tier:      m.tier,
         qualification: m.level,
         paper:     String(m.paper),
@@ -396,8 +398,8 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
                       {r.paperName ? <span style={{fontWeight:400,color:'var(--text-muted)',fontSize:'0.78rem'}}> — {r.paperName}</span> : null}
                     </div>
                     <div style={{fontSize:'0.72rem',color:'var(--text-muted)',display:'flex',alignItems:'center',gap:5}}>
-                      <span className="badge badge-purple" style={{fontSize:'0.64rem',padding:'1px 6px'}}>{r.qualification||'GCSE'}</span>
-                      {r.board}{r.tier&&r.tier!=='N/A'?` · ${r.tier}`:''}
+                      <span className="badge badge-accent" style={{fontSize:'0.64rem',padding:'1px 6px'}}>{r.qualification||'GCSE'}</span>
+                      {boardLabel(r.board)}{r.tier&&r.tier!=='N/A'?` · ${r.tier}`:''}
                     </div>
                   </div>
                   <input
