@@ -9,7 +9,9 @@ import toast from 'react-hot-toast'
 import { collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Section } from './Section'
-import { EXAM_BOARDS, getSubjectList } from '../data/subjects'
+import { getSubjectList } from '../data/subjects'
+import { canonicalBoard } from '../data/boards'
+import BoardOptions from './BoardOptions'
 import {
   getTopicOverride, saveTopicOverride,
   listExamDateOverrides, saveExamDateOverride, deleteExamDateOverride,
@@ -113,8 +115,8 @@ function TopicsEditor() {
         <select className="select" value={level} onChange={e => { setLevel(e.target.value); setSubject('') }}>
           {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
         </select>
-        <select className="select" value={board} onChange={e => setBoard(e.target.value)}>
-          {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+        <select className="select" value={canonicalBoard(board)} onChange={e => setBoard(e.target.value)}>
+          <BoardOptions current={board} />
         </select>
         <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
           {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
@@ -210,8 +212,8 @@ function ExamDatesEditor() {
 
       <Section title="Add / override an exam date" icon="➕">
         <form onSubmit={addEntry} className="grid-3" style={{ gap: 10 }}>
-          <select className="select" value={form.board} onChange={e => setForm(f => ({ ...f, board: e.target.value }))}>
-            {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+          <select className="select" value={canonicalBoard(form.board)} onChange={e => setForm(f => ({ ...f, board: e.target.value }))}>
+            <BoardOptions current={form.board} />
           </select>
           <input className="input" placeholder="Subject (exact name)" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} />
           <input className="input" placeholder="Tier (N/A if untiered)" value={form.tier} onChange={e => setForm(f => ({ ...f, tier: e.target.value }))} />
@@ -293,8 +295,8 @@ function PapersEditor() {
         <select className="select" value={level} onChange={e => { setLevel(e.target.value); setSubject('') }}>
           {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
         </select>
-        <select className="select" value={board} onChange={e => setBoard(e.target.value)}>
-          {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+        <select className="select" value={canonicalBoard(board)} onChange={e => setBoard(e.target.value)}>
+          <BoardOptions current={board} />
         </select>
         <select className="select" value={subject} onChange={e => setSubject(e.target.value)}>
           {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
