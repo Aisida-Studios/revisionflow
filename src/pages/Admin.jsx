@@ -7,6 +7,7 @@ import { getSubjectList } from '../data/subjects'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
 import AdminDataEditor from '../components/AdminDataEditor'
 import AdminMetricsTab from '../components/AdminMetricsTab'
+import AdminAnnouncementsTab from '../components/AdminAnnouncementsTab'
 import { Section } from '../components/Section'
 import toast from 'react-hot-toast'
 import {
@@ -392,13 +393,14 @@ export default function Admin() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        {['metrics', 'users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
+        {['metrics', 'announcements', 'users', 'beta', 'stats', 'content', 'data', 'resources'].map(t => (
           <button key={t} className={`tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>{t}</button>
         ))}
       </div>
 
       {tab === 'metrics' && <AdminMetricsTab />}
+      {tab === 'announcements' && <AdminAnnouncementsTab />}
       {tab === 'users' && <UsersTab email={user.email} />}
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
@@ -712,7 +714,7 @@ function UsersTab({ email }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {u.displayName || '(no name)'}
-                    {u.betaUser && <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>Beta</span>}
+                    {u.betaUser && <span className="badge badge-accent" style={{ fontSize: '0.65rem' }}>Beta</span>}
                     {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
                   </div>
                   <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2 }}>
