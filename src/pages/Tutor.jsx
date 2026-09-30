@@ -111,7 +111,7 @@ function MathsSolver({ uid, profile }) {
           {steps.slice(0, revealed).map(s => (
             <div key={s.number} className="card" style={{ padding:'14px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-                <span className="badge badge-purple">Step {s.number}</span>
+                <span className="badge badge-accent">Step {s.number}</span>
                 <span style={{ fontWeight:700, fontSize:'0.88rem' }}>{s.title}</span>
               </div>
               <AIOutput text={s.content} compact />
