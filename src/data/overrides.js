@@ -14,6 +14,7 @@ import { db } from '../firebase'
 import { getAllTopicsFlat as getStaticTopics } from './topics'
 import { getExamDates as getStaticExamDates, getAllSubjectsForBoard as getStaticSubjectsForBoard } from './examDates2026'
 import { getPaperSpec as getStaticPaperSpec, getBoundaries as getStaticBoundaries } from './paperDatabase'
+import { canonicalBoard } from './boards'
 
 function sanitize(str) {
   return String(str || '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
@@ -21,7 +22,7 @@ function sanitize(str) {
 
 // ── Topics ───────────────────────────────────────────────────────────────────
 function topicOverrideId(board, level, subject) {
-  return sanitize(`${board}_${level}_${subject}`).slice(0, 150)
+  return sanitize(`${canonicalBoard(board)}_${level}_${subject}`).slice(0, 150)
 }
 
 export async function getTopicOverride(board, level, subject) {
@@ -32,7 +33,7 @@ export async function getTopicOverride(board, level, subject) {
 export async function saveTopicOverride(board, level, subject, { added, removedNames, renamed }) {
   const id = topicOverrideId(board, level, subject)
   await setDoc(doc(db, 'topicOverrides', id), {
-    board, level, subject,
+    board: canonicalBoard(board), level, subject,
     added: added || [],
     removedNames: removedNames || [],
     renamed: renamed || {},
@@ -63,7 +64,7 @@ export async function getMergedTopicsFlat(board, subject, level) {
 // (board|level|subject|paper) to override; entries with no replacesKey are net-new additions
 // (e.g. 2027 dates, or a board/level combo the static file doesn't cover at all).
 function examDateKey(board, level, subject, paper) {
-  return sanitize(`${board}_${level}_${subject}_${paper}`)
+  return sanitize(`${canonicalBoard(board)}_${level}_${subject}_${paper}`)
 }
 
 export async function listExamDateOverrides(level) {
@@ -74,7 +75,7 @@ export async function listExamDateOverrides(level) {
 export async function saveExamDateOverride(entry) {
   const id = entry.id || examDateKey(entry.board, entry.level, entry.subject, entry.paper)
   await setDoc(doc(db, 'examDateOverrides', id), {
-    board: entry.board, level: entry.level, subject: entry.subject,
+    board: canonicalBoard(entry.board), level: entry.level, subject: entry.subject,
     tier: entry.tier || 'N/A', paper: entry.paper, paperName: entry.paperName || '',
     date: entry.date, removed: !!entry.removed,
     updatedAt: serverTimestamp(),
@@ -95,7 +96,7 @@ export async function getMergedExamDates(subject, board, tier, level, year = 202
   const staticDates = getStaticExamDates(subject, board, tier, level, year) || []
   let overrides = []
   try { overrides = await listExamDateOverrides(level) } catch (e) { overrides = [] }
-  const relevant = overrides.filter(o => o.board === board && o.subject === subject)
+  const relevant = overrides.filter(o => canonicalBoard(o.board) === canonicalBoard(board) && o.subject === subject)
   const overrideByPaper = new Map(relevant.map(o => [String(o.paper), o]))
 
   const merged = []
@@ -111,10 +112,10 @@ export async function getMergedExamDates(subject, board, tier, level, year = 202
 
 // ── Paper database (specs + grade boundaries) ───────────────────────────────
 function paperOverrideId(board, level, subject, paper) {
-  return sanitize(`${board}_${level}_${subject}_P${paper}`)
+  return sanitize(`${canonicalBoard(board)}_${level}_${subject}_P${paper}`)
 }
 function boundaryOverrideId(board, level, subject) {
-  return sanitize(`${board}_${level}_${subject}`)
+  return sanitize(`${canonicalBoard(board)}_${level}_${subject}`)
 }
 
 export async function getPaperSpecOverride(board, level, subject, paper) {
@@ -125,7 +126,7 @@ export async function getPaperSpecOverride(board, level, subject, paper) {
 export async function savePaperSpecOverride(board, level, subject, paper, { maxMarks, duration }) {
   const id = paperOverrideId(board, level, subject, paper)
   await setDoc(doc(db, 'paperSpecOverrides', id), {
-    board, level, subject, paper, maxMarks, duration, updatedAt: serverTimestamp(),
+    board: canonicalBoard(board), level, subject, paper, maxMarks, duration, updatedAt: serverTimestamp(),
   }, { merge: true })
 }
 
@@ -144,7 +145,7 @@ export async function getBoundaryOverride(board, level, subject) {
 export async function saveBoundaryOverride(board, level, subject, { maxMarks, boundaries, grades }) {
   const id = boundaryOverrideId(board, level, subject)
   await setDoc(doc(db, 'boundaryOverrides', id), {
-    board, level, subject, maxMarks, boundaries, grades: grades || null, updatedAt: serverTimestamp(),
+    board: canonicalBoard(board), level, subject, maxMarks, boundaries, grades: grades || null, updatedAt: serverTimestamp(),
   }, { merge: true })
 }
 
