@@ -18,13 +18,13 @@ PAGES & FEATURES:
 - Calendar: Monthly/weekly view, AI-powered 7-step schedule generator, ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
 - Exam Dates: Add upcoming exams with subject, board, paper, date. Emergency Mode triggers when exam is within 7 days.
 - Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019–2025, 2026 estimated). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
-- Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 6 boards, GCSE, AS-Level and A-Level, each kept fully separate. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
+- Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 5 supported boards (AQA, Edexcel, OCR, Eduqas / WJEC, CCEA), GCSE, AS-Level and A-Level, each kept fully separate. Cambridge International is not currently supported. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
 - Study Tools (/study): Five tabs:
   * Topic Notes — AI-generated revision guides per topic, cached so popular topics load instantly for everyone
   * Flashcards — AI generator (up to 50 cards for Pro, 20 for free), saved sets (private/public), create custom sets, flip-card UI, confidence rating, on-demand AI memory aids for cards you keep missing, Quizlet copy, CSV download, public sets library with search/filter
   * Practice — spaced repetition. Pulls due cards from every saved set (not just one), ranked so the ones you keep getting wrong come back the most often; cards you know well get spaced further apart automatically
   * Quiz — Multiple choice (AI generates plausible wrong answers, not random ones), written, or mixed mode. Timed challenge mode (Pro only). Quiz history with scores saved automatically. Browse and quiz on public sets, not just your own. Filter by subject
-  * Exam Questions — Realistic board-accurate questions (AQA/Edexcel/OCR/WJEC/Eduqas/CCEA). Correct command words per board per mark value. Mark scheme hidden until revealed. Examiner tips. Copy all button
+  * Exam Questions — Realistic board-accurate questions (AQA/Edexcel/OCR/Eduqas-WJEC/CCEA). Correct command words per board per mark value. Mark scheme hidden until revealed. Examiner tips. Copy all button
   * Answer Marker — Submit a question + your answer (typed, pasted, or photographed), choose subject/board/level/marks. AI marks it like a real examiner: awarded marks, credited points, not-credited points, AO breakdown, how to improve, examiner annotation. Inline coaching on what the question's command word (e.g. "evaluate") actually requires. If your marks are consistently weak on one command word, it offers 3 targeted flashcards on just that skill. Recent marking history panel
 - Tutor (/tutor, Pro only): Maths step-by-step solver (reveals one step at a time rather than the full answer, so it teaches the method) and English essay feedback (strengths, areas to improve, structure, technical accuracy, a rough indicative band). Both accept a photo instead of typing — see Photo scanning below.
 - Photo scanning: on the Tutor page and the Answer Marker, students can take a photo or upload one instead of typing — a maths problem, an exam question, or a handwritten essay/answer. The photo is transcribed into the text box (handwriting gets an educated-guess transcription, not left blank if messy) so it can be checked and corrected before solving or marking.
@@ -69,7 +69,7 @@ FLASHCARDS & QUIZ:
 - Admin can bulk-generate public flashcard sets for all topics in a subject
 
 EXAM QUESTIONS & MARKING:
-- Board-specific: AQA, Edexcel, OCR, WJEC, Eduqas, CCEA at GCSE, AS-Level and A-Level
+- Board-specific: AQA, Edexcel, OCR, Eduqas / WJEC, CCEA at GCSE, AS-Level and A-Level
 - Correct command words per board per mark value (e.g. AQA 6-mark = Evaluate/Discuss)
 - Mark scheme formats: point-mark for lower marks, level-based for higher marks
 - Maths questions use plain-text notation (no LaTeX)
