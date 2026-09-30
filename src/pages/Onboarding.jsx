@@ -6,10 +6,10 @@ import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { awardXP } from '../utils/firestore'
 import { db } from '../firebase'
 import { generateCalendarPlan } from '../utils/ai'
-import {
-  GCSE_SUBJECTS, ALEVEL_SUBJECTS, AS_LEVEL_SUBJECTS, BTEC_L2_SUBJECTS, BTEC_L3_SUBJECTS,
-  EXAM_BOARDS, getGradeOptions, SUBJECT_COLOURS,
-} from '../data/subjects'
+import { getGradeOptions, SUBJECT_COLOURS } from '../data/subjects'
+import { canonicalBoard, boardLabel } from '../data/boards'
+import { getSupportedSubjects } from '../data/curriculumSupport'
+import BoardOptions from '../components/BoardOptions'
 import { isTiered } from '../data/examDates2026'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
@@ -93,13 +93,11 @@ export default function Onboarding() {
   useEffect(() => {
     const opts = getGradeOptions('', qual, 'N/A')
     setGlobalTarget(opts[0] || '9')
+    setNewSubj(s => getSupportedSubjects(s.board, qual).includes(s.name) ? s : { ...s, name:'', tier:'N/A' })
   }, [qual])
 
-  const subjectList = qual==='A-Level' ? ALEVEL_SUBJECTS
-    : qual==='AS-Level' ? AS_LEVEL_SUBJECTS
-    : qual==='BTEC-L2' ? BTEC_L2_SUBJECTS
-    : qual==='BTEC-L3' ? BTEC_L3_SUBJECTS
-    : GCSE_SUBJECTS
+  // Only subjects this board + qualification actually has curriculum content for.
+  const subjectList = getSupportedSubjects(newSubj.board, qual)
 
   const gradeOptions       = getGradeOptions(newSubj.name, qual, newSubj.tier)
   const globalGradeOptions = getGradeOptions('', qual, 'N/A')
@@ -116,6 +114,14 @@ export default function Onboarding() {
 
   function onSubjName(name) {
     setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && qual === 'GCSE') ? 'Higher' : 'N/A' }))
+  }
+
+  // The subject list depends on the board, so a subject picked under one board is cleared if the new
+  // board has no content for it, rather than being kept as an unsupported board + subject pair.
+  function onBoard(board) {
+    setNewSubj(s => getSupportedSubjects(board, qual).includes(s.name)
+      ? { ...s, board }
+      : { ...s, board, name:'', tier:'N/A' })
   }
 
   function addSubject() {
@@ -272,7 +278,6 @@ export default function Onboarding() {
               </div>
               {[
                 { id:'GCSE',    label:'GCSE',                       desc:'Grades 9–1 · Most common UK qualification at 16' },
-                { id:'BTEC-L2', label:'BTEC Tech Award (Level 2)',  desc:'Grades D*–P · Vocational, taken alongside GCSEs' },
               ].map(({ id:q, label, desc }) => (
                 <button key={q} onClick={() => setQual(q)} style={{
                   width:'100%', textAlign:'left', cursor:'pointer', marginBottom:8,
@@ -296,7 +301,6 @@ export default function Onboarding() {
               {[
                 { id:'AS-Level', label:'AS-Level',                  desc:'Grades A–E · Standalone one-year qualification, separate from A-Level' },
                 { id:'A-Level', label:'A-Level',                    desc:'Grades A*–E · Two-year, university entrance qualification' },
-                { id:'BTEC-L3', label:'BTEC National (Level 3)',    desc:'Grades D*D*–U · Vocational, equivalent to A-Levels' },
               ].map(({ id:q, label, desc }) => (
                 <button key={q} onClick={() => setQual(q)} style={{
                   width:'100%', textAlign:'left', cursor:'pointer', marginBottom:8,
@@ -344,7 +348,7 @@ export default function Onboarding() {
                       animation:'chipIn 0.25s ease',
                     }}>
                       {s.name}
-                      <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{s.board}</span>
+                      <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>
                       <button onClick={() => setSubjects(ss => ss.filter(x => x.id !== s.id))}
                         style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit' }}>
                         <X size={12} />
@@ -359,18 +363,18 @@ export default function Onboarding() {
               <div style={{ background:'var(--bg-surface)', padding:14, borderRadius:12, border:'1px solid var(--border)' }}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
                   <div>
+                    <label className="label">Exam board</label>
+                    <select className="select" value={canonicalBoard(newSubj.board)} onChange={e => onBoard(e.target.value)}>
+                      <BoardOptions current={newSubj.board} />
+                    </select>
+                  </div>
+                  <div>
                     <label className="label">Subject</label>
                     <select className="select" value={newSubj.name} onChange={e => onSubjName(e.target.value)}>
                       <option value="">Select…</option>
                       {subjectList.filter(s => !subjects.find(x => x.name === s)).map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Exam board</label>
-                    <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board:e.target.value }))}>
-                      {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                   {newSubj.name && isTiered(newSubj.name) && qual === 'GCSE' && (
