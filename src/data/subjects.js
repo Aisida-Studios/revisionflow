@@ -84,14 +84,13 @@
 //     BTEC_L3_SUBJECTS — it isn't a real BTEC subject, just an unfilled template row.
 //
 // LEFT AS-IS (flagging rather than changing):
-//   - EXAM_BOARDS keeps 'WJEC' (not 'Eduqas/WJEC') as the display value — topics.js's board-alias
-//     resolution already maps 'WJEC' (and 'Eduqas') to its 'Eduqas/WJEC' data, and 'WJEC' reads
-//     better as a picker label than the combined name, so no change needed here.
-//   - EXAM_BOARDS also keeps 'Cambridge' (CIE). topics.js has zero content for this board — it's an
-//     entirely different qualification family (IGCSE / Cambridge International A-Level) that wasn't
-//     part of the topics.js rebuild. If the app lets a user pick Cambridge as a board today, they'll
-//     hit an empty topic list. Left in rather than removed since that's a bigger, separate scope
-//     decision, but worth knowing about.
+//   - (Superseded — see data/boards.js.) EXAM_BOARDS is now derived from boards.js's single
+//     SUPPORTED_BOARDS list. Eduqas and WJEC are stored as 'WJEC' (unchanged, so no data moves) but
+//     shown as one 'Eduqas / WJEC' option via boardLabel(). 'Cambridge' is no longer a selectable
+//     board: there is no Cambridge International content, and previously picking it silently served
+//     AQA's topics (topics.js fell back to AQA for any board it had no data for — that fallback is
+//     removed). Legacy 'Cambridge' values already stored on a profile are left untouched and shown
+//     as "Cambridge (not supported)".
 //   - BTEC_L2_SUBJECTS / BTEC_L3_SUBJECTS otherwise untouched — topics.js doesn't cover BTEC (it's a
 //     unit/assignment structure, not exam papers, so "topics" don't map the same way), so there was
 //     nothing to reconcile there beyond the placeholder fix above.
@@ -100,7 +99,11 @@
 //   - XP_REWARDS, LEVELS, BADGES: untouched — gamification config, not exam-specification data.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const EXAM_BOARDS = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge']
+import { SUPPORTED_BOARDS } from './boards'
+
+// Values only (what gets stored). For display text use boardLabel() from ./boards — 'WJEC' is
+// shown as 'Eduqas / WJEC'. Derived, not hand-maintained, so it can never drift from boards.js.
+export const EXAM_BOARDS = SUPPORTED_BOARDS.map(b => b.value)
 
 export const GCSE_SUBJECTS = [
   'Biology', 'Chemistry', 'Physics', 'Combined Science', 'Combined Science: Trilogy', 'Combined Science: Synergy',
@@ -242,8 +245,15 @@ export function getSubjectList(qualification) {
   return GCSE_SUBJECTS
 }
 
-// All qualification values the app understands, in the order they should appear in pickers.
+// Every qualification value the app can still RECOGNISE in stored data (including legacy BTEC
+// records, which are preserved rather than deleted). Not what a student may newly choose — use
+// SUPPORTED_QUALIFICATIONS for pickers.
 export const QUALIFICATIONS = ['GCSE', 'AS-Level', 'A-Level', 'BTEC-L2', 'BTEC-L3']
+
+// The qualifications RevisionFlow actually supports end to end (topics, past papers, boundaries).
+// BTEC has no equivalent topic / past-paper infrastructure yet, so it is not offered for new
+// selection; existing BTEC data stays stored and is simply hidden from current curriculum views.
+export const SUPPORTED_QUALIFICATIONS = ['GCSE', 'AS-Level', 'A-Level']
 
 // A student's account has one primary profile.qualification, but AS-Level and A-Level are
 // deliberately mixable per-subject (e.g. A-Level Maths alongside AS-Level Further Maths) —
