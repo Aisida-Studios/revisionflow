@@ -13,17 +13,11 @@
 // different way — topic IDs are already board+qualification-scoped; this is
 // the same idea one level up, without a topic name in it.
 //
-// WJEC/Eduqas note: this file resolves both aliases to one shared board token
-// (EDUQAS_WJEC) purely so a record's subjectKey is stable no matter which of
-// the two names it was originally stored under. This does NOT change how
-// data/topics.js or data/examDates2026.js look up their own board-keyed data
-// — those already have their own working (if inconsistent with each other)
-// WJEC/Eduqas alias tables, and rewriting either is a separate, larger job
-// that needs its own careful verification, not bundled into this file.
-// 'Cambridge' is intentionally left as its own distinct token — never merged
-// into OCR or any other board — so legacy Cambridge records stay identifiable
-// as their own (unsupported) thing rather than being silently corrupted into
-// a supported board's data.
+// Boards: canonicalBoard() from data/boards.js is the app's single board alias table, so every
+// Eduqas/WJEC spelling produces the same key ('WJEC'). An unsupported board such as legacy
+// 'Cambridge' is kept as its own distinct token — never merged into OCR or any other board — so
+// legacy Cambridge records stay identifiable as their own (unsupported) thing rather than being
+// silently corrupted into a supported board's data.
 //
 // A client-generated subject `id` (profile.subjects[i].id, if one is ever
 // added) must NEVER be used here: it isn't guaranteed stable across edits or
@@ -32,21 +26,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { normalizeQualificationToken } from './topicId'
-
-// Local-only alias resolution for key-building — see file header note above.
-const KEY_BOARD_ALIASES = {
-  'WJEC': 'EDUQAS_WJEC', 'wjec': 'EDUQAS_WJEC',
-  'Eduqas': 'EDUQAS_WJEC', 'eduqas': 'EDUQAS_WJEC',
-  'Eduqas/WJEC': 'EDUQAS_WJEC', 'Eduqas / WJEC': 'EDUQAS_WJEC',
-}
+import { canonicalBoard, DEFAULT_BOARD } from '../data/boards'
 
 function sanitize(str) {
   return String(str || '').replace(/[^a-zA-Z0-9_]/g, '_')
 }
 
 function boardToken(board) {
-  const raw = String(board || 'AQA').trim()
-  return sanitize(KEY_BOARD_ALIASES[raw] || raw)
+  // Only a MISSING board takes the default (profiles that predate board capture); a named board
+  // is never swapped for another.
+  return sanitize(canonicalBoard(board) || DEFAULT_BOARD)
 }
 
 /**
