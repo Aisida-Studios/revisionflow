@@ -5,6 +5,7 @@
 // Estimates (marked ~) derived from 3-year historical averages
 
 import { TIERED_SUBJECTS } from './subjects'
+import { canonicalBoard } from './boards'
 // GCSE format: boundaries [G9,G8,G7,G6,G5,G4,G3,G2,G1]
 // A-Level format: [A*,A,B,C,D,E] — 6 entries
 // NO null values — every subject has a full boundary array
@@ -1745,6 +1746,7 @@ export const PAST_PAPER_SOURCES = {
 // Returns the correct official finder-tool URL for a board + qualification level. Use this rather
 // than hardcoding a board's URL elsewhere, so a future path change only needs updating here.
 export function getPastPaperSourceUrl(board, level) {
+  board = canonicalBoard(board)
   const src = PAST_PAPER_SOURCES[board]
   if (!src) return null
   if (board === 'CCEA') {
@@ -1765,6 +1767,7 @@ export function getPastPaperSourceUrl(board, level) {
 // for untiered subjects that exist at both GCSE and A-Level, it would have silently handed back
 // the GCSE paper's spec to an A-Level lookup the moment A-Level data was queried this way.
 export function getPaperSpec(board, subject, tier, paper, level) {
+  board = canonicalBoard(board)
   const t = tier && tier !== 'N/A' ? tier : 'N/A'
   if (level === 'A-Level') {
     return PAPER_DATABASE[`${board}-${subject}-N/A-Alevel-P${paper}`] || null
@@ -1792,6 +1795,7 @@ function normSubj(subject) {
 }
 
 export function getBoundaries(board, subject, tier, year, level) {
+  board = canonicalBoard(board)
   const norm = normSubj(subject)
   const isTieredSubj = TIERED.includes(subject) || TIERED.includes(norm)
   const isALevel = level === 'A-Level'
@@ -1828,6 +1832,7 @@ export function getBoundaries(board, subject, tier, year, level) {
 }
 
 export function getBoundariesForPaper(board, subject, tier, year, paper, level) {
+  board = canonicalBoard(board)
   // Mirrors the 2026-first-then-fallback logic in getBoundaries() above.
   if (year === 2026 && GRADE_BOUNDARIES[2026] && level !== 'A-Level' && level !== 'AS-Level') {
     const paperKey2026 = `${board}-${subject}-P${paper}`
