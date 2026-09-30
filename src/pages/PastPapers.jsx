@@ -8,6 +8,8 @@ import { calculateGradeFromBoundaries, AVAILABLE_YEARS } from '../data/paperData
 import { getMergedPaperSpec, getMergedBoundaries } from '../data/overrides'
 import { isTiered } from '../data/examDates2026'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
+import { canonicalBoard, boardLabel } from '../data/boards'
+import BoardOptions from '../components/BoardOptions'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'
@@ -174,7 +176,7 @@ export default function PastPapers() {
                       <td><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[a.subject]||'var(--accent)',flexShrink:0}}/>{a.subject}</div></td>
                       <td><span className="badge badge-accent" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
                       <td>P{a.paper}</td>
-                      <td>{a.board}</td>
+                      <td>{boardLabel(a.board)}</td>
                       <td>{a.year}</td>
                       <td>{a.score}/{a.maxMarks}</td>
                       <td>{a.percentage}%</td>
@@ -327,8 +329,8 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
                 {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
               </select></div>
             <div><label className="label">Board</label>
-              <select className="select" value={form.board} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
-                {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
+              <select className="select" value={canonicalBoard(form.board)} onChange={e=>setForm(f=>({...f,board:e.target.value}))}>
+                <BoardOptions current={form.board} />
               </select></div>
             <div><label className="label">Level</label>
               <select className="select" value={formQual} onChange={e=>setLevelOverride(e.target.value)}>
@@ -532,8 +534,8 @@ function BoundaryEditorModal({ profile, onClose }) {
               {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
             </select></div>
           <div><label className="label">Board</label>
-            <select className="select" value={selBoard} onChange={e=>setSelBoard(e.target.value)}>
-              {['AQA','Edexcel','OCR','WJEC','CCEA'].map(b=><option key={b} value={b}>{b}</option>)}
+            <select className="select" value={canonicalBoard(selBoard)} onChange={e=>setSelBoard(e.target.value)}>
+              <BoardOptions current={selBoard} />
             </select></div>
           <div><label className="label">Level</label>
             <select className="select" value={selLevel} onChange={e=>setSelLevel(e.target.value)}>
@@ -563,7 +565,7 @@ function BoundaryEditorModal({ profile, onClose }) {
             </p>
           </div>
         ) : (
-          <div className="empty-state" style={{padding:'24px 0'}}><p>No boundary data found for {selBoard} {selSubj} at {selLevel}{selTier!=='N/A'?` (${selTier})`:''}.</p></div>
+          <div className="empty-state" style={{padding:'24px 0'}}><p>No boundary data found for {boardLabel(selBoard)} {selSubj} at {selLevel}{selTier!=='N/A'?` (${selTier})`:''}.</p></div>
         )}
         <div style={{display:'flex',justifyContent:'flex-end',marginTop:16}}>
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
