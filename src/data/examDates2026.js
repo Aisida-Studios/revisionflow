@@ -7,6 +7,7 @@
 // maintained list here (and a third one in paperDatabase.js) which had drifted out of sync with
 // each other. Re-exported here so existing imports of `isTiered` from this file keep working.
 export { TIERED_SUBJECTS, isTiered } from './subjects'
+import { canonicalBoard } from './boards'
 
 // ── GCSE 2026 EXAM DATES ──────────────────────────────────────────────────────
 const GCSE_2026 = [
@@ -11919,14 +11920,16 @@ const ALEVEL_2027 = [
 
 export const EXAM_DATES_2027 = [...GCSE_2027, ...ASLEVEL_2027, ...CCEA_ASLEVEL_2027, ...ALEVEL_2027]
 
-// subjects.js only offers 'WJEC' as a pickable board (see its audit notes — 'Eduqas' and 'WJEC'
-// are meant to resolve to the same data, same as topics.js's BOARD_ALIASES), but every entry in
-// this file is stored under 'Eduqas'. Without this alias, a WJEC-board student matched zero exam
-// dates for every subject at every level — not a mixing bug, but the opposite failure (silently
-// empty), which is just as much a case of the app getting a board wrong.
-const EXAM_BOARD_ALIASES = { 'WJEC': 'Eduqas', 'wjec': 'Eduqas', 'eduqas': 'Eduqas' }
+// Board naming (every Eduqas/WJEC spelling) is resolved once in ./boards. This file only owns how ITS
+// data is keyed: every Eduqas/WJEC entry here is stored under 'Eduqas', all other boards under
+// their own name. Without that mapping a WJEC-board student matched zero exam dates for every
+// subject at every level — the opposite failure to board-mixing (silently empty), but just as much
+// a case of the app getting a board wrong. An unsupported board (e.g. legacy 'Cambridge') matches
+// nothing here, as it should.
+const EXAM_DATA_BOARD_KEYS = { WJEC: 'Eduqas' }
 function resolveExamBoard(board) {
-  return EXAM_BOARD_ALIASES[board] || board
+  const canon = canonicalBoard(board)
+  return EXAM_DATA_BOARD_KEYS[canon] || canon
 }
 
 // `year` defaults to 2026 so every existing call site (which doesn't pass it) keeps returning
