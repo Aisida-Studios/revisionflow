@@ -6,7 +6,10 @@ import { useTheme } from '../context/ThemeContext'
 import { updateUserProfile, archiveSupersededAttempts, deleteSubjectAttempts } from '../utils/firestore'
 import { detectQualificationSwitches } from '../utils/qualificationSwitch'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
-import { EXAM_BOARDS, QUALIFICATIONS, getGradeOptions, getSubjectList, getSubjectQualification, isTiered } from '../data/subjects'
+import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isTiered } from '../data/subjects'
+import { canonicalBoard, boardLabel } from '../data/boards'
+import { getSupportedSubjects } from '../data/curriculumSupport'
+import BoardOptions from '../components/BoardOptions'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
@@ -79,8 +82,10 @@ export default function Settings() {
     if (profile?.qualification) setQual(profile.qualification)
   }, [profile?.qualification])
 
-  const addSubjQual = newSubjLevel || qual
-  const addSubjList = getSubjectList(addSubjQual)
+  // A profile still on a legacy, no-longer-offered qualification (BTEC) starts the add form on GCSE.
+  const addSubjQual = newSubjLevel || (SUPPORTED_QUALIFICATIONS.includes(qual) ? qual : 'GCSE')
+  // Only subjects this board + level actually has curriculum content for.
+  const addSubjList = getSupportedSubjects(newSubj.board, addSubjQual)
 
   // Called after subjects are saved, with the subjects array from just before the save. Finds
   // any subject whose qualification changed (directly, or a same-named subject swapped in at a
@@ -199,9 +204,9 @@ export default function Settings() {
             <label className="label">Qualification</label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span className="badge badge-accent">{profile?.qualification || 'GCSE'}</span>
-              {QUALIFICATIONS.filter(q => q !== (profile?.qualification || 'GCSE')).map(q => (
+              {SUPPORTED_QUALIFICATIONS.filter(q => q !== (profile?.qualification || 'GCSE')).map(q => (
                 <button key={q} className="btn btn-secondary btn-sm" onClick={() => setNewQualFlow(q)}>
-                  Switch to {q === 'BTEC-L2' ? 'BTEC (L2)' : q === 'BTEC-L3' ? 'BTEC (L3)' : q} →
+                  Switch to {q} →
                 </button>
               ))}
             </div>
@@ -231,7 +236,7 @@ export default function Settings() {
                 <div key={s.id || i} className="ap-subject-row">
                   <div className="ap-subject-row-id">
                     <span className="ap-subject-row-name">{s.name}</span>
-                    <span className="badge badge-grey">{s.board}</span>
+                    <span className="badge badge-grey">{boardLabel(s.board)}</span>
                     {subjQual !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{subjQual}</span>}
                     {s.tier && s.tier !== 'N/A' && <span className="badge badge-grey">{s.tier}</span>}
                   </div>
@@ -266,26 +271,30 @@ export default function Settings() {
                 { v: 'GCSE', label: 'GCSE' },
                 { v: 'AS-Level', label: 'AS-Level' },
                 { v: 'A-Level', label: 'A-Level' },
-                { v: 'BTEC-L2', label: 'BTEC (L2)' },
-                { v: 'BTEC-L3', label: 'BTEC (L3)' },
               ].map(({ v, label }) => (
-                <button key={v} onClick={() => setNewSubjLevel(v)}
+                <button key={v} onClick={() => { setNewSubjLevel(v); setNewSubj(s => getSupportedSubjects(s.board, v).includes(s.name) ? s : { ...s, name: '', tier: 'N/A' }) }}
                   style={{ padding: '3px 10px', borderRadius: 'var(--r-sm)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${(newSubjLevel || qual) === v ? 'var(--accent)' : 'var(--border)'}`, background: (newSubjLevel || qual) === v ? 'var(--accent-pale)' : 'transparent', color: (newSubjLevel || qual) === v ? 'var(--accent-light)' : 'var(--text-muted)' }}>
                   {label}
                 </button>
               ))}
             </div>
             <div className="grid-2" style={{ gap: 8 }}>
-              <select className="select" value={newSubj.name}
+              <select className="select" aria-label="Exam board" value={canonicalBoard(newSubj.board)}
+                onChange={e => {
+                  const board = e.target.value
+                  setNewSubj(s => getSupportedSubjects(board, addSubjQual).includes(s.name)
+                    ? { ...s, board }
+                    : { ...s, board, name: '', tier: 'N/A' })
+                }}>
+                <BoardOptions current={newSubj.board} />
+              </select>
+              <select className="select" aria-label="Subject" value={newSubj.name}
                 onChange={e => {
                   const name = e.target.value
                   setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && addSubjQual === 'GCSE') ? 'Higher' : 'N/A' }))
                 }}>
                 <option value="">Subject…</option>
                 {addSubjList.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>
-                {EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
               {newSubj.name && isTiered(newSubj.name) && addSubjQual === 'GCSE' && (
                 <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
@@ -508,10 +517,11 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
   const [subjects, setSubjects] = useState([])
   // Switching into sixth form (AS-Level or A-Level) lets each subject be tagged AS-Level or
   // A-Level independently — e.g. A-Level Maths alongside AS-Level Further Maths is a normal
-  // combination. For GCSE/BTEC targets there's no sibling to choose between.
+  // combination. For a GCSE target there's no sibling to choose between.
   const isSixthForm = newQual === 'AS-Level' || newQual === 'A-Level'
   const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9', qualification: newQual })
-  const subjectList = getSubjectList(newSubj.qualification || newQual)
+  // Only subjects this board + qualification actually has curriculum content for.
+  const subjectList = getSupportedSubjects(newSubj.board, newSubj.qualification || newQual)
 
   function addSubj() {
     if (!newSubj.name) return
@@ -553,7 +563,7 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                   <div key={s.id} className="ap-subject-row">
                     <div className="ap-subject-row-id">
                       <span className="ap-subject-row-name">{s.name}</span>
-                      <span className="badge badge-grey">{s.board}</span>
+                      <span className="badge badge-grey">{boardLabel(s.board)}</span>
                       {isSixthForm && <span className="badge badge-grey">{s.qualification}</span>}
                     </div>
                     <div className="ap-subject-row-grades">
@@ -583,13 +593,20 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                 </div>
               )}
               <div className="grid-2" style={{ gap: 8 }}>
-                <select className="select" value={newSubj.name}
+                <select className="select" aria-label="Exam board" value={canonicalBoard(newSubj.board)}
+                  onChange={e => {
+                    const board = e.target.value
+                    const effQual = newSubj.qualification || newQual
+                    setNewSubj(s => getSupportedSubjects(board, effQual).includes(s.name)
+                      ? { ...s, board }
+                      : { ...s, board, name: '', tier: 'N/A' })
+                  }}><BoardOptions current={newSubj.board} /></select>
+                <select className="select" aria-label="Subject" value={newSubj.name}
                   onChange={e => {
                     const name = e.target.value
                     const effQual = newSubj.qualification || newQual
                     setNewSubj(s => ({ ...s, name, tier: (isTiered(name) && effQual === 'GCSE') ? 'Higher' : 'N/A' }))
                   }}><option value="">Subject…</option>{subjectList.map(s => <option key={s} value={s}>{s}</option>)}</select>
-                <select className="select" value={newSubj.board} onChange={e => setNewSubj(s => ({ ...s, board: e.target.value }))}>{EXAM_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}</select>
                 {newSubj.name && isTiered(newSubj.name) && (newSubj.qualification || newQual) === 'GCSE' && (
                   <select className="select" value={newSubj.tier} onChange={e => setNewSubj(s => ({ ...s, tier: e.target.value }))}>
                     <option value="Higher">Higher</option><option value="Foundation">Foundation</option>
@@ -649,7 +666,7 @@ function BoundaryViewer({ profile }) {
       {bounds ? (
         <div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-            {selBoard} · {selSubj} · {selQual} · {selTier && selTier !== 'N/A' ? selTier + ' · ' : ''}{selYear} · Max marks: {bounds.maxMarks}
+            {boardLabel(selBoard)} · {selSubj} · {selQual} · {selTier && selTier !== 'N/A' ? selTier + ' · ' : ''}{selYear} · Max marks: {bounds.maxMarks}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(80px,1fr))', gap: 8, marginBottom: 12 }}>
             {grades.map((g, i) => {
