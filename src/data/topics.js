@@ -6241,43 +6241,53 @@ const ALEVEL = {
 // never silently return data belonging to another.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { canonicalBoard, DEFAULT_BOARD } from './boards'
+
 /**
  * Resolves a level string to its backing data object.
  * Recognised aliases:
- *   GCSE      -> 'GCSE' (default/fallback for anything unrecognised)
+ *   GCSE      -> 'GCSE'
  *   AS-Level  -> 'AS-Level', 'ASLEVEL', 'AS_LEVEL', 'AS'
  *   A-Level   -> 'A-Level', 'ALEVEL', 'A_LEVEL'
+ * A MISSING level (undefined/empty — subjects saved before per-subject qualification existed) is
+ * treated as GCSE, as it always has been. A level that is named but has no data here (e.g.
+ * 'BTEC-L2', 'BTEC-L3', or a typo) returns null so the lookups return nothing — it must never be
+ * quietly answered with GCSE content.
  */
 function resolveLevel(level) {
+  if (!level) return GCSE
   if (level === 'AS-Level' || level === 'ASLEVEL' || level === 'AS_LEVEL' || level === 'AS') {
     return ASLEVEL
   }
   if (level === 'A-Level' || level === 'ALEVEL' || level === 'A_LEVEL') {
     return ALEVEL
   }
-  return GCSE
+  if (level === 'GCSE') return GCSE
+  return null
 }
 
-const BOARD_ALIASES = {
-  'Eduqas': 'Eduqas/WJEC',
-  'WJEC':   'Eduqas/WJEC',
-  'eduqas': 'Eduqas/WJEC',
-  'wjec':   'Eduqas/WJEC',
+// Board naming lives in ./boards (one alias table for the whole app). This file only owns how ITS
+// data is keyed: everything is stored under the board's own name except Eduqas/WJEC, whose
+// top-level key here is 'Eduqas/WJEC'. Only a MISSING board falls back to the default board (legacy
+// profiles that predate board capture); a board that is named but has no data here — e.g. legacy
+// 'Cambridge' — resolves to nothing rather than to AQA's content.
+const TOPICS_BOARD_KEYS = { WJEC: 'Eduqas/WJEC' }
+function boardDataFor(levelData, board) {
+  if (!levelData) return null
+  const canon = canonicalBoard(board) || DEFAULT_BOARD
+  return levelData[TOPICS_BOARD_KEYS[canon] || canon] || null
 }
 
 /**
  * Returns a flat array of { name, paper, subjectId } for use in topic seeding,
  * confidence tracking, and the AI context builder.
  *
- * @param {string} board   - e.g. 'AQA', 'Edexcel', 'OCR', 'Eduqas/WJEC', 'CCEA'
+ * @param {string} board   - 'AQA', 'Edexcel', 'OCR', 'WJEC' (any Eduqas/WJEC spelling is accepted), 'CCEA'
  * @param {string} subject - e.g. 'Biology', 'Mathematics'
  * @param {string} level   - 'GCSE', 'AS-Level' (or 'ASLEVEL'), or 'A-Level' (or 'ALEVEL')
  */
 export function getAllTopicsFlat(board, subject, level) {
-  const levelData = resolveLevel(level)
-  const boardKey = BOARD_ALIASES[board] || board
-
-  const boardData = levelData[boardKey] || levelData['AQA'] || {}
+  const boardData = boardDataFor(resolveLevel(level), board) || {}
   const subjectData = boardData[subject]
 
   if (!subjectData?.papers) return []
@@ -6296,10 +6306,7 @@ export function getAllTopicsFlat(board, subject, level) {
  * { 1: ['topic1', ...], 2: [...] }
  */
 export function getTopicsForSubject(board, subject, level) {
-  const levelData = resolveLevel(level)
-  const boardKey = BOARD_ALIASES[board] || board
-
-  const boardData = levelData[boardKey] || levelData['AQA'] || {}
+  const boardData = boardDataFor(resolveLevel(level), board) || {}
   return boardData[subject]?.papers || {}
 }
 
@@ -6307,9 +6314,7 @@ export function getTopicsForSubject(board, subject, level) {
  * Returns all subject names available for a given board and level.
  */
 export function getSubjectsForBoard(board, level) {
-  const levelData = resolveLevel(level)
-  const boardKey = BOARD_ALIASES[board] || board
-  return Object.keys(levelData[boardKey] || {})
+  return Object.keys(boardDataFor(resolveLevel(level), board) || {})
 }
 
 /**
@@ -6317,8 +6322,7 @@ export function getSubjectsForBoard(board, level) {
  * board-selection UI once AS-Level exists alongside GCSE and A-Level).
  */
 export function getBoardsForLevel(level) {
-  const levelData = resolveLevel(level)
-  return Object.keys(levelData)
+  return Object.keys(resolveLevel(level) || {})
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
