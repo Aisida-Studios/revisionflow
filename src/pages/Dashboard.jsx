@@ -35,7 +35,8 @@ import {
 } from '../utils/firestore'
 import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
-import { computeSubjectPredictions, computeWeakTopics } from '../utils/gradeInsights'
+import { computeSubjectPredictions } from '../utils/gradeInsights'
+import { computeTopicRecommendations } from '../utils/recommendations'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
 import { gradeColour } from '../utils/calendar'
 import { LEVELS, levelFromXP, SUBJECT_COLOURS } from '../data/subjects'
@@ -216,6 +217,7 @@ export default function Dashboard() {
   const [paperAttempts, setPaperAttempts] = useState([])
   const [quizResults, setQuizResults] = useState([])
   const [topics, setTopics] = useState([])
+  const [mistakes, setMistakes] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
 
   const [refCode, setRefCode] = useState('')
@@ -243,12 +245,14 @@ export default function Dashboard() {
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getTopicsWithConfidence(user.uid, profile?.subjects || []),
-    ]).then(([s, p, q, t]) => {
+      getMistakes(user.uid),
+    ]).then(([s, p, q, t, m]) => {
       if (cancelled) return
       setSessions(s || [])
       setPaperAttempts(p || [])
       setQuizResults(q || [])
       setTopics(t || [])
+      setMistakes(m || [])
       setDataLoading(false)
     }).catch(() => { if (!cancelled) setDataLoading(false) })
     return () => { cancelled = true }
@@ -266,7 +270,10 @@ export default function Dashboard() {
     () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []),
     [topics, currentPapers, currentQuizzes, profile]
   )
-  const weakTopics = useMemo(() => computeWeakTopics(topics, 4), [topics])
+  const weakTopics = useMemo(
+    () => computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 4 }),
+    [topics, mistakes, profile?.examDates, sessions]
+  )
   const upcomingExams = useMemo(() => filterUpcomingExams(profile?.examDates || []).slice(0, 4), [profile?.examDates])
 
   const avgConfidence = useMemo(() => {
@@ -321,9 +328,9 @@ export default function Dashboard() {
         return
       }
       try {
-        const mistakes = await getMistakes(user.uid)
+        const freshMistakes = await getMistakes(user.uid)
         const sessionsForPrompt = todaySessions.map((s) => ({ subject: s.subject, type: s.title || 'session' }))
-        const result = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, mistakes)
+        const result = await getDailyAdvice(user.uid, sessionsForPrompt, profile?.streak || 0, freshMistakes)
         if (cancelled) return
         // getDailyAdvice returns {provider, remaining, text, error} like every other ai.js
         // function — .text is the actual briefing, not the object itself.
@@ -567,17 +574,18 @@ export default function Dashboard() {
           <p className="card-eyebrow">Needs attention</p>
           {dataLoading ? <Skeleton height={130} /> : weakTopics.length ? (
             <>
-              <p className="card-sub-line">{weakTopics.length} topic{weakTopics.length === 1 ? ' is' : 's are'} below 60% confidence</p>
+              <p className="card-sub-line">{weakTopics.length} topic{weakTopics.length === 1 ? '' : 's'} need{weakTopics.length === 1 ? 's' : ''} attention</p>
               <ul className="plain-list">
                 {weakTopics.map((t) => (
-                  <li key={t.id} className="progress-row">
+                  <li key={t.id} className="progress-row" title={t.reasons[0]}>
                     <div className="progress-row-top">
-                      <span>{t.name}</span>
-                      <span>{t.confidence * 20}%</span>
+                      <span>{t.topic}</span>
+                      <span>{t.confidence ? `${t.confidence * 20}%` : 'Not rated'}</span>
                     </div>
                     <div className="thin-progress">
-                      <div className="thin-progress-fill" style={{ width: `${t.confidence * 20}%` }} />
+                      <div className="thin-progress-fill" style={{ width: `${(t.confidence || 0) * 20}%` }} />
                     </div>
+                    <p className="card-sub-line" style={{ margin: '2px 0 0' }}>{t.reasons[0]}</p>
                   </li>
                 ))}
               </ul>
