@@ -121,6 +121,18 @@ module.exports.handler = async function(event) {
 
   if (!action) return respond(400, { error: 'action required' })
 
+  // Admin-settable fields via setUserField/bulkSetField, as an ALLOWLIST rather than a
+  // denylist. The previous version blocked a short, specific list of sensitive fields
+  // (stripeSecretKey, serviceAccount, __proto__, constructor) and allowed everything else —
+  // meaning any OTHER field on a user doc (uid, email, createdAt, xp, adminAuditLog-adjacent
+  // fields, anything) was writable by construction, not by decision. Checked every caller in
+  // the app (Admin.jsx's Beta/Pro toggle buttons are the only ones) before narrowing this:
+  // 'betaUser' and 'isPro' are the only two fields anything currently sets through either
+  // action. A future admin feature that needs to set something else will get a clear,
+  // deliberate error here rather than silently working — extend this list explicitly when
+  // that's actually needed, rather than widening it speculatively now.
+  const ADMIN_SETTABLE_FIELDS = ['betaUser', 'isPro']
+
   try {
     const admin = await getAdmin()
     const db    = admin.firestore()
@@ -130,10 +142,8 @@ module.exports.handler = async function(event) {
       if (!targetUid || field === undefined || value === undefined) {
         return respond(400, { error: 'targetUid, field, value required' })
       }
-      // Guard against writing sensitive internal fields via this endpoint
-      const BLOCKED_FIELDS = ['stripeSecretKey', 'serviceAccount', '__proto__', 'constructor']
-      if (BLOCKED_FIELDS.includes(field)) {
-        return respond(400, { error: 'Cannot write protected field: ' + field })
+      if (!ADMIN_SETTABLE_FIELDS.includes(field)) {
+        return respond(400, { error: 'Field not allowed via setUserField: ' + field })
       }
       await db.collection('users').doc(targetUid).update({ [field]: value })
       logAdminAction(db, 'setUserField', { targetUid, field, value })
@@ -145,9 +155,8 @@ module.exports.handler = async function(event) {
       if (!targetUids || !Array.isArray(targetUids) || field === undefined || value === undefined) {
         return respond(400, { error: 'targetUids array, field, value required' })
       }
-      const BLOCKED_FIELDS = ['stripeSecretKey', 'serviceAccount', '__proto__', 'constructor']
-      if (BLOCKED_FIELDS.includes(field)) {
-        return respond(400, { error: 'Cannot write protected field: ' + field })
+      if (!ADMIN_SETTABLE_FIELDS.includes(field)) {
+        return respond(400, { error: 'Field not allowed via bulkSetField: ' + field })
       }
       const batchSize = 400
       const chunks = []
