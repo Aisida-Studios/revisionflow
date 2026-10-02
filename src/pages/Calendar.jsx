@@ -16,6 +16,7 @@ import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parse
 import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { computeTopicRecommendations } from '../utils/recommendations'
+import { subjectIdentityForName } from '../utils/subjectKey'
 import CalendarGenerator from '../components/CalendarGenerator'
 import CalendarTimetable from '../components/CalendarTimetable'
 import toast from 'react-hot-toast'
@@ -326,12 +327,16 @@ export default function Calendar() {
 
       for (const ev of approved) {
         const start = ev.start instanceof Date && !isNaN(ev.start) ? ev.start : null
+        // An imported file's subject is free text, so only enrich when it happens to match one
+        // of the student's own current subjects exactly — never guessed otherwise.
+        const identity = ev.subject ? subjectIdentityForName(ev.subject, profile) : null
         await addDoc(collection(db, 'users', user.uid, 'sessions'), {
           title:      ev.title || `${ev.subject || 'Revision'} – ${ev.type || 'Session'}`,
           subject:    ev.subject    || '',
           type:       ev.type       || 'Content Revision',
           paper:      ev.paper      || '',
-          board:      ev.board      || '',
+          board:      identity?.board || ev.board || '',
+          ...(identity ? { qualification: identity.qualification, tier: identity.tier, subjectKey: identity.subjectKey } : {}),
           isEmergency: ev.isEmergency || false,
           startTime:  start ? start.toISOString() : null,
           endTime:    ev.end instanceof Date && !isNaN(ev.end) ? ev.end.toISOString() : null,
@@ -882,15 +887,17 @@ export default function Calendar() {
         <AddEventModal user={user} profile={profile} selectedDate={selected} prefill={addPrefill}
           onClose={()=>{setShowAdd(false);setAddPrefill(null)}}
           onSaveSession={async s=>{
+            const identity = subjectIdentityForName(s.subject, profile)
             await addDoc(collection(db,'users',user.uid,'sessions'),{
-              ...s, completed:false, source:'manual', createdAt:serverTimestamp()
+              ...s, ...(identity || {}), completed:false, source:'manual', createdAt:serverTimestamp()
             })
             await loadSessions()
             setShowAdd(false); setAddPrefill(null)
             toast.success('Session added')
           }}
           onSaveTask={async t=>{
-            await addTask(user.uid, t)
+            const identity = t.subject ? subjectIdentityForName(t.subject, profile) : null
+            await addTask(user.uid, { ...t, ...(identity || {}) })
             await loadSessions()
             setShowAdd(false); setAddPrefill(null)
             toast.success('Task added')
@@ -906,7 +913,8 @@ export default function Calendar() {
             toast.success('Session updated')
           }}
           onSaveTask={async data=>{
-            await updateTask(user.uid, showEdit.id, data)
+            const identity = data.subject ? subjectIdentityForName(data.subject, profile) : null
+            await updateTask(user.uid, showEdit.id, { ...data, ...(identity || {}) })
             await loadSessions()
             setShowEdit(null)
             toast.success('Task updated')
