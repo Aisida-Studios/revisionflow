@@ -33,6 +33,7 @@ import { subjectColour } from '../data/subjects'
 import { componentForSubject } from '../data/illustrationThemes'
 import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, parseCategory } from '../utils/topicDisplay'
+import { buildSubjectKey } from '../utils/subjectKey'
 import AIOutput from '../components/AIOutput'
 import toast from 'react-hot-toast'
 import {
@@ -264,11 +265,13 @@ export default function TopicDetail() {
   async function handleSaveNote() {
     if (!noteForm.title) return
     setSavingNote(true)
+    const subjectKey = topic.subjectKey
+      || buildSubjectKey({ board: topic.board, qualification: topic.qualification, subject: topic.subjectId, tier: topic.tier })
     try {
       if (editingNote) {
-        await saveNote(user.uid, { ...editingNote, ...noteForm, subject: topic.subjectId, topicId, updatedAt: new Date().toISOString() })
+        await saveNote(user.uid, { ...editingNote, ...noteForm, subject: topic.subjectId, topicId, subjectKey, updatedAt: new Date().toISOString() })
       } else {
-        await saveNote(user.uid, { ...noteForm, subject: topic.subjectId, topicId, createdAt: new Date().toISOString() })
+        await saveNote(user.uid, { ...noteForm, subject: topic.subjectId, topicId, subjectKey, createdAt: new Date().toISOString() })
       }
       setNoteForm({ title: '', content: '' })
       setEditingNote(null)
