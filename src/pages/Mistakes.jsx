@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { addMistake, getMistakes, getPaperAttempts, resolveMistake } from '../utils/firestore'
+import { subjectIdentityForName } from '../utils/subjectKey'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { SUBJECT_COLOURS } from '../data/subjects'
@@ -52,12 +53,18 @@ export default function Mistakes() {
   async function handleAdd() {
     if (!form.subject||!form.description) return
     const linked = paperOptionsForSubject.find(a => a.id === form.paperAttemptId)
+    // board/qualification/tier/subjectKey come from the student's OWN current entry for this
+    // subject (profile.subjects), not invented — identityForName returns null for a subject
+    // that's since been removed from the profile, in which case the mistake is saved with
+    // just its plain subject name, same as before this field existed.
+    const identity = subjectIdentityForName(form.subject, profile)
     const payload = {
       subject: form.subject,
       topic: form.topic,
       description: form.description,
       source: form.source,
       priority: form.priority,
+      ...(identity || {}),
     }
     if (form.category) payload.category = form.category
     if (form.marksLost !== '' && !Number.isNaN(Number(form.marksLost))) payload.marksLost = Number(form.marksLost)
