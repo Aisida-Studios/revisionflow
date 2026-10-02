@@ -13,6 +13,7 @@ import BoardOptions from '../components/BoardOptions'
 import { isTiered } from '../data/examDates2026'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
+import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'
 
@@ -162,6 +163,7 @@ export default function Onboarding() {
         const id = buildTopicId(s.board, subjQual, s.name, t.name)
         await setDoc(doc(db,'users',uid,'topics',id), {
           name:t.name, paper:t.paper, subjectId:s.name, board:s.board, qualification:subjQual,
+          subjectKey: buildSubjectKey({ board:s.board, qualification:subjQual, subject:s.name, tier:s.tier }),
           confidence:null, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
         }, { merge:true })
       }
