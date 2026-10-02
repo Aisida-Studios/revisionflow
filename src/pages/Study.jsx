@@ -12,6 +12,7 @@ import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashc
 import { getSubjectQualification, subjectColour } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
+import { subjectIdentityForName } from '../utils/subjectKey'
 import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'
@@ -1409,7 +1410,12 @@ function QuizTab({ mySets, uid, profile }) {
         // the subject's current entry in profile.subjects, not the flashcard set itself (sets
         // don't carry a qualification field). This is what lets future qualification switches
         // (see Settings.jsx) tell current-level quiz history apart from superseded history.
+        // Full identity from the student's own current profile.subjects entry — qualification
+        // alone (as before) isn't enough to build a reliable subjectKey, since board wasn't
+        // captured at all; subjMeta is looked up again here only for backward-compat display
+        // fields already in use elsewhere (getSubjectQualification), identity covers the rest.
         const subjMeta = profile?.subjects?.find(s => s.name === selectedSet.subject)
+        const identity = subjectIdentityForName(selectedSet.subject, profile)
         await saveQuizResult(uid, {
           subject: selectedSet.subject,
           setId: selectedSet.id,
@@ -1418,6 +1424,7 @@ function QuizTab({ mySets, uid, profile }) {
           total,
           percentage: Math.round((got / total) * 100),
           qualification: getSubjectQualification(subjMeta, profile),
+          ...(identity || {}),
         })
       } catch (e) {}
     }
