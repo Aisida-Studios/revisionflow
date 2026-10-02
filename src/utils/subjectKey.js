@@ -107,6 +107,23 @@ export function isCurrentSubjectInstance(record, profile) {
  * rather than the softer legacy handling filterToCurrentQualification
  * currently gives them).
  */
+/**
+ * Looks up a student's own subject by name in their current profile.subjects and returns
+ * its full identity — board, qualification, tier and the canonical subjectKey. This is the
+ * common case at a write site that only has a plain subject NAME (the student picked it
+ * from a dropdown of their own subjects, e.g. a session/mistake/quiz form) and needs to tag
+ * a new record with all of it at once. Returns null if the name isn't found (e.g. a subject
+ * that's since been removed from the profile) rather than guessing any part of it.
+ */
+export function subjectIdentityForName(subjectName, profile) {
+  const subj = (profile?.subjects || []).find(s => s.name === subjectName)
+  if (!subj) return null
+  const qualification = subj.qualification || profile?.qualification
+  const tier = subj.tier || 'N/A'
+  const board = canonicalBoard(subj.board) || DEFAULT_BOARD
+  return { board, qualification, tier, subjectKey: buildSubjectKey({ board, qualification, subject: subj.name, tier }) }
+}
+
 export function filterToCurrentSubjectInstance(records, profile) {
   return (records || []).filter(r => isCurrentSubjectInstance(r, profile))
 }
