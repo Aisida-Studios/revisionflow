@@ -16,6 +16,7 @@ import { getSubjectIcon } from '../utils/subjectIcons'
 import { buildTopicId } from '../utils/topicId'
 import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'
+import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import {
   Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,
@@ -232,9 +233,9 @@ export default function Topics() {
     setNoteSaving(true)
     try {
       if (editingNote) {
-        await saveNote(user.uid, { ...editingNote, ...noteForm, subject: selSubj, updatedAt: new Date().toISOString() })
+        await saveNote(user.uid, { ...editingNote, ...noteForm, subject: selSubj, subjectKey: buildSubjectKey({ board:selBoard, qualification:selLevel, subject:selSubj, tier:selSubjObj?.tier }), updatedAt: new Date().toISOString() })
       } else {
-        await saveNote(user.uid, { ...noteForm, subject: selSubj, createdAt: new Date().toISOString() })
+        await saveNote(user.uid, { ...noteForm, subject: selSubj, subjectKey: buildSubjectKey({ board:selBoard, qualification:selLevel, subject:selSubj, tier:selSubjObj?.tier }), createdAt: new Date().toISOString() })
       }
       setNoteForm({ title:'', content:'' })
       setEditingNote(null)
@@ -261,6 +262,7 @@ export default function Topics() {
       const id = buildTopicId(subj?.board||'AQA', subjQual, selSubj, t.name)
       await setDoc(doc(db,'users',user.uid,'topics',id), {
         name:t.name, paper:t.paper, subjectId:selSubj, board:subj?.board||'AQA', qualification:subjQual,
+        subjectKey: buildSubjectKey({ board:subj?.board||'AQA', qualification:subjQual, subject:selSubj, tier:subj?.tier }),
         confidence:null, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
       }, { merge:true })
     }
@@ -273,7 +275,9 @@ export default function Topics() {
     if (!newTopic.name || !selSubj || selSubj === 'All') return
     const id = buildTopicId(selBoard, selLevel, selSubj, newTopic.name)
     await setDoc(doc(db,'users',user.uid,'topics',id), {
-      ...newTopic, subjectId:selSubj, board:selBoard, qualification:selLevel, createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+      ...newTopic, subjectId:selSubj, board:selBoard, qualification:selLevel,
+      subjectKey: buildSubjectKey({ board:selBoard, qualification:selLevel, subject:selSubj, tier:selSubjObj?.tier }),
+      createdAt:serverTimestamp(), updatedAt:serverTimestamp()
     }, { merge:true })
     await awardXP(user.uid, 10, 'Topic added')
     await loadTopics()
