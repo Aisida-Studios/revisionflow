@@ -13,6 +13,7 @@
 import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek } from 'date-fns'
 import { getPaperSpec } from '../data/paperDatabase'
 import { parseLocalDate } from './examUtils'
+import { buildSubjectKey } from './subjectKey'
 
 // â”€â”€ CONSTANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Fallback only â€” getExamDuration checks the real per-board/tier paper database
@@ -398,6 +399,10 @@ export function generateSchedule(options) {
     const session = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       subject: subjName,
+      board: meta?.board,
+      qualification: meta?.qualification,
+      tier: meta?.tier,
+      subjectKey: meta ? buildSubjectKey({ board: meta.board, qualification: meta.qualification, subject: subjName, tier: meta.tier }) : null,
       paper,
       type: isEmergency ? 'Emergency Revision' : stype === 'content' ? 'Content Revision' : 'Exam Practice',
       title: name,
@@ -701,6 +706,10 @@ export function scheduleFreePeriods(options) {
     const session = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       subject: subjName,
+      board: meta?.board,
+      qualification: meta?.qualification,
+      tier: meta?.tier,
+      subjectKey: meta ? buildSubjectKey({ board: meta.board, qualification: meta.qualification, subject: subjName, tier: meta.tier }) : null,
       paper,
       type: stype === 'content' ? 'Content Revision' : 'Exam Practice',
       title: name,
