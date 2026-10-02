@@ -6,6 +6,7 @@ import { countdownUrgency, daysUntilExam } from '../utils/calendar'
 import { isExamDone, parseLocalDate } from '../utils/examUtils'
 import { getSubjectQualification } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
+import { buildSubjectKey } from '../utils/subjectKey'
 import BoardOptions from '../components/BoardOptions'
 import { isTiered } from '../data/examDates2026'
 import { getMergedExamDates } from '../data/overrides'
@@ -46,6 +47,7 @@ export default function ExamDates() {
     const newDates = autoMatches.map(m => ({
       id: `${m.board}-${m.subject}-${m.tier}-P${m.paper}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       subject: m.subject, board: canonicalBoard(m.board), tier: m.tier, qualification: m.level,
+      subjectKey: buildSubjectKey({ board: m.board, qualification: m.level, subject: m.subject, tier: m.tier }),
       paper: String(m.paper), paperName: m.paperName, examDate: m.date,
     }))
     await updateUserProfile(user.uid, { examDates: [...existing, ...newDates] })
@@ -62,7 +64,9 @@ export default function ExamDates() {
     // subject's own stored qualification via the Subject select's onChange below) rather than only
     // ever being silently re-derived here — matters if the same subject name exists at two levels.
     const qualification = form.qualification || getSubjectQualification(subjMeta, profile)
-    const updated = [...(profile?.examDates || []), { ...form, qualification, id: Date.now().toString() }]
+    const tier = subjMeta?.tier || form.tier
+    const subjectKey = buildSubjectKey({ board: form.board, qualification, subject: form.subject, tier })
+    const updated = [...(profile?.examDates || []), { ...form, qualification, tier, subjectKey, id: Date.now().toString() }]
     await updateUserProfile(user.uid, { examDates: updated })
     await refreshProfile()
     setForm({ subject:'', board:'AQA', tier:'N/A', qualification:'GCSE', paper:'1', paperName:'', examDate:'' })
@@ -327,6 +331,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
         board:     canonicalBoard(m.board),
         tier:      m.tier,
         qualification: m.level,
+        subjectKey: buildSubjectKey({ board: m.board, qualification: m.level, subject: m.subject, tier: m.tier }),
         paper:     String(m.paper),
         paperName: m.paperName,
         examDate:  m.date,
