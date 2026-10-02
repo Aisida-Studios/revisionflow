@@ -10,6 +10,7 @@ import { isTiered } from '../data/examDates2026'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
+import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'
@@ -314,7 +315,8 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
     const grades  = autoBoundary?.grades || getGradeOptions(form.subject, formQual, form.tier)
     const bounds  = useCustom ? { boundaries:customBoundaries.map(Number), maxMarks:max, grades } : autoBoundary
     const grade   = bounds ? calculateGradeFromBoundaries(score, bounds) : null
-    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, qualification:formQual, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
+    const subjectKey = buildSubjectKey({ board: form.board, qualification: formQual, subject: form.subject, tier: form.tier })
+    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, qualification:formQual, subjectKey, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
   }
 
   return (
