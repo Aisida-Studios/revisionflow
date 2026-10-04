@@ -9,6 +9,10 @@ import { useAuth } from './AuthContext'
 import { BADGE_MAP } from '../data/badges'
 import toast from 'react-hot-toast'
 
+// Badge artwork is lazy-loaded: the unlock popups are rare, one-off moments, and importing the
+// art here statically would put it in the app-shell bundle every visitor downloads.
+const BadgeArt = React.lazy(() => import('../components/illustrations/BadgeArt'))
+
 // Rare badges get the full-screen treatment. Previously referenced session_100, paper_50,
 // perfect_paper, grade_9, all_subjects and monthly_master — none of which exist as ids in
 // BADGE_LIST (see data/badges.js) at all, only in a separate, older 14-badge list in
@@ -122,9 +126,11 @@ function BadgeToast({ badge, visible, onDismiss }) {
         background: 'var(--accent-pale)',
         border: '1px solid var(--accent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '1.8rem', flexShrink: 0,
+        flexShrink: 0,
       }}>
-        {badge.icon}
+        <React.Suspense fallback={<span style={{ display: 'block', width: 40, height: 40 }} />}>
+          <BadgeArt id={badge.id} size={40} />
+        </React.Suspense>
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -190,10 +196,11 @@ function BadgeCelebration({ badge, onClose }) {
             borderRadius: '50%',
             background: 'var(--brand-gradient)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '3.5rem',
             boxShadow: '0 0 50px rgba(34,197,94,0.7), 0 0 100px rgba(34,197,94,0.35)',
           }}>
-            {badge.icon}
+            <React.Suspense fallback={<span style={{ display: 'block', width: 92, height: 92 }} />}>
+              <BadgeArt id={badge.id} size={92} />
+            </React.Suspense>
           </div>
         </div>
 
@@ -201,7 +208,7 @@ function BadgeCelebration({ badge, onClose }) {
           fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-light)',
           textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8,
         }}>
-          🏆 Badge Unlocked!
+          Badge unlocked!
         </div>
 
         <div style={{
