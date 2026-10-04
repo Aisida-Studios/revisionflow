@@ -1,0 +1,139 @@
+/* src/components/illustrations/illustrations.css
+   ─────────────────────────────────────────────────────────────────────────────
+   RevisionFlow illustration tokens.
+
+   WHY A SEPARATE PALETTE (not var(--accent)):
+   Users can unlock cosmetic accent themes (data/themes.js — galaxy, neon, rose …) that
+   overwrite --accent at runtime. Artwork built on --accent would turn purple/neon, which the
+   illustration brief forbids and which would break the family look. So illustrations carry
+   their own green-led palette taken from the approved Illustration System guide
+   (#0F5132 / #A7C4B6 / #EBF3EE / #2F6F91 / #6B7280 / #F8FAF9). UI chrome still follows the
+   user's accent; artwork stays RevisionFlow.
+
+   TOKENS ARE ROLES, NOT SHADES: deep < mid < leaf < soft < mist < mint < paper in
+   lightness in BOTH modes. Dark mode is a dimmed, desaturated adaptation of the same ramp
+   (never an inversion), so an illustration keeps its identity. Outlines (--rfi-ink) are
+   darker than the fills in both modes so edges stay crisp.
+
+   All tokens live on `.rfi` (the <svg> root class) so they never leak into the app.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.rfi {
+  /* greens */
+  --rfi-ink:        #0b3b27;
+  --rfi-deep:       #0f5132;
+  --rfi-mid:        #3f7f5f;
+  --rfi-leaf:       #5e9c7e;
+  --rfi-soft:       #a7c4b6;
+  --rfi-mist:       #cfe0d6;
+  --rfi-mint:       #ebf3ee;
+
+  /* paper + neutrals */
+  --rfi-paper:      #fbfcfa;
+  --rfi-paper2:     #e4eae6;
+  --rfi-neutral:    #6b7280;
+  --rfi-neutral2:   #9aa5a0;
+  --rfi-neutral3:   #d3d9d5;
+
+  /* blues (secondary accent) */
+  --rfi-blue:       #2f6f91;
+  --rfi-blue-mid:   #5b93b0;
+  --rfi-blue-pale:  #c5dbe6;
+
+  /* teal (social badges) */
+  --rfi-teal:       #3a8a86;
+  --rfi-teal-pale:  #cde5e2;
+
+  /* warm: desk wood, kraft board, cream ceramic */
+  --rfi-warm:       #eadfc8;
+  --rfi-warm2:      #d5bc92;
+  --rfi-warm3:      #a98558;
+
+  /* restrained highlights — muted gold (never trophy gold) and amber for "needs attention" */
+  --rfi-gold:       #d9a441;
+  --rfi-gold-pale:  #f2e2b3;
+  --rfi-amber:      #e3a857;
+  --rfi-amber-pale: #f6e3c2;
+
+  /* backdrop disc, rings, shadows, devices */
+  --rfi-disc-hi:    #f7fbf8;
+  --rfi-disc-lo:    #dbe9e0;
+  --rfi-ring:       rgba(15, 81, 50, 0.16);
+  --rfi-shadow:     rgba(11, 59, 39, 0.22);
+  --rfi-display:    #f3f8f5;
+  --rfi-screen:     #1b2a22;
+  --rfi-glass:      rgba(255, 255, 255, 0.6);
+  --rfi-hi:         #ffffff;
+}
+
+[data-theme="dark"] .rfi {
+  --rfi-ink:        #07110c;
+  --rfi-deep:       #2b6648;
+  --rfi-mid:        #3f8062;
+  --rfi-leaf:       #5c9e7e;
+  --rfi-soft:       #7da690;
+  --rfi-mist:       #a3bdae;
+  --rfi-mint:       #c4d8cb;
+
+  --rfi-paper:      #d9e5dd;
+  --rfi-paper2:     #aebdb3;
+  --rfi-neutral:    #8a948e;
+  --rfi-neutral2:   #6f7a74;
+  --rfi-neutral3:   #4c5750;
+
+  --rfi-blue:       #3f83a8;
+  --rfi-blue-mid:   #6aa3c0;
+  --rfi-blue-pale:  #a5c6d6;
+
+  --rfi-teal:       #4aa39e;
+  --rfi-teal-pale:  #a8cfcb;
+
+  --rfi-warm:       #cbbd9f;
+  --rfi-warm2:      #a68c62;
+  --rfi-warm3:      #7a6140;
+
+  --rfi-gold:       #d1a043;
+  --rfi-gold-pale:  #e4d39d;
+  --rfi-amber:      #d89f55;
+  --rfi-amber-pale: #e3caa0;
+
+  --rfi-disc-hi:    rgba(80, 156, 112, 0.30);
+  --rfi-disc-lo:    rgba(80, 156, 112, 0.10);
+  --rfi-ring:       rgba(125, 195, 155, 0.26);
+  --rfi-shadow:     rgba(0, 0, 0, 0.50);
+  --rfi-display:    #17251e;
+  --rfi-screen:     #0b1410;
+  --rfi-glass:      rgba(255, 255, 255, 0.16);
+  --rfi-hi:         #e6f0e9;
+}
+
+/* Root element. Artwork is content-sized by its width/height attributes but can
+   never exceed its container (320px-safe) and keeps its aspect ratio from the viewBox. */
+.rfi {
+  display: block;
+  flex-shrink: 0;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;           /* sprigs may deliberately cross the backdrop edge */
+  pointer-events: none;        /* decorative by default — never steals taps */
+}
+
+/* Locked badges: same artwork, drained of colour. */
+.rfi.rfi-locked { filter: grayscale(1); opacity: 0.45; }
+
+/* ── Empty-state wrapper (EmptyState.jsx) ─────────────────────────────────────
+   Builds on the app's existing .empty-state (flex column, centred, padding, gap). */
+.rf-empty { gap: 12px; }
+.rf-empty__art { width: 100%; display: flex; justify-content: center; }
+.rf-empty--md .rf-empty__art .rfi { width: min(100%, 230px); }
+.rf-empty--sm .rf-empty__art .rfi { width: min(100%, 150px); }
+.rf-empty--inline { padding: 20px 0; }
+.rf-empty--sm { padding: 28px 16px; }
+.rf-empty__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.rf-empty__body  { margin: 0; max-width: 38ch; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); }
+.rf-empty__action { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+@media (max-width: 480px) {
+  .rf-empty--md .rfi { width: min(100%, 190px); }
+  .rf-empty__action { width: 100%; }
+  .rf-empty__action .btn { flex: 1 1 auto; min-height: 44px; }
+}
