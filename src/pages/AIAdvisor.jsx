@@ -9,7 +9,8 @@ import {
   generateStudyPlan,
   getTopicAdvice,
 } from '../utils/ai'
-import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, filterToCurrentQualification } from '../utils/firestore'
+import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes } from '../utils/firestore'
+import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { useIsPro } from '../components/ProGate'
@@ -75,7 +76,7 @@ export default function AIAdvisor() {
   useEffect(() => {
     if (!user || !profile) return
     Promise.all([
-      getTopicsWithConfidence(user.uid, profile?.subjects || []),
+      getTopicsWithConfidence(user.uid, profile),
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getMistakes(user.uid),
@@ -84,8 +85,8 @@ export default function AIAdvisor() {
     }).catch(() => {})
   }, [user, profile])
 
-  const currentPapers  = filterToCurrentQualification(paperAttempts, profile?.subjects || [])
-  const currentQuizzes = filterToCurrentQualification(quizResults, profile?.subjects || [])
+  const currentPapers  = filterToCurrentSubjectInstance(paperAttempts, profile)
+  const currentQuizzes = filterToCurrentSubjectInstance(quizResults, profile)
   // Same call, same inputs, as Dashboard.jsx's own predicted-grade widget -- a lookup into
   // the one shared calculation, not a second estimate that could disagree with it.
   const allPredictions = profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []
