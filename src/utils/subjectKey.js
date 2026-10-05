@@ -87,25 +87,43 @@ export function currentSubjectKeys(profile) {
  */
 export function isCurrentSubjectInstance(record, profile) {
   if (!record) return false
-  const keys = currentSubjectKeys(profile)
-  if (record.subjectKey) return keys.has(record.subjectKey)
+  if (record.archived) return false // explicitly resolved as "keep, hidden" — never current
+  // A record carrying its own real subjectKey was stamped with a genuine tier (even 'N/A' for a
+  // non-tiered subject), so a precise, tier-aware comparison against every current instance's
+  // key is reliable here.
+  if (record.subjectKey) return currentSubjectKeys(profile).has(record.subjectKey)
+
   const subjectName = record.subject || record.subjectId || record.name
-  if (subjectName && record.qualification) {
-    return keys.has(buildSubjectKey({ ...record, subject: subjectName }))
+  if (!subjectName || !record.qualification) return false
+  const subjMeta = (profile?.subjects || []).find(s => s.name === subjectName)
+  if (!subjMeta) return false
+  const currentQualification = subjMeta.qualification || profile?.qualification
+  if (record.qualification !== currentQualification) return false
+  if (canonicalBoard(record.board) !== (canonicalBoard(subjMeta.board) || DEFAULT_BOARD)) return false
+  // Tier is only enforced when BOTH sides actually have a real (non-'N/A') tier. A record with
+  // no tier field at all — true for every topic, note and mistake written before tier was ever
+  // captured per-record, tiered subject or not — means "tier unknown", not "no tier"; treating
+  // that as a mismatch against a genuinely tiered current subject would make every one of those
+  // pre-existing records vanish from current views, which is a worse error than the (narrower)
+  // one this is fixing.
+  if (record.tier && record.tier !== 'N/A' && subjMeta.tier && subjMeta.tier !== 'N/A' && record.tier !== subjMeta.tier) {
+    return false
   }
-  return false
+  return true
 }
 
 /**
  * Filters a list of records down to only the student's current subject
- * instances, using isCurrentSubjectInstance's same rules. Intended as the
- * eventual single replacement for the qualification-only
- * filterToCurrentQualification() — not yet wired in anywhere, since swapping
- * every call site over needs each one checked against what fields its
- * records actually carry first (many pre-date subjectKey and only have
- * board+qualification, some have neither and would silently drop out here
- * rather than the softer legacy handling filterToCurrentQualification
- * currently gives them).
+ * instances, using isCurrentSubjectInstance's same rules — compares subjectKey
+ * directly where present, derives one from board+qualification+tier where
+ * those exist but subjectKey doesn't yet, and excludes (rather than guesses
+ * about) a record with neither. The single replacement for the old
+ * qualification-only, grade-format/nearest-neighbour-guessing
+ * filterToCurrentQualification() that used to live in utils/firestore.js —
+ * wired into every surface that used it (Dashboard, Past Papers, Analytics,
+ * AI Advisor, Emergency Mode, AI context, PDF reports) plus
+ * getTopicsWithConfidence, which had its own separate qualification-only
+ * check with the same board-blindness problem.
  */
 /**
  * Looks up a student's own subject by name in their current profile.subjects and returns
