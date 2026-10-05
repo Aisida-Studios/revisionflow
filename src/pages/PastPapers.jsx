@@ -1,7 +1,7 @@
 // src/pages/PastPapers.jsx
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { savePaperAttempt, getPaperAttempts, getPaperStructures, deletePaperAttempt, updatePaperAttempt, filterToCurrentQualification } from '../utils/firestore'
+import { savePaperAttempt, getPaperAttempts, getPaperStructures, deletePaperAttempt, updatePaperAttempt } from '../utils/firestore'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
 import { calculateGradeFromBoundaries, AVAILABLE_YEARS } from '../data/paperDatabase'
@@ -10,7 +10,7 @@ import { isTiered } from '../data/examDates2026'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
-import { buildSubjectKey } from '../utils/subjectKey'
+import { buildSubjectKey, filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'
@@ -70,11 +70,11 @@ export default function PastPapers() {
   }
 
   // Computed live against the student's current subjects every render, rather than trusting
-  // the archived flag alone — see filterToCurrentQualification in utils/firestore.js. This is
+  // the archived flag alone — see filterToCurrentSubjectInstance in utils/subjectKey.js. This is
   // the one place that decides what counts as "current" for this whole page; everything below
   // reads from this, not the raw attempts fetch, so nothing here can accidentally skip the check
   // the way the old "only filter when a subject is selected" logic used to.
-  const currentAttempts = filterToCurrentQualification(attempts, profile?.subjects)
+  const currentAttempts = filterToCurrentSubjectInstance(attempts, profile)
 
   const filtered = (selSubject ? currentAttempts.filter(a=>a.subject===selSubject) : [...currentAttempts])
     .sort((a, b) => {
