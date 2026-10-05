@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { addMistake, getMistakes, getPaperAttempts, resolveMistake } from '../utils/firestore'
+import { subjectIdentityForName, filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { SUBJECT_COLOURS } from '../data/subjects'
 import toast from 'react-hot-toast'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
-import EmptyState from '../components/illustrations/EmptyState'
 import { Plus, X, CheckCircle2, Trash2 } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 
 // Only used where the underlying reason is actually distinguishable by the student logging
 // it -- these are the categories section 17 of the brief asks for, kept optional since
@@ -22,7 +23,7 @@ const emptyForm = { subject:'', topic:'', description:'', source:'', priority:'m
 
 export default function Mistakes() {
   const { user, profile } = useAuth()
-  const [mistakes, setMistakes] = useState([])
+  const [allMistakes, setAllMistakes] = useState([])
   const [paperAttempts, setPaperAttempts] = useState([])
   const [filter, setFilter] = useState({ subject:'', resolved:false })
   const [showAdd, setShowAdd] = useState(false)
@@ -37,7 +38,7 @@ export default function Mistakes() {
   // which is what actually needs to happen for the subject buttons above the list to work.
   useEffect(() => {
     if (!user) return
-    getMistakes(user.uid).then(setMistakes)
+    getMistakes(user.uid).then(setAllMistakes)
     getPaperAttempts(user.uid).then(setPaperAttempts)
   }, [user])
 
@@ -53,12 +54,18 @@ export default function Mistakes() {
   async function handleAdd() {
     if (!form.subject||!form.description) return
     const linked = paperOptionsForSubject.find(a => a.id === form.paperAttemptId)
+    // board/qualification/tier/subjectKey come from the student's OWN current entry for this
+    // subject (profile.subjects), not invented — identityForName returns null for a subject
+    // that's since been removed from the profile, in which case the mistake is saved with
+    // just its plain subject name, same as before this field existed.
+    const identity = subjectIdentityForName(form.subject, profile)
     const payload = {
       subject: form.subject,
       topic: form.topic,
       description: form.description,
       source: form.source,
       priority: form.priority,
+      ...(identity || {}),
     }
     if (form.category) payload.category = form.category
     if (form.marksLost !== '' && !Number.isNaN(Number(form.marksLost))) payload.marksLost = Number(form.marksLost)
@@ -69,7 +76,7 @@ export default function Mistakes() {
       payload.paperLabel = `${linked.board||''} ${linked.subject} Paper ${linked.paper} (${linked.year})`.replace(/\s+/g,' ').trim()
     }
     await addMistake(user.uid, payload)
-    await getMistakes(user.uid).then(setMistakes)
+    await getMistakes(user.uid).then(setAllMistakes)
     setForm(emptyForm)
     setShowAdd(false)
     toast.success('Mistake logged +10 XP')
@@ -77,24 +84,26 @@ export default function Mistakes() {
 
   async function handleResolve(id) {
     await resolveMistake(user.uid, id)
-    setMistakes(ms=>ms.map(m=>m.id===id?{...m,resolved:true}:m))
+    setAllMistakes(ms=>ms.map(m=>m.id===id?{...m,resolved:true}:m))
     toast.success('Resolved ✓')
   }
 
   async function handleDelete(id) {
     await deleteDoc(doc(db,'users',user.uid,'mistakes',id))
-    setMistakes(ms=>ms.filter(m=>m.id!==id))
+    setAllMistakes(ms=>ms.filter(m=>m.id!==id))
   }
 
   async function handleBulkDelete() {
     await Promise.all(selected.map(id=>deleteDoc(doc(db,'users',user.uid,'mistakes',id))))
-    setMistakes(ms=>ms.filter(m=>!selected.includes(m.id)))
+    setAllMistakes(ms=>ms.filter(m=>!selected.includes(m.id)))
     setSelected([])
     toast.success(`Deleted ${selected.length} mistake${selected.length!==1?'s':''}`)
   }
 
   function toggleSelect(id) { setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]) }
 
+  const mistakes = filterToCurrentSubjectInstance(allMistakes, profile)
+  const legacyCount = allMistakes.length - mistakes.length
   const visible = mistakes.filter(m =>
     (filter.resolved ? true : !m.resolved) &&
     (!filter.subject || m.subject === filter.subject)
@@ -128,6 +137,12 @@ export default function Mistakes() {
           </div>
         ))}
       </div>
+
+      {legacyCount > 0 && (
+        <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:16}}>
+          {legacyCount} older mistake{legacyCount===1?'':'s'} from before board tracking {legacyCount===1?'isn\'t':'aren\'t'} shown here.
+        </p>
+      )}
 
       {visible.length===0 ? (
         <EmptyState art="emptyMistakes" title="No mistakes logged" body="Log a slip-up to turn it into targeted revision — spot it, understand it, fix it." action={<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Log first mistake</button>} />
