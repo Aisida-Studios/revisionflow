@@ -206,7 +206,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
       try {
         const { getTopicsWithConfidence } = await import('../utils/firestore')
         const { getTopicsForSubject } = await import('../data/topics')
-        const confTopics = await getTopicsWithConfidence(user.uid, profile?.subjects || [])
+        const confTopics = await getTopicsWithConfidence(user.uid, profile)
         for (const s of builtSubjects) {
           const papers = getTopicsForSubject(s.board || 'AQA', s.name, s.qualification || 'GCSE') || {}
           for (const paperNum of s.papers) {
