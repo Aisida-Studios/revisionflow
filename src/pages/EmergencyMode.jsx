@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes,
-  filterToCurrentQualification,
 } from '../utils/firestore'
+import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { callAI } from '../utils/ai'
@@ -135,7 +135,7 @@ export default function EmergencyMode() {
     let cancelled = false
     setDataLoading(true)
     Promise.all([
-      getTopicsWithConfidence(user.uid, profile?.subjects || []),
+      getTopicsWithConfidence(user.uid, profile),
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getMistakes(user.uid),
@@ -151,11 +151,11 @@ export default function EmergencyMode() {
   }, [user, profile])
 
   const currentPapers = useMemo(
-    () => filterToCurrentQualification(paperAttempts, profile?.subjects || []),
+    () => filterToCurrentSubjectInstance(paperAttempts, profile),
     [paperAttempts, profile?.subjects]
   )
   const currentQuizzes = useMemo(
-    () => filterToCurrentQualification(quizResults, profile?.subjects || []),
+    () => filterToCurrentSubjectInstance(quizResults, profile),
     [quizResults, profile?.subjects]
   )
   // Same call, same inputs, as Dashboard.jsx's own predicted-grade widget -- a lookup into the
