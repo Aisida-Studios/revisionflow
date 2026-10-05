@@ -4,7 +4,8 @@ import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts, filterToCurrentQualification } from '../utils/firestore'
+import { getPaperAttempts } from '../utils/firestore'
+import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -69,7 +70,7 @@ export default function Analytics() {
   // archived flag alone did. The two lifetime stats (top bar "Papers logged", and "Papers
   // attempted"/"Topics rated" under Personal Records) deliberately keep using the raw, unfiltered
   // `attempts`/`topics` instead — those are meant to count everything, forever.
-  const currentAttempts = useMemo(() => filterToCurrentQualification(attempts, profile?.subjects), [attempts, profile])
+  const currentAttempts = useMemo(() => filterToCurrentSubjectInstance(attempts, profile), [attempts, profile])
 
   useEffect(() => {
     if (!user) return
@@ -181,8 +182,7 @@ export default function Analytics() {
     }))
   }, [subjectDist, totalMinutes])
 
-  const currentSubjects = useMemo(() => profile?.subjects || [], [profile])
-  const currentTopics = useMemo(() => filterToCurrentQualification(topics, currentSubjects), [topics, currentSubjects])
+  const currentTopics = useMemo(() => filterToCurrentSubjectInstance(topics, profile), [topics, profile])
 
   // ── Topic confidence breakdown ────────────────────────────────────────────
   const confidenceBreakdown = useMemo(() => {
