@@ -2613,7 +2613,7 @@ export default function Study() {
   useEffect(() => { if (user) loadMySets() }, [user])
   useEffect(() => {
     if (!user || !profile?.subjects?.length) return
-    getTopicsWithConfidence(user.uid, profile.subjects).then(rows => {
+    getTopicsWithConfidence(user.uid, profile).then(rows => {
       setWeakTopics((rows || []).filter(t => t.confidence > 0 && t.confidence <= 2).sort((a,b) => a.confidence-b.confidence).slice(0,8))
     }).catch(() => setWeakTopics([]))
   }, [user, profile?.subjects])
