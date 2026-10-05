@@ -88,11 +88,13 @@ export default function Settings() {
   const addSubjList = getSupportedSubjects(newSubj.board, addSubjQual)
 
   // Called after subjects are saved, with the subjects array from just before the save. Finds
-  // any subject whose qualification changed (directly, or a same-named subject swapped in at a
-  // different level). Exam dates for that subject are cleared straight away — a new
-  // qualification means a new specification, so the old dates aren't useful to keep either way
-  // and the student adds fresh ones in Exam Dates. Past Papers/quiz history is different: it's
-  // worth asking about, so this puts up the keep/remove choice instead of deciding silently.
+  // any subject whose board, qualification OR tier changed (directly, or a same-named subject
+  // swapped in at a different instance) — an AQA->OCR board switch is caught here just as much
+  // as a GCSE->A-Level qualification switch. Exam dates for that subject are cleared straight
+  // away — a new instance means a new specification, so the old dates aren't useful to keep
+  // either way and the student adds fresh ones in Exam Dates. Past Papers/quiz history is
+  // different: it's worth asking about, so this puts up the keep/remove choice instead of
+  // deciding silently.
   async function detectAndOfferSwitchChoice(oldSubjects, newSubjects, currentExamDates) {
     const switches = detectQualificationSwitches(oldSubjects, newSubjects, profile)
     if (!switches.length) return
@@ -114,9 +116,9 @@ export default function Settings() {
     for (const sw of switches) {
       try {
         if (keep) {
-          await archiveSupersededAttempts(user.uid, sw.subjectName, sw.newQualification)
+          await archiveSupersededAttempts(user.uid, sw.subjectName, sw.new)
         } else {
-          await deleteSubjectAttempts(user.uid, sw.subjectName, sw.newQualification)
+          await deleteSubjectAttempts(user.uid, sw.subjectName, sw.new)
         }
       } catch (e) {
         console.error('[resolvePendingSwitches]', sw.subjectName, e)
