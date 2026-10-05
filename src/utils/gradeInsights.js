@@ -60,8 +60,8 @@ export function computeWeakTopics(topics, limit = 6) {
 // Only predicts for the student's CURRENTLY active subjects — a subject dropped entirely (no
 // current entry in profile.subjects, same name or otherwise) is skipped outright, however much
 // history it has. paperAttempts/quizResults/topics should already be filtered to each subject's
-// current qualification before being passed in (see filterToCurrentQualification and
-// getTopicsWithConfidence in utils/firestore.js) — this function decides which of the current
+// current subject instance before being passed in (see filterToCurrentSubjectInstance in
+// utils/subjectKey.js and getTopicsWithConfidence in utils/firestore.js) — this function decides which of the current
 // subjects have enough data to predict, it doesn't re-derive what "current" means itself.
 export function computeSubjectPredictions(topics, paperAttempts, quizResults, profile) {
   const activeSubjects = profile?.subjects || []
