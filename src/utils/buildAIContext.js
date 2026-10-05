@@ -2,7 +2,7 @@
 // Builds a full student context string used across ALL AI features in RevisionFlow
 // Every AI call should include this so outputs are personalised and in sync
 
-import { filterToCurrentQualification } from './firestore'
+import { filterToCurrentSubjectInstance } from './subjectKey'
 import { daysUntilExam } from './examUtils'
 
 /**
@@ -63,7 +63,7 @@ export function buildAIContext(profile, opts = {}) {
   if (topics.length) {
     lines.push('\n=== TOPIC CONFIDENCE (1=low, 5=high) ===')
     const bySubject = {}
-    filterToCurrentQualification(topics, profile.subjects).forEach(t => {
+    filterToCurrentSubjectInstance(topics, profile).forEach(t => {
       if (!bySubject[t.subjectId]) bySubject[t.subjectId] = []
       bySubject[t.subjectId].push(t)
     })
@@ -100,7 +100,7 @@ export function buildAIContext(profile, opts = {}) {
   if (papers.length) {
     lines.push('\n=== PAST PAPER PERFORMANCE ===')
     const bySubject = {}
-    filterToCurrentQualification(papers, profile.subjects).forEach(p => {
+    filterToCurrentSubjectInstance(papers, profile).forEach(p => {
       if (!bySubject[p.subject]) bySubject[p.subject] = []
       bySubject[p.subject].push(p)
     })
