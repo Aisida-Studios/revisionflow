@@ -31,6 +31,7 @@ import { BADGE_MAP } from '../data/badges'
 import { getDailyQuests } from '../data/badges'
 import { levelFromXP } from '../data/subjects'
 import { buildTopicId, isLegacyTopicId } from './topicId'
+import { buildSubjectKey, isCurrentSubjectInstance } from './subjectKey'
 import { createNotification } from './notificationFeed'
 
 export { auth, db }
@@ -702,90 +703,30 @@ export const getQuizResults = async (uid) => {
 ========================= */
 
 // A grade string that's exclusive to one qualification's scale. Numeric grades (and Combined
-// Science's hyphenated pairs, e.g. "7-6") only ever occur at GCSE; A* only occurs at A-Level.
-// Everything else (A-E, U, BTEC-style grades) is shared across qualifications, so this
-// deliberately returns null rather than guessing when the grade alone doesn't settle it.
-export function gradeImpliesQualification(grade) {
-  if (!grade) return null
-  const g = String(grade).trim()
-  if (/^[1-9]$/.test(g)) return 'GCSE'
-  if (/^[1-9]-[1-9]$/.test(g)) return 'GCSE'
-  if (g === 'A*') return 'A-Level'
-  return null
-}
-
-// Among other records for the same subject that DO carry a qualification, finds the one
-// closest in time to targetMillis and returns its qualification — the best available guess
-// for an untagged record when the grade format alone doesn't settle it.
-function nearestTaggedQualification(records, targetMillis) {
-  let best = null
-  let bestDiff = Infinity
-  for (const r of records) {
-    if (!r.qualification || r.createdAtMillis == null) continue
-    const diff = Math.abs(r.createdAtMillis - targetMillis)
-    if (diff < bestDiff) { bestDiff = diff; best = r.qualification }
-  }
-  return best
-}
-
-// The single source of truth for "does this record belong on screen right now" — used by
-// every current-qualification view (Predicted Grades, Past Papers, Analytics' subject
-// breakdowns, the AI tutor's context, PDF reports). Unlike checking the archived flag alone,
-// this is computed live against the student's CURRENT subjects list every time it's called,
-// so a view is correct even if a record was never explicitly archived by some earlier trigger
-// or backfill — it doesn't depend on that having already run successfully.
-//
-// A subject that's been dropped entirely (no current entry at all) excludes ALL of its
-// records — there's no current view for them to belong to. A subject that's still active only
-// keeps records matching its CURRENT qualification: tagged records are compared directly,
-// untagged ones are classified by grade format, then by the nearest tagged record in time for
-// the same subject, and excluded if neither gives an answer — old data shouldn't be shown on
-// a guess that it might be current.
-export function filterToCurrentQualification(records, subjectsList) {
-  const list = Array.isArray(subjectsList) ? subjectsList : []
-  const all = records || []
-  const subjectNameOf = r => r.subject || r.subjectId
-
-  const taggedBySubject = {}
-  all.forEach(r => {
-    if (r.qualification) {
-      const key = subjectNameOf(r)
-      if (!taggedBySubject[key]) taggedBySubject[key] = []
-      taggedBySubject[key].push({
-        qualification: r.qualification,
-        createdAtMillis: r.createdAt?.toMillis?.() ?? null,
-      })
-    }
-  })
-
-  return all.filter(r => {
-    if (r.archived) return false // explicitly resolved as "keep, hidden" — never shown as current
-    const subjMeta = list.find(s => s.name === subjectNameOf(r))
-    if (!subjMeta) return false // subject dropped entirely
-    const currentQual = subjMeta.qualification
-
-    if (r.qualification) return r.qualification === currentQual
-
-    const byGrade = gradeImpliesQualification(r.grade)
-    if (byGrade) return byGrade === currentQual
-
-    const targetMillis = r.createdAt?.toMillis?.() ?? null
-    if (targetMillis != null) {
-      const nearest = nearestTaggedQualification(taggedBySubject[subjectNameOf(r)] || [], targetMillis)
-      if (nearest) return nearest === currentQual
-    }
-
-    return false
-  })
-}
+// filterToCurrentQualification (qualification-string-only, with grade-format/nearest-neighbour
+// guessing for untagged records) used to live here. Superseded by
+// isCurrentSubjectInstance/filterToCurrentSubjectInstance (utils/subjectKey.js), which checks
+// board and tier too — not just qualification — so two different boards' data for the same
+// subject name (e.g. AQA Physics vs OCR Physics, both GCSE) is no longer treated as
+// interchangeable, and never guesses an untagged record's qualification from its grade format
+// or from the nearest timestamped record; untagged records are simply left out of current views
+// instead, same as any other data too ambiguous to place safely.
 
 // Shared by archiveSupersededAttempts and deleteSubjectAttempts below: finds every
-// paperAttempts/quizResults doc ref for this user + subject that belongs to a qualification
-// other than currentQualification, without doing anything to them yet. Already-tagged docs
-// are handled directly; untagged docs are classified in order: grade format, then nearest
-// tagged record in time for the same subject, then left alone (treated as current) if
-// neither signal is available.
-async function findSupersededRefs(uid, subjectName, currentQualification) {
+// paperAttempts/quizResults doc ref for this user + subject that belongs to a DIFFERENT subject
+// instance (board/qualification/tier) than newInstance, without doing anything to them yet.
+// newInstance is {board, qualification, tier, subjectKey} — the instance to KEEP — or null if
+// the subject was dropped entirely (everything for this name is then superseded).
+//
+// A doc's own subjectKey is compared directly where present; one with board+qualification but
+// no subjectKey (predates that field) has one derived the same way subjectKey.js would; one
+// with only qualification (predates board tracking entirely) falls back to a qualification-only
+// comparison, matching this flow's older, less granular behaviour for exactly those older
+// records rather than suddenly leaving them unclassified. A doc with NONE of subjectKey, board
+// or qualification is left untouched — no grade-format or nearest-neighbour guessing — same
+// "don't guess, leave it as a legacy case rather than silently archive/delete it" principle as
+// isCurrentSubjectInstance (utils/subjectKey.js) uses for display filtering.
+async function findSupersededRefs(uid, subjectName, newInstance) {
   const [papersSnap, quizzesSnap] = await Promise.all([
     getDocs(query(collection(db, 'users', uid, 'paperAttempts'), where('subject', '==', subjectName))),
     getDocs(query(collection(db, 'users', uid, 'quizResults'), where('subject', '==', subjectName))),
@@ -796,39 +737,37 @@ async function findSupersededRefs(uid, subjectName, currentQualification) {
     ...quizzesSnap.docs.map(d => ({ ref: d.ref, ...d.data() })),
   ].filter(d => !d.archived)
 
-  // Anchor set for the nearest-neighbour fallback: every already-tagged record for this subject.
-  const tagged = allDocs
-    .filter(d => d.qualification)
-    .map(d => ({ qualification: d.qualification, createdAtMillis: d.createdAt?.toMillis?.() ?? null }))
-
   const superseded = []
   for (const d of allDocs) {
+    if (!newInstance) { superseded.push(d.ref); continue } // subject dropped — nothing is current
+
+    if (d.subjectKey) {
+      if (d.subjectKey !== newInstance.subjectKey) superseded.push(d.ref)
+      continue
+    }
+    if (d.board && d.qualification) {
+      const derived = buildSubjectKey({ board: d.board, qualification: d.qualification, subject: subjectName, tier: d.tier })
+      if (derived !== newInstance.subjectKey) superseded.push(d.ref)
+      continue
+    }
     if (d.qualification) {
-      if (d.qualification !== currentQualification) superseded.push(d.ref)
+      if (d.qualification !== newInstance.qualification) superseded.push(d.ref)
       continue
     }
-    // Untagged — try the grade first (paper attempts only; quiz results have no grade field)
-    const byGrade = gradeImpliesQualification(d.grade)
-    if (byGrade) {
-      if (byGrade !== currentQualification) superseded.push(d.ref)
-      continue
-    }
-    // Fall back to whichever tagged record for this subject is closest in time
-    const targetMillis = d.createdAt?.toMillis?.() ?? null
-    const nearest = targetMillis != null ? nearestTaggedQualification(tagged, targetMillis) : null
-    if (nearest && nearest !== currentQualification) superseded.push(d.ref)
-    // else: no usable signal at all for this one — leave it, treated as current
+    // No subjectKey, board or qualification at all — leave it, same as before this rewrite.
   }
 
   return { superseded, checked: allDocs.length }
 }
 
 // Hides superseded history without deleting it (archived: true) — still counts toward
-// lifetime stats, just excluded from current-qualification views. Safe to call more than
-// once — already-archived docs are left as-is. Used when a student chooses to keep their
-// old-qualification history after a switch (see the Settings.jsx switch-choice dialog).
-export const archiveSupersededAttempts = async (uid, subjectName, currentQualification) => {
-  const { superseded, checked } = await findSupersededRefs(uid, subjectName, currentQualification)
+// lifetime stats, just excluded from current views. Safe to call more than once —
+// already-archived docs are left as-is. Used when a student chooses to keep their
+// old-instance history after a switch (see the Settings.jsx switch-choice dialog).
+// newInstance: {board, qualification, tier, subjectKey} to keep, or null if the subject was
+// dropped entirely (see detectQualificationSwitches in utils/qualificationSwitch.js).
+export const archiveSupersededAttempts = async (uid, subjectName, newInstance) => {
+  const { superseded, checked } = await findSupersededRefs(uid, subjectName, newInstance)
   const batchSize = 400
   for (let i = 0; i < superseded.length; i += batchSize) {
     const batch = writeBatch(db)
@@ -839,10 +778,10 @@ export const archiveSupersededAttempts = async (uid, subjectName, currentQualifi
 }
 
 // Permanently removes superseded history instead of archiving it — used when a student
-// chooses NOT to keep their old-qualification history after a switch. Irreversible, unlike
+// chooses NOT to keep their old-instance history after a switch. Irreversible, unlike
 // archiving, so this should only ever run after explicit confirmation in the UI.
-export const deleteSubjectAttempts = async (uid, subjectName, currentQualification) => {
-  const { superseded, checked } = await findSupersededRefs(uid, subjectName, currentQualification)
+export const deleteSubjectAttempts = async (uid, subjectName, newInstance) => {
+  const { superseded, checked } = await findSupersededRefs(uid, subjectName, newInstance)
   const batchSize = 400
   for (let i = 0; i < superseded.length; i += batchSize) {
     const batch = writeBatch(db)
@@ -859,18 +798,16 @@ export const deleteSubjectAttempts = async (uid, subjectName, currentQualificati
    predicted-grade widgets — that only need the confidence data, not the full edit flow.
 ========================= */
 
-// Only returns topics for each subject's CURRENT qualification — a topic logged before a
-// GCSE -> AS-Level/A-Level switch is excluded here at the source, so every consumer (the
-// dashboard's weak-topics and predicted-grade widgets) is automatically qualification-safe
-// without needing its own filter. subjects: pass profile.subjects.
-export const getTopicsWithConfidence = async (uid, subjects = []) => {
+// Only returns topics for the student's CURRENT subject instance — a topic logged before a
+// GCSE -> AS-Level/A-Level switch, OR before a board switch (e.g. AQA -> OCR Physics, same
+// qualification), is excluded here at the source, so every consumer (the dashboard's
+// weak-topics and predicted-grade widgets) is automatically current-subject-safe without
+// needing its own filter. profile: the student's full profile (needed for
+// isCurrentSubjectInstance's qualification fallback, not just its subjects array).
+export const getTopicsWithConfidence = async (uid, profile) => {
   const snap = await getDocs(collection(db, 'users', uid, 'topics'))
   const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  return all.filter(t => {
-    const subjMeta = subjects.find(s => s.name === t.subjectId)
-    if (!subjMeta) return false // subject dropped entirely — no current view for this to belong to
-    return (t.qualification || subjMeta.qualification) === subjMeta.qualification
-  })
+  return all.filter(t => isCurrentSubjectInstance({ ...t, subject: t.subjectId }, profile))
 }
 
 /* =========================
