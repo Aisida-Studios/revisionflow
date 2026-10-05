@@ -132,7 +132,7 @@ export default function Calendar() {
       // these fails, they're not load-bearing for the calendar's core session/task features.
       try {
         const [t, m] = await Promise.all([
-          getTopicsWithConfidence(user.uid, profile?.subjects || []),
+          getTopicsWithConfidence(user.uid, profile),
           getMistakes(user.uid),
         ])
         setTopics(t || [])
@@ -1030,7 +1030,7 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     const sb = subjMeta?.board || 'AQA', lv = subjMeta?.qualification || 'GCSE'
     Promise.all([
       import('../data/topics').then(({ getTopicsForSubject }) => (getTopicsForSubject(sb, form.subject, lv) || {})[form.paper] || []),
-      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile?.subjects || [])).catch(() => []),
+      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile)).catch(() => []),
     ]).then(([topics, confTopics]) => {
       setPaperTopics(topics)
       const confMap = {}
@@ -1349,7 +1349,7 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
     const lv = subjMeta?.qualification || 'GCSE'
     Promise.all([
       import('../data/topics').then(({ getTopicsForSubject }) => getTopicsForSubject(sb, paperForm.subject, lv) || {}),
-      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile?.subjects || [])).catch(() => []),
+      import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile)).catch(() => []),
     ]).then(([papers, confTopics]) => {
       setPaperTopicsByPaper(papers)
       const confMap = {}
