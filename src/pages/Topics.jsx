@@ -16,7 +16,7 @@ import { getSubjectIcon } from '../utils/subjectIcons'
 import { buildTopicId } from '../utils/topicId'
 import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'
-import { buildSubjectKey } from '../utils/subjectKey'
+import { buildSubjectKey, filterToCurrentSubjectInstance, isCurrentSubjectInstance } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import {
   Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,
@@ -212,13 +212,17 @@ export default function Topics() {
     // qualification) to the new board+qualification-scoped scheme. No-ops once already migrated.
     const all = await migrateLegacyTopicDocs(user.uid, raw, profile?.subjects, profile?.qualification)
     setAllTopics(all)
+    // Current-subject-instance filtering (board+qualification, and tier where a record actually
+    // carries one) — a topic logged under a different board, or from before a qualification
+    // switch, must never blend into either the All-Subjects overview or a single subject's own
+    // view. The All-Subjects view previously had no filtering at all here; the single-subject
+    // view checked qualification but never board, so e.g. an AQA->OCR switch for the same
+    // subject+qualification still blended old and new topics together.
+    const current = filterToCurrentSubjectInstance(all.map(t => ({ ...t, subject: t.subjectId })), profile)
     if (selSubj === 'All') {
-      setTopics(all)
+      setTopics(current)
     } else {
-      // subjectId alone isn't enough once a subject's switched qualification (e.g. GCSE
-      // Physics -> AS-Level Physics) — both sets of topic docs share that name, so without the
-      // qualification check here they'd show up blended together on this page.
-      setTopics(all.filter(t=>t.subjectId===selSubj && (t.qualification||selLevel)===selLevel))
+      setTopics(current.filter(t=>t.subjectId===selSubj))
     }
   }
 
@@ -316,13 +320,12 @@ export default function Topics() {
   }
   function toggleSelect(id) { setSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]) }
 
-  // Same current-qualification rule loadTopics() already applies for a single selected subject,
-  // applied consistently for every subject here too — otherwise a switched subject's old- and
-  // new-qualification topic docs would blend together in the "All Subjects" summary cards.
+  // Same current-subject-instance rule loadTopics() already applies, applied consistently for
+  // every subject here too — otherwise a switched subject's old- and new-instance topic docs
+  // (different qualification, OR different board at the same qualification) would blend
+  // together in the "All Subjects" summary cards.
   function topicsForSubject(name) {
-    const subj = profile?.subjects?.find(s => s.name === name)
-    const level = getSubjectQualification(subj, profile)
-    return allTopics.filter(t => t.subjectId === name && (t.qualification||level) === level)
+    return allTopics.filter(t => t.subjectId === name && isCurrentSubjectInstance({ ...t, subject: t.subjectId }, profile))
   }
 
   const searching = search.trim().length > 0
