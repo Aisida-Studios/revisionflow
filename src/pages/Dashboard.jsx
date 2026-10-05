@@ -31,8 +31,9 @@ import { componentForSubject } from '../data/illustrationThemes'
 import AIOutput from '../components/AIOutput'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
-  filterToCurrentQualification, getMistakes, getCachedDailyBriefing, saveDailyBriefing,
+  getMistakes, getCachedDailyBriefing, saveDailyBriefing,
 } from '../utils/firestore'
+import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
@@ -244,7 +245,7 @@ export default function Dashboard() {
       getSessions(user.uid),
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
-      getTopicsWithConfidence(user.uid, profile?.subjects || []),
+      getTopicsWithConfidence(user.uid, profile),
       getMistakes(user.uid),
     ]).then(([s, p, q, t, m]) => {
       if (cancelled) return
@@ -259,11 +260,11 @@ export default function Dashboard() {
   }, [user, profile?.subjects])
 
   const currentPapers = useMemo(
-    () => filterToCurrentQualification(paperAttempts, profile?.subjects || []),
+    () => filterToCurrentSubjectInstance(paperAttempts, profile),
     [paperAttempts, profile?.subjects]
   )
   const currentQuizzes = useMemo(
-    () => filterToCurrentQualification(quizResults, profile?.subjects || []),
+    () => filterToCurrentSubjectInstance(quizResults, profile),
     [quizResults, profile?.subjects]
   )
   const predictions = useMemo(
