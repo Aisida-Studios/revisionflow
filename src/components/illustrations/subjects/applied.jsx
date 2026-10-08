@@ -1,9 +1,10 @@
 // src/components/illustrations/subjects/applied.jsx
 // Business & Economics · PE & Sport · Food & Nutrition · Health & Care · Generic study desk.
 import React from 'react'
-import { C, G, Leaf, Shadow, Pencil, BookStack, PottedPlant, Deco, DecoFront, useUid } from '../kit'
+import { C, G, Leaf, Shadow, Pencil, BookStack, PottedPlant, Foliage, Deco, DecoFront, useUid } from '../kit'
 import { OpenBook } from './humanities'
 import { useDetail } from '../IllustrationFrame'
+import { GlyphMark } from './GlyphMark'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
@@ -255,17 +256,107 @@ export function HealthArt() {
 }
 
 /** The generic study desk: notebook, books, plant, pencil. Fallback for unknown subjects and the
- *  dashboard's "nothing scheduled" state. */
+ *  dashboard's "nothing scheduled" state. (At compact size it is a stack of books with a sprout, so
+ *  it never reads as a specific subject's open book.) */
 export function GenericArt() {
   const d = useDetail()
   const compact = d === 'compact'
   return (
     <g>
       <Deco v="a" />
-      {!compact && <BookStack x={62} y={174} s={0.9} books={[{ w: 66, h: 14, tone: 'mid' }, { w: 56, h: 12, tone: 'cream', dx: 3 }]} />}
-      {!compact && <PottedPlant x={176} y={176} s={0.86} kind="broad" />}
-      <OpenBook x={120} y={compact ? 160 : 196} s={compact ? 1.2 : 0.96} cover="cream" />
-      {d === 'full' && <Pencil x={128} y={206} r={-12} len={70} />}
+      {compact ? (
+        <g>
+          <BookStack x={120} y={198} s={1.16} books={[{ w: 100, h: 17, tone: 'mid' }, { w: 88, h: 15, tone: 'cream', dx: 3 }, { w: 76, h: 14, tone: 'blueMid', dx: -3 }]} />
+          <Foliage x={120} y={146} kind="sprout" s={1.2} />
+        </g>
+      ) : (
+        <g>
+          <BookStack x={62} y={174} s={0.9} books={[{ w: 66, h: 14, tone: 'mid' }, { w: 56, h: 12, tone: 'cream', dx: 3 }]} />
+          <PottedPlant x={176} y={176} s={0.86} kind="broad" />
+          <OpenBook x={120} y={196} s={0.96} cover="cream" />
+          {d === 'full' && <Pencil x={128} y={206} r={-12} len={70} />}
+        </g>
+      )}
+      <DecoFront side="left" />
+    </g>
+  )
+}
+
+
+/* ═══════════════════════════ Economics · Accounting ═══════════════════════════ */
+
+/** Supply & demand diagram. Origin = card centre; 128 × 100. */
+export function SupplyDemand({ x = 0, y = 0, r = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <rect x="-61" y="-45" width="128" height="100" rx="8" fill={C.shadow} opacity="0.28" />
+      <rect x="-64" y="-50" width="128" height="100" rx="8" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <path d="M-50 36H52M-50 36V-38" stroke={C.soft} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      <path d="M-46 28C-22 22 6-2 38-30" fill="none" stroke={C.leaf} strokeWidth="4" strokeLinecap="round" />
+      <path d="M-46-30C-18-16 8 12 38 30" fill="none" stroke={C.blue} strokeWidth="4" strokeLinecap="round" />
+      <path d="M-5 -1V36M-5 -1H-50" stroke={C.amber} strokeWidth="2.2" strokeDasharray="4 4" strokeLinecap="round" fill="none" />
+      <circle cx="-5" cy="-1" r="6" fill={C.paper} stroke={C.amber} strokeWidth="3.4" />
+    </G>
+  )
+}
+
+/** A coin standing on its edge, showing £. Origin = centre. */
+export function PoundCoin({ x = 0, y = 0, s = 1, r = 0 }) {
+  return (
+    <G x={x} y={y} s={s} r={r}>
+      <Shadow cx={3} cy={26} rx={24} />
+      <circle cx="3" cy="3" r="26" fill={C.warm3} />
+      <circle r="26" fill={C.gold} />
+      <circle r="21" fill="none" stroke={C.goldPale} strokeWidth="2.4" />
+      <GlyphMark s={0.34} glyph="pound" fill={C.warm3} />
+      <path d="M-18-14A22 22 0 0 1-4-22" fill="none" stroke={C.hi} strokeWidth="3" strokeLinecap="round" opacity="0.55" />
+    </G>
+  )
+}
+
+export function EconomicsArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      <SupplyDemand x={compact ? 120 : 112} y={compact ? 112 : 102} r={compact ? 0 : -3} s={compact ? 1.12 : 1} />
+      {!compact && <PoundCoin x={186} y={164} s={0.96} r={8} />}
+      {d === 'full' && <Coins x={62} y={198} n={3} s={0.92} />}
+      <DecoFront side="left" />
+    </g>
+  )
+}
+
+/** Till receipt with a torn edge. Origin = top-left; 38 × 108. */
+export function Receipt({ x = 0, y = 0, r = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <path d={`M3 4H41V96${'l-6.3 9l-6.3-9'.repeat(3)}Z`} fill={C.shadow} opacity="0.28" />
+      <path d={`M0 0H38V92${'l-6.3 9l-6.3-9'.repeat(3)}Z`} fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <rect x="7" y="9" width="24" height="5" rx="2.5" fill={C.leaf} />
+      {[22, 31, 40, 49, 58].map((yy, i) => <g key={yy}><rect x="7" y={yy} width={i % 2 ? 12 : 16} height="3.4" rx="1.7" fill={C.mist} /><rect x="24" y={yy} width="7" height="3.4" rx="1.7" fill={C.soft} /></g>)}
+      <rect x="7" y="72" width="24" height="5" rx="2.5" fill={C.deep} />
+    </G>
+  )
+}
+
+export function AccountingArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  const bx = compact ? 100 : 118
+  const by = compact ? 150 : 170
+  const bs = compact ? 0.98 : 1.08
+  return (
+    <g>
+      <Deco v="a" />
+      {!compact && <Receipt x={44} y={74} r={-8} s={1.04} />}
+      <OpenBook x={bx} y={by} s={bs} cover="cream" />
+      <g transform={`translate(${bx} ${by}) scale(${bs})`}>
+        <path d="M-16-44V4M-30-48V0M-44-52V-5M16-44V4M30-48V0M44-52V-5" stroke={C.soft} strokeWidth="1" opacity="0.9" />
+      </g>
+      <Calculator x={compact ? 164 : 182} y={198} r={5} s={compact ? 1.1 : 0.88} />
+      {d === 'full' && <Pencil x={92} y={206} r={-6} len={64} tone="green" />}
       <DecoFront side="left" />
     </g>
   )
