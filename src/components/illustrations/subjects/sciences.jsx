@@ -240,10 +240,11 @@ export function ChemistryArt() {
     <g>
       <Deco v="b" />
       {std && <Molecule x={72} y={62} s={d === 'full' ? 1 : 0.85} />}
-      {std && <Beaker x={170} y={194} s={1.1} />}
+      {std && <Beaker x={compact ? 168 : 170} y={194} s={1.1} />}
+      {compact && <Beaker x={170} y={198} s={1.16} />}
       {d === 'full' && <TestTube x={52} y={196} r={-12} tone="gold" />}
       {d === 'full' && <TestTube x={66} y={197} r={3} tone="blue" />}
-      <Flask x={compact ? 120 : 114} y={compact ? 200 : 194} s={compact ? 1.2 : 1.08} />
+      <Flask x={compact ? 106 : 114} y={compact ? 200 : 194} s={compact ? 1.08 : 1.08} />
       {std && (
         <g fill={C.paper} stroke={C.soft} strokeWidth="1.4">
           <circle cx="106" cy="40" r="5" /><circle cx="120" cy="28" r="3.4" /><circle cx="112" cy="17" r="2.4" />
@@ -277,9 +278,9 @@ export function ScienceArt() {
   return (
     <g>
       <Deco v="c" />
-      {!compact && <Atom x={160} y={84} s={0.62} />}
+      <Atom x={compact ? 166 : 160} y={compact ? 78 : 84} s={compact ? 0.56 : 0.62} />
       {d === 'full' && <PetriDish x={176} y={198} s={0.9} />}
-      <Flask x={compact ? 120 : 104} y={compact ? 200 : 194} s={compact ? 1.2 : 0.98} liquid="leaf" />
+      <Flask x={compact ? 98 : 104} y={compact ? 200 : 194} s={compact ? 1.0 : 0.98} liquid="leaf" />
       {!compact && <Leaf x={148} y={198} r={30} l={34} tone="mid" />}
       {!compact && <Leaf x={154} y={199} r={62} l={26} tone="leaf" />}
     </g>
