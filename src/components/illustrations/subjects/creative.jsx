@@ -196,7 +196,7 @@ export function DramaArt() {
   )
 }
 
-export function MediaArt() {
+export function FilmArt() {
   const d = useDetail()
   const compact = d === 'compact'
   return (
@@ -211,6 +211,124 @@ export function MediaArt() {
         </g>
       )}
       <DecoFront side="right" />
+    </g>
+  )
+}
+
+
+/* ═════════════════════════ Photography · Media Studies ═════════════════════════ */
+
+/** Camera, front-on. Origin = body centre. */
+export function Camera({ x = 0, y = 0, s = 1, r = 0 }) {
+  return (
+    <G x={x} y={y} s={s} r={r}>
+      <Shadow cx={3} cy={46} rx={68} />
+      <rect x="-26" y="-48" width="30" height="16" rx="4" fill={C.n2} />
+      <rect x="-22" y="-45" width="22" height="9" rx="2" fill={C.display} />
+      <rect x="34" y="-46" width="24" height="12" rx="3" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <rect x="-56" y="-44" width="16" height="9" rx="3" fill={C.amber} />
+      <rect x="-64" y="-34" width="128" height="76" rx="12" fill={C.deep} />
+      <rect x="22" y="-34" width="42" height="76" rx="12" fill={C.ink} opacity="0.22" />
+      <path d="M-64-22V-24Q-64-34-52-34H52Q64-34 64-24V-8H-64Z" fill={C.n3} />
+      <rect x="-64" y="-10" width="128" height="3.4" fill={C.ink} opacity="0.28" />
+      <rect x="-64" y="-34" width="128" height="4" rx="2" fill={C.hi} opacity="0.4" />
+      <circle cy="10" r="33" fill={C.n2} />
+      <circle cy="10" r="28.4" fill={C.screen} />
+      <circle cy="10" r="22" fill={C.blueMid} />
+      <circle cy="10" r="14" fill={C.blue} />
+      <circle cy="10" r="6" fill={C.ink} />
+      <path d="M-16-2A22 22 0 0 1-4-10" fill="none" stroke={C.hi} strokeWidth="3.4" strokeLinecap="round" opacity="0.75" />
+      <circle cx="9" cy="1" r="2.6" fill={C.hi} opacity="0.6" />
+    </G>
+  )
+}
+
+/** Instant print. Origin = centre. */
+export function Polaroid({ x = 0, y = 0, r = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <rect x="-26" y="-31" width="54" height="66" rx="3" fill={C.shadow} opacity="0.3" />
+      <rect x="-27" y="-33" width="54" height="66" rx="3" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <rect x="-22" y="-28" width="44" height="44" rx="1.6" fill={C.bluePale} />
+      <circle cx="10" cy="-15" r="5.4" fill={C.goldPale} />
+      <path d="M-22 16V4Q-10-7 2 4T22 0V16Z" fill={C.leaf} />
+      <path d="M-22 16V10Q-4 2 22 12V16Z" fill={C.mid} />
+    </G>
+  )
+}
+
+export function PhotographyArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      {!compact && <Polaroid x={186} y={150} r={10} s={0.96} />}
+      {d === 'full' && <Polaroid x={54} y={156} r={-9} s={0.84} />}
+      <Camera x={compact ? 120 : 116} y={compact ? 124 : 134} s={compact ? 1.22 : 1.02} />
+      <DecoFront side="right" />
+    </g>
+  )
+}
+
+/** Folded newspaper. Origin = centre; 92 × 116. */
+export function Newspaper({ x = 0, y = 0, r = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <rect x="-43" y="-53" width="92" height="116" rx="4" fill={C.shadow} opacity="0.28" />
+      <rect x="-46" y="-58" width="92" height="116" rx="4" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <rect x="-38" y="-50" width="76" height="11" rx="2" fill={C.deep} />
+      <rect x="-38" y="-33" width="76" height="6" rx="2" fill={C.ink} opacity="0.85" />
+      <rect x="-38" y="-23" width="50" height="6" rx="2" fill={C.ink} opacity="0.85" />
+      <rect x="-38" y="-11" width="34" height="28" rx="2" fill={C.bluePale} />
+      <path d="M-38 17V9Q-28 0-20 9T-4 5V17Z" fill={C.leaf} />
+      <circle cx="-14" cy="-3" r="3.6" fill={C.goldPale} />
+      {[-9, -1, 7, 15].map((yy, i) => <rect key={yy} x="0" y={yy} width={i % 2 ? 34 : 38} height="3.6" rx="1.8" fill={C.mist} />)}
+      {[26, 34, 42, 50].map((yy, i) => (
+        <g key={yy}><rect x="-38" y={yy} width={i % 2 ? 32 : 36} height="3.4" rx="1.7" fill={C.mist} /><rect x="2" y={yy} width={i % 2 ? 36 : 30} height="3.4" rx="1.7" fill={C.mist} /></g>
+      ))}
+      <path d="M0 -58V58" stroke={C.paper2} strokeWidth="1.4" />
+    </G>
+  )
+}
+
+/** Retro television. Origin = base centre. */
+export function RetroTV({ x = 0, y = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={2} cy={8} rx={54} />
+      <path d="M-8-66L-24-90M8-66L24-90" stroke={C.n2} strokeWidth="2.8" strokeLinecap="round" />
+      <circle cx="-24" cy="-91" r="3.2" fill={C.n2} />
+      <circle cx="24" cy="-91" r="3.2" fill={C.n2} />
+      <rect x="-34" y="-3" width="12" height="9" rx="3" fill={C.warm3} />
+      <rect x="22" y="-3" width="12" height="9" rx="3" fill={C.warm3} />
+      <rect x="-48" y="-68" width="96" height="68" rx="11" fill={C.warm2} />
+      <rect x="22" y="-68" width="26" height="68" rx="11" fill={C.warm3} opacity="0.4" />
+      <rect x="-48" y="-68" width="96" height="4" rx="2" fill={C.hi} opacity="0.35" />
+      <rect x="-40" y="-60" width="60" height="50" rx="9" fill={C.screen} />
+      <rect x="-37" y="-57" width="54" height="44" rx="7" fill={C.display} />
+      <path d="M-18-46L0-35L-18-24Z" fill={C.leaf} />
+      <path d="M-34-20Q-20-26-6-20" fill="none" stroke={C.soft} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="35" cy="-48" r="6.6" fill={C.warm3} />
+      <circle cx="35" cy="-30" r="6.6" fill={C.warm3} />
+      <path d="M31-18H39M31-14H39M31-10H39" stroke={C.warm3} strokeWidth="1.4" strokeLinecap="round" />
+    </G>
+  )
+}
+
+export function MediaStudiesArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      <Newspaper x={compact ? 98 : 88} y={compact ? 124 : 118} r={-7} s={compact ? 1.12 : 1} />
+      <RetroTV x={compact ? 152 : 160} y={compact ? 192 : 196} s={compact ? 1.0 : 0.94} />
+      {d === 'full' && (
+        <g fill="none" stroke={C.leaf} strokeWidth="2.6" strokeLinecap="round">
+          <path d="M184 76Q192 70 200 76" /><path d="M180 66Q192 56 204 66" />
+        </g>
+      )}
     </g>
   )
 }
