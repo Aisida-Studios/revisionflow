@@ -1,8 +1,9 @@
 // src/components/illustrations/subjects/stem.jsx
 // Mathematics · Computer Science · Design & Technology.
 import React from 'react'
-import { C, G, Sheet, Pencil, Laptop, Deco, DecoFront, useUid } from '../kit'
+import { C, G, Shadow, Sheet, Pencil, Laptop, Deco, DecoFront, useUid } from '../kit'
 import { useDetail } from '../IllustrationFrame'
+import { GlyphMark } from './GlyphMark'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
@@ -144,7 +145,7 @@ export function MathsArt() {
           <circle cx="168" cy="82" r="2.4" fill={C.deep} />
         </g>
       )}
-      {!compact && <SetSquare x={48} y={192} r={-6} s={0.95} />}
+      <SetSquare x={compact ? 50 : 48} y={compact ? 194 : 192} r={-6} s={compact ? 1.0 : 0.95} />
       <Ruler x={compact ? 52 : 56} y={compact ? 184 : 190} r={compact ? -8 : -6} len={compact ? 136 : 140} />
       <DrawingCompass x={compact ? 118 : 124} y={compact ? 74 : 72} s={compact ? 1.14 : 1.04} />
       {d === 'full' && <Pencil x={150} y={197} r={-168} len={70} tone="green" />}
@@ -200,6 +201,169 @@ export function DesignTechArt() {
       <Cog x={compact ? 118 : 92} y={compact ? 124 : 134} s={compact ? 1.45 : 1.1} />
       {!compact && <Cog x={150} y={164} s={0.66} tone="soft" n={8} ro={40} ri={32} hole={11} />}
       <DecoFront side="right" />
+    </g>
+  )
+}
+
+
+/* ═════════════════ Further Mathematics · Statistics · Engineering ═════════════════ */
+
+/** Wireframe surface z = sin·cos, in simple isometric projection. Origin = surface centre. */
+export function SurfaceMesh({ x = 0, y = 0, n = 7, step = 10.5, amp = 9 }) {
+  const pt = (i, j) => {
+    const u = i - (n - 1) / 2
+    const v = j - (n - 1) / 2
+    const z = Math.sin(u * 0.95) * Math.cos(v * 0.95) * amp
+    return `${r1((u - v) * step * 0.87)} ${r1((u + v) * step * 0.5 - z)}`
+  }
+  const rows = []
+  const cols = []
+  for (let a = 0; a < n; a += 1) {
+    const rr = []
+    const cc = []
+    for (let b = 0; b < n; b += 1) { rr.push(pt(b, a)); cc.push(pt(a, b)) }
+    rows.push(`M${rr.join('L')}`)
+    cols.push(`M${cc.join('L')}`)
+  }
+  return (
+    <G x={x} y={y}>
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={cols.join('')} stroke={C.leaf} strokeWidth="1.8" />
+        <path d={rows.join('')} stroke={C.blue} strokeWidth="1.8" />
+      </g>
+    </G>
+  )
+}
+
+export function FurtherMathsArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      <G x={compact ? 120 : 116} y={compact ? 112 : 104} r={compact ? 0 : -3} s={compact ? 1.12 : 1}>
+        <rect x="-66" y="-54" width="132" height="108" rx="9" fill={C.shadow} opacity="0.28" transform="translate(3 5)" />
+        <rect x="-66" y="-54" width="132" height="108" rx="9" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+        <path d="M-52 42H54M-52 42V-42" stroke={C.soft} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        <path d="M54 42l-5-3.4M54 42l-5 3.4M-52-42l-3.4 5M-52-42l3.4 5" stroke={C.soft} strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        <SurfaceMesh x={2} y={-2} />
+      </G>
+      {!compact && <GlyphMark x={50} y={160} s={0.88} glyph="integral" fill={C.deep} />}
+      {!compact && (
+        <G x={178} y={166}>
+          <circle cx="2" cy="4" r="25" fill={C.shadow} opacity="0.28" />
+          <circle r="25" fill={C.deep} />
+          <circle r="20" fill={C.mid} />
+          <GlyphMark s={0.3} glyph="sigma" fill={C.paper} />
+        </G>
+      )}
+      {d === 'full' && <Pencil x={92} y={200} r={-4} len={74} tone="blue" />}
+    </g>
+  )
+}
+
+/** Die with pips. Origin = centre. */
+export function Die({ x = 0, y = 0, r = 0, s = 1, pips = 5 }) {
+  const P = {
+    3: [[-8, -8], [0, 0], [8, 8]],
+    4: [[-8, -8], [8, -8], [-8, 8], [8, 8]],
+    5: [[-8, -8], [8, -8], [0, 0], [-8, 8], [8, 8]],
+    6: [[-8, -9], [8, -9], [-8, 0], [8, 0], [-8, 9], [8, 9]],
+  }[pips]
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <rect x="-15" y="-13" width="34" height="34" rx="7" fill={C.shadow} opacity="0.3" />
+      <rect x="-17" y="-17" width="34" height="34" rx="7" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <rect x="-17" y="8" width="34" height="9" rx="4.5" fill={C.paper2} opacity="0.55" />
+      {P.map(([px, py], i) => <circle key={i} cx={px} cy={py} r="3.5" fill={C.deep} />)}
+    </G>
+  )
+}
+
+export function StatisticsArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  const heights = [0.14, 0.3, 0.55, 0.82, 1, 0.82, 0.55, 0.3, 0.14]
+  const curve = []
+  for (let t = -3.2; t <= 3.21; t += 0.2) curve.push(`${r1(t * 17.5)} ${r1(38 - 74 * Math.exp((-t * t) / 2))}`)
+  return (
+    <g>
+      <Deco v="a" />
+      <G x={compact ? 120 : 114} y={compact ? 112 : 100} r={compact ? 0 : -3} s={compact ? 1.12 : 1}>
+        <rect x="-66" y="-56" width="132" height="112" rx="9" fill={C.shadow} opacity="0.28" transform="translate(3 5)" />
+        <rect x="-66" y="-56" width="132" height="112" rx="9" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+        {heights.map((h, i) => (
+          <rect key={i} x={-57 + i * 12.8} y={38 - h * 74} width="11.2" height={h * 74} rx="2" fill={i === 4 ? C.leaf : i % 2 ? C.mist : C.soft} />
+        ))}
+        <path d={`M${curve.join('L')}`} fill="none" stroke={C.deep} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M0-44V38" stroke={C.amber} strokeWidth="2.2" strokeDasharray="4 4" strokeLinecap="round" />
+        <path d="M-60 38H60" stroke={C.soft} strokeWidth="2" strokeLinecap="round" />
+      </G>
+      {!compact && <Die x={154} y={176} r={14} pips={5} />}
+      {!compact && <Die x={112} y={186} r={-10} pips={3} s={0.86} />}
+      {d === 'full' && (
+        <G x={176} y={74}>
+          <rect x="3" y="4" width="46" height="38" rx="6" fill={C.shadow} opacity="0.28" />
+          <rect width="46" height="38" rx="6" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+          {[[8, 28], [14, 20], [20, 22], [26, 14], [32, 16], [38, 8]].map(([px, py], i) => <circle key={i} cx={px} cy={py} r="2.4" fill={C.leaf} />)}
+          <path d="M6 30L40 6" stroke={C.deep} strokeWidth="2" strokeLinecap="round" />
+        </G>
+      )}
+    </g>
+  )
+}
+
+/** Safety helmet. Origin = centre of the brim. */
+export function HardHat({ x = 0, y = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={2} cy={8} rx={56} />
+      <path d="M-34-4C-34-44-16-62 0-62S34-44 34-4Z" fill={C.gold} />
+      <path d="M8-60C26-52 34-34 34-4H12C14-28 14-44 8-60Z" fill={C.warm3} opacity="0.4" />
+      <path d="M-26-14C-26-38-14-52-2-56" fill="none" stroke={C.goldPale} strokeWidth="5" strokeLinecap="round" opacity="0.8" />
+      <rect x="-7" y="-63" width="14" height="60" rx="6" fill={C.goldPale} opacity="0.85" />
+      <rect x="-9" y="-63" width="4" height="60" rx="2" fill={C.hi} opacity="0.35" />
+      <rect x="-50" y="-8" width="100" height="12" rx="6" fill={C.gold} />
+      <rect x="-50" y="0" width="100" height="4" rx="2" fill={C.warm3} opacity="0.5" />
+      <rect x="-50" y="-8" width="100" height="3.6" rx="1.8" fill={C.hi} opacity="0.3" />
+    </G>
+  )
+}
+
+/** Open-ended spanner. Origin = centre of the jaw head; the handle extends along +x. */
+export function Spanner({ x = 0, y = 0, r = 0, s = 1, len = 112 }) {
+  const head = 'M-14.8-6L3-6V6L-14.8 6A16 16 0 1 0-14.8-6Z'
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <path d={head} fill={C.shadow} opacity="0.28" transform="translate(2 4)" />
+      <rect x="10" y="-6.4" width={len - 10} height="12.8" rx="6.4" fill={C.shadow} opacity="0.28" transform="translate(2 4)" />
+      <rect x="10" y="-6.4" width={len - 10} height="12.8" rx="6.4" fill={C.n2} />
+      <rect x="10" y="1.6" width={len - 10} height="4.8" rx="2.4" fill={C.neutral} opacity="0.55" />
+      <rect x="10" y="-6.4" width={len - 10} height="3.6" rx="1.8" fill={C.hi} opacity="0.45" />
+      <path d={head} fill={C.n2} />
+      <path d="M-4-15A16 16 0 0 1 12-8" fill="none" stroke={C.hi} strokeWidth="2.6" strokeLinecap="round" opacity="0.6" />
+      <circle cx={len - 8} cy="0" r="3.2" fill={C.neutral} />
+    </G>
+  )
+}
+
+export function EngineeringArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="c" />
+      {!compact && (
+        <g transform="rotate(-8 150 96)">
+          <rect x="104" y="52" width="96" height="76" rx="4" fill={C.shadow} opacity="0.26" transform="translate(3 4)" />
+          <rect x="104" y="52" width="96" height="76" rx="4" fill={C.bluePale} stroke={C.blueMid} strokeWidth="1" />
+          <path d="M116 52V128M128 52V128M140 52V128M152 52V128M164 52V128M176 52V128M188 52V128M104 66H200M104 80H200M104 94H200M104 108H200M104 122H200" stroke={C.blueMid} strokeWidth="0.6" opacity="0.5" />
+          <path d="M122 112V76H146M122 94H140M158 112A18 18 0 0 0 176 94V76" fill="none" stroke={C.blue} strokeWidth="2" strokeLinecap="round" />
+        </g>
+      )}
+      <Spanner x={compact ? 60 : 62} y={compact ? 190 : 186} r={compact ? -34 : -30} len={compact ? 128 : 124} />
+      <HardHat x={compact ? 116 : 112} y={compact ? 140 : 132} s={compact ? 1.3 : 1.08} />
+      {!compact && <Cog x={178} y={172} s={0.62} tone="deep" n={9} />}
     </g>
   )
 }
