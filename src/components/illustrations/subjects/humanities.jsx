@@ -3,6 +3,7 @@
 import React from 'react'
 import { C, G, Leaf, Shadow, BookStack, Pencil, Deco, DecoFront, useUid } from '../kit'
 import { useDetail } from '../IllustrationFrame'
+import { GlyphBubble } from './languages'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
@@ -115,14 +116,14 @@ export function Column({ x = 0, y = 0, s = 1, h = 118 }) {
   return (
     <G x={x} y={y} s={s}>
       <Shadow cx={3} cy={2} rx={34} />
-      <rect x="-26" y="-12" width="52" height="12" rx="2.4" fill={C.soft} />
-      <rect x="-22" y="-20" width="44" height="9" rx="2" fill={C.mist} />
-      <path d={`M-15 -18L-13 ${top + 16}H13L15 -18Z`} fill={C.mist} />
-      <path d={`M5 -18L6.4 ${top + 16}H13L15 -18Z`} fill={C.soft} opacity="0.7" />
-      <path d={flutes.join('')} stroke={C.soft} strokeWidth="1.3" />
-      <rect x="-20" y={top + 8} width="40" height="9" rx="2" fill={C.mist} />
+      <rect x="-26" y="-12" width="52" height="12" rx="2.4" fill={C.warm2} />
+      <rect x="-22" y="-20" width="44" height="9" rx="2" fill={C.warm} />
+      <path d={`M-15 -18L-13 ${top + 16}H13L15 -18Z`} fill={C.warm} />
+      <path d={`M3 -18L5 ${top + 16}H13L15 -18Z`} fill={C.warm2} opacity="0.85" />
+      <path d={flutes.join('')} stroke={C.warm3} strokeWidth="1.3" opacity="0.55" />
+      <rect x="-20" y={top + 8} width="40" height="9" rx="2" fill={C.warm} />
       <rect x="-27" y={top - 2} width="54" height="11" rx="2.4" fill={C.paper} />
-      <rect x="-27" y={top + 5} width="54" height="4.4" fill={C.soft} opacity="0.55" />
+      <rect x="-27" y={top + 5} width="54" height="4.4" fill={C.warm2} opacity="0.7" />
       <rect x="-27" y={top - 2} width="54" height="3" rx="1.5" fill={C.hi} opacity="0.6" />
     </G>
   )
@@ -286,8 +287,8 @@ export function HistoryArt() {
     <g>
       <Deco v="c" />
       {d === 'full' && <Hourglass x={176} y={166} s={1.0} />}
-      <Column x={compact ? 112 : 100} y={compact ? 196 : 192} s={compact ? 1.12 : 1.04} />
-      {!compact && <Scroll x={compact ? 150 : 152} y={188} r={-8} s={1.05} />}
+      <Column x={compact ? 98 : 100} y={compact ? 196 : 192} s={compact ? 1.06 : 1.04} />
+      <Scroll x={compact ? 152 : 152} y={compact ? 186 : 188} r={-8} s={compact ? 1.2 : 1.05} />
       <DecoFront side="right" />
     </g>
   )
@@ -319,7 +320,7 @@ export function GeographyArt() {
   )
 }
 
-export function ReligionPhilosophyArt() {
+export function PhilosophyArt() {
   const d = useDetail()
   const compact = d === 'compact'
   return (
@@ -354,7 +355,7 @@ export function PsychologyArt() {
   )
 }
 
-export function LawPoliticsArt() {
+export function LawArt() {
   const d = useDetail()
   const compact = d === 'compact'
   return (
@@ -378,6 +379,226 @@ export function LanguagesArt() {
       {compact && <Bubble x={74} y={44} w={92} h={56} tone="deep" tail="left" marks="wave" />}
       <BookStack x={120} y={196} s={compact ? 1.1 : 1.0} books={[{ w: 112, h: 17, tone: 'mid' }, { w: 98, h: 14, tone: 'cream', dx: 3 }, { w: 86, h: 13, tone: 'blueMid', dx: -3 }]} />
       {d === 'full' && <Pencil x={150} y={160} r={-30} len={64} tone="blue" />}
+      <DecoFront side="left" />
+    </g>
+  )
+}
+
+
+/* ═════ English Language · English Language & Literature · Religious Studies · Sociology · Politics ═════ */
+
+/** Magnifying glass. Origin = lens centre. */
+export function Magnifier({ x = 0, y = 0, r = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} r={r} s={s}>
+      <circle cx="3" cy="5" r="24" fill={C.shadow} opacity="0.25" />
+      <rect x="20" y="-5.4" width="38" height="10.8" rx="5.4" fill={C.warm3} transform="rotate(45)" />
+      <rect x="20" y="-5.4" width="38" height="3.4" rx="1.7" fill={C.hi} opacity="0.3" transform="rotate(45)" />
+      <circle r="23" fill={C.bluePale} opacity="0.45" />
+      <circle r="23" fill="none" stroke={C.n2} strokeWidth="5.4" />
+      <circle r="23" fill="none" stroke={C.n3} strokeWidth="1.6" opacity="0.8" />
+      <path d="M-14-12A18 18 0 0 1-2-18" fill="none" stroke={C.hi} strokeWidth="3.4" strokeLinecap="round" opacity="0.7" />
+    </G>
+  )
+}
+
+/** Ink bottle. Origin = base centre. */
+export function Inkwell({ x = 0, y = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={2} cy={2} rx={30} />
+      <path d="M-25 0V-24Q-25-37-12-37H12Q25-37 25-24V0Q25 2 21 2H-21Q-25 2-25 0Z" fill={C.bluePale} opacity="0.7" />
+      <path d="M-23-19H23V-1Q23 1 21 1H-21Q-23 1-23-1Z" fill={C.ink} />
+      <ellipse cx="0" cy="-19" rx="23" ry="3.4" fill={C.blue} opacity="0.7" />
+      <path d="M-25 0V-24Q-25-37-12-37H12Q25-37 25-24V0" fill="none" stroke={C.soft} strokeWidth="1.6" />
+      <rect x="-9.4" y="-46" width="18.8" height="11" rx="3.4" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+      <path d="M-18-30V-6" stroke={C.hi} strokeWidth="3.2" strokeLinecap="round" opacity="0.6" />
+    </G>
+  )
+}
+
+export function EnglishLanguageArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      <G x={compact ? 98 : 94} y={compact ? 132 : 124} r={-5} s={compact ? 1.08 : 1}>
+        <rect x="-46" y="-60" width="92" height="118" rx="6" fill={C.shadow} opacity="0.28" transform="translate(3 5)" />
+        <rect x="-46" y="-60" width="92" height="118" rx="6" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+        <rect x="-34" y="-48" width="40" height="6" rx="3" fill={C.leaf} />
+        <rect x="-38" y="-22" width="76" height="14" rx="4" fill={C.amberPale} />
+        {[-32, -16, 0, 14, 28, 42].map((yy, i) => (
+          <rect key={yy} x="-34" y={yy - (i === 1 ? 0 : 0)} width={i === 1 ? 58 : i % 2 ? 62 : 70} height="4.6" rx="2.3" fill={i === 1 ? C.soft : C.mist} />
+        ))}
+        <path d="M-34-4q4 4 8 0t8 0t8 0t8 0" fill="none" stroke={C.amber} strokeWidth="2" strokeLinecap="round" />
+      </G>
+      {!compact && <Magnifier x={134} y={150} s={0.98} />}
+      <GlyphBubble x={compact ? 150 : 168} y={compact ? 78 : 70} s={compact ? 0.72 : 0.66} glyph="quote" tone="deep" />
+      <DecoFront side="right" />
+    </g>
+  )
+}
+
+export function EnglishLangLitArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="b" />
+      {!compact && (
+        <g>
+          <path d="M170 168L190 108" stroke={C.warm3} strokeWidth="2" strokeLinecap="round" />
+          <Leaf x={168} y={170} r={22} l={92} w={22} tone="leaf" b={7} />
+        </g>
+      )}
+      <BookStack x={compact ? 118 : 100} y={198} books={[{ w: 108, h: 18, tone: 'deep' }, { w: 94, h: 15, tone: 'cream', dx: 3 }, { w: 82, h: 13, tone: 'warm', dx: -3 }]} />
+      {!compact && <Inkwell x={170} y={198} s={1.05} />}
+      <GlyphBubble x={compact ? 120 : 98} y={compact ? 86 : 84} s={compact ? 0.82 : 0.72} glyph="quote" tone="paperMid" />
+    </g>
+  )
+}
+
+/** Wooden A-frame book stand. Origin = ground centre. */
+export function BookStand({ x = 0, y = 0, s = 1, children }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={2} cy={2} rx={48} />
+      <path d="M-36 0L-6-64M36 0L6-64" stroke={C.warm3} strokeWidth="7" strokeLinecap="round" />
+      <path d="M-22-26H22" stroke={C.warm2} strokeWidth="5" strokeLinecap="round" />
+      <rect x="-48" y="-72" width="96" height="9" rx="3" fill={C.warm2} />
+      <rect x="-48" y="-79" width="96" height="7.4" rx="3" fill={C.warm} />
+      {children}
+    </G>
+  )
+}
+
+/** Candle with a small flame. Origin = base centre. */
+export function Candle({ x = 0, y = 0, s = 1, glow = true }) {
+  return (
+    <G x={x} y={y} s={s}>
+      {glow && <circle cx="0" cy="-66" r="34" fill={C.goldPale} opacity="0.26" />}
+      <Shadow cx={2} cy={2} rx={20} />
+      <ellipse cx="0" cy="-1" rx="18" ry="4.6" fill={C.warm2} />
+      <rect x="-9" y="-50" width="18" height="48" rx="2.4" fill={C.paper} />
+      <rect x="2" y="-50" width="7" height="48" rx="2.4" fill={C.paper2} opacity="0.8" />
+      <path d="M-9-50H9L9-44Q4-40 3-46Q0-38-4-46Q-7-40-9-44Z" fill={C.hi} opacity="0.7" />
+      <path d="M0-52V-57" stroke={C.ink} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M0-58C-7-66-5-74 0-82C5-74 7-66 0-58Z" fill={C.gold} />
+      <path d="M0-61C-3.4-66-2.4-70 0-74C2.4-70 3.4-66 0-61Z" fill={C.goldPale} />
+    </G>
+  )
+}
+
+export function ReligiousStudiesArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="a" />
+      <BookStand x={compact ? 120 : 110} y={compact ? 196 : 194} s={compact ? 1.18 : 1.0}>
+        <OpenBook x={0} y={-86} s={0.88} cover="cream" />
+      </BookStand>
+      {!compact && <Candle x={184} y={196} s={0.98} glow={d === 'full'} />}
+      {d === 'full' && [[56, 150], [66, 134], [49, 124]].map(([ox, oy], i) => <ellipse key={i} cx={ox} cy={oy} rx="3.6" ry="5" fill={C.deep} transform={`rotate(${i * 24 - 20} ${ox} ${oy})`} />)}
+      <DecoFront side="left" />
+    </g>
+  )
+}
+
+/** Head-and-shoulders figure. Origin = centre of the shoulders' baseline. */
+export function Figure({ x = 0, y = 0, s = 1, tone = 'soft' }) {
+  const f = {
+    paper: [C.paper, C.paper2], soft: [C.soft, C.leaf], leaf: [C.leaf, C.mid],
+    blue: [C.blueMid, C.blue], warm: [C.warm2, C.warm3], mid: [C.mid, C.deep], teal: [C.teal, C.deep],
+  }[tone]
+  return (
+    <G x={x} y={y} s={s}>
+      <circle cx="2" cy="4" r="22" fill={C.shadow} opacity="0.2" />
+      <path d="M-17 22C-17 6-9-2 0-2S17 6 17 22Z" fill={f[0]} />
+      <path d="M0-2C9-2 17 6 17 22H7C7 10 5 2 0-2Z" fill={f[1]} opacity="0.55" />
+      <circle cy="-16" r="11" fill={f[0]} />
+      <circle cx="3" cy="-14" r="8" fill={f[1]} opacity="0.35" />
+      <circle cx="-3.4" cy="-19" r="3.4" fill={C.hi} opacity="0.35" />
+    </G>
+  )
+}
+
+export function SociologyArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  const R = compact ? 48 : 52
+  const cx = 120
+  const cy = compact ? 112 : 110
+  const tones = ['blue', 'leaf', 'warm', 'mid', 'teal']
+  const pts = tones.map((_, i) => {
+    const a = (-90 + i * 72) * (Math.PI / 180)
+    return [r1(cx + Math.cos(a) * R), r1(cy + Math.sin(a) * R)]
+  })
+  const links = []
+  for (let i = 0; i < 5; i += 1) {
+    links.push(`M${pts[i].join(' ')}L${pts[(i + 1) % 5].join(' ')}`)
+    links.push(`M${pts[i].join(' ')}L${pts[(i + 2) % 5].join(' ')}`)
+  }
+  return (
+    <g>
+      <Deco v="a" />
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke={C.soft} strokeWidth="1.6" strokeDasharray="3 6" opacity="0.8" />
+      <path d={links.join('')} stroke={C.soft} strokeWidth="2" strokeLinecap="round" opacity="0.85" fill="none" />
+      <circle cx={cx} cy={cy} r="9" fill={C.amber} />
+      <circle cx={cx - 2.4} cy={cy - 2.6} r="2.8" fill={C.hi} opacity="0.5" />
+      {pts.map(([px, py], i) => <Figure key={i} x={px} y={py + 4} s={compact ? 1.0 : 0.92} tone={tones[i]} />)}
+      <DecoFront side="left" />
+    </g>
+  )
+}
+
+/** Ballot box with a paper going in. Origin = base centre. */
+export function BallotBox({ x = 0, y = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={3} cy={2} rx={56} />
+      <G x={4} y={-78} r={-7}>
+        <rect x="-20" y="-34" width="40" height="58" rx="3" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
+        <rect x="-13" y="-26" width="20" height="4.4" rx="2.2" fill={C.leaf} />
+        {[-12, 0, 12].map((yy) => <g key={yy}><rect x="-13" y={yy - 2} width="8" height="8" rx="1.6" fill="none" stroke={C.soft} strokeWidth="1.4" /><rect x="-1" y={yy} width="12" height="3.6" rx="1.8" fill={C.mist} /></g>)}
+        <path d="M-12 -0.4l3 3.4l5-6.4" fill="none" stroke={C.leaf} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </G>
+      <rect x="-44" y="-62" width="88" height="62" rx="6" fill={C.deep} />
+      <rect x="14" y="-62" width="30" height="62" rx="6" fill={C.ink} opacity="0.28" />
+      <rect x="-50" y="-72" width="100" height="14" rx="5" fill={C.mid} />
+      <rect x="-50" y="-72" width="100" height="4" rx="2" fill={C.hi} opacity="0.3" />
+      <rect x="-24" y="-67" width="48" height="5" rx="2.5" fill={C.ink} />
+      <rect x="-26" y="-46" width="52" height="32" rx="4" fill={C.paper} />
+      <path d="M-12-30l7 7l14-15" fill="none" stroke={C.leaf} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    </G>
+  )
+}
+
+/** Speaker's lectern with a microphone. Origin = base centre. */
+export function Podium({ x = 0, y = 0, s = 1 }) {
+  return (
+    <G x={x} y={y} s={s}>
+      <Shadow cx={2} cy={2} rx={32} />
+      <path d="M-26 0L-22-66H22L26 0Z" fill={C.warm2} />
+      <path d="M8-66H22L26 0H12Z" fill={C.warm3} opacity="0.4" />
+      <path d="M-17-8L-14-58H14L17-8Z" fill={C.warm} />
+      <rect x="-31" y="-74" width="62" height="9" rx="3" fill={C.warm3} />
+      <path d="M0-74V-98Q0-106 10-106" fill="none" stroke={C.n2} strokeWidth="2.6" strokeLinecap="round" />
+      <ellipse cx="14" cy="-106" rx="7" ry="4.6" fill={C.screen} />
+      <ellipse cx="12" cy="-107.4" rx="2.6" ry="1.6" fill={C.hi} opacity="0.5" />
+    </G>
+  )
+}
+
+export function PoliticsArt() {
+  const d = useDetail()
+  const compact = d === 'compact'
+  return (
+    <g>
+      <Deco v="b" />
+      {!compact && <Podium x={176} y={198} s={0.96} />}
+      <BallotBox x={compact ? 120 : 102} y={compact ? 198 : 198} s={compact ? 1.34 : 1.06} />
       <DecoFront side="left" />
     </g>
   )
