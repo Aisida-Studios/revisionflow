@@ -456,7 +456,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
               </p>
               {holidays.map(h=>(
                 <div key={h.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'5px 10px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.82rem',marginBottom:5}}>
-                  <span>{h.label||'Holiday'}: {h.start} → {h.end}</span>
+                  <span>{h.label||'Holiday'}: {h.start} \u2192 {h.end}</span>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>setHolidays(hs=>hs.filter(x=>x.id!==h.id))}><Trash2 size={12}/></button>
                 </div>
               ))}
@@ -477,7 +477,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
           <div>
             <h4 style={{marginBottom:4}}>When are you available to revise?</h4>
             <p style={{fontSize:'0.82rem',marginBottom:14}}>
-              Set one or more time ranges for each day — e.g. 15:00–17:00 and 19:00–22:00. Leave a day unticked for rest days.
+              Set one or more time ranges for each day — e.g. 15:00-17:00 and 19:00-22:00. Leave a day unticked for rest days.
             </p>
             <div style={{display:'flex',flexDirection:'column',gap:6}}>
               {DAYS.map(day => (
@@ -761,7 +761,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
             <h4 style={{marginBottom:12}}>Review your preferences</h4>
             <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16,fontSize:'0.875rem'}}>
               {[
-                ['Date range', `${startDate} → ${endDate}`],
+                ['Date range', `${startDate} \u2192 ${endDate}`],
                 ['Available days', Object.entries(availability).filter(([,v])=>v.enabled).map(([k])=>k.slice(0,3)).join(', ')],
                 ...(hasSixthForm ? [[
                   'Free periods',
