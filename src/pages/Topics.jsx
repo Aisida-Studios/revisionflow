@@ -262,13 +262,21 @@ export default function Topics() {
     const subjQual = getSubjectQualification(subj, profile)
     const topicList = await getMergedTopicsFlat(subj?.board||'AQA', selSubj, subjQual)
     if (!topicList.length) { toast.error('No topics found for this subject/board'); setLoading(false); return }
+    // Reloading must NEVER reset a student's existing confidence ratings or notes: with { merge:true },
+    // writing `confidence:null, notes:''` would overwrite them on every topic that already exists.
+    // Topics that already exist only get their descriptive fields refreshed; brand-new topics
+    // (e.g. ones added by a curriculum update) are created with an empty rating.
+    const existingIds = new Set((await getDocs(collection(db,'users',user.uid,'topics'))).docs.map(d => d.id))
     for (const t of topicList) {
       const id = buildTopicId(subj?.board||'AQA', subjQual, selSubj, t.name)
-      await setDoc(doc(db,'users',user.uid,'topics',id), {
+      const descriptive = {
         name:t.name, paper:t.paper, subjectId:selSubj, board:subj?.board||'AQA', qualification:subjQual,
         subjectKey: buildSubjectKey({ board:subj?.board||'AQA', qualification:subjQual, subject:selSubj, tier:subj?.tier }),
-        confidence:null, notes:'', createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
-      }, { merge:true })
+        updatedAt:serverTimestamp(),
+      }
+      await setDoc(doc(db,'users',user.uid,'topics',id),
+        existingIds.has(id) ? descriptive : { ...descriptive, confidence:null, notes:'', createdAt:serverTimestamp() },
+        { merge:true })
     }
     await loadTopics()
     toast.success(`Loaded ${topicList.length} topics for ${selSubj}`)
