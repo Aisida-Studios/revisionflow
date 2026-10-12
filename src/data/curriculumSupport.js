@@ -14,6 +14,13 @@
 // if one is ever added to topics.js it must be added to subjects.js too or it
 // will not appear here.)
 //
+// LEGACY DATASETS: a few datasets in topics.js describe a qualification the board does
+// not actually publish (checked against the board's own qualifications listing — see
+// data/curriculum/provenance.json). They are kept so students who already selected them keep
+// their topics and ratings, but they are hidden here so nobody new can pick them and be
+// shown an unsupported combination as if it were a complete curriculum. The list lives in the
+// generated data/curriculum/availability.js; topic lookups (getAllTopicsFlat etc.) are unchanged.
+//
 // Lives in its own module (not subjects.js) so subjects.js stays a light
 // constants file that does not depend on the large topic dataset.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,6 +28,7 @@
 import { getSubjectList, SUPPORTED_QUALIFICATIONS } from './subjects'
 import { getSubjectsForBoard } from './topics'
 import { canonicalBoard } from './boards'
+import { isLegacyDataset } from './curriculum/availability'
 
 /**
  * Subject names with real curriculum data for this board + qualification.
@@ -29,8 +37,9 @@ import { canonicalBoard } from './boards'
  */
 export function getSupportedSubjects(board, qualification) {
   if (!SUPPORTED_QUALIFICATIONS.includes(qualification)) return []
-  const supported = new Set(getSubjectsForBoard(canonicalBoard(board), qualification))
-  return getSubjectList(qualification).filter(name => supported.has(name))
+  const canon = canonicalBoard(board)
+  const supported = new Set(getSubjectsForBoard(canon, qualification))
+  return getSubjectList(qualification).filter(name => supported.has(name) && !isLegacyDataset(canon, qualification, name))
 }
 
 export function isSupportedCombination(board, qualification, subject) {
