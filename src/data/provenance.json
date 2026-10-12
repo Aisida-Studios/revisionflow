@@ -1,0 +1,2805 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-10",
+  "note": "Curated evidence. A dataset with no entry here is AWAITING_VERIFICATION. Only record a status you have earned: VERIFIED/PARTIALLY_VERIFIED/UNSUPPORTED need an official (tier 1–2) source, a section reference and a date. scripts/curriculum/validate.mjs enforces this.",
+  "sources": {
+    "aqa-8300-specification": {
+      "board": "AQA",
+      "qualification": "GCSE",
+      "subject": "Mathematics",
+      "title": "AQA GCSE Mathematics (8300) Specification — for first teaching in 2015",
+      "specificationCode": "8300",
+      "specificationVersion": "Version 1.1, September 2026",
+      "url": "https://www.aqa.org.uk/files/resources.mathematics.specifications.AQA-8300-SP-2015_PDF/ed86a99d3abbb2fff89fc83ee6046f9ae8e37c78.pdf",
+      "sourceType": "specification",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Full text retrieved. Used: section 3 (subject content, 3.1–3.6) and the scheme of assessment (papers, marks, timings)."
+    },
+    "aqa-qualifications-listing": {
+      "board": "AQA",
+      "title": "AQA | Qualifications — full listing of A-level, AS Level, AQA Certificate and GCSE qualifications",
+      "url": "https://www.aqa.org.uk/qualifications",
+      "sourceType": "board-listing",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Complete listing page retrieved (copyright AQA 2026). Used to confirm which GCSE/AS/A-level qualifications AQA currently offers, and their specification codes."
+    },
+    "ocr-as-a-level-listing": {
+      "board": "OCR",
+      "title": "Cambridge OCR — AS and A Level qualifications (full list of subjects and specification codes)",
+      "url": "https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level",
+      "sourceType": "board-listing",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Complete listing page retrieved. Used to confirm which OCR AS/A Level qualifications currently exist, their specification codes, and where OCR publishes more than one specification (A/B/MEI/Salters routes)."
+    },
+    "pearson-biology-a-2015": {
+      "board": "Edexcel",
+      "title": "Pearson Edexcel AS and A level Biology A (Salters-Nuffield) 2015 — qualification page",
+      "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/biology-a-2015.html",
+      "sourceType": "board-listing",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Pearson product page: lists the A level and AS level Biology A specifications (first teaching 2015). Used only to evidence that Pearson publishes two Biology specifications."
+    },
+    "pearson-biology-b-2015": {
+      "board": "Edexcel",
+      "title": "Pearson Edexcel AS and A level Biology B 2015 — qualification page",
+      "url": "https://qualifications.pearson.com/edexcelasandalevel/biologyb",
+      "sourceType": "board-listing",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Pearson product page: lists the A level and AS level Biology B specifications (first teaching 2015)."
+    },
+    "aqa-gcse-timetable-2027": {
+      "board": "AQA",
+      "qualification": "GCSE",
+      "title": "AQA Exam timetable May/June 2027 — GCSE, AQA Certificates, ELC and Projects",
+      "url": "https://www.aqa.org.uk/files/449f89fe-eb10-43c4-9f7f-d94906b16007/8572d66498f4d624b9c6ecb4abf5f0a01aff69f3.pdf",
+      "sourceType": "timetable",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Only search-result excerpts of this PDF were read, not the whole document."
+    },
+    "jcq-june-2027-commentary": {
+      "title": "JCQ — Commentary on the June 2027 examination timetable (GCSE, GCE AS and A level)",
+      "url": "https://www.jcq.org.uk/wp-content/uploads/sites/2/2026/05/Commentary-June-2027-timetable.pdf",
+      "sourceType": "timetable",
+      "tier": 2,
+      "accessedAt": "2026-10-10",
+      "notes": "Excerpt only. Lists changes made after the consultation on the common-slot June 2027 timetable."
+    },
+    "school-timetable-2027-maths": {
+      "board": "AQA",
+      "title": "South Nottinghamshire Academy — Draft Exam Timetable Summer 2027 (reproduces AQA GCSE 8300 paper dates)",
+      "url": "https://www.southnottinghamshireacademy.org.uk/_site/data/files/B808A5E6577CBB1F5595B5CAA882770E.pdf",
+      "sourceType": "secondary",
+      "tier": 4,
+      "accessedAt": "2026-10-10",
+      "notes": "Secondary source used only to corroborate AQA GCSE Mathematics 2027 paper dates."
+    }
+  },
+  "boardListings": {
+    "AQA": {
+      "sourceId": "aqa-qualifications-listing",
+      "levelsTranscribed": [
+        "GCSE",
+        "AS-Level",
+        "A-Level"
+      ],
+      "accessedAt": "2026-10-10",
+      "note": "Transcribed from AQA's qualifications page (GCSE, AS Level, A-level and AQA Certificate sections). subject = the name RevisionFlow uses for it, or null when RevisionFlow has no dataset. Codes are only recorded where they were needed.",
+      "GCSE": [
+        {
+          "title": "Art and Design",
+          "subject": "Art & Design",
+          "codes": [
+            "8201",
+            "8202",
+            "8203",
+            "8204",
+            "8205",
+            "8206"
+          ]
+        },
+        {
+          "title": "Bengali",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "Biology",
+          "subject": "Biology",
+          "codes": [
+            "8461"
+          ]
+        },
+        {
+          "title": "Business",
+          "subject": "Business",
+          "codes": [
+            "8132"
+          ]
+        },
+        {
+          "title": "Chemistry",
+          "subject": "Chemistry",
+          "codes": [
+            "8462"
+          ]
+        },
+        {
+          "title": "Chinese (Mandarin)",
+          "subject": "Mandarin Chinese",
+          "codes": [
+            "8673"
+          ]
+        },
+        {
+          "title": "Citizenship Studies",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "Combined Science: Synergy",
+          "subject": "Combined Science: Synergy",
+          "codes": [
+            "8465"
+          ]
+        },
+        {
+          "title": "Combined Science: Trilogy",
+          "subject": "Combined Science: Trilogy",
+          "codes": [
+            "8464"
+          ]
+        },
+        {
+          "title": "Computer Science",
+          "subject": "Computer Science",
+          "codes": [
+            "8525"
+          ]
+        },
+        {
+          "title": "Dance",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "Design and Technology",
+          "subject": "Design & Technology",
+          "codes": [
+            "8552"
+          ]
+        },
+        {
+          "title": "Drama",
+          "subject": "Drama",
+          "codes": [
+            "8261"
+          ]
+        },
+        {
+          "title": "Economics",
+          "subject": "Economics",
+          "codes": [
+            "8136"
+          ]
+        },
+        {
+          "title": "Engineering",
+          "subject": "Engineering",
+          "codes": [
+            "8852"
+          ]
+        },
+        {
+          "title": "English Language",
+          "subject": "English Language",
+          "codes": [
+            "8700"
+          ]
+        },
+        {
+          "title": "English Literature",
+          "subject": "English Literature",
+          "codes": [
+            "8702"
+          ]
+        },
+        {
+          "title": "Food preparation and nutrition",
+          "subject": "Food Preparation & Nutrition",
+          "codes": [
+            "8585"
+          ]
+        },
+        {
+          "title": "French",
+          "subject": "French",
+          "codes": [
+            "8652",
+            "8658"
+          ]
+        },
+        {
+          "title": "Geography",
+          "subject": "Geography",
+          "codes": [
+            "8035"
+          ]
+        },
+        {
+          "title": "German",
+          "subject": "German",
+          "codes": [
+            "8662",
+            "8668"
+          ]
+        },
+        {
+          "title": "Hebrew (Modern)",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "History",
+          "subject": "History",
+          "codes": [
+            "8145"
+          ]
+        },
+        {
+          "title": "Italian",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "Mathematics",
+          "subject": "Mathematics",
+          "codes": [
+            "8300"
+          ]
+        },
+        {
+          "title": "Media Studies",
+          "subject": "Media Studies",
+          "codes": [
+            "8572"
+          ]
+        },
+        {
+          "title": "Music",
+          "subject": "Music",
+          "codes": [
+            "8271"
+          ]
+        },
+        {
+          "title": "Panjabi",
+          "subject": null,
+          "codes": []
+        },
+        {
+          "title": "Physical Education",
+          "subject": "Physical Education",
+          "codes": [
+            "8582"
+          ]
+        },
+        {
+          "title": "Physics",
+          "subject": "Physics",
+          "codes": [
+            "8463"
+          ]
+        },
+        {
+          "title": "Polish",
+          "subject": "Polish",
+          "codes": [
+            "8688"
+          ]
+        },
+        {
+          "title": "Psychology",
+          "subject": "Psychology",
+          "codes": [
+            "8182"
+          ]
+        },
+        {
+          "title": "Religious Studies",
+          "subject": "Religious Studies",
+          "codes": [
+            "8061",
+            "8062",
+            "8063"
+          ]
+        },
+        {
+          "title": "Sociology",
+          "subject": "Sociology",
+          "codes": [
+            "8192"
+          ]
+        },
+        {
+          "title": "Spanish",
+          "subject": "Spanish",
+          "codes": [
+            "8692",
+            "8698"
+          ]
+        },
+        {
+          "title": "Statistics",
+          "subject": "Statistics",
+          "codes": [
+            "8382"
+          ]
+        },
+        {
+          "title": "Urdu",
+          "subject": "Urdu",
+          "codes": [
+            "8648"
+          ]
+        },
+        {
+          "title": "Further Mathematics (AQA Certificate Level 2)",
+          "subject": "Further Mathematics",
+          "codes": [
+            "8365"
+          ],
+          "listedAs": "AQA Certificate"
+        }
+      ],
+      "AS-Level": [
+        {
+          "title": "Biology",
+          "subject": "Biology",
+          "codes": [
+            "7401"
+          ]
+        },
+        {
+          "title": "Business",
+          "subject": "Business",
+          "codes": [
+            "7131",
+            "7137"
+          ]
+        },
+        {
+          "title": "Chemistry",
+          "subject": "Chemistry",
+          "codes": [
+            "7404"
+          ]
+        },
+        {
+          "title": "Computer Science",
+          "subject": "Computer Science",
+          "codes": [
+            "7516"
+          ]
+        },
+        {
+          "title": "Economics",
+          "subject": "Economics",
+          "codes": [
+            "7135"
+          ]
+        },
+        {
+          "title": "English Language",
+          "subject": "English Language",
+          "codes": [
+            "7701"
+          ]
+        },
+        {
+          "title": "English Literature",
+          "subject": "English Literature",
+          "codes": [
+            "7711",
+            "7716"
+          ]
+        },
+        {
+          "title": "French",
+          "subject": "French",
+          "codes": [
+            "7651"
+          ]
+        },
+        {
+          "title": "Further Mathematics",
+          "subject": "Further Mathematics",
+          "codes": [
+            "7366"
+          ]
+        },
+        {
+          "title": "Geography",
+          "subject": "Geography",
+          "codes": [
+            "7036"
+          ]
+        },
+        {
+          "title": "German",
+          "subject": "German",
+          "codes": [
+            "7661"
+          ]
+        },
+        {
+          "title": "History",
+          "subject": "History",
+          "codes": [
+            "7041"
+          ]
+        },
+        {
+          "title": "Mathematics",
+          "subject": "Mathematics",
+          "codes": [
+            "7356"
+          ]
+        },
+        {
+          "title": "Physics",
+          "subject": "Physics",
+          "codes": [
+            "7407"
+          ]
+        },
+        {
+          "title": "Psychology",
+          "subject": "Psychology",
+          "codes": [
+            "7181"
+          ]
+        },
+        {
+          "title": "Religious Studies",
+          "subject": "Religious Studies",
+          "codes": [
+            "7061"
+          ]
+        },
+        {
+          "title": "Sociology",
+          "subject": "Sociology",
+          "codes": [
+            "7191"
+          ]
+        },
+        {
+          "title": "Spanish",
+          "subject": "Spanish",
+          "codes": [
+            "7691"
+          ]
+        }
+      ],
+      "A-Level": [
+        {
+          "title": "Accounting",
+          "subject": "Accounting",
+          "codes": [
+            "7127"
+          ]
+        },
+        {
+          "title": "Art and Design",
+          "subject": "Art & Design",
+          "codes": [
+            "7201",
+            "7202",
+            "7203",
+            "7204",
+            "7205",
+            "7206"
+          ]
+        },
+        {
+          "title": "Art and Design (Photography)",
+          "subject": "Photography",
+          "codes": [
+            "7206"
+          ]
+        },
+        {
+          "title": "Bengali",
+          "subject": null,
+          "codes": [
+            "7637"
+          ]
+        },
+        {
+          "title": "Biology",
+          "subject": "Biology",
+          "codes": [
+            "7402"
+          ]
+        },
+        {
+          "title": "Business",
+          "subject": "Business",
+          "codes": [
+            "7132",
+            "7138"
+          ]
+        },
+        {
+          "title": "Chemistry",
+          "subject": "Chemistry",
+          "codes": [
+            "7405"
+          ]
+        },
+        {
+          "title": "Computer Science",
+          "subject": "Computer Science",
+          "codes": [
+            "7517"
+          ]
+        },
+        {
+          "title": "Dance",
+          "subject": null,
+          "codes": [
+            "7237"
+          ]
+        },
+        {
+          "title": "Design and Technology",
+          "subject": "Design and Technology: Product Design",
+          "codes": [
+            "7552",
+            "7562"
+          ]
+        },
+        {
+          "title": "Drama",
+          "subject": "Drama and Theatre",
+          "codes": [
+            "7262"
+          ]
+        },
+        {
+          "title": "Economics",
+          "subject": "Economics",
+          "codes": [
+            "7136"
+          ]
+        },
+        {
+          "title": "English Language",
+          "subject": "English Language",
+          "codes": [
+            "7702"
+          ]
+        },
+        {
+          "title": "English Language and Literature",
+          "subject": "English Language & Literature",
+          "codes": [
+            "7707"
+          ]
+        },
+        {
+          "title": "English Literature",
+          "subject": "English Literature",
+          "codes": [
+            "7712",
+            "7717"
+          ]
+        },
+        {
+          "title": "Environmental Science",
+          "subject": "Environmental Science",
+          "codes": [
+            "7447"
+          ]
+        },
+        {
+          "title": "French",
+          "subject": "French",
+          "codes": [
+            "7652"
+          ]
+        },
+        {
+          "title": "Further Mathematics",
+          "subject": "Further Mathematics",
+          "codes": [
+            "7367"
+          ]
+        },
+        {
+          "title": "Geography",
+          "subject": "Geography",
+          "codes": [
+            "7037"
+          ]
+        },
+        {
+          "title": "German",
+          "subject": "German",
+          "codes": [
+            "7662"
+          ]
+        },
+        {
+          "title": "Hebrew (Biblical)",
+          "subject": null,
+          "codes": [
+            "7677"
+          ]
+        },
+        {
+          "title": "Hebrew (Modern)",
+          "subject": null,
+          "codes": [
+            "7672"
+          ]
+        },
+        {
+          "title": "History",
+          "subject": "History",
+          "codes": [
+            "7042"
+          ]
+        },
+        {
+          "title": "Law",
+          "subject": "Law",
+          "codes": [
+            "7162"
+          ]
+        },
+        {
+          "title": "Mathematics",
+          "subject": "Mathematics",
+          "codes": [
+            "7357"
+          ]
+        },
+        {
+          "title": "Media Studies",
+          "subject": "Media Studies",
+          "codes": [
+            "7572"
+          ]
+        },
+        {
+          "title": "Music",
+          "subject": "Music",
+          "codes": [
+            "7272"
+          ]
+        },
+        {
+          "title": "Panjabi",
+          "subject": null,
+          "codes": [
+            "7682"
+          ]
+        },
+        {
+          "title": "Philosophy",
+          "subject": "Philosophy",
+          "codes": [
+            "7172"
+          ]
+        },
+        {
+          "title": "Physical Education",
+          "subject": "Physical Education",
+          "codes": [
+            "7582"
+          ]
+        },
+        {
+          "title": "Physics",
+          "subject": "Physics",
+          "codes": [
+            "7408"
+          ]
+        },
+        {
+          "title": "Polish",
+          "subject": null,
+          "codes": [
+            "7687"
+          ]
+        },
+        {
+          "title": "Politics",
+          "subject": "Politics",
+          "codes": [
+            "7152"
+          ]
+        },
+        {
+          "title": "Psychology",
+          "subject": "Psychology",
+          "codes": [
+            "7182"
+          ]
+        },
+        {
+          "title": "Religious Studies",
+          "subject": "Religious Studies",
+          "codes": [
+            "7062"
+          ]
+        },
+        {
+          "title": "Sociology",
+          "subject": "Sociology",
+          "codes": [
+            "7192"
+          ]
+        },
+        {
+          "title": "Spanish",
+          "subject": "Spanish",
+          "codes": [
+            "7692"
+          ]
+        }
+      ]
+    },
+    "OCR": {
+      "sourceId": "ocr-as-a-level-listing",
+      "levelsTranscribed": [
+        "AS-Level",
+        "A-Level"
+      ],
+      "accessedAt": "2026-10-10",
+      "note": "Transcribed from the Cambridge OCR \"AS and A Level\" qualifications page. The OCR GCSE listing page could not be retrieved in this audit, so OCR GCSE datasets are NOT checked. \"2026+\" marks specifications that start in 2026. subject = the name RevisionFlow uses for it, or null when RevisionFlow has no dataset.",
+      "AS-Level": [
+        {
+          "title": "Ancient History",
+          "subject": null,
+          "codes": [
+            "H007"
+          ]
+        },
+        {
+          "title": "Art and Design",
+          "subject": null,
+          "codes": [
+            "H200"
+          ]
+        },
+        {
+          "title": "Biology A",
+          "subject": "Biology",
+          "codes": [
+            "H020"
+          ]
+        },
+        {
+          "title": "Biology B (Advancing Biology)",
+          "subject": null,
+          "codes": [
+            "H022"
+          ]
+        },
+        {
+          "title": "Business",
+          "subject": null,
+          "codes": [
+            "H031"
+          ]
+        },
+        {
+          "title": "Business (2026+)",
+          "subject": null,
+          "codes": [
+            "H036"
+          ]
+        },
+        {
+          "title": "Chemistry A",
+          "subject": "Chemistry",
+          "codes": [
+            "H032"
+          ]
+        },
+        {
+          "title": "Chemistry B (Salters)",
+          "subject": null,
+          "codes": [
+            "H033"
+          ]
+        },
+        {
+          "title": "Classical Civilisation",
+          "subject": null,
+          "codes": [
+            "H008"
+          ]
+        },
+        {
+          "title": "Classical Greek",
+          "subject": "Classical Greek",
+          "codes": [
+            "H044"
+          ]
+        },
+        {
+          "title": "Computer Science",
+          "subject": "Computer Science",
+          "codes": [
+            "H046"
+          ]
+        },
+        {
+          "title": "Design and Technology",
+          "subject": null,
+          "codes": [
+            "H004",
+            "H005",
+            "H006"
+          ]
+        },
+        {
+          "title": "Drama and Theatre",
+          "subject": null,
+          "codes": [
+            "H059"
+          ]
+        },
+        {
+          "title": "Economics",
+          "subject": null,
+          "codes": [
+            "H060"
+          ]
+        },
+        {
+          "title": "English Language",
+          "subject": null,
+          "codes": [
+            "H070"
+          ]
+        },
+        {
+          "title": "English Language and Literature (EMC)",
+          "subject": null,
+          "codes": [
+            "H074"
+          ]
+        },
+        {
+          "title": "English Literature",
+          "subject": null,
+          "codes": [
+            "H072"
+          ]
+        },
+        {
+          "title": "Film Studies",
+          "subject": null,
+          "codes": [
+            "H010"
+          ]
+        },
+        {
+          "title": "Geography",
+          "subject": "Geography",
+          "codes": [
+            "H081"
+          ]
+        },
+        {
+          "title": "Geology",
+          "subject": null,
+          "codes": [
+            "H014"
+          ]
+        },
+        {
+          "title": "History A",
+          "subject": "History",
+          "codes": [
+            "H105"
+          ]
+        },
+        {
+          "title": "Latin",
+          "subject": "Latin",
+          "codes": [
+            "H043"
+          ]
+        },
+        {
+          "title": "Law",
+          "subject": null,
+          "codes": [
+            "H018"
+          ]
+        },
+        {
+          "title": "Mathematics A",
+          "subject": "Mathematics",
+          "codes": [
+            "H230"
+          ]
+        },
+        {
+          "title": "Mathematics A, Further",
+          "subject": "Further Mathematics",
+          "codes": [
+            "H235"
+          ]
+        },
+        {
+          "title": "Mathematics B (MEI)",
+          "subject": null,
+          "codes": [
+            "H630"
+          ]
+        },
+        {
+          "title": "Mathematics B (MEI), Further",
+          "subject": null,
+          "codes": [
+            "H635"
+          ]
+        },
+        {
+          "title": "Media Studies",
+          "subject": null,
+          "codes": [
+            "H009"
+          ]
+        },
+        {
+          "title": "Music",
+          "subject": null,
+          "codes": [
+            "H143"
+          ]
+        },
+        {
+          "title": "Physical Education",
+          "subject": null,
+          "codes": [
+            "H155"
+          ]
+        },
+        {
+          "title": "Physics A",
+          "subject": "Physics",
+          "codes": [
+            "H156"
+          ]
+        },
+        {
+          "title": "Physics B (Advancing Physics)",
+          "subject": null,
+          "codes": [
+            "H157"
+          ]
+        },
+        {
+          "title": "Psychology",
+          "subject": null,
+          "codes": [
+            "H167"
+          ]
+        },
+        {
+          "title": "Psychology (2026+)",
+          "subject": null,
+          "codes": [
+            "H169"
+          ]
+        },
+        {
+          "title": "Religious Studies",
+          "subject": null,
+          "codes": [
+            "H173"
+          ]
+        },
+        {
+          "title": "Sociology",
+          "subject": null,
+          "codes": [
+            "H180"
+          ]
+        },
+        {
+          "title": "Sociology (2026+)",
+          "subject": null,
+          "codes": [
+            "H182"
+          ]
+        }
+      ],
+      "A-Level": [
+        {
+          "title": "Ancient History",
+          "subject": null,
+          "codes": [
+            "H407"
+          ]
+        },
+        {
+          "title": "Art and Design",
+          "subject": null,
+          "codes": [
+            "H600"
+          ]
+        },
+        {
+          "title": "Biology A",
+          "subject": "Biology",
+          "codes": [
+            "H420"
+          ]
+        },
+        {
+          "title": "Biology B (Advancing Biology)",
+          "subject": null,
+          "codes": [
+            "H422"
+          ]
+        },
+        {
+          "title": "Business",
+          "subject": null,
+          "codes": [
+            "H431"
+          ]
+        },
+        {
+          "title": "Business (2026+)",
+          "subject": null,
+          "codes": [
+            "H436"
+          ]
+        },
+        {
+          "title": "Chemistry A",
+          "subject": "Chemistry",
+          "codes": [
+            "H432"
+          ]
+        },
+        {
+          "title": "Chemistry B (Salters)",
+          "subject": null,
+          "codes": [
+            "H433"
+          ]
+        },
+        {
+          "title": "Classical Civilisation",
+          "subject": null,
+          "codes": [
+            "H408"
+          ]
+        },
+        {
+          "title": "Classical Greek",
+          "subject": "Classical Greek",
+          "codes": [
+            "H444"
+          ]
+        },
+        {
+          "title": "Computer Science",
+          "subject": "Computer Science",
+          "codes": [
+            "H446"
+          ]
+        },
+        {
+          "title": "Design and Technology",
+          "subject": null,
+          "codes": [
+            "H404",
+            "H405",
+            "H406"
+          ]
+        },
+        {
+          "title": "Drama and Theatre",
+          "subject": null,
+          "codes": [
+            "H459"
+          ]
+        },
+        {
+          "title": "Economics",
+          "subject": null,
+          "codes": [
+            "H460"
+          ]
+        },
+        {
+          "title": "English Language",
+          "subject": null,
+          "codes": [
+            "H470"
+          ]
+        },
+        {
+          "title": "English Language and Literature (EMC)",
+          "subject": null,
+          "codes": [
+            "H474"
+          ]
+        },
+        {
+          "title": "English Literature",
+          "subject": null,
+          "codes": [
+            "H472"
+          ]
+        },
+        {
+          "title": "Film Studies",
+          "subject": null,
+          "codes": [
+            "H410"
+          ]
+        },
+        {
+          "title": "Geography",
+          "subject": "Geography",
+          "codes": [
+            "H481"
+          ]
+        },
+        {
+          "title": "Geology",
+          "subject": null,
+          "codes": [
+            "H414"
+          ]
+        },
+        {
+          "title": "History A",
+          "subject": "History",
+          "codes": [
+            "H505"
+          ]
+        },
+        {
+          "title": "Latin",
+          "subject": "Latin",
+          "codes": [
+            "H443"
+          ]
+        },
+        {
+          "title": "Law",
+          "subject": null,
+          "codes": [
+            "H418"
+          ]
+        },
+        {
+          "title": "Mathematics A",
+          "subject": "Mathematics",
+          "codes": [
+            "H240"
+          ]
+        },
+        {
+          "title": "Mathematics A, Further",
+          "subject": "Further Mathematics",
+          "codes": [
+            "H245"
+          ]
+        },
+        {
+          "title": "Mathematics B (MEI)",
+          "subject": null,
+          "codes": [
+            "H640"
+          ]
+        },
+        {
+          "title": "Mathematics B (MEI), Further",
+          "subject": null,
+          "codes": [
+            "H645"
+          ]
+        },
+        {
+          "title": "Media Studies",
+          "subject": null,
+          "codes": [
+            "H409"
+          ]
+        },
+        {
+          "title": "Music",
+          "subject": null,
+          "codes": [
+            "H543"
+          ]
+        },
+        {
+          "title": "Physical Education",
+          "subject": null,
+          "codes": [
+            "H555"
+          ]
+        },
+        {
+          "title": "Physics A",
+          "subject": "Physics",
+          "codes": [
+            "H556"
+          ]
+        },
+        {
+          "title": "Physics B (Advancing Physics)",
+          "subject": null,
+          "codes": [
+            "H557"
+          ]
+        },
+        {
+          "title": "Psychology",
+          "subject": null,
+          "codes": [
+            "H567"
+          ]
+        },
+        {
+          "title": "Psychology (2026+)",
+          "subject": null,
+          "codes": [
+            "H569"
+          ]
+        },
+        {
+          "title": "Religious Studies",
+          "subject": null,
+          "codes": [
+            "H573"
+          ]
+        },
+        {
+          "title": "Sociology",
+          "subject": null,
+          "codes": [
+            "H580"
+          ]
+        },
+        {
+          "title": "Sociology (2026+)",
+          "subject": null,
+          "codes": [
+            "H582"
+          ]
+        }
+      ]
+    }
+  },
+  "listingAttempts": {
+    "note": "What was tried for the boards whose official qualification listing is NOT transcribed in boardListings. Honest record of effort, not evidence about the datasets.",
+    "Edexcel": "One web search for the UK GCE/GCSE qualification list returned Pearson International (IGCSE/IAL) pages and individual Pearson product pages (Biology A and B) but no UK listing page; a second, more specific search returned only the same product pages and third-party school lists. No UK listing page was retrieved.",
+    "OCR": "AS/A Level: retrieved. GCSE: three searches and one fetch were tried; only the AS/A Level listing page surfaced and the GCSE listing page could not be fetched (it never appeared in a search result).",
+    "WJEC": "Not attempted in this session.",
+    "CCEA": "Not attempted in this session."
+  },
+  "datasets": {
+    "AQA|GCSE|Mathematics": {
+      "verificationStatus": "PARTIALLY_VERIFIED",
+      "availability": "offered",
+      "specificationCode": "8300",
+      "specificationTitle": "AQA GCSE Mathematics (8300)",
+      "specificationVersion": "Version 1.1, September 2026",
+      "sourceIds": [
+        "aqa-8300-specification",
+        "aqa-qualifications-listing"
+      ],
+      "sourceSection": "Section 3 Subject content (3.1 Number, 3.2 Algebra, 3.3 Ratio, proportion and rates of change, 3.4 Geometry and measures, 3.5 Probability, 3.6 Statistics; points N1–N16, A1–A25, R1–R16, G1–G25, P1–P9, S1–S6) and the scheme of assessment",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "All 97 specification points (N1–S6) were transcribed from the full specification text and compared with the topic list (see specs/aqa-gcse-mathematics.json). 12 topics for uncovered points were added (new entries only — no existing topic was renamed or removed, so student records are unaffected). After that, 92 points are fully covered and 5 are partially covered; no point is uncovered and every topic is accounted for. Not VERIFIED because of the unresolved items below.",
+      "specMap": "aqa-gcse-mathematics",
+      "flags": [
+        "PAPER_GROUPING_UNSUPPORTED"
+      ],
+      "unresolved": [
+        "Five points are only partly covered by topic titles: N3 (inverse operations, reciprocals), N7 (fractional/negative indices), N8 (exact multiples of π), G24 (translation as a 2D vector), P4 (probabilities of an exhaustive set summing to one). Either rename/extend a topic (needs a topic-ID alias) or add a topic.",
+        "topics.js groups topics under 2 papers; the specification has 3 papers and says content from any part may be assessed on any paper, so the paper grouping is a RevisionFlow convention, not a specification fact.",
+        "Foundation/Higher placement of each point (the specification's tier columns) was not compared. Topics labelled \"(Higher)\" — e.g. the one containing error intervals (N15) and the one containing the basic congruence criteria (G5) — may contain Foundation content.",
+        "\"Statistics – Data: Time Series and Moving Averages\" names moving averages, which the specification's S2 (tables and line graphs for time series data) does not mention; possibly out of specification. Not renamed because topic IDs are derived from topic names."
+      ]
+    },
+    "AQA|GCSE|Further Mathematics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8365",
+      "flags": [
+        "NOT_A_GCSE"
+      ],
+      "verificationNotes": "Existence confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AQA Certificate Level 2 Further Mathematics (8365) — listed under \"AQA Certificate\", not under \"GCSE\". RevisionFlow presents it under the GCSE qualification; it is a Level 2 Certificate. Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Statistics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8382",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Statistics (8382). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|English Language": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8700",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE English Language (8700). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|English Literature": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8702",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE English Literature (8702). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Biology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8461",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Biology (8461). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Chemistry": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8462",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Chemistry (8462). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Physics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8463",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Physics (8463). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Combined Science: Trilogy": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8464",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Combined Science: Trilogy (8464). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Combined Science: Synergy": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8465",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Combined Science: Synergy (8465). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Computer Science": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8525",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Computer Science (8525). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Geography": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8035",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Geography (8035). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|History": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8145",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE History (8145). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Religious Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: GCSE Religious Studies (8061), (8062) and (8063). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|GCSE|Psychology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8182",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Psychology (8182). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Sociology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8192",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Sociology (8192). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Business": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8132",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Business (8132). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Economics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8136",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Economics (8136). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|French": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: GCSE French (8652) and (8658). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|GCSE|German": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: GCSE German (8662) and (8668). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|GCSE|Spanish": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: GCSE Spanish (8692) and (8698). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|GCSE|Mandarin Chinese": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8673",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Chinese (Mandarin) (8673). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Arabic": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"GCSE\" section (no Arabic entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no GCSE Arabic qualification. Corroboration: the repository's AQA GCSE exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|GCSE|Polish": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8688",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Polish (8688). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Urdu": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8648",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Urdu (8648). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Art & Design": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: six GCSE Art and Design titles (8201 Art, craft and design; 8202 Fine art; 8203 Graphic communication; 8204 Textile design; 8205 Three-dimensional design; 8206 Photography). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|GCSE|Drama": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8261",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Drama (8261). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Music": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8271",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Music (8271). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Physical Education": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8582",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Physical Education (8582). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Food Preparation & Nutrition": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8585",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Food Preparation & Nutrition (8585). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Design & Technology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8552",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Design & Technology (8552). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Media Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8572",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Media Studies (8572). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|GCSE|Film Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"GCSE\" section (no Film Studies entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no GCSE Film Studies qualification. Corroboration: the repository's AQA GCSE exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|GCSE|Engineering": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "8852",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): GCSE Engineering (8852). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Mathematics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7356",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Mathematics (7356). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Further Mathematics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7366",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Further Mathematics (7366). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Biology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7401",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Biology (7401). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Chemistry": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7404",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Chemistry (7404). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Physics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7407",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Physics (7407). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Computer Science": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7516",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Computer Science (7516). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|English Language": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7701",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS English Language (7701). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|English Literature": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: AS English Literature A (7711) and B (7716). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|AS-Level|History": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7041",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS History (7041). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Geography": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7036",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Geography (7036). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Business": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: AS Business (7131) and AS Business (New) (7137). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|AS-Level|Economics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7135",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Economics (7135). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Sociology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7191",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Sociology (7191). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Psychology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7181",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Psychology (7181). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|French": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7651",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS French (7651). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|German": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7661",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS German (7661). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Spanish": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7691",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Spanish (7691). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Art & Design": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Art & Design entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Art & Design qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Photography": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Photography entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Photography qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Law": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Law entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Law qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Philosophy": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Philosophy entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Philosophy qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Accounting": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Accounting entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Accounting qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Politics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Politics entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Politics qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Religious Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7061",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): AS Religious Studies (7061). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|AS-Level|Physical Education": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Physical Education entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Physical Education qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Media Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Media Studies entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Media Studies qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Drama and Theatre": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Drama and Theatre entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Drama and Theatre qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Latin": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Latin entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Latin qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Classical Greek": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Classical Greek entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Classical Greek qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Music": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Music entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Music qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|English Language & Literature": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no English Language & Literature entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level English Language & Literature qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Design and Technology: Product Design": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Design and Technology: Product Design entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Design and Technology: Product Design qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|AS-Level|Environmental Science": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"AS Level\" section (no Environmental Science entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no AS-Level Environmental Science qualification. Corroboration: the repository's AQA AS-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|A-Level|Mathematics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7357",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Mathematics (7357). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Further Mathematics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7367",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Further Mathematics (7367). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Biology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7402",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Biology (7402). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Chemistry": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7405",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Chemistry (7405). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Physics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7408",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Physics (7408). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Computer Science": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7517",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Computer Science (7517). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|English Language": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7702",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level English Language (7702). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|English Literature": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: A-level English Literature A (7712) and B (7717). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|A-Level|History": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7042",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level History (7042). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Geography": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7037",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Geography (7037). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Business": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: A-level Business (7132) and A-level Business (New) (7138). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|A-Level|Economics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7136",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Economics (7136). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Sociology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7192",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Sociology (7192). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Psychology": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7182",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Psychology (7182). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|French": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7652",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level French (7652). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|German": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7662",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level German (7662). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Spanish": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7692",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Spanish (7692). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Music": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7272",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Music (7272). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Art & Design": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: six A-level Art and Design titles (7201 Art, craft and design; 7202 Fine art; 7203 Graphic communication; 7204 Textile design; 7205 Three-dimensional design; 7206 Photography). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "AQA|A-Level|Photography": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7206",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Art and Design (Photography) (7206). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Law": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7162",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Law (7162). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Philosophy": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7172",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Philosophy (7172). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Accounting": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7127",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Accounting (7127). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Politics": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7152",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Politics (7152). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Religious Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7062",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Religious Studies (7062). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Physical Education": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7582",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Physical Education (7582). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Media Studies": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7572",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Media Studies (7572). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Drama and Theatre": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7262",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Drama (7262). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Latin": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"A-level\" section (no Latin entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no A-Level Latin qualification. Corroboration: the repository's AQA A-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|A-Level|Classical Greek": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
+      "sourceSection": "Qualifications listing — \"A-level\" section (no Classical Greek entry)",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) has no A-Level Classical Greek qualification. Corroboration: the repository's AQA A-Level exam-timetable data contains no rows for this subject. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers so it is not offered as a supported curriculum."
+    },
+    "AQA|A-Level|English Language & Literature": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7707",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level English Language & Literature (7707). Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Design and Technology: Product Design": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "verificationNotes": "Existence confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10). AQA lists two A-level Design and Technology specifications, (7552) and (7562); the listing does not say which is Product Design, so no code is recorded. Topic content has NOT yet been compared with the specification."
+    },
+    "AQA|A-Level|Environmental Science": {
+      "sourceIds": [
+        "aqa-qualifications-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "7447",
+      "verificationNotes": "Existence and specification code confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10): A-level Environmental Science (7447). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|AS-Level|Mathematics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Mathematics A (H230) and Mathematics B (MEI) (H630). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|AS-Level|Further Mathematics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Mathematics A, Further (H235) and Mathematics B (MEI), Further (H635). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|AS-Level|Biology": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Biology A (H020) and Biology B (Advancing Biology) (H022). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|AS-Level|Chemistry": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Chemistry A (H032) and Chemistry B (Salters) (H033). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|AS-Level|Physics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Physics A (H156) and Physics B (Advancing Physics) (H157). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|AS-Level|Computer Science": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H046",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Computer Science (H046). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|AS-Level|History": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H105",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): History (H105). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|AS-Level|Geography": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H081",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Geography (H081). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|AS-Level|Latin": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H043",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Latin (H043). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|AS-Level|Classical Greek": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H044",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Classical Greek (H044). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|A-Level|Mathematics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Mathematics A (H240) and Mathematics B (MEI) (H640). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|A-Level|Further Mathematics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Mathematics A, Further (H245) and Mathematics B (MEI), Further (H645). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|A-Level|Biology": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Biology A (H420) and Biology B (Advancing Biology) (H422). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|A-Level|Chemistry": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Chemistry A (H432) and Chemistry B (Salters) (H433). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|A-Level|Physics": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "OCR's official AS and A Level listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10) shows two specifications for this subject: Physics A (H556) and Physics B (Advancing Physics) (H557). The dataset does not record which it follows (comments in topics.js are not independent evidence), so no single specification code is recorded. Topic content has NOT yet been compared with a specification."
+    },
+    "OCR|A-Level|Computer Science": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H446",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Computer Science (H446). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|A-Level|History": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H505",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): History (H505). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|A-Level|Geography": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H481",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Geography (H481). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|A-Level|Latin": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H443",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Latin (H443). Topic content has NOT yet been compared with the specification."
+    },
+    "OCR|A-Level|Classical Greek": {
+      "sourceIds": [
+        "ocr-as-a-level-listing"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "specificationCode": "H444",
+      "verificationNotes": "Existence and specification code confirmed against OCR's official AS and A Level qualifications listing (https://ocr-live-prd95.cambridgeassessment.org.uk/qualifications/as-and-a-level, accessed 2026-10-10): Classical Greek (H444). Topic content has NOT yet been compared with the specification."
+    },
+    "Edexcel|AS-Level|Biology": {
+      "sourceIds": [
+        "pearson-biology-a-2015",
+        "pearson-biology-b-2015"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "Pearson's own qualification pages (accessed 2026-10-10) show two Edexcel Biology specifications, each with an AS and an A level: Biology A (Salters-Nuffield) and Biology B (2015). The dataset does not record which it follows, and the exam-date data is filed only under \"Biology B\". The rest of Edexcel's listing was NOT retrieved, so this is variant evidence, not a full existence check. Topic content has NOT yet been compared with a specification."
+    },
+    "Edexcel|A-Level|Biology": {
+      "sourceIds": [
+        "pearson-biology-a-2015",
+        "pearson-biology-b-2015"
+      ],
+      "verificationStatus": "AWAITING_VERIFICATION",
+      "availability": "offered",
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
+      "verificationNotes": "Pearson's own qualification pages (accessed 2026-10-10) show two Edexcel Biology specifications, each with an AS and an A level: Biology A (Salters-Nuffield) and Biology B (2015). The dataset does not record which it follows, and the exam-date data is filed only under \"Biology B\". The rest of Edexcel's listing was NOT retrieved, so this is variant evidence, not a full existence check. Topic content has NOT yet been compared with a specification."
+    }
+  },
+  "paperStructures": {
+    "AQA|GCSE|Mathematics": {
+      "verificationStatus": "VERIFIED",
+      "sourceIds": [
+        "aqa-8300-specification"
+      ],
+      "verifiedAt": "2026-10-10",
+      "checked": "Three papers; Paper 1 non-calculator, Papers 2 and 3 calculator; each 1 hour 30 minutes and 80 marks; 240 marks in total.",
+      "comparedWith": "PAPER_DATABASE keys AQA-Mathematics-{Higher,Foundation}-P1..P3 (maxMarks 80, duration 90) and GRADE_BOUNDARIES AQA-Mathematics-* (maxMarks 240) — all agree. Note topics.js models only 2 papers (see dataset unresolved items)."
+    }
+  },
+  "examDates": {
+    "note": "One block per series × board × level. sourceClaim is what the data file itself says about the rows; it is a claim, not verification. 2026 is complete (results issued 20 August 2026) and retained as history; 2027 is the series students are revising for. OCR has no AS/A-Level 2027 rows at all.",
+    "blocks": [
+      {
+        "id": "2026|AQA|GCSE",
+        "year": 2026,
+        "board": "AQA",
+        "level": "GCSE",
+        "rows": 93,
+        "seriesComplete": true,
+        "sourceClaim": "File header (lines 3–4): \"published timetables\" for all boards; \"some dates are confirmed, others estimated from typical timetabling patterns\" — rows are not individually marked.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Edexcel|GCSE",
+        "year": 2026,
+        "board": "Edexcel",
+        "level": "GCSE",
+        "rows": 88,
+        "seriesComplete": true,
+        "sourceClaim": "File header (lines 3–4): \"published timetables\" for all boards; \"some dates are confirmed, others estimated from typical timetabling patterns\" — rows are not individually marked.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|OCR|GCSE",
+        "year": 2026,
+        "board": "OCR",
+        "level": "GCSE",
+        "rows": 84,
+        "seriesComplete": true,
+        "sourceClaim": "File header (lines 3–4): \"published timetables\" for all boards; \"some dates are confirmed, others estimated from typical timetabling patterns\" — rows are not individually marked.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Eduqas|GCSE",
+        "year": 2026,
+        "board": "Eduqas",
+        "level": "GCSE",
+        "rows": 39,
+        "seriesComplete": true,
+        "sourceClaim": "File header (lines 3–4): \"published timetables\" for all boards; \"some dates are confirmed, others estimated from typical timetabling patterns\" — rows are not individually marked.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|CCEA|GCSE",
+        "year": 2026,
+        "board": "CCEA",
+        "level": "GCSE",
+        "rows": 32,
+        "seriesComplete": true,
+        "sourceClaim": "File header (lines 3–4): \"published timetables\" for all boards; \"some dates are confirmed, others estimated from typical timetabling patterns\" — rows are not individually marked.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|AQA|AS-Level",
+        "year": 2026,
+        "board": "AQA",
+        "level": "AS-Level",
+        "rows": 38,
+        "seriesComplete": true,
+        "sourceClaim": "AQA official May/June 2026 A-level, AS, Level 3 exam timetable (aqa.org.uk).",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Edexcel|AS-Level",
+        "year": 2026,
+        "board": "Edexcel",
+        "level": "AS-Level",
+        "rows": 36,
+        "seriesComplete": true,
+        "sourceClaim": "Pearson Edexcel GCE Summer 2026 Examination Timetable FINAL.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|OCR|AS-Level",
+        "year": 2026,
+        "board": "OCR",
+        "level": "AS-Level",
+        "rows": 42,
+        "seriesComplete": true,
+        "sourceClaim": "OCR AS and A Level Provisional Examination Timetable, June 2026.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Eduqas|AS-Level",
+        "year": 2026,
+        "board": "Eduqas",
+        "level": "AS-Level",
+        "rows": 28,
+        "seriesComplete": true,
+        "sourceClaim": "WJEC Wales and Eduqas Summer 2026 FINAL Examination Timetable.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|CCEA|AS-Level",
+        "year": 2026,
+        "board": "CCEA",
+        "level": "AS-Level",
+        "rows": 13,
+        "seriesComplete": true,
+        "sourceClaim": "CCEA document (same as the CCEA A-Level entries).",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|AQA|A-Level",
+        "year": 2026,
+        "board": "AQA",
+        "level": "A-Level",
+        "rows": 94,
+        "seriesComplete": true,
+        "sourceClaim": "File note (lines 3042–3043): \"A-Level dates estimated from typical May/June timetabling; confirmed dates will be published by each board\".",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|OCR|A-Level",
+        "year": 2026,
+        "board": "OCR",
+        "level": "A-Level",
+        "rows": 61,
+        "seriesComplete": true,
+        "sourceClaim": "File note (lines 3042–3043): \"A-Level dates estimated from typical May/June timetabling; confirmed dates will be published by each board\".",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Eduqas|A-Level",
+        "year": 2026,
+        "board": "Eduqas",
+        "level": "A-Level",
+        "rows": 42,
+        "seriesComplete": true,
+        "sourceClaim": "File note (lines 3042–3043): \"A-Level dates estimated from typical May/June timetabling; confirmed dates will be published by each board\".",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|CCEA|A-Level",
+        "year": 2026,
+        "board": "CCEA",
+        "level": "A-Level",
+        "rows": 32,
+        "seriesComplete": true,
+        "sourceClaim": "File note (lines 3042–3043): \"A-Level dates estimated from typical May/June timetabling; confirmed dates will be published by each board\".",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|Edexcel|A-Level",
+        "year": 2026,
+        "board": "Edexcel",
+        "level": "A-Level",
+        "rows": 99,
+        "seriesComplete": true,
+        "sourceClaim": "File note (lines 3042–3043): \"A-Level dates estimated from typical May/June timetabling; confirmed dates will be published by each board\".",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2026|OCR|Level 2",
+        "year": 2026,
+        "board": "OCR",
+        "level": "Level 2",
+        "rows": 5,
+        "seriesComplete": true,
+        "sourceClaim": "No source documented in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|AQA|GCSE",
+        "year": 2027,
+        "board": "AQA",
+        "level": "GCSE",
+        "rows": 76,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6208–6215): AQA official \"Exam timetable May/June 2027 – GCSE, AQA Certificates, ELC and Projects\", Version 1.0, labelled PROVISIONAL by AQA.",
+        "verificationStatus": "PARTIALLY_VERIFIED",
+        "sourceIds": [
+          "aqa-gcse-timetable-2027"
+        ],
+        "verifiedAt": "2026-10-10",
+        "verificationNotes": "SAMPLE ONLY. Checked against excerpts of AQA's official GCSE timetable (returned by search; the full PDF was not read): Biology P1 11 May, Biology P2 10 June, Chemistry P2 15 June, Combined Science Trilogy Biology/Chemistry Paper 2 (10 and 15 June), Synergy Physical sciences papers 3 and 4 (10 and 15 June) and Trilogy Physics Paper 2 (18 June) all agree. Mathematics P1–P3 (14 May, 27 May, 14 June) agree with three school timetables that reproduce the awarding-body timetable (secondary sources). The other rows were not checked. The status of the document (provisional v1.0 per the file vs a later version) was not established."
+      },
+      {
+        "id": "2027|Edexcel|GCSE",
+        "year": 2027,
+        "board": "Edexcel",
+        "level": "GCSE",
+        "rows": 95,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|OCR|GCSE",
+        "year": 2027,
+        "board": "OCR",
+        "level": "GCSE",
+        "rows": 87,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|Eduqas|GCSE",
+        "year": 2027,
+        "board": "Eduqas",
+        "level": "GCSE",
+        "rows": 34,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|CCEA|GCSE",
+        "year": 2027,
+        "board": "CCEA",
+        "level": "GCSE",
+        "rows": 27,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|AQA|AS-Level",
+        "year": 2027,
+        "board": "AQA",
+        "level": "AS-Level",
+        "rows": 38,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|Edexcel|AS-Level",
+        "year": 2027,
+        "board": "Edexcel",
+        "level": "AS-Level",
+        "rows": 30,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|Eduqas|AS-Level",
+        "year": 2027,
+        "board": "Eduqas",
+        "level": "AS-Level",
+        "rows": 33,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|CCEA|AS-Level",
+        "year": 2027,
+        "board": "CCEA",
+        "level": "AS-Level",
+        "rows": 16,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|AQA|A-Level",
+        "year": 2027,
+        "board": "AQA",
+        "level": "A-Level",
+        "rows": 93,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|Edexcel|A-Level",
+        "year": 2027,
+        "board": "Edexcel",
+        "level": "A-Level",
+        "rows": 99,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|Eduqas|A-Level",
+        "year": 2027,
+        "board": "Eduqas",
+        "level": "A-Level",
+        "rows": 54,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      },
+      {
+        "id": "2027|CCEA|A-Level",
+        "year": 2027,
+        "board": "CCEA",
+        "level": "A-Level",
+        "rows": 16,
+        "seriesComplete": false,
+        "sourceClaim": "File comment (lines 6216–6230) says every board other than AQA GCSE is a documented gap that was NOT transcribed — yet these rows exist. Their source is not documented anywhere in the file.",
+        "verificationStatus": "AWAITING_VERIFICATION"
+      }
+    ]
+  },
+  "gradeBoundaries": {
+    "verificationStatus": "AWAITING_VERIFICATION",
+    "note": "No boundary value has been checked against an official published boundary document. The data file records 194 entries as estimates (note contains \"~\") and 14 as known-not-yet-corrected; see DATA_QUALITY_REPORT.md."
+  },
+  "resourceLinks": {
+    "verificationStatus": "AWAITING_VERIFICATION",
+    "livenessChecked": false,
+    "note": "No link has been fetched in this audit. Run scripts/curriculum/check-links.mjs from a machine with internet access."
+  }
+}
