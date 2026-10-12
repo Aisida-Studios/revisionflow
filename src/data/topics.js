@@ -73,11 +73,14 @@ const GCSE = {
   AQA: {
 
     // ── Mathematics (AQA 8300 — Corbettmaths topic list, cross-checked vs spec) ─
+    // Checked against AQA GCSE Mathematics 8300 on 2026-10-10: all 97 specification points (N1–S6) are mapped to topics in
+    // data/curriculum/specs/aqa-gcse-mathematics.json. 13 topics were ADDED for uncovered points (none renamed or removed).
     'Mathematics': { papers: {
       1: [ // Non-calculator — largely Number and Algebra heavy
         // NUMBER
         'Number – Integers: Order of Operations (BIDMAS)',
         'Number – Integers: Negative Numbers, Directed Number Arithmetic',
+        'Number – Integers: Ordering Numbers and Using Inequality Symbols',
         'Number – Integers: Types of Number (Factors, Multiples, Primes, Square, Cube, Triangular)',
         'Number – Integers: Prime Factors, HCF and LCM (including Venn Diagram Method)',
         'Number – Integers: Powers and Roots',
@@ -85,14 +88,18 @@ const GCSE = {
         'Number – Integers: Standard Form Calculations (Multiplying and Dividing)',
         'Number – Fractions: Operations with Fractions (+ − × ÷, Mixed Numbers)',
         'Number – Fractions: Fraction of an Amount',
+        'Number – Fractions: Converting Between Terminating Decimals and Fractions',
         'Number – Fractions: Converting Recurring Decimals to Fractions (Higher)',
+        'Number – Decimals: Place Value and the Four Operations with Decimals',
         'Number – Decimals: Rounding and Significant Figures',
         'Number – Decimals: Estimation and Approximation',
         'Number – Decimals: Upper and Lower Bounds (Higher)',
         'Number – Percentages: Percentage of an Amount (Calculator and Non-Calculator Methods)',
+        'Number – Percentages: Expressing One Quantity as a Percentage of Another',
         'Number – Percentages: Percentage Change and Reverse Percentages',
         'Number – Percentages: Simple and Compound Interest',
         'Number – Percentages: Growth and Decay (Compound Growth/Decay Formula, Higher)',
+        'Number – Ratio: Expressing One Quantity as a Fraction of Another',
         'Number – Ratio: Simplifying, Dividing in a Ratio, 1:n Form',
         'Number – Ratio: Combining Ratios, Ratio Problems Involving Algebra (Higher)',
         'Number – Proportion: Direct and Inverse Proportion (including Graphically)',
@@ -101,7 +108,9 @@ const GCSE = {
         'Number – Surds: Simplifying, Rationalising the Denominator (Higher)',
         'Number – Bounds: Error Intervals and Bounds Calculations (Higher)',
         'Number – Listing Strategies: Systematic Listing, Product Rule for Counting',
+        'Number – Measures: Standard Units and Metric Conversions',
         // ALGEBRA
+        'Algebra – Notation: Algebraic Notation and Vocabulary (Terms, Factors, Expressions, Equations, Formulae, Identities, Inequalities)',
         'Algebra – Expressions: Simplifying, Collecting Like Terms, Index Laws',
         'Algebra – Expressions: Expanding Single and Double Brackets, Factorising',
         'Algebra – Expressions: Expanding Three Brackets (Higher)',
@@ -109,6 +118,7 @@ const GCSE = {
         'Algebra – Expressions: Simplifying Algebraic Fractions (Higher)',
         'Algebra – Formulae: Substituting into Formulae, Changing the Subject',
         'Algebra – Formulae: Changing the Subject Where the Subject Appears Twice (Higher)',
+        'Algebra – Sequences: Generating Terms from Term-to-Term and Position-to-Term Rules',
         'Algebra – Sequences: nth Term of Linear Sequences',
         'Algebra – Sequences: nth Term of Quadratic Sequences (Higher)',
         'Algebra – Sequences: Geometric Sequences and Special Sequences (Fibonacci, Triangular)',
@@ -131,6 +141,7 @@ const GCSE = {
         'Ratio and Proportion – Density, Mass, Volume',
         'Ratio and Proportion – Pressure, Force, Area',
         'Ratio and Proportion – Converting Compound Units',
+        'Ratio and Proportion – Scale Factors, Scale Diagrams and Maps',
       ],
       2: [ // Calculator — Geometry, Graphs and Statistics
         // GRAPHS
@@ -148,6 +159,7 @@ const GCSE = {
         'Graphs – Inequalities on Graphs: Shading Regions (Higher)',
         'Graphs – Trigonometric Graphs: sin, cos and tan for Any Angle (Higher)',
         // GEOMETRY
+        'Geometry – Properties: Geometric Terms, Notation and Labelling Sides and Angles',
         'Geometry – Angles: Angles in Triangles, Quadrilaterals and Polygons',
         'Geometry – Angles: Parallel Lines (Alternate, Corresponding, Co-interior)',
         'Geometry – Angles: Interior and Exterior Angles of Polygons',
@@ -175,6 +187,7 @@ const GCSE = {
         'Geometry – Constructions: Perpendicular/Angle Bisectors, Loci',
         'Geometry – Vectors: Vector Notation, Addition and Scalar Multiples (Higher)',
         'Geometry – Vectors: Vector Geometry Proofs (Higher)',
+        'Geometry – Circles: Parts of a Circle and Their Definitions',
         'Geometry – Circle Theorems (Higher)',
         // STATISTICS AND PROBABILITY
         'Statistics – Data: Sampling Methods, Populations and Samples',
@@ -182,12 +195,14 @@ const GCSE = {
         'Statistics – Data: Averages from Frequency Tables and Grouped Frequency Tables',
         'Statistics – Data: Comparing Data Sets Using Averages and Range',
         'Statistics – Data: Two-Way Tables',
+        'Statistics – Data: Frequency Tables, Pictograms and Vertical Line Charts',
         'Statistics – Data: Bar Charts, Pie Charts, Frequency Polygons',
         'Statistics – Data: Scatter Graphs and Correlation, Line of Best Fit',
         'Statistics – Data: Time Series and Moving Averages',
         'Statistics – Data: Cumulative Frequency Diagrams and Box Plots',
         'Statistics – Data: Histograms with Unequal Class Widths (Frequency Density, Higher)',
         'Probability – Basic: Probability Scale, Listing Outcomes, Sample Space Diagrams',
+        'Probability – Expected Outcomes and Frequency Trees',
         'Probability – Relative Frequency and Experimental Probability',
         'Probability – Combined Events: AND/OR Rules, Tree Diagrams (Independent and Dependent)',
         'Probability – Venn Diagrams and Set Notation',
