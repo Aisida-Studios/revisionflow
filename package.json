@@ -11,7 +11,8 @@
     "curriculum:validate": "node scripts/curriculum/validate.mjs",
     "curriculum:report": "node scripts/curriculum/report.mjs",
     "curriculum:links": "node scripts/curriculum/check-links.mjs",
-    "test:curriculum": "node --test tests/curriculum/curriculum.test.mjs"
+    "test:curriculum": "node --test tests/curriculum/curriculum.test.mjs",
+    "test:utils": "esbuild tests/utils.test.js --bundle --platform=node --format=esm --outfile=.test-build/utils.test.mjs --log-level=error && node .test-build/utils.test.mjs"
   },
   "dependencies": {
     "date-fns": "^3.6.0",
