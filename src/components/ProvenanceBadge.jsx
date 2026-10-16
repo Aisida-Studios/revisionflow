@@ -18,3 +18,20 @@ export default function ProvenanceBadge({ source }) {
     </span>
   )
 }
+
+// Shown above AI-generated learning content (topic notes, guides). Content an admin has approved is
+// labelled as reviewed; everything else is plainly an AI draft the student should check.
+export function AiContentNotice({ verified = false }) {
+  if (verified) {
+    return (
+      <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+        <ProvenanceBadge source="official" /> Reviewed by RevisionFlow.
+      </p>
+    )
+  }
+  return (
+    <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+      <ProvenanceBadge source="ai-draft" /> Written by AI and not reviewed. Check it against your specification and your teacher's notes before relying on it.
+    </p>
+  )
+}
