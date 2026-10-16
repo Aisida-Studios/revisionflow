@@ -1,5 +1,6 @@
 // src/pages/AIAdvisor.jsx
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -9,17 +10,22 @@ import {
   generateStudyPlan,
   getTopicAdvice,
 } from '../utils/ai'
-import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes } from '../utils/firestore'
+import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, getSessions } from '../utils/firestore'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
+import GradeEstimate from '../components/GradeEstimate'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { daysUntilExam } from '../utils/examUtils'
-import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'
+import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap } from 'lucide-react'
 import './AccountPages.css'
+import { toLocalDateStr } from '../utils/localDate'
+
+// Maths solver + essay feedback live inside /ai now (the old /tutor page redirects here).
+const TutorPanel = lazy(() => import('./Tutor'))
 
 const QUICK_PROMPTS = [
   'What should I revise today?',
@@ -37,7 +43,10 @@ export default function AIAdvisor() {
   const [input,       setInput]       = useState('')
   const inputFieldRef = useRef(null)
   const [loading,     setLoading]     = useState(false)
-  const [tab,         setTab]         = useState('chat')
+  const [searchParams] = useSearchParams()
+  const VALID_TABS = ['chat', 'predict', 'next', 'resources', 'plan', 'techniques', 'tutor']
+  const initialTab = VALID_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'chat'
+  const [tab,         setTab]         = useState(initialTab)
   const [resources,   setResources]   = useState({})
   const [loadingRes,  setLoadingRes]  = useState(null)
   const [studyPlan,   setStudyPlan]   = useState('')
@@ -71,6 +80,7 @@ export default function AIAdvisor() {
   const [topics,        setTopics]        = useState([])
   const [paperAttempts, setPaperAttempts] = useState([])
   const [quizResults,   setQuizResults]   = useState([])
+  const [sessions,      setSessions]      = useState([])
   const [mistakes,      setMistakes]      = useState([])
 
   useEffect(() => {
@@ -80,8 +90,9 @@ export default function AIAdvisor() {
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getMistakes(user.uid),
-    ]).then(([t, p, q, m]) => {
-      setTopics(t || []); setPaperAttempts(p || []); setQuizResults(q || []); setMistakes(m || [])
+      getSessions(user.uid),
+    ]).then(([t, p, q, m, ss]) => {
+      setTopics(t || []); setPaperAttempts(p || []); setQuizResults(q || []); setMistakes(m || []); setSessions(ss || [])
     }).catch(() => {})
   }, [user, profile])
 
@@ -89,7 +100,7 @@ export default function AIAdvisor() {
   const currentQuizzes = filterToCurrentSubjectInstance(quizResults, profile)
   // Same call, same inputs, as Dashboard.jsx's own predicted-grade widget -- a lookup into
   // the one shared calculation, not a second estimate that could disagree with it.
-  const allPredictions = profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []
+  const allPredictions = profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile, { sessions: filterToCurrentSubjectInstance(sessions, profile) }) : []
 
   useEffect(() => { buildContext() }, [profile, user])
 
@@ -122,7 +133,7 @@ export default function AIAdvisor() {
       const mistakes = mistakesSnap.docs.map(d=>d.data())
 
       const currentSubjectNames = new Set((profile.subjects||[]).map(s=>s.name))
-      const weakTopics   = topics.filter(t=>(t.confidence||3)<=2 && currentSubjectNames.has(t.subjectId)).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
+      const weakTopics   = topics.filter(t=>t.confidence>0 && t.confidence<=2 && currentSubjectNames.has(t.subjectId)).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
       const recentPapers = papers.slice(0,5).map(p=>`${p.subject} P${p.paper} ${p.year}: ${p.percentage}% (Grade ${p.grade||'?'})`)
       const topMistakes  = mistakes.filter(m=>!m.resolved).slice(0,5).map(m=>`${m.subject} - ${m.topic}: ${m.description?.slice(0,60)}`)
 
@@ -258,12 +269,19 @@ export default function AIAdvisor() {
           {k:'resources',  label:'Resources',      icon:BookOpen},
           {k:'plan',       label:'Study Plan',     icon:TrendingUp},
           {k:'techniques', label:'Techniques',     icon:Lightbulb},
+          {k:'tutor',      label:'Maths & Essays', icon:GraduationCap},
         ].map(({k,label,icon:Icon})=>(
           <button key={k} className={`tab${tab===k?' active':''}`} onClick={()=>setTab(k)}>
             <Icon size={13}/> {label}
           </button>
         ))}
       </div>
+
+      {tab==='tutor'&&(
+        <Suspense fallback={<div style={{padding:24,color:'var(--text-muted)'}}>Loading…</div>}>
+          <TutorPanel embedded />
+        </Suspense>
+      )}
 
       {/* ── Chat ── */}
       {tab==='chat'&&(
@@ -338,7 +356,7 @@ export default function AIAdvisor() {
         <div className="ap-tool-layout">
           <div className="card">
             <h4 style={{marginBottom:4,display:'flex',alignItems:'center',gap:8}}><Target size={18} color="var(--accent-light)"/> Grade Predictor</h4>
-            <p style={{marginBottom:16,fontSize:'0.875rem'}}>Based on your paper scores, topic confidence, and revision patterns.</p>
+            <p style={{marginBottom:16,fontSize:'0.875rem'}}>Worked out from your own paper scores, quizzes and topic ratings, with the working shown.</p>
             <div className="form-group">
               <label className="label">Subject</label>
               <select className="select" value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
@@ -353,11 +371,7 @@ export default function AIAdvisor() {
           <div className="ap-tool-output">
             {gradePred && (
               <div className="card" style={{padding:'20px 22px'}}>
-                <div style={{fontSize:'2.2rem',fontWeight:800,color:'var(--success)',marginBottom:6}}>{gradePred.grade}</div>
-                <p style={{margin:0,fontSize:'0.875rem',color:'var(--text-secondary)'}}>
-                  {gradePred.percentage}% blended estimate, based on your RevisionFlow data
-                  ({gradePred.sources.papers} paper{gradePred.sources.papers!==1?'s':''}, {gradePred.sources.quizzes} quiz{gradePred.sources.quizzes!==1?'zes':''}, {gradePred.sources.topicsRated} rated topic{gradePred.sources.topicsRated!==1?'s':''}). Not an official prediction — ask in Chat for ideas on what would move it.
-                </p>
+                <GradeEstimate prediction={gradePred} />
               </div>
             )}
             {gradeSubj && !gradePred && (
@@ -661,7 +675,7 @@ function AddPlanToCalendarModal({ studyPlan, profile, user, onClose, onDone }) {
         sessions.push({
           subject: subj, type: isExamPractice ? 'Exam Practice' : 'Content Revision',
           title:   `${subj} – ${isExamPractice ? 'Exam Practice' : 'Content Revision'}`,
-          date:    sessionDate.toISOString().slice(0,10),
+          date:    toLocalDateStr(sessionDate),
           start:   `${String(hour).padStart(2,'0')}:00`,
           startTime: sessionDate.toISOString(), endTime: endDate.toISOString(),
           duration: 45, source: 'ai-plan', completed: false, notes: 'Generated from Study Plan',
