@@ -154,7 +154,7 @@ export async function generateStreakCard({
   ctx.font = 'bold 24px -apple-system, system-ui, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillStyle = '#8c8c8c'
-  ctx.fillText('Join the revision revolution 🚀', W / 2, cardY + cardH - 32)
+  ctx.fillText('Join the revision revolution', W / 2, cardY + cardH - 32)
 
   return canvas.toDataURL('image/png')
 }
