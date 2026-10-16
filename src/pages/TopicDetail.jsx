@@ -14,6 +14,7 @@
 // questions/advice/guides scoped to it, keep notes scoped to it, cross-reference
 // past paper questions already tagged with a matching topic, and build a real
 // confidence trend from here on.
+import { AiContentNotice } from '../components/ProvenanceBadge'
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
@@ -208,7 +209,7 @@ export default function TopicDetail() {
 
   async function loadAdvice() {
     setLoadingAdvice(true)
-    const res = await getTopicAdvice(topic.subjectId, topic.name, topic.confidence || 3, [], user.uid)
+    const res = await getTopicAdvice(topic.subjectId, topic.name, topic.confidence || 0, [], user.uid)
     setAdvice(res.text || res.error || 'Could not load advice — check your connection')
     setLoadingAdvice(false)
   }
@@ -236,7 +237,7 @@ export default function TopicDetail() {
       if (!forceGenerate) {
         const cached = await getTopicNoteFromCache(board, level, topic.subjectId, topic.name)
         if (cached) {
-          setGuide({ text: cached.text, cached: true, slug: cached.slug })
+          setGuide({ text: cached.text, cached: true, slug: cached.slug, verified: cached.verified === true })
           incrementTopicNoteViews(cached.slug).catch(() => {})
           setLoadingGuide(false)
           return
@@ -245,7 +246,7 @@ export default function TopicDetail() {
       const limit = await checkTopicNoteLimit(user.uid, profile)
       setGuideRemaining(limit.remaining)
       if (!limit.allowed) {
-        toast.error("You've used today's 5 free guides. Upgrade to Pro for unlimited, or come back tomorrow.")
+        toast.error("You've used today's 5 free guides. Upgrade to Pro for higher limits, or come back tomorrow.")
         setLoadingGuide(false)
         return
       }
@@ -540,6 +541,7 @@ export default function TopicDetail() {
                   <RotateCcw size={12} /> Regenerate
                 </button>
               </div>
+              <AiContentNotice verified={guide.verified === true} />
               <AIOutput text={guide.text} label={`Study guide — ${displayName}`} />
             </div>
           )}
