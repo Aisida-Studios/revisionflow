@@ -75,30 +75,8 @@ async function removeFriendPair(db, uidA, uidB) {
   await refB.update({ friends: admin.firestore.FieldValue.arrayRemove(uidA) })
 }
 
-// Mirrors currentWeekStart/currentMonthStart/xpPeriodPatch in src/utils/firestore.js —
-// duplicated here for the same reason BADGE_XP below is: this runs under the Admin SDK in a
-// separate Node runtime that can't import client-side firestore.js. Keep both copies in sync if
-// the period logic ever changes.
-function currentWeekStart(now = new Date()) {
-  const d = new Date(now)
-  const day = d.getDay()
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-  return d.toISOString().slice(0, 10)
-}
-function currentMonthStart(now = new Date()) {
-  return now.toISOString().slice(0, 7) + '-01'
-}
-function xpPeriodPatch(admin, existingData, amount) {
-  const weekStart  = currentWeekStart()
-  const monthStart = currentMonthStart()
-  const inc = admin.firestore.FieldValue.increment(amount)
-  return {
-    xpWeekStart:  weekStart,
-    xpMonthStart: monthStart,
-    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? inc : amount,
-    xpThisMonth:  existingData?.xpMonthStart === monthStart ? inc : amount,
-  }
-}
+// Period keys are computed in the user's own timezone (xpTz), matching the client - see lib/periods.js.
+const { xpPeriodPatch } = require('./lib/periods')
 
 async function awardXP(db, uid, amount, reason) {
   const admin = await getAdmin()
