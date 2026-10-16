@@ -28,7 +28,7 @@ async function authedHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken, ...appCheckHeader }
 }
 
-const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level, A-Level and BTEC revision.
+const SYSTEM = `You are RevisionFlow's AI tutor — an expert on UK GCSE, AS-Level and A-Level revision.
 AS-Level is a standalone one-year qualification, separate from A-Level (not the first year of it) —
 keep their content, depth and grading scale (A-E for AS-Level, A*-E for A-Level) distinct whenever a
 student's qualification is given as one or the other.
@@ -259,7 +259,10 @@ Keep the total response under ${wordCap} words. Be specific and actionable.`
 }
 
 export async function getTopicAdvice(subject, topic, confidence, mistakes, uid) {
-  const confLabel = ['','Very weak — needs urgent attention','Weak — gaps in understanding','Building — some understanding but not secure','Strong — mostly secure','Mastered — confident'][confidence] || 'Building'
+  // An unrated topic (null/0) must not be described as a middle rating — say it is unrated.
+  const confLabel = confidence > 0
+    ? (['','Very weak — needs urgent attention','Weak — gaps in understanding','Building — some understanding but not secure','Strong — mostly secure','Mastered — confident'][confidence] || 'Not rated yet')
+    : 'Not rated yet — the student has not rated this topic, so do not assume a level'
   const prompt = `You are an expert GCSE/A-Level tutor. A student is revising the topic "${topic}" within ${subject}. Their current confidence is: ${confLabel}.
 
 Give a focused, exam-targeted response with these sections:
@@ -352,69 +355,91 @@ export async function chatWithAI(messages, userContext, uid) {
   return callAIChat(messages.slice(-10), systemWithContext, uid, 'advisorChat', 2000)
 }
 
-export async function markAnswer(subject, board, level, paper, question, markAllocation, studentAnswer, uid) {
-  const isLevelBased = markAllocation >= 6
+export const AI_MARKING_DISCLAIMER = 'AI marking estimate — not official examiner marking. Compare with your teacher\'s or the board\'s published mark scheme.'
+
+/**
+ * AI marking estimate.
+ * Contract (all required unless marked optional):
+ *   question, studentAnswer, markScheme, marksAvailable, board, qualification,
+ *   subject, topic (optional), markSchemeProvenance (optional, e.g. 'student-supplied')
+ * Returns the callAI result ({ text } | { error }) with `disclaimer` attached.
+ */
+export async function markAnswer(input, uid) {
+  const {
+    question, studentAnswer, markScheme, marksAvailable, board, qualification,
+    subject, topic = null, markSchemeProvenance = 'student-supplied',
+  } = input || {}
+  const marks = Number(marksAvailable)
+  const missing = []
+  if (!String(question || '').trim()) missing.push('question')
+  if (!String(studentAnswer || '').trim()) missing.push('student answer')
+  if (!String(markScheme || '').trim()) missing.push('mark scheme')
+  if (!Number.isFinite(marks) || marks < 1) missing.push('marks available')
+  if (!String(board || '').trim()) missing.push('exam board')
+  if (!String(qualification || '').trim()) missing.push('qualification')
+  if (!String(subject || '').trim()) missing.push('subject')
+  if (missing.length) return { error: 'Missing required marking input: ' + missing.join(', ') }
+
+  const isLevelBased = marks >= 6
   const isMaths = subject === 'Mathematics' || subject === 'Further Mathematics'
 
-  // Conservative marking system prompt — forces accuracy over generosity
-  const markerSystem = `You are a SENIOR PRINCIPAL EXAMINER for ${board} ${level} ${subject}. You have marked thousands of scripts.
+  const markerSystem = `You are an AI marking assistant producing a marking ESTIMATE for ${board} ${qualification} ${subject}. You are not an examiner and your output is not official marking.
 
-CRITICAL MARKING RULES — you MUST follow these exactly:
-1. NEVER award marks for vague or generic statements. Every mark requires a specific, creditable point.
-2. If the student implies something but does not state it explicitly, do NOT award the mark unless the mark scheme specifically says "accept implied reference".
-3. For level-based questions: read the FULL answer before deciding the level. Do not upgrade for one good sentence in an otherwise weak answer.
-4. Be CONSERVATIVE. Real examiner research shows AI markers consistently over-mark by 15-25%. Correct for this by being strict.
-5. Max marks available is ${markAllocation}. You CANNOT award more than ${markAllocation}.
-6. If the answer is strong but has a small gap, award the mark band BELOW the top — reserve the top band for genuinely exceptional answers.
-7. Quote directly from the student's answer when awarding or denying marks. Do not paraphrase their words to make them seem better than they are.`
+RULES:
+1. Mark ONLY against the mark scheme supplied by the student. Do not invent mark scheme points that are not in it or clearly implied by it.
+2. Never award marks for vague or generic statements. Every mark needs a specific, creditable point.
+3. Do not award implied points unless the supplied mark scheme says implied references are accepted.
+4. For level-based questions read the whole answer before choosing a level; do not upgrade for one good sentence.
+5. Be conservative: AI markers tend to over-mark. Maximum available is ${marks}; never exceed it.
+6. Quote the student's own words when awarding or denying marks.
+7. If the mark scheme is too thin to mark confidently, say so rather than guessing.`
 
-  const prompt = `EXAMINATION PAPER: ${board} ${level} ${subject}${paper ? ` Paper ${paper}` : ''}
-TOTAL MARKS FOR THIS QUESTION: ${markAllocation}
-${isLevelBased ? `MARKING TYPE: Level-based (holistic — judge the overall quality, not just individual points)` : `MARKING TYPE: Point-mark (each distinct valid point = 1 mark, maximum ${markAllocation})`}
+  const prompt = `QUALIFICATION: ${board} ${qualification} ${subject}${topic ? `\nTOPIC: ${topic}` : ''}
+MARKS AVAILABLE: ${marks}
+${isLevelBased ? 'MARKING TYPE: Level-based (holistic)' : `MARKING TYPE: Point-mark (maximum ${marks})`}
+MARK SCHEME PROVENANCE: ${markSchemeProvenance}
 
 QUESTION:
-${question}
+${String(question).trim()}
 
-STUDENT'S ANSWER (mark exactly what is written — do not award marks for what they might have meant):
-${studentAnswer}
+MARK SCHEME (use only this):
+${String(markScheme).trim()}
+
+STUDENT'S ANSWER (mark exactly what is written):
+${String(studentAnswer).trim()}
 
 ---
 
-Now mark this answer. Use EXACTLY this format — no deviations:
+Use EXACTLY this format:
 
-AWARDED MARKS: [X]/${markAllocation}
-${isLevelBased ? 'LEVEL: [Level 1 / 2 / 3 / 4 — state which and the mark range for that level]' : ''}
+AWARDED MARKS: [X]/${marks}
+${isLevelBased ? 'LEVEL: [level and mark range]' : ''}
 
 CREDITED POINTS:
-[List only the points you are actually awarding marks for, one per line. Quote the student's exact words that earned each mark. If zero points earned, write "None — no creditable content identified."]
+[Points credited, quoting the student's words. If none, write "None — no creditable content identified."]
 
 POINTS NOT CREDITED:
-[List mark scheme points the student did not adequately address. Be specific about what was missing.]
+[Mark scheme points not adequately addressed]
 
 ANNOTATION:
-[Pick 2-3 sentences from the student's answer. Quote them in "speech marks". For each, explain precisely why it does or does not gain marks — reference specific mark scheme criteria.]
+[2-3 quoted sentences from the answer, each with why it does or does not gain marks]
 
 ${isMaths
-  ? `MARK BREAKDOWN:
-- Method marks (M): [X] — [which methods were shown correctly]
-- Accuracy marks (A): [X] — [which values were correct]
-- B marks (B): [X]`
-  : `AO BREAKDOWN:
-- AO1 Knowledge & Understanding: [X]/[available] — [brief reason]
-- AO2 Application: [X]/[available] — [brief reason]
-- AO3 Analysis & Evaluation: [X]/[available] — [brief reason]`}
+  ? `MARK BREAKDOWN:\n- Method marks (M): [X]\n- Accuracy marks (A): [X]\n- B marks (B): [X]`
+  : `AO BREAKDOWN:\n- AO1: [X]/[available]\n- AO2: [X]/[available]\n- AO3: [X]/[available] (omit any AO not relevant to this question)`}
 
 GRADE BOUNDARY CONTEXT:
-[State roughly what raw mark this corresponds to as a grade — e.g. "This mark would typically correspond to a grade 6 on this paper"]
+[Only state what this raw mark might indicate if you are confident; otherwise write "Not enough information to estimate a grade."]
 
 TO REACH THE NEXT MARK BAND:
-1. [Specific thing to add or change — quote from mark scheme indicative content]
-2. [Specific second improvement]
-3. [Specific third improvement]
+1. [Specific improvement tied to the mark scheme]
+2. [Second improvement]
+3. [Third improvement]
 
-EXAMINER NOTE: [One sentence in examiner voice — the kind of comment written on actual marked scripts, e.g. "Some relevant knowledge shown but analysis lacks development — candidate must engage more explicitly with the question's focus on..."]`
+EXAMINER NOTE: [One sentence of feedback. Begin with "AI estimate:".]`
 
-  return callAI(prompt, markerSystem, 4000, uid)
+  const res = await callAI(prompt, markerSystem, 4000, uid, 'markAnswer')
+  return { ...res, disclaimer: AI_MARKING_DISCLAIMER }
 }
 
 
@@ -451,6 +476,45 @@ export async function generateFlashcards(subject, topic, count, uid, maxTokens =
     'Now generate exactly ' + count + ' flashcards for ' + subject + (topic ? ' (' + topic + ')' : '') + ':',
   ].join('\n')
   return callAI(prompt, SYSTEM, tokenBudget, uid)
+}
+
+// Large flashcard requests are produced in chunks. One call for 30-50 cards needs more output than a
+// single response allows, so it came back cut off mid-card. Each chunk is a separate request that is
+// told which questions already exist (so the set does not repeat itself); chunks are merged into the
+// same "Q: ... A: ..." text the rest of the app parses, with duplicate questions dropped.
+// Resolves to the usual { text } / { error } shape, plus { requested, produced, partial }.
+// If a later chunk fails the cards already produced are returned with partial: true.
+export async function generateFlashcardsChunked(subject, topic, count, uid, { chunkSize = 15, focusHint = '', onProgress = null } = {}) {
+  count = count || 8
+  if (count <= chunkSize) {
+    const res = await generateFlashcards(subject, topic, count, uid, null, focusHint)
+    return res.error ? res : { ...res, requested: count, produced: parseFlashcards(res.text).length, partial: false }
+  }
+  const norm = (q) => q.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  const toQA = (list) => list.map(c => 'Q: ' + c.q + '\nA: ' + c.a).join('\n\n')
+  const cards = []
+  const seen = new Set()
+  const maxRequests = Math.ceil(count / chunkSize) + 2 // a little slack for chunks that return fewer or repeat
+  for (let request = 0; request < maxRequests && cards.length < count; request++) {
+    const want = Math.min(chunkSize, count - cards.length)
+    const already = cards.slice(-30).map(c => c.q).join(' | ')
+    const hint = [focusHint, already ? 'Cover DIFFERENT ground from these questions that are already written (do not repeat or reword them): ' + already : ''].filter(Boolean).join('\n')
+    const res = await generateFlashcards(subject, topic, want, uid, null, hint)
+    if (res.error) {
+      if (!cards.length) return res
+      return { text: toQA(cards), requested: count, produced: cards.length, partial: true, warning: res.error }
+    }
+    let added = 0
+    for (const c of parseFlashcards(res.text)) {
+      const key = norm(c.q)
+      if (!key || seen.has(key)) continue
+      seen.add(key); cards.push(c); added++
+      if (cards.length >= count) break
+    }
+    if (onProgress) onProgress(cards.length, count)
+    if (!added) break // the model is only repeating itself - stop rather than spend more requests
+  }
+  return { text: toQA(cards), requested: count, produced: cards.length, partial: cards.length < count }
 }
 
 export async function generatePredictedQuestions(subject, board, level, topic, totalMarks, numQuestions, uid) {
@@ -650,6 +714,8 @@ export async function saveTopicNoteToCache(board, level, subject, topic, text) {
   await setDoc(doc(db, 'topicNotes', slug), {
     board, level, subject, topic, text,
     slug,
+    verified: false,
+    provenance: 'ai-generated-draft',
     generatedAt: serverTimestamp(),
     views: 1,
   })
