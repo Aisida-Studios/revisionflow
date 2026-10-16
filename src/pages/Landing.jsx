@@ -13,7 +13,7 @@ import {
 import './Landing.css'
 
 const FEATURES_MAJOR = [
-  { icon:Calendar,      title:'Smart Calendar',            desc:'AI-generated revision schedules with exam-paper rotation, a 2:1 content-to-practice ratio, and automatic locking as exams approach.' },
+  { icon:Calendar,      title:'Smart Calendar',            desc:'Revision schedules built by rules from your subjects, exam dates and confidence ratings — with exam-paper rotation, a 2:1 content-to-practice ratio, and automatic locking as exams approach.' },
   { icon:FileText,      title:'Past Paper Tracker',        desc:'Log your marks and get your grade calculated from real, board-published grade boundaries — plus analysis of where marks were lost.' },
   { icon:Brain,         title:'Topic Confidence Tracker',  desc:'Rate your confidence topic by topic, spot weak spots on a heatmap, and get a clear suggestion for what to revise next.' },
   { icon:Layers,        title:'Flashcards',                desc:'Generate topic flashcards or build your own sets, then revise with spaced repetition that brings back the cards you keep missing.' },
@@ -104,7 +104,7 @@ export default function Landing() {
             </h1>
 
             <p className="lp-hero-sub">
-              Exam calendars, accurate grade tracking and examiner-style answer marking
+              Exam calendars, grade tracking and AI answer-marking estimates
               — matched exactly to your board. Free to use.
             </p>
 
@@ -156,9 +156,9 @@ export default function Landing() {
           <div>
             <div className="lp-feature-hero-icon"><ClipboardCheck size={21} color="var(--accent-light)"/></div>
             <h3>Answer Marker</h3>
-            <p>Type your answer, or photograph your handwritten working, and get examiner-style marking
-              in seconds — the marks you'd actually get, an AO breakdown, and exactly what would have
-              earned the rest.</p>
+            <p>Type your answer, or photograph your handwritten working, and get an AI marking estimate
+              in seconds — likely marks against your mark scheme, an AO breakdown, and what would
+              have earned the rest. It is an estimate, not official examiner marking.</p>
           </div>
           <div className="lp-feature-hero-visual">
             <div className="lp-mock-label">Your answer, marked</div>
