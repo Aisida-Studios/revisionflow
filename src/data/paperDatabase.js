@@ -1794,6 +1794,36 @@ function normSubj(subject) {
     .trim()
 }
 
+// Every boundary set handed back carries provenance, so nothing downstream can mistake another
+// year's numbers (or an estimate) for the official boundaries of the year that was asked for.
+//   requestedYear  the exam year the caller asked about
+//   sourceYear     the year the numbers actually come from
+//   verified       true only when the numbers are for exactly the requested year AND the entry is
+//                  not flagged as an estimate in its own `note` (RevisionFlow's bundled data marks
+//                  estimates with '~estimated'; this flag reflects that labelling, it is not an
+//                  independent check against the board's PDF)
+//   estimated      true when it is a flagged estimate OR a different year was substituted
+//   fallback       true when sourceYear !== requestedYear
+//   label          ready-to-show text describing exactly what the student is looking at
+function withProvenance(data, board, requestedYear, sourceYear) {
+  if (!data) return null
+  const reqYear   = Number(requestedYear) || sourceYear
+  const flagged   = /estimat/i.test(data.note || '')
+  const fallback  = sourceYear !== reqYear
+  const verified  = !flagged && !fallback
+  let label
+  if (fallback)      label = `Official boundary data unavailable for ${reqYear} — estimated using ${sourceYear} boundaries`
+  else if (flagged)  label = `Estimated ${sourceYear} boundaries — not confirmed against the board's published figures`
+  else               label = `${sourceYear} boundaries as bundled with RevisionFlow`
+  return {
+    ...data,
+    provenance: {
+      requestedYear: reqYear, sourceYear, verified, estimated: flagged || fallback, fallback,
+      source: 'RevisionFlow bundled boundary data', board, label,
+    },
+  }
+}
+
 export function getBoundaries(board, subject, tier, year, level) {
   board = canonicalBoard(board)
   const norm = normSubj(subject)
@@ -1824,11 +1854,12 @@ export function getBoundaries(board, subject, tier, year, level) {
   // would have silently ignored real 2026 data forever once it existed.
   if (year === 2026 && GRADE_BOUNDARIES[2026]) {
     const real2026 = lookupIn(GRADE_BOUNDARIES[2026])
-    if (real2026) return real2026
+    if (real2026) return withProvenance(real2026, board, year, 2026)
   }
   const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
+  const sourceYear = GRADE_BOUNDARIES[lookupYear] ? lookupYear : 2024
   const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
-  return lookupIn(yearData)
+  return withProvenance(lookupIn(yearData), board, year, sourceYear)
 }
 
 export function getBoundariesForPaper(board, subject, tier, year, paper, level) {
@@ -1836,9 +1867,10 @@ export function getBoundariesForPaper(board, subject, tier, year, paper, level) 
   // Mirrors the 2026-first-then-fallback logic in getBoundaries() above.
   if (year === 2026 && GRADE_BOUNDARIES[2026] && level !== 'A-Level' && level !== 'AS-Level') {
     const paperKey2026 = `${board}-${subject}-P${paper}`
-    if (GRADE_BOUNDARIES[2026][paperKey2026]) return GRADE_BOUNDARIES[2026][paperKey2026]
+    if (GRADE_BOUNDARIES[2026][paperKey2026]) return withProvenance(GRADE_BOUNDARIES[2026][paperKey2026], board, year, 2026)
   }
   const lookupYear = (!GRADE_BOUNDARIES[year] || year === 2026) ? 2025 : year
+  const sourceYear = GRADE_BOUNDARIES[lookupYear] ? lookupYear : 2024
   const yearData = GRADE_BOUNDARIES[lookupYear] || GRADE_BOUNDARIES[2024]
   // A handful of untiered GCSE subjects (AQA English Literature, AQA Geography) have a different
   // maxMarks/boundary set per paper, so they're keyed as `${board}-${subject}-P${paper}` rather
@@ -1848,7 +1880,7 @@ export function getBoundariesForPaper(board, subject, tier, year, paper, level) 
   // boundaries the moment their paper numbers lined up.
   if (yearData && level !== 'A-Level' && level !== 'AS-Level') {
     const paperKey = `${board}-${subject}-P${paper}`
-    if (yearData[paperKey]) return yearData[paperKey]
+    if (yearData[paperKey]) return withProvenance(yearData[paperKey], board, year, sourceYear)
   }
   return getBoundaries(board, subject, tier, year, level)
 }
@@ -1881,5 +1913,5 @@ export function getBoundariesWithPercentages(board, subject, tier, year, paper, 
 }
 
 export const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
-// Note: 2026 grade boundaries will be published by exam boards in August 2026.
-// Until then, logging a 2026 paper will calculate grade using 2025 boundaries as an estimate.
+// Where bundled data for a requested year is missing (or flagged as an estimate), getBoundaries()
+// says so through its `provenance` field rather than passing another year's numbers off as official.
