@@ -359,7 +359,7 @@ export default function Profile() {
             )}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
-            {['Unlimited Topic Notes', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
+            {['Higher AI limits', '50-card flashcard sets', 'Timed quiz mode', 'All 10 themes', 'All 12 icons'].map(f => (
               <span key={f} className="badge badge-gold">
                 <Check size={10} /> {f}
               </span>
@@ -371,7 +371,7 @@ export default function Profile() {
         <div className="card" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontWeight: 650, fontSize: '0.88rem', marginBottom: 2 }}>Upgrade to Pro</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Unlimited AI, all themes, timed quiz — from £3.99/mo</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Higher AI limits, all themes, timed quiz — from £3.99/mo</div>
           </div>
           <Link to="/pro" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}><Zap size={13} /> Upgrade</Link>
         </div>
