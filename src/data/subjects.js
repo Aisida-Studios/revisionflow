@@ -266,7 +266,7 @@ export function getSubjectQualification(subject, profile) {
 }
 
 export const SUBJECT_COLOURS = {
-  'Biology':'#27ae60','Chemistry':'#8e44ad','Physics':'#2980b9',
+  'Biology':'#27ae60','Chemistry':'#2f6f5e','Physics':'#2980b9',
   'Combined Science':'#0d9488',
   'Combined Science: Trilogy':'#16a085','Combined Science: Synergy':'#1abc9c',
   'Mathematics':'#e74c3c','Further Mathematics':'#c0392b','Statistics':'#e67e22',
