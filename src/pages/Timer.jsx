@@ -1,5 +1,9 @@
 // src/pages/Timer.jsx — Professional Focus Timer
+import { Bell, Maximize2, Minimize2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../firebase'
 import { useTimer } from '../context/TimerContext'
 import { startSound, stopSound, setVolume as setSoundVolume } from '../utils/timerSounds'
 import { awardTimerXP, recordActivityStreak } from '../utils/firestore'
@@ -15,46 +19,46 @@ function pad(n) { return String(n).padStart(2, '0') }
 
 /* ─── Scenes ─────────────────────────────────────────────────── */
 const SCENES = [
-  { id: 'none',     label: 'None',      icon: '○',  bg: '',  overlay: '' },
-  { id: 'forest',   label: 'Forest',    icon: '🌲', bg: 'forest',   overlay: 'rgba(0,8,2,0.55)'    },
-  { id: 'rain',     label: 'Rain',      icon: '🌧', bg: 'rain',     overlay: 'rgba(2,5,15,0.6)'    },
-  { id: 'ocean',    label: 'Ocean',     icon: '🌊', bg: 'ocean',    overlay: 'rgba(0,6,20,0.55)'   },
-  { id: 'sunset',   label: 'Sunset',    icon: '🌅', bg: 'sunset',   overlay: 'rgba(8,0,5,0.45)'    },
-  { id: 'snow',     label: 'Snow',      icon: '❄',  bg: 'snow',     overlay: 'rgba(2,4,15,0.6)'    },
-  { id: 'aurora',   label: 'Aurora',    icon: '✦',  bg: 'aurora',   overlay: 'rgba(0,2,8,0.5)'     },
-  { id: 'campfire', label: 'Campfire',  icon: '🔥', bg: 'campfire', overlay: 'rgba(4,1,0,0.5)'     },
-  { id: 'meadow',   label: 'Meadow',    icon: '🌿', bg: 'meadow',   overlay: 'rgba(0,5,2,0.6)'     },
-  { id: 'cosmos',   label: 'Space',     icon: '✦',  bg: 'cosmos',   overlay: 'rgba(0,0,4,0.5)'     },
-  { id: 'storm',    label: 'Storm',     icon: '⚡', bg: 'storm',    overlay: 'rgba(2,3,8,0.65)'    },
-  { id: 'library',  label: 'Library',   icon: '📚', bg: 'library',  overlay: 'rgba(4,2,0,0.6)'     },
+  { id: 'none',     label: 'None',      bg: '',  overlay: '' },
+  { id: 'forest',   label: 'Forest',    bg: 'forest',   overlay: 'rgba(0,8,2,0.55)'    },
+  { id: 'rain',     label: 'Rain',      bg: 'rain',     overlay: 'rgba(2,5,15,0.6)'    },
+  { id: 'ocean',    label: 'Ocean',     bg: 'ocean',    overlay: 'rgba(0,6,20,0.55)'   },
+  { id: 'sunset',   label: 'Sunset',    bg: 'sunset',   overlay: 'rgba(8,0,5,0.45)'    },
+  { id: 'snow',     label: 'Snow',      bg: 'snow',     overlay: 'rgba(2,4,15,0.6)'    },
+  { id: 'aurora',   label: 'Aurora',    bg: 'aurora',   overlay: 'rgba(0,2,8,0.5)'     },
+  { id: 'campfire', label: 'Campfire',  bg: 'campfire', overlay: 'rgba(4,1,0,0.5)'     },
+  { id: 'meadow',   label: 'Meadow',    bg: 'meadow',   overlay: 'rgba(0,5,2,0.6)'     },
+  { id: 'cosmos',   label: 'Space',     bg: 'cosmos',   overlay: 'rgba(0,0,4,0.5)'     },
+  { id: 'storm',    label: 'Storm',     bg: 'storm',    overlay: 'rgba(2,3,8,0.65)'    },
+  { id: 'library',  label: 'Library',   bg: 'library',  overlay: 'rgba(4,2,0,0.6)'     },
 ]
 
 /* ─── Ambient sounds ──────────────────────────────────────────── */
 const AMBIENTS = [
   { id: 'none',        label: 'Off',          emoji: '○'  },
-  { id: 'rain',        label: 'Rainfall',      emoji: '🌧' },
-  { id: 'ocean',       label: 'Ocean waves',   emoji: '🌊' },
-  { id: 'forest',      label: 'Forest birds',  emoji: '🌿' },
+  { id: 'rain',        label: 'Rainfall' },
+  { id: 'ocean',       label: 'Ocean waves' },
+  { id: 'forest',      label: 'Forest birds' },
   { id: 'whitenoise',  label: 'White noise',   emoji: '〰' },
-  { id: 'brownnoise',  label: 'Brown noise',   emoji: '🟤' },
-  { id: 'cafe',        label: 'Coffee shop',   emoji: '☕' },
-  { id: 'fireplace',   label: 'Fireplace',     emoji: '🔥' },
-  { id: 'lofi',        label: 'Lo-fi beats',   emoji: '🎵' },
+  { id: 'brownnoise',  label: 'Brown noise' },
+  { id: 'cafe',        label: 'Coffee shop' },
+  { id: 'fireplace',   label: 'Fireplace' },
+  { id: 'lofi',        label: 'Lo-fi beats' },
 ]
 
 /* ─── Music playlists ─────────────────────────────────────────── */
 const PLAYLISTS = [
   // IDs verified against search results May 2026
-  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Lofi Girl mix',        vid: 'CFGLoQIhmow', thumb: '🎵' },
-  { id: 'lofi2',      label: 'Lofi Mix',         sub: 'Beats to study to',   vid: 'CFGLoQIhmow', thumb: '🎵' },
-  { id: 'classical',  label: 'Classical',        sub: 'Mozart & Vivaldi',    vid: 'BMuknRb7woc', thumb: '🎻' },
-  { id: 'classical2', label: 'Classical Piano',  sub: '4 hours Halidon',     vid: 'PkjATKxRDO0', thumb: '🎼' },
-  { id: 'piano',      label: 'Solo Piano',       sub: 'Calm & focus',        vid: 'oiGmGFxsJi8', thumb: '🎹' },
-  { id: 'rain',       label: 'Rain Sounds',      sub: 'Sleep & focus',       vid: 'q76bMs-NwRk', thumb: '🌧' },
-  { id: 'ambient',    label: 'Ambient',          sub: 'Atmospheric',         vid: 'HGl75kurxok', thumb: '🌌' },
-  { id: 'brownnoise', label: 'Brown Noise',      sub: 'Deep concentration',  vid: 'RqzGzwTY-6w', thumb: '🟤' },
-  { id: 'nature',     label: 'Nature Sounds',    sub: 'Outdoors',            vid: 'eKFTSSKCzWA', thumb: '🍃' },
-  { id: 'jazz',       label: 'Jazz',             sub: '1AM study session',   vid: 'lTRiuFIWV54', thumb: '🎷' },
+  { id: 'lofi',       label: 'Lo-fi Hip Hop',   sub: 'Lofi Girl mix',        vid: 'CFGLoQIhmow' },
+  { id: 'lofi2',      label: 'Lofi Mix',         sub: 'Beats to study to',   vid: 'CFGLoQIhmow' },
+  { id: 'classical',  label: 'Classical',        sub: 'Mozart & Vivaldi',    vid: 'BMuknRb7woc' },
+  { id: 'classical2', label: 'Classical Piano',  sub: '4 hours Halidon',     vid: 'PkjATKxRDO0' },
+  { id: 'piano',      label: 'Solo Piano',       sub: 'Calm & focus',        vid: 'oiGmGFxsJi8' },
+  { id: 'rain',       label: 'Rain Sounds',      sub: 'Sleep & focus',       vid: 'q76bMs-NwRk' },
+  { id: 'ambient',    label: 'Ambient',          sub: 'Atmospheric',         vid: 'HGl75kurxok' },
+  { id: 'brownnoise', label: 'Brown Noise',      sub: 'Deep concentration',  vid: 'RqzGzwTY-6w' },
+  { id: 'nature',     label: 'Nature Sounds',    sub: 'Outdoors',            vid: 'eKFTSSKCzWA' },
+  { id: 'jazz',       label: 'Jazz',             sub: '1AM study session',   vid: 'lTRiuFIWV54' },
 ]
 
 /* ─── Alert tones ─────────────────────────────────────────────── */
@@ -92,7 +96,7 @@ const SCENE_CSS = `
 @keyframes waveSweep { 0%,100%{transform:translateX(0) translateY(0) scaleX(1)} 50%{transform:translateX(2%) translateY(-8px) scaleX(.98)} }
 
 /* Sunset */
-.bg-sunset { background: linear-gradient(180deg, #120318 0%, #4a0d25 15%, #8b1a0e 30%, #d4420a 48%, #f06a1a 58%, #f8b84e 68%, #fde68a 74%, #e8d06a 78%, #1a0520 85%, #0a0218 100%); }
+.bg-sunset { background: linear-gradient(180deg, #1a0a08 0%, #4a0d25 15%, #8b1a0e 30%, #d4420a 48%, #f06a1a 58%, #f8b84e 68%, #fde68a 74%, #e8d06a 78%, #1a0520 85%, #0a0218 100%); }
 .bg-sunset::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 50% 68%, rgba(255,160,30,0.45) 0%, rgba(220,70,10,0.2) 25%, transparent 55%); animation:sunPulse 6s ease-in-out infinite; }
 .bg-sunset .horizon { position:absolute; bottom:26%; left:0; right:0; height:1px; background: linear-gradient(90deg,transparent,rgba(255,200,100,0.6),transparent); }
 @keyframes sunPulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} }
@@ -106,7 +110,7 @@ const SCENE_CSS = `
 .bg-aurora { background: radial-gradient(ellipse at 50% 80%, #020a12 0%, #010608 100%); }
 .aurora-band { position:absolute; left:-20%; right:-20%; height:55%; border-radius:0 0 60% 60%; animation:auroraShift ease-in-out infinite; }
 .aurora-1 { top:-5%; background:linear-gradient(180deg,transparent 0%,rgba(0,220,120,0.12) 30%,rgba(0,180,200,0.18) 60%,transparent 100%); animation-duration:11s; }
-.aurora-2 { top:-2%; background:linear-gradient(180deg,transparent 0%,rgba(120,0,220,0.08) 40%,rgba(0,200,160,0.14) 70%,transparent 100%); animation-duration:16s; animation-direction:reverse; }
+.aurora-2 { top:-2%; background:linear-gradient(180deg,transparent 0%,rgba(0,140,180,0.08) 40%,rgba(0,200,160,0.14) 70%,transparent 100%); animation-duration:16s; animation-direction:reverse; }
 .star { position:absolute; border-radius:50%; background:#fff; animation:twinkle ease-in-out infinite; }
 @keyframes auroraShift { 0%,100%{transform:translateX(0) scaleX(1) skewX(0deg);opacity:.6} 33%{transform:translateX(4%) scaleX(.96) skewX(2deg);opacity:1} 66%{transform:translateX(-4%) scaleX(1.04) skewX(-2deg);opacity:.8} }
 @keyframes twinkle { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.6)} }
@@ -130,8 +134,8 @@ const SCENE_CSS = `
 .bg-meadow .grass { position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(180deg,transparent,#071008 60%); clip-path:polygon(0%100%,2%82%,4%90%,6%78%,8%88%,10%75%,12%85%,14%72%,16%82%,18%70%,20%80%,22%74%,24%85%,26%72%,28%80%,30%76%,32%86%,34%74%,36%82%,38%70%,40%78%,42%72%,44%84%,46%76%,48%82%,50%74%,52%86%,54%76%,56%80%,58%72%,60%82%,62%74%,64%86%,66%78%,68%82%,70%74%,72%84%,74%76%,76%80%,78%72%,80%82%,82%70%,84%80%,86%74%,88%84%,90%76%,92%82%,94%72%,96%80%,98%76%,100%82%,100%100%); }
 
 /* Cosmos */
-.bg-cosmos { background: radial-gradient(ellipse at 30% 40%, #08021a 0%, #040110 50%, #020008 100%); }
-.bg-cosmos::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 25% 35%, rgba(80,0,180,0.14) 0%, transparent 40%), radial-gradient(ellipse at 70% 65%, rgba(0,40,180,0.1) 0%, transparent 35%); animation:nebula 14s ease-in-out infinite; }
+.bg-cosmos { background: radial-gradient(ellipse at 30% 40%, #021218 0%, #010a0e 50%, #010608 100%); }
+.bg-cosmos::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 25% 35%, rgba(0,120,160,0.14) 0%, transparent 40%), radial-gradient(ellipse at 70% 65%, rgba(0,40,180,0.1) 0%, transparent 35%); animation:nebula 14s ease-in-out infinite; }
 .shooting-star { position:absolute; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent); animation:shoot linear infinite; }
 @keyframes nebula { 0%,100%{opacity:.5} 50%{opacity:1} }
 @keyframes shoot { 0%{transform:translateX(-200px) translateY(0);opacity:0;width:0} 10%{opacity:1} 30%{opacity:0;width:120px} 100%{transform:translateX(120vw) translateY(60px);opacity:0;width:0} }
@@ -243,7 +247,7 @@ function Particles({ scene }) {
     if (p.type === 'drop')       return <div key={k} className="rain-drop" style={p.style} />
     if (p.type === 'wave')       return <div key={k} className="wave" style={p.style} />
     if (p.type === 'star')       return <div key={k} className="star" style={p.style} />
-    if (p.type === 'snowflake')  return <div key={k} className="snowflake" style={p.style}>❄</div>
+    if (p.type === 'snowflake')  return <div key={k} className="snowflake" style={p.style}>•</div>
     if (p.type === 'ember')      return <div key={k} className="ember" style={p.style} />
     if (p.type === 'firefly')    return <div key={k} className="firefly" style={p.style} />
     if (p.type === 'shooting')   return <div key={k} className="shooting-star" style={p.style} />
@@ -359,6 +363,14 @@ export default function Timer() {
   const [alarmTime,setAlarmTime] = useState('')
   const [alarmMins,setAlarmMins] = useState('')
 
+  // Scheduled session this timer run belongs to: /timer?sessionId=ABC
+  const [searchParams] = useSearchParams()
+  const sessionIdParam = searchParams.get('sessionId')
+  const activeSessionId = sessionIdParam || timer.linkedSessionId
+  const [linkedSession, setLinkedSession] = useState(null)
+  const [sessionLoadError, setSessionLoadError] = useState(null)
+  const [completing, setCompleting] = useState(false)
+
   const containerRef = useRef(null)
   const alertLoopRef = useRef(null)
   const prevSignal   = useRef(timer.timerFinishedSignal)
@@ -387,10 +399,39 @@ export default function Timer() {
     alertLoopRef.current = setInterval(() => playAlert(alertType), 3500)
     if (timer.musicAutoStop) setPlaylist(null)
     if (user && timer.cdTotal > 0) {
-      awardTimerXP(user.uid, Math.floor(timer.cdTotal / 60)).catch(() => {})
+      // A linked session is paid once through completeSession() (keyed to the session id, run
+      // from TimerContext), so the per-minute timer XP is skipped for it — no double payment.
+      if (!timer.linkedSessionId) awardTimerXP(user.uid, Math.floor(timer.cdTotal / 60)).catch(() => {})
       recordActivityStreak(user.uid).catch(() => {})
     }
   }, [timer.timerFinishedSignal])
+
+  // ── Linked session: load it for display and attach this timer run to it ──
+  useEffect(() => {
+    if (!activeSessionId || !user) { setLinkedSession(null); return }
+    let cancelled = false
+    setSessionLoadError(null)
+    getDoc(doc(db, 'users', user.uid, 'sessions', activeSessionId)).then(snap => {
+      if (cancelled) return
+      if (!snap.exists()) { setLinkedSession(null); setSessionLoadError('This session no longer exists.'); return }
+      const data = { ...snap.data(), id: snap.id }
+      setLinkedSession(data)
+      if (!sessionIdParam || data.completed) return // only a ?sessionId= link attaches the timer, and never to a finished session
+      const isNewLink = timer.linkedSessionId !== snap.id
+      // Preset first, then link, so the reset isn't counted as focus time for this session.
+      if (isNewLink && !timer.cdRunning && data.duration > 0) timer.cdSetPreset(Math.round(data.duration) * 60)
+      timer.linkSession(snap.id)
+    }).catch(err => { if (!cancelled) setSessionLoadError(err.message || 'Could not load the session.') })
+    return () => { cancelled = true }
+  }, [activeSessionId, sessionIdParam, user?.uid])
+
+  async function completeLinkedSession() {
+    if (completing) return
+    setCompleting(true)
+    const result = await timer.finishLinkedSession()
+    if (result?.completed) { timer.cdPause(); timer.swPause() }
+    setCompleting(false)
+  }
 
   function dismissAlert() {
     clearInterval(alertLoopRef.current)
@@ -482,24 +523,62 @@ export default function Timer() {
           {/* Top bar */}
           <div style={{ ...glass(0.55), padding:'0.7rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontWeight:800, fontSize:'1rem', color:textC, letterSpacing:'-0.01em' }}>⏱ Timer</span>
-              {onScene && <span style={{ fontSize:'0.72rem', color:mutedC, padding:'2px 8px', borderRadius:12, background:'rgba(255,255,255,0.1)' }}>{sc.icon} {sc.label}</span>}
+              <span style={{ fontWeight:800, fontSize:'1rem', color:textC, letterSpacing:'-0.01em' }}>Timer</span>
+              {onScene && <span style={{ fontSize:'0.72rem', color:mutedC, padding:'2px 8px', borderRadius:12, background:'rgba(255,255,255,0.1)' }}>{sc.label}</span>}
             </div>
             <div style={{ display:'flex', gap:5, flexWrap:'wrap', alignItems:'center' }}>
               {[
-                { id:'scene',  label:'🎨 Scene'  },
-                { id:'sounds', label:'🎶 Sound'  },
-                { id:'music',  label:'🎵 Music'  },
+                { id:'scene',  label:'Scene'  },
+                { id:'sounds', label:'Sound'  },
+                { id:'music',  label:'Music'  },
               ].map(p => (
                 <button key={p.id} onClick={() => setPanel(panel === p.id ? null : p.id)} style={chip(panel === p.id)}>
                   {p.label}
                 </button>
               ))}
               <button onClick={toggleFs} style={{ ...chip(false), padding:'5px 8px' }}>
-                {fullscreen ? '⊠' : '⛶'}
+                {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
             </div>
           </div>
+
+          {/* Linked session banner (/timer?sessionId=ABC) */}
+          {(linkedSession || sessionLoadError || timer.sessionResult) && (
+            <div style={{ ...glass(0.55), padding:'0.7rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap', borderTop:'none' }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:'0.7rem', fontWeight:700, color:mutedC, letterSpacing:'0.1em', textTransform:'uppercase' }}>Scheduled session</div>
+                {sessionLoadError && <div style={{ fontSize:'0.85rem', color:'var(--danger)' }}>{sessionLoadError}</div>}
+                {!sessionLoadError && linkedSession && (
+                  <div style={{ fontSize:'0.9rem', fontWeight:700, color:textC }}>
+                    {linkedSession.title || linkedSession.subject}
+                    {linkedSession.duration ? <span style={{ fontWeight:500, color:mutedC }}> · {linkedSession.duration} min planned</span> : null}
+                  </div>
+                )}
+                {timer.sessionResult && timer.sessionResult.sessionId === activeSessionId && (
+                  <div style={{ fontSize:'0.8rem', color: timer.sessionResult.error ? 'var(--danger)' : 'var(--success)', marginTop:2 }}>
+                    {timer.sessionResult.error
+                      ? timer.sessionResult.error
+                      : timer.sessionResult.alreadyCompleted
+                        ? 'Already completed — nothing was added twice.'
+                        : `Session completed — ${timer.sessionResult.minutes} min logged.`}
+                  </div>
+                )}
+                {!timer.sessionResult && linkedSession?.completed && (
+                  <div style={{ fontSize:'0.8rem', color:mutedC, marginTop:2 }}>This session is already completed.</div>
+                )}
+              </div>
+              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                {timer.linkedSessionId && timer.linkedSessionId === activeSessionId && (
+                  <button onClick={completeLinkedSession} disabled={completing} style={{ ...chip(true), opacity: completing ? 0.6 : 1 }}>
+                    {completing ? 'Completing…' : 'Complete session'}
+                  </button>
+                )}
+                {timer.sessionResult && (
+                  <Link to="/calendar" style={{ ...chip(false), textDecoration:'none' }}>Back to calendar</Link>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Panels */}
           {panel === 'scene' && (
@@ -508,7 +587,7 @@ export default function Timer() {
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {SCENES.map(s => (
                   <button key={s.id} onClick={() => setScene(s.id)} style={chip(scene === s.id)}>
-                    {s.icon} {s.label}
+                    {s.label}
                   </button>
                 ))}
               </div>
@@ -522,7 +601,7 @@ export default function Timer() {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
                   {AMBIENTS.map(a => (
                     <button key={a.id} onClick={() => setAmbient(a.id)} style={chip(ambient === a.id)}>
-                      {a.emoji} {a.label}
+                      {a.label}
                     </button>
                   ))}
                 </div>
@@ -562,7 +641,6 @@ export default function Timer() {
                 {PLAYLISTS.map(p => (
                   <button key={p.id} onClick={() => setPlaylist(playlist?.id === p.id ? null : p)}
                     style={{ ...chip(playlist?.id === p.id), textAlign:'left', padding:'8px 12px', borderRadius:10, display:'flex', gap:8, alignItems:'center' }}>
-                    <span style={{ fontSize:'1.2rem' }}>{p.thumb}</span>
                     <div>
                       <div style={{ fontSize:'0.8rem', fontWeight:700, lineHeight:1.2 }}>{p.label}</div>
                       <div style={{ fontSize:'0.68rem', opacity:0.7, lineHeight:1.2 }}>{p.sub}</div>
@@ -629,7 +707,7 @@ export default function Timer() {
                       <button onClick={dismissAlert}
                         style={{ padding:'8px 20px', borderRadius:20, border:'none', cursor:'pointer',
                           background:'var(--danger)', color:'white', fontWeight:700, fontSize:'0.85rem' }}>
-                        ✓ Dismiss
+                        Dismiss
                       </button>
                     </div>
                   ) : (
@@ -644,7 +722,7 @@ export default function Timer() {
                       )}
                       {ambient !== 'none' && timer.cdRunning && (
                         <span style={{ fontSize:'0.68rem', color:mutedC, marginTop:2 }}>
-                          {AMBIENTS.find(a=>a.id===ambient)?.emoji} playing
+                          {AMBIENTS.find(a=>a.id===ambient)?.label} playing
                         </span>
                       )}
                     </>
@@ -693,7 +771,7 @@ export default function Timer() {
                 {!timer.cdRunning ? (
                   <button onClick={timer.cdStart} style={playBtn(onScene)}>▶ Start</button>
                 ) : (
-                  <button onClick={timer.cdPause} style={playBtn(onScene, '#e67e22')}>⏸ Pause</button>
+                  <button onClick={timer.cdPause} style={playBtn(onScene, '#e67e22')}>Pause</button>
                 )}
                 <button onClick={() => { timer.cdReset(); stopSound(); clearInterval(alertLoopRef.current) }}
                   style={{ ...chip(false), padding:'10px 20px', fontSize:'0.9rem' }}>↺ Reset</button>
@@ -715,8 +793,8 @@ export default function Timer() {
                 {!timer.swRunning ? (
                   <button onClick={timer.swStart} style={playBtn(onScene)}>▶ Start</button>
                 ) : (<>
-                  <button onClick={timer.swPause} style={playBtn(onScene,'#e67e22')}>⏸ Pause</button>
-                  <button onClick={timer.swLap} style={playBtn(onScene,'#1a5276')}>🏁 Lap</button>
+                  <button onClick={timer.swPause} style={playBtn(onScene,'#e67e22')}>Pause</button>
+                  <button onClick={timer.swLap} style={playBtn(onScene,'#1a5276')}>Lap</button>
                 </>)}
                 <button onClick={timer.swReset} style={{ ...chip(false), padding:'10px 18px', fontSize:'0.9rem' }}>↺</button>
               </div>
@@ -748,7 +826,7 @@ export default function Timer() {
               {timer.alarmFired && (
                 <div style={{ padding:'1.25rem 2rem', background:'rgba(239,68,68,0.18)', border:'1px solid var(--danger)',
                   borderRadius:14, textAlign:'center' }}>
-                  <div style={{ fontSize:'1.8rem', marginBottom:8 }}>⏰</div>
+                  <div style={{ marginBottom:8 }}><Bell size={30} /></div>
                   <div style={{ fontWeight:800, fontSize:'1.2rem', color:'var(--danger)', marginBottom:12 }}>Alarm!</div>
                   <button onClick={timer.clearAlarm}
                     style={{ padding:'8px 24px', borderRadius:20, border:'none', cursor:'pointer',
@@ -759,14 +837,14 @@ export default function Timer() {
               )}
               {timer.alarmTarget && !timer.alarmFired && (
                 <div style={{ ...glass(0.4), padding:'10px 18px', borderRadius:12, display:'flex', alignItems:'center', gap:12, color:textC }}>
-                  <span style={{ fontSize:'1.1rem' }}>⏰</span>
+                  <Bell size={16} />
                   <span style={{ fontWeight:600 }}>{timer.alarmTarget.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                   <button onClick={timer.clearAlarm} style={{ ...chip(false), padding:'4px 10px', fontSize:'0.75rem' }}>Clear</button>
                 </div>
               )}
               <div style={{ display:'flex', flexDirection:'column', gap:12, width:'100%', maxWidth:340 }}>
                 <div style={{ ...glass(0.42), borderRadius:14, padding:'1.1rem' }}>
-                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>⏰ Set clock time</div>
+                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>Set clock time</div>
                   <div style={{ display:'flex', gap:8 }}>
                     <input type="time" value={alarmTime} onChange={e=>setAlarmTime(e.target.value)}
                       style={{ flex:1, padding:'9px 12px', borderRadius:8,
@@ -783,7 +861,7 @@ export default function Timer() {
                   </div>
                 </div>
                 <div style={{ ...glass(0.42), borderRadius:14, padding:'1.1rem' }}>
-                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>⏱ Countdown alarm</div>
+                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>Countdown alarm</div>
                   <div style={{ display:'flex', gap:8 }}>
                     <input type="number" placeholder="Minutes" value={alarmMins} onChange={e=>setAlarmMins(e.target.value)} min="1"
                       style={{ flex:1, padding:'9px 12px', borderRadius:8,
