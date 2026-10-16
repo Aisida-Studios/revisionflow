@@ -214,10 +214,10 @@ export default function Signup() {
                 <span style={{ fontSize: '0.75rem', marginTop: 3, display: 'block',
                   color: referrerName === null ? 'var(--danger)' : 'var(--success)' }}>
                   {codeChecking
-                    ? '⏳ Checking code...'
+                    ? 'Checking code...'
                     : referrerName === null
-                      ? '❌ Code not found — double-check and try again'
-                      : '🚀 Referred by ' + referrerName + ' · You both earn XP + unlock the Rocket icon'
+                      ? 'Code not found — double-check and try again'
+                      : 'Referred by ' + referrerName + ' · You both earn XP + unlock the Rocket icon'
                   }
                 </span>
               )}
