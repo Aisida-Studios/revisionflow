@@ -1,4 +1,6 @@
 // src/pages/Study.jsx
+import ProvenanceBadge, { AiContentNotice } from '../components/ProvenanceBadge'
+import { flashcardSetSource } from '../utils/provenance'
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsPro, ProBadge } from '../components/ProGate'
@@ -8,8 +10,8 @@ import {
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
 } from '../utils/firestore'
-import { generateFlashcards, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
-import { getSubjectQualification, subjectColour } from '../data/subjects'
+import { generateFlashcards, generateFlashcardsChunked, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
+import { getSubjectQualification, subjectColour, getSubjectList } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
 import { subjectIdentityForName } from '../utils/subjectKey'
@@ -72,13 +74,18 @@ function myQualificationFor(subject, profile) {
 
 /* ── Flip card ─────────────────────────────────────────────────────────────── */
 function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggling }) {
-  const [flipped, setFlipped] = useState(false)
-  useEffect(() => setFlipped(false), [index])
+  // Flip state belongs to ONE card: it is stored as "the index that is flipped", so moving to a
+  // different card is unflipped in the very same render. (The old effect reset it a render later,
+  // which showed the next or previous card's answer for a moment.) The inner element is also keyed
+  // by card, so it mounts unflipped instead of animating back from 180 degrees - that rotation
+  // would otherwise expose the new card's answer side halfway through.
+  const [flippedIndex, setFlippedIndex] = useState(null)
+  const flipped = flippedIndex === index
   const accent = subjectColour(subject)
   return (
     <div className="rf-flip-wrap">
-      <div className="rf-flip-card" onClick={() => setFlipped(f => !f)}>
-        <div className={`rf-flip-inner${flipped ? ' is-flipped' : ''}`}>
+      <div className="rf-flip-card" onClick={() => setFlippedIndex(f => (f === index ? null : index))}>
+        <div key={index} className={`rf-flip-inner${flipped ? ' is-flipped' : ''}`}>
           <div className="rf-flip-face" style={{ borderColor: accent + '4d' }}>
             <div className="rf-flip-eyebrow" style={{ color: accent }}>Card {index+1} of {total}</div>
             <div className="rf-flip-q">{card.q}</div>
@@ -285,6 +292,10 @@ function WriteMode({ cards, onDone, uid }) {
     setChecked(correct ? 'correct' : 'wrong')
   }
 
+  // Ctrl+Enter and the Submit button share one path (check() was never defined here, so the
+  // shortcut threw a ReferenceError).
+  function submitAnswer() { if (input.trim()) setChecked('pending') }
+
   function next() {
     if (idx >= deck.length-1) {
       const missed = deck.filter((c, i) => !scores[i])
@@ -312,7 +323,7 @@ function WriteMode({ cards, onDone, uid }) {
         <textarea ref={inputRef} className="textarea"
           style={{ minHeight:80, fontSize:'0.9rem', borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
           value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)check()}}
+          onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)submitAnswer()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
         {!checked && <MathSymbolToolbar fieldRef={inputRef} value={input} onChange={setInput} />}
         {/* AI marking shown once answer is submitted */}
@@ -325,7 +336,7 @@ function WriteMode({ cards, onDone, uid }) {
       </div>
       {!checked && (
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setChecked('pending')} disabled={!input.trim()}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={submitAnswer} disabled={!input.trim()}>
             Submit answer
           </button>
           <button className="btn btn-secondary" onClick={() => {
@@ -1341,6 +1352,8 @@ function QuizTab({ mySets, uid, profile }) {
   const [publicSubject, setPublicSubject] = useState('')
   const [publicBoard,   setPublicBoard]   = useState('')
   const [publicLevel,   setPublicLevel]   = useState('')
+  const [publicSource,  setPublicSource]  = useState('all')   // all | official | community
+  const [publicLimit,   setPublicLimit]   = useState(30)
 
   // "My sets" filters — subject/board/level, same pattern as Topic Notes' selector
   const [mySubjectFilter, setMySubjectFilter] = useState('')
@@ -1374,6 +1387,11 @@ function QuizTab({ mySets, uid, profile }) {
     const { board, level } = deriveSetBoardLevel(set, null)
     if (publicBoard && board && board !== publicBoard) return false
     if (publicLevel && level && level !== publicLevel) return false
+    // Official = reviewed by an admin. Community = another student's set. Older "official" sets
+    // that were never reviewed are neither, so they only show under All (labelled Unverified).
+    const src = flashcardSetSource(set, uid)
+    if (publicSource === 'official' && src !== 'official') return false
+    if (publicSource === 'community' && src !== 'community' && src !== 'student') return false
     return true
   })
 
@@ -1381,11 +1399,11 @@ function QuizTab({ mySets, uid, profile }) {
     if (setSource !== 'public') return
     setPublicLoading(true)
     import('../utils/firestore').then(({ getPublicFlashcardSets }) => {
-      getPublicFlashcardSets(publicSubject || null, 30)
+      getPublicFlashcardSets(publicSubject || null, publicLimit)
         .then(setPublicSets)
         .finally(() => setPublicLoading(false))
     })
-  }, [setSource, publicSubject])
+  }, [setSource, publicSubject, publicLimit])
 
   function openHistory() {
     setShowHistory(true)
@@ -1558,9 +1576,18 @@ function QuizTab({ mySets, uid, profile }) {
 
         {setSource === 'public' && (
           <div className="rf-config-grid" style={{ marginBottom: 12 }}>
-            <select className="select" value={publicSubject} onChange={e => setPublicSubject(e.target.value)}>
+            <select className="select" value={publicSubject} onChange={e => { setPublicSubject(e.target.value); setPublicLimit(30) }}>
               <option value="">All subjects</option>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              <optgroup label="Other subjects">
+                {[...new Set(['GCSE', 'AS-Level', 'A-Level'].flatMap(l => getSubjectList(l)))]
+                  .filter(n => !subjects.includes(n)).sort().map(n => <option key={n} value={n}>{n}</option>)}
+              </optgroup>
+            </select>
+            <select className="select" value={publicSource} onChange={e => setPublicSource(e.target.value)}>
+              <option value="all">Official and community</option>
+              <option value="official">Official only (reviewed)</option>
+              <option value="community">Community only</option>
             </select>
             <select className="select" value={canonicalBoard(publicBoard)} onChange={e => setPublicBoard(e.target.value)}>
               <option value="">All boards</option>
@@ -1636,7 +1663,7 @@ function QuizTab({ mySets, uid, profile }) {
           ) : filteredPublic.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}>
               <p>No sets match those filters</p>
-              <button className="btn btn-secondary btn-sm" onClick={() => { setPublicBoard(''); setPublicLevel('') }}>Clear board/level filters</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setPublicBoard(''); setPublicLevel(''); setPublicSource('all') }}>Clear filters</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1650,7 +1677,7 @@ function QuizTab({ mySets, uid, profile }) {
                         {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div className="rf-set-row-title">{set.title}</div>
+                        <div className="rf-set-row-title">{set.title}<ProvenanceBadge source={flashcardSetSource(set, uid)} /></div>
                         <div className="rf-set-row-meta">
                           {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}
                         </div>
@@ -1660,6 +1687,12 @@ function QuizTab({ mySets, uid, profile }) {
                   </div>
                 </button>
               ))}
+              {publicSets.length >= publicLimit && publicLimit < 150 && (
+                <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'center' }} disabled={publicLoading}
+                  onClick={() => setPublicLimit(l => Math.min(150, l + 30))}>
+                  {publicLoading ? 'Loading...' : 'Load more sets'}
+                </button>
+              )}
             </div>
           )
         )}
@@ -1999,7 +2032,7 @@ function TopicNotesTab({ profile, uid }) {
       const limit = await checkTopicNoteLimit(uid, profile)
       setRemaining(limit.remaining)
       if (!limit.allowed) {
-        toast.error("You've used today's 5 free notes. Upgrade to Pro for unlimited, or come back tomorrow.")
+        toast.error("You've used today's 5 free notes. Upgrade to Pro for higher limits, or come back tomorrow.")
         setLoading(false)
         return
       }
@@ -2033,7 +2066,7 @@ function TopicNotesTab({ profile, uid }) {
           AI-generated revision guides cached globally — generated once, available to all students.
           {remaining !== null && remaining !== Infinity && (
             <span style={{ marginLeft: 8, color: remaining > 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
-              {remaining > 0 ? `${remaining} generations left today` : 'All used up for today — upgrade to Pro for unlimited'}
+              {remaining > 0 ? `${remaining} generations left today` : 'All used up for today — upgrade to Pro for higher limits'}
             </span>
           )}
         </p>
@@ -2134,6 +2167,7 @@ function TopicNotesTab({ profile, uid }) {
                 </div>
               </div>
               <div style={{ padding: '16px 18px', overflowY: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
+                <AiContentNotice verified={note.verified === true} />
                 <AIOutput text={note.text} />
               </div>
             </div>
@@ -2217,6 +2251,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   const mkQRef = useRef(null)
   const [mkMarks,   setMkMarks]   = React.useState('6')
   const [mkAnswer,  setMkAnswer]  = React.useState('')
+  const [mkScheme,  setMkScheme]  = React.useState('')
+  const [mkTopic,   setMkTopic]   = React.useState('')
   const mkAnswerRef = useRef(null)
   const [mkResult,  setMkResult]  = React.useState(null)
   const [mkLoading, setMkLoading] = React.useState(false)
@@ -2234,15 +2270,18 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   }, [subjects.length])
 
   async function handleMark() {
-    if (!mkSubject || !mkQ.trim() || !mkAnswer.trim() || !mkMarks) {
-      toast.error('Fill in all fields before marking')
+    if (!mkSubject || !mkQ.trim() || !mkAnswer.trim() || !mkScheme.trim() || !mkMarks) {
+      toast.error('Fill in the question, mark scheme, your answer and marks before marking')
       return
     }
     setMkLoading(true)
     setMkResult(null)
     try {
       const { markAnswer } = await import('../utils/ai')
-      const res = await markAnswer(mkSubject, mkBoard, mkLevel, null, mkQ.trim(), parseInt(mkMarks), mkAnswer.trim(), uid)
+      const res = await markAnswer({
+        question: mkQ, studentAnswer: mkAnswer, markScheme: mkScheme, marksAvailable: parseInt(mkMarks),
+        board: mkBoard, qualification: mkLevel, subject: mkSubject, topic: mkTopic.trim() || null,
+      }, uid)
       if (res.error) { toast.error(res.error); setMkLoading(false); return }
       const parsed = parseMarkerResult(res.text || '')
       setMkResult(parsed)
@@ -2288,7 +2327,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
     }
   }
 
-  const canMark = mkSubject && mkQ.trim().length > 5 && mkAnswer.trim().length > 5 && mkMarks
+  const canMark = mkSubject && mkQ.trim().length > 5 && mkAnswer.trim().length > 5 && mkScheme.trim().length > 5 && mkMarks
 
   // ── Result display
   function ResultCard({ r }) {
@@ -2312,6 +2351,9 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
             padding: '3px 12px', borderRadius: 999, background: pale,
             fontSize: '0.8rem', fontWeight: 700, color: colour }}>
             Estimated grade: {grade}
+          </div>
+          <div style={{ marginTop: 10, fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            AI marking estimate — not official examiner marking. Check against your own mark scheme.
           </div>
         </div>
 
@@ -2399,7 +2441,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               <Brain size={18} color="var(--accent-light)" /> Mark my answer
             </h4>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Paste a question and your answer — the AI marks it like a real examiner.
+              Paste the question, its mark scheme and your answer. You get an AI marking estimate — not official marking.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -2450,6 +2492,15 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 <CommandWordHint questionText={mkQ} />
               </div>
               <div>
+                <label className="label">Mark scheme</label>
+                <textarea className="textarea" rows={4} placeholder="Paste the mark scheme points for this question..."
+                  value={mkScheme} onChange={e => setMkScheme(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Topic (optional)</label>
+                <input className="input" placeholder="e.g. Electrolysis" value={mkTopic} onChange={e => setMkTopic(e.target.value)} />
+              </div>
+              <div>
                 <label className="label">Your answer</label>
                 <textarea ref={mkAnswerRef} className="textarea" rows={6} placeholder="Type or paste your answer here..."
                   value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} />
@@ -2487,7 +2538,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                         </div>
                       </div>
                       {h.result?.awarded != null && (
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color, flexShrink: 0 }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: colour, flexShrink: 0 }}>
                           {h.result.awarded}/{h.result.outOf}
                         </span>
                       )}
@@ -2561,6 +2612,7 @@ export default function Study() {
   const [fcTopic, setFcTopic] = useState('')
   const [fcCount, setFcCount] = useState(10)
   const [fcLoading, setFcLoading] = useState(false)
+  const [fcProgress, setFcProgress] = useState(null)   // { done, total } while a large set is generated in chunks
   const [weakTopics, setWeakTopics] = useState([])
 
   // My sets
@@ -2644,11 +2696,16 @@ export default function Study() {
       if (cached?.cards?.length) {
         parsed = cached.cards
       } else {
-        const res = await generateFlashcards(fcSubject, fcTopic, fcCount, user?.uid)
+        const res = await generateFlashcardsChunked(fcSubject, fcTopic, fcCount, user?.uid, { onProgress: (done, total) => setFcProgress({ done, total }) })
         if (res.error) { toast.error(res.error); return }
         parsed = parseFlashcards(res.text || '')
         if (!parsed.length) { toast.error('Could not parse flashcards — try again'); return }
-        saveFlashcardSetToCache(board, level, fcSubject, fcTopic, fcCount, parsed).catch(() => {})
+        if (res.partial) {
+          // Don't cache a short set under the full-size key; tell the student what they actually got.
+          toast('Made ' + parsed.length + ' of ' + fcCount + ' cards' + (res.warning ? ' (' + res.warning + ')' : '') + '.')
+        } else {
+          saveFlashcardSetToCache(board, level, fcSubject, fcTopic, fcCount, parsed).catch(() => {})
+        }
       }
       setStudyCards(parsed)
       setStudyTitle(fcSubject + (fcTopic ? ' — ' + fcTopic : ''))
@@ -2658,7 +2715,7 @@ export default function Study() {
       await autoCompleteQuest(user.uid, 'use_ai')
     } catch (e) {
       toast.error('Generation failed: ' + e.message)
-    } finally { setFcLoading(false) }
+    } finally { setFcLoading(false); setFcProgress(null) }
   }
 
   async function handleSaveSet({ title, isPublic }) {
@@ -2751,7 +2808,12 @@ export default function Study() {
       const subj = profile?.subjects?.find(s => s.name === eqSubject)
       const board = eqBoard || subj?.board || 'AQA'
       const marksNum = parseInt(marksTotal) || undefined
-      const res = await markAnswer(eqSubject, board, eqLevel, null, questionText, marksNum || 6, attempt.answer.trim(), user?.uid)
+      const res = await markAnswer({
+        question: questionText, studentAnswer: attempt.answer, marksAvailable: marksNum || 6,
+        markScheme: 'No official mark scheme supplied (AI-generated practice question). Judge against the specification content for this topic and say where you are unsure.',
+        markSchemeProvenance: 'none — AI-generated practice question',
+        board, qualification: eqLevel, subject: eqSubject,
+      }, user?.uid)
       if (res.error) { toast.error(res.error); setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false } })); return }
       setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false, marking: res.text || 'Could not mark answer.' } }))
       await autoCompleteQuest(user.uid, 'use_ai')
@@ -2875,7 +2937,7 @@ export default function Study() {
                   </div>
                 </div>
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={fcLoading || !fcSubject}>
-                  {fcLoading ? 'Generating…' : 'Generate ' + fcCount + ' flashcards'}
+                  {fcLoading ? (fcProgress ? 'Generating ' + fcProgress.done + ' of ' + fcProgress.total + '...' : 'Generating...') : 'Generate ' + fcCount + ' flashcards'}
                 </button>
               </div>
             </div>
