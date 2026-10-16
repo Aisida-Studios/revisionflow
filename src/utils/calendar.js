@@ -1,4 +1,5 @@
 // src/utils/calendar.js
+import { parseLocalDate } from './localDate'
 import { format, addDays, startOfWeek, eachDayOfInterval,
          isSameDay, differenceInDays } from 'date-fns'
 
@@ -309,7 +310,7 @@ export function getWeekDays(date) {
 
 export function sessionsForDay(sessions, date) {
   return sessions.filter(s => {
-    const d = s.startTime ? new Date(s.startTime) : s.date ? new Date(s.date) : null
+    const d = s.startTime ? new Date(s.startTime) : s.date ? parseLocalDate(s.date) : null
     return d && !isNaN(d.getTime()) && isSameDay(d, date)
   }).sort((a, b) => {
     const ta = a.start || ''
