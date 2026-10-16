@@ -35,50 +35,75 @@
       "accessedAt": "2026-10-10",
       "notes": "Complete listing page retrieved. Used to confirm which OCR AS/A Level qualifications currently exist, their specification codes, and where OCR publishes more than one specification (A/B/MEI/Salters routes)."
     },
-    "pearson-biology-a-2015": {
+    "edexcel-1ph0-2h-examiners-report-2025": {
       "board": "Edexcel",
-      "title": "Pearson Edexcel AS and A level Biology A (Salters-Nuffield) 2015 — qualification page",
-      "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/biology-a-2015.html",
-      "sourceType": "board-listing",
-      "tier": 1,
-      "accessedAt": "2026-10-10",
-      "notes": "Pearson product page: lists the A level and AS level Biology A specifications (first teaching 2015). Used only to evidence that Pearson publishes two Biology specifications."
-    },
-    "pearson-biology-b-2015": {
-      "board": "Edexcel",
-      "title": "Pearson Edexcel AS and A level Biology B 2015 — qualification page",
-      "url": "https://qualifications.pearson.com/edexcelasandalevel/biologyb",
-      "sourceType": "board-listing",
-      "tier": 1,
-      "accessedAt": "2026-10-10",
-      "notes": "Pearson product page: lists the A level and AS level Biology B specifications (first teaching 2015)."
-    },
-    "aqa-gcse-timetable-2027": {
-      "board": "AQA",
       "qualification": "GCSE",
-      "title": "AQA Exam timetable May/June 2027 — GCSE, AQA Certificates, ELC and Projects",
-      "url": "https://www.aqa.org.uk/files/449f89fe-eb10-43c4-9f7f-d94906b16007/8572d66498f4d624b9c6ecb4abf5f0a01aff69f3.pdf",
-      "sourceType": "timetable",
-      "tier": 1,
-      "accessedAt": "2026-10-10",
-      "notes": "Only search-result excerpts of this PDF were read, not the whole document."
-    },
-    "jcq-june-2027-commentary": {
-      "title": "JCQ — Commentary on the June 2027 examination timetable (GCSE, GCE AS and A level)",
-      "url": "https://www.jcq.org.uk/wp-content/uploads/sites/2/2026/05/Commentary-June-2027-timetable.pdf",
-      "sourceType": "timetable",
+      "subject": "Physics",
+      "title": "Pearson Edexcel GCSE Physics 1PH0 Paper 2H — Examiners' Report, June 2025",
+      "url": "https://qualifications.pearson.com/content/dam/pdf/GCSE/Science/2016/Exam-materials/1ph0-2h-pef-20250821.pdf",
+      "sourceType": "specification-appendix",
       "tier": 2,
       "accessedAt": "2026-10-10",
-      "notes": "Excerpt only. Lists changes made after the consultation on the common-slot June 2027 timetable."
+      "notes": "Pearson-hosted. Only a search-result excerpt was read, not the whole report. It lists the specification topics assessed on Paper 2, beginning with Topic 1 – Key concepts of physics, then Topics 8–15."
     },
-    "school-timetable-2027-maths": {
-      "board": "AQA",
-      "title": "South Nottinghamshire Academy — Draft Exam Timetable Summer 2027 (reproduces AQA GCSE 8300 paper dates)",
-      "url": "https://www.southnottinghamshireacademy.org.uk/_site/data/files/B808A5E6577CBB1F5595B5CAA882770E.pdf",
-      "sourceType": "secondary",
-      "tier": 4,
+    "edexcel-1sc0-1ph-examiners-report-2025": {
+      "board": "Edexcel",
+      "qualification": "GCSE",
+      "subject": "Combined Science",
+      "title": "Pearson Edexcel GCSE Combined Science 1SC0 1PH — Examiners' Report, June 2025",
+      "url": "https://qualifications.pearson.com/content/dam/pdf/GCSE/Science/2016/Exam-materials/1sc0-1ph-pef-20250821.pdf",
+      "sourceType": "specification-appendix",
+      "tier": 2,
       "accessedAt": "2026-10-10",
-      "notes": "Secondary source used only to corroborate AQA GCSE Mathematics 2027 paper dates."
+      "notes": "Pearson-hosted. Only a search-result excerpt was read. It lists \"Topic 1 – Key concepts of physics\" among the physics topics of the Combined Science specification."
+    },
+    "dfe-gcse-maths-subject-content": {
+      "title": "Department for Education — GCSE mathematics: subject content and assessment objectives (DFE-00233-2013)",
+      "url": "https://assets.publishing.service.gov.uk/media/5a7cb5b040f0b6629523b52c/GCSE_mathematics_subject_content_and_assessment_objectives.pdf",
+      "sourceType": "subject-content",
+      "tier": 2,
+      "accessedAt": "2026-10-10",
+      "notes": "Read in full (17 pages, Open Government Licence). Published 1 November 2013 for England; sets out the content every GCSE mathematics specification must cover. It confirms the 97 content points transcribed from AQA 8300 (AQA labels them N1–S6; the DfE numbers them within each heading). Used as the common reference for Edexcel and OCR GCSE Mathematics."
+    },
+    "edexcel-gcse-timetable-2027-final": {
+      "board": "Edexcel",
+      "qualification": "GCSE",
+      "title": "Pearson Edexcel GCSE Summer 2027 Examination Timetable — FINAL",
+      "url": "https://qualifications.pearson.com/content/dam/pdf/Support/Examination-timetables-for-UK-Edexcel-GCSE/gcse-summer-2027final.pdf",
+      "sourceType": "timetable",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Full text retrieved from Pearson's own site. Lists every UK Edexcel GCSE sitting for June 2027, with specification codes."
+    },
+    "edexcel-gce-timetable-2027-final": {
+      "board": "Edexcel",
+      "qualification": "AS and A-level",
+      "title": "Pearson Edexcel GCE Summer 2027 Examination Timetable — FINAL",
+      "url": "https://qualifications.pearson.com/content/dam/pdf/Support/Examination-timetables/gce-summer-2027-final.pdf",
+      "sourceType": "timetable",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Full text retrieved from Pearson's own site. Lists every UK Edexcel AS (8xx0) and A level (9xx0) sitting for June 2027, with specification codes. Shows A level Statistics (9ST0) exists in the UK and that there is no A level Computer Science."
+    },
+    "aqa-alevel-timetable-2027-v1-2": {
+      "board": "AQA",
+      "qualification": "AS and A-level",
+      "title": "AQA Exam timetable May/June 2027 — AS, A-level, Applied General, Level 3 Certificates and Level 3 Extended Project (Version 1.2)",
+      "url": "https://www.aqa.org.uk/files/f8837da9-1846-4e7f-89a3-fb265c42f2e5/0ada6c345d4c272c8a4a42e48a5986983bfb0d56.pdf",
+      "sourceType": "timetable",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Full text retrieved, including the version-control table. Versions 1.0 and 1.1 of the same document also exist; 1.2 is the current one found. Also confirms AQA D&T Product Design is 7552 (Fashion and Textiles is 7562), that A-level Business 7132 has its final sitting in 2027, and that the AS Business paper is 7137 (new)."
+    },
+    "aqa-gcse-timetable-2027-v1-2": {
+      "board": "AQA",
+      "qualification": "GCSE",
+      "title": "AQA Exam timetable May/June 2027 — GCSE, AQA Certificates, ELC and Projects (Version 1.2)",
+      "url": "https://www.aqa.org.uk/files/449f89fe-eb10-43c4-9f7f-d94906b16007/8dfe25454c7bcaa686393e07ade5d2f194bc7fa0.pdf",
+      "sourceType": "timetable",
+      "tier": 1,
+      "accessedAt": "2026-10-10",
+      "notes": "Full text retrieved, including the version-control table. Versions 1.0 and 1.1 of the same document also exist; 1.2 is the current one found."
     }
   },
   "datasets": [
@@ -926,19 +951,30 @@
       "subject": "Mathematics",
       "tiered": true,
       "papers": 3,
-      "topics": 54,
-      "verificationStatus": "AWAITING_VERIFICATION",
+      "topics": 70,
+      "verificationStatus": "PARTIALLY_VERIFIED",
       "availability": "offered",
-      "specificationCode": null,
-      "specificationTitle": null,
+      "specificationCode": "1MA1",
+      "specificationTitle": "Pearson Edexcel GCSE Mathematics (1MA1)",
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
-      "specMap": null,
-      "flags": [],
-      "unresolved": []
+      "sourceIds": [
+        "dfe-gcse-maths-subject-content",
+        "edexcel-gcse-timetable-2027-final"
+      ],
+      "sourceSection": "DfE GCSE mathematics subject content: Number 1–16, Algebra 1–25, Ratio, proportion and rates of change 1–16, Geometry and measures 1–25, Probability 1–9, Statistics 1–6 (97 points). Code 1MA1 from the FINAL 2027 exam timetable.",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "All 97 content points that the Department for Education requires of every England GCSE mathematics specification were compared with this topic list (see specs/edexcel-gcse-mathematics.json). The list was coarse, so 16 topics were added for points no title addressed (new entries only — nothing renamed or removed, so student records are unaffected). After that 83 points are fully covered, 14 partly, and none is uncovered. Edexcel's own specification was NOT read, so its version, tiers and any board-specific detail are unchecked.",
+      "specMap": "edexcel-gcse-mathematics",
+      "flags": [
+        "PAPER_GROUPING_UNSUPPORTED"
+      ],
+      "unresolved": [
+        "Edexcel's own specification (1MA1) was not read: its version, paper structure, tier placement and any Edexcel-specific content are unchecked; coverage was judged against the DfE content every specification must contain.",
+        "14 points are only partly covered by topic titles (listed in the spec-layer file with what is missing). Either extend a topic (needs a topic-ID alias) or add a topic.",
+        "topics.js groups topics under 3 papers; the DfE content says nothing about papers and any content may be assessed on any paper, so the grouping is a RevisionFlow convention.",
+        "Foundation/Higher placement of each point was not compared; topics labelled \"(Higher)\" are unverified.",
+        "\"Mixed Topics: Problem Solving\" is a synoptic topic rather than a content point; it is kept and declared unmapped."
+      ]
     },
     {
       "id": "Edexcel|GCSE|Combined Science",
@@ -948,16 +984,19 @@
       "subject": "Combined Science",
       "tiered": true,
       "papers": 6,
-      "topics": 41,
+      "topics": 42,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1SC0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final",
+        "edexcel-1sc0-1ph-examiners-report-2025"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Combined Science (1SC0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification. Pearson's June 2025 examiners' report lists Topic 1 – Key concepts of physics among the physics topics of the Combined Science specification (the dataset's physics list began at Motion), so a topic with that official heading was added. The dataset's CB/CC/CP numbering is RevisionFlow's, not Edexcel's, and Edexcel's own topic content was not read.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -973,13 +1012,15 @@
       "topics": 14,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1BI0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Biology (1BI0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -995,13 +1036,15 @@
       "topics": 17,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1CH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Chemistry (1CH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -1014,16 +1057,19 @@
       "subject": "Physics",
       "tiered": true,
       "papers": 2,
-      "topics": 17,
+      "topics": 18,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1PH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final",
+        "edexcel-1ph0-2h-examiners-report-2025"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Physics (1PH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification. Pearson's June 2025 examiners' report lists Topic 1 – Key concepts of physics among the specification's topics (the dataset's list began at Motion), so a topic with that official heading was added. The dataset's SP/SB/SC numbering is RevisionFlow's, not Edexcel's, and Edexcel's own topic content was not read.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -1042,12 +1088,16 @@
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: English Language (1EN0) and English Language 2.0 (1EN2). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
-      "flags": [],
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
       "unresolved": []
     },
     {
@@ -1061,13 +1111,15 @@
       "topics": 13,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1ET0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): English Literature (1ET0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -1083,13 +1135,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1BS0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Business (1BS0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -1105,13 +1159,15 @@
       "topics": 15,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "1HI0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): History (1HI0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -1130,12 +1186,16 @@
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: Geography A (1GA0) and Geography B (1GB0). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
-      "flags": [],
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
       "unresolved": []
     },
     {
@@ -1152,12 +1212,16 @@
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gcse-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Pearson Edexcel GCSE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: Religious Studies A (1RA0) and Religious Studies B (1RB0). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
-      "flags": [],
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
       "unresolved": []
     },
     {
@@ -1168,19 +1232,29 @@
       "subject": "Mathematics",
       "tiered": true,
       "papers": 3,
-      "topics": 38,
-      "verificationStatus": "AWAITING_VERIFICATION",
+      "topics": 58,
+      "verificationStatus": "PARTIALLY_VERIFIED",
       "availability": "offered",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
-      "specMap": null,
-      "flags": [],
-      "unresolved": []
+      "sourceIds": [
+        "dfe-gcse-maths-subject-content"
+      ],
+      "sourceSection": "DfE GCSE mathematics subject content: Number 1–16, Algebra 1–25, Ratio, proportion and rates of change 1–16, Geometry and measures 1–25, Probability 1–9, Statistics 1–6 (97 points).",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "All 97 content points that the Department for Education requires of every England GCSE mathematics specification were compared with this topic list (see specs/ocr-gcse-mathematics.json). The list was coarse, so 20 topics were added for points no title addressed (new entries only — nothing renamed or removed, so student records are unaffected). After that 81 points are fully covered, 16 partly, and none is uncovered. OCR's own specification was NOT read, so its version, tiers and any board-specific detail are unchecked. OCR's GCSE listing page could not be retrieved, so its specification code is not recorded.",
+      "specMap": "ocr-gcse-mathematics",
+      "flags": [
+        "PAPER_GROUPING_UNSUPPORTED"
+      ],
+      "unresolved": [
+        "OCR's own specification was not read: its code, version, paper structure, tier placement and any OCR-specific content are unchecked; coverage was judged against the DfE content every specification must contain.",
+        "16 points are only partly covered by topic titles (listed in the spec-layer file with what is missing). Either extend a topic (needs a topic-ID alias) or add a topic.",
+        "topics.js groups topics under 3 papers; the DfE content says nothing about papers and any content may be assessed on any paper, so the grouping is a RevisionFlow convention.",
+        "Foundation/Higher placement of each point was not compared; topics labelled \"(Higher)\" are unverified.",
+        "\"Mixed Problem Solving and Multi-Step Reasoning\" is a synoptic topic rather than a content point; it is kept and declared unmapped."
+      ]
     },
     {
       "id": "OCR|GCSE|Computer Science",
@@ -2073,11 +2147,12 @@
       "specificationTitle": null,
       "specificationVersion": null,
       "sourceIds": [
-        "aqa-qualifications-listing"
+        "aqa-qualifications-listing",
+        "aqa-alevel-timetable-2027-v1-2"
       ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: AS Business (7131) and AS Business (New) (7137). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification.",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: AS Business (7131) and AS Business (New) (7137). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification. AQA's 2027 AS/A-level timetable (Version 1.2) lists only AS Business 7137 (new) for June 2027.",
       "specMap": null,
       "flags": [
         "SPEC_VARIANT_AMBIGUOUS"
@@ -2623,13 +2698,15 @@
       "topics": 18,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8MA0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Mathematics (8MA0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2645,13 +2722,15 @@
       "topics": 7,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8FM0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Further Mathematics (8FM0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2665,15 +2744,17 @@
       "tiered": false,
       "papers": 2,
       "topics": 7,
-      "verificationStatus": "AWAITING_VERIFICATION",
-      "availability": "offered",
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
+      "sourceSection": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) — no Statistics AS sittings listed",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "Pearson's own Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) lists every UK Edexcel GCE sitting for June 2027 and has none for AS-Level Statistics. Pearson's qualification list itself was not retrieved, so this rests on the absence of any sitting. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2693,12 +2774,11 @@
       "specificationTitle": null,
       "specificationVersion": null,
       "sourceIds": [
-        "pearson-biology-a-2015",
-        "pearson-biology-b-2015"
+        "edexcel-gce-timetable-2027-final"
       ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": "Pearson's own qualification pages (accessed 2026-10-10) show two Edexcel Biology specifications, each with an AS and an A level: Biology A (Salters-Nuffield) and Biology B (2015). The dataset does not record which it follows, and the exam-date data is filed only under \"Biology B\". The rest of Edexcel's listing was NOT retrieved, so this is variant evidence, not a full existence check. Topic content has NOT yet been compared with a specification.",
+      "verificationNotes": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: Biology A (Salters Nuffield) (8BN0) and Biology B (8BI0). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
       "flags": [
         "SPEC_VARIANT_AMBIGUOUS"
@@ -2716,13 +2796,15 @@
       "topics": 9,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8CH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Chemistry (8CH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2738,13 +2820,15 @@
       "topics": 7,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8PH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Physics (8PH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2760,13 +2844,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8HI0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): History (8HI0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2782,13 +2868,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8EC0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Economics (8EC0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2804,13 +2892,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8GE0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Geography (8GE0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2824,15 +2914,17 @@
       "tiered": false,
       "papers": 2,
       "topics": 10,
-      "verificationStatus": "AWAITING_VERIFICATION",
-      "availability": "offered",
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
+      "sourceSection": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) — no Computer Science AS sittings listed",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "Pearson's own Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) lists every UK Edexcel GCE sitting for June 2027 and has none for AS-Level Computer Science. Pearson's qualification list itself was not retrieved, so this rests on the absence of any sitting. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2848,13 +2940,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8BS0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Business (8BS0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2870,13 +2964,15 @@
       "topics": 10,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "8PS0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Psychology (8PS0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2890,15 +2986,17 @@
       "tiered": false,
       "papers": 2,
       "topics": 9,
-      "verificationStatus": "AWAITING_VERIFICATION",
-      "availability": "offered",
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
+      "sourceSection": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) — no Arabic AS sittings listed",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "Pearson's own Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) lists every UK Edexcel GCE sitting for June 2027 and has none for AS-Level Arabic. Pearson's qualification list itself was not retrieved, so this rests on the absence of any sitting. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -2912,15 +3010,17 @@
       "tiered": false,
       "papers": 2,
       "topics": 9,
-      "verificationStatus": "AWAITING_VERIFICATION",
-      "availability": "offered",
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
+      "sourceSection": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) — no Mandarin Chinese AS sittings listed",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "Pearson's own Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) lists every UK Edexcel GCE sitting for June 2027 and has none for AS-Level Mandarin Chinese. Pearson's qualification list itself was not retrieved, so this rests on the absence of any sitting. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -3732,11 +3832,12 @@
       "specificationTitle": null,
       "specificationVersion": null,
       "sourceIds": [
-        "aqa-qualifications-listing"
+        "aqa-qualifications-listing",
+        "aqa-alevel-timetable-2027-v1-2"
       ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: A-level Business (7132) and A-level Business (New) (7138). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification.",
+      "verificationNotes": "AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10) shows more than one specification for this subject: A-level Business (7132) and A-level Business (New) (7138). The dataset does not say which it follows, so no single specification code is recorded. Topic content has NOT yet been compared with a specification. AQA's 2027 AS/A-level timetable (Version 1.2) shows A-level Business 7132 as a \"final sitting\" in June 2027, so the older specification is ending; the dataset does not say which specification it follows.",
       "specMap": null,
       "flags": [
         "SPEC_VARIANT_AMBIGUOUS"
@@ -4236,15 +4337,16 @@
       "topics": 16,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "7552",
       "specificationTitle": null,
       "specificationVersion": null,
       "sourceIds": [
-        "aqa-qualifications-listing"
+        "aqa-qualifications-listing",
+        "aqa-alevel-timetable-2027-v1-2"
       ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": "Existence confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10). AQA lists two A-level Design and Technology specifications, (7552) and (7562); the listing does not say which is Product Design, so no code is recorded. Topic content has NOT yet been compared with the specification.",
+      "verificationNotes": "Existence confirmed against AQA's official qualifications listing (https://www.aqa.org.uk/qualifications, accessed 2026-10-10), which lists two A-level Design and Technology specifications, (7552) and (7562). AQA's 2027 AS/A-level timetable (Version 1.2) labels 7552 \"Design and Technology: Product Design\" and 7562 \"Design and Technology: Fashion and Textiles\", so this dataset's code is 7552. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4284,13 +4386,15 @@
       "topics": 36,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9MA0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Mathematics (9MA0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4306,13 +4410,15 @@
       "topics": 22,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9FM0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Further Mathematics (9FM0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4328,13 +4434,15 @@
       "topics": 18,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9ST0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Statistics (9ST0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4354,12 +4462,11 @@
       "specificationTitle": null,
       "specificationVersion": null,
       "sourceIds": [
-        "pearson-biology-a-2015",
-        "pearson-biology-b-2015"
+        "edexcel-gce-timetable-2027-final"
       ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": "Pearson's own qualification pages (accessed 2026-10-10) show two Edexcel Biology specifications, each with an AS and an A level: Biology A (Salters-Nuffield) and Biology B (2015). The dataset does not record which it follows, and the exam-date data is filed only under \"Biology B\". The rest of Edexcel's listing was NOT retrieved, so this is variant evidence, not a full existence check. Topic content has NOT yet been compared with a specification.",
+      "verificationNotes": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: Biology A (Salters Nuffield) (9BN0) and Biology B (9BI0). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
       "flags": [
         "SPEC_VARIANT_AMBIGUOUS"
@@ -4377,13 +4484,15 @@
       "topics": 26,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9CH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Chemistry (9CH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4399,13 +4508,15 @@
       "topics": 21,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9PH0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Physics (9PH0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4421,13 +4532,15 @@
       "topics": 11,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9HI0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): History (9HI0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4446,12 +4559,16 @@
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) shows two specifications for this subject: Economics A (9EC0) and Economics B (9EB0). The dataset does not record which it follows, so no single specification code is recorded. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with a specification.",
       "specMap": null,
-      "flags": [],
+      "flags": [
+        "SPEC_VARIANT_AMBIGUOUS"
+      ],
       "unresolved": []
     },
     {
@@ -4465,13 +4582,15 @@
       "topics": 11,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9GE0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Geography (9GE0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4485,15 +4604,17 @@
       "tiered": false,
       "papers": 3,
       "topics": 14,
-      "verificationStatus": "AWAITING_VERIFICATION",
-      "availability": "offered",
+      "verificationStatus": "UNSUPPORTED",
+      "availability": "legacy",
       "specificationCode": null,
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
-      "sourceSection": null,
-      "verifiedAt": null,
-      "verificationNotes": null,
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
+      "sourceSection": "Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) — no Computer Science A level sittings listed",
+      "verifiedAt": "2026-10-10",
+      "verificationNotes": "Pearson's own Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10) lists every UK Edexcel GCE sitting for June 2027 and has none for A-Level Computer Science (Pearson does not publish an A level in it). Pearson's qualification list itself was not retrieved, so this rests on the absence of any sitting. The topic data is retained for any existing student who already selected it, but the combination is hidden from subject pickers.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4509,13 +4630,15 @@
       "topics": 13,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9BS0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Business (9BS0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4531,13 +4654,15 @@
       "topics": 13,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9PS0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Psychology (9PS0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4553,13 +4678,15 @@
       "topics": 9,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9AA0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Arabic (9AA0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
@@ -4575,13 +4702,15 @@
       "topics": 8,
       "verificationStatus": "AWAITING_VERIFICATION",
       "availability": "offered",
-      "specificationCode": null,
+      "specificationCode": "9CN0",
       "specificationTitle": null,
       "specificationVersion": null,
-      "sourceIds": [],
+      "sourceIds": [
+        "edexcel-gce-timetable-2027-final"
+      ],
       "sourceSection": null,
       "verifiedAt": null,
-      "verificationNotes": null,
+      "verificationNotes": "Existence and specification code confirmed against Pearson Edexcel GCE Summer 2027 Examination Timetable (FINAL) (accessed 2026-10-10): Mandarin Chinese (9CN0) has June 2027 sittings. Pearson's qualification list itself was not retrieved. Topic content has NOT yet been compared with the specification.",
       "specMap": null,
       "flags": [],
       "unresolved": []
