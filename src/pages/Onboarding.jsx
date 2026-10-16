@@ -191,7 +191,7 @@ export default function Onboarding() {
       await awardXP(user.uid, xpPreview, 'Onboarding complete')
       await refreshProfile()
       navigate('/dashboard')
-      toast.success('Welcome to RevisionFlow! 🎉')
+      toast.success('Welcome to RevisionFlow!')
     } catch(err) { toast.error(err.message) }
     finally { setSaving(false) }
   }
@@ -612,7 +612,7 @@ export default function Onboarding() {
             ) : (
               <button className="btn btn-primary" onClick={finish} disabled={saving}
                 style={{ padding:'10px 24px', fontSize:'0.95rem' }}>
-                {saving ? 'Setting up…' : '🚀 Go to dashboard'}
+                {saving ? 'Setting up…' : 'Go to dashboard'}
               </button>
             )}
           </div>
