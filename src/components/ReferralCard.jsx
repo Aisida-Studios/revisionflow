@@ -108,9 +108,9 @@ export default function ReferralCard() {
         gap: 12,
         flexWrap: 'wrap',
       }}>
-        <span>🎁 You get: <strong>+200 XP</strong></span>
-        <span>🎁 They get: <strong>+100 XP</strong></span>
-        <span>🏅 Earn the <strong>Recruiter</strong> badge</span>
+        <span>You get: <strong>+200 XP</strong></span>
+        <span>They get: <strong>+100 XP</strong></span>
+        <span>Earn the <strong>Recruiter</strong> badge</span>
       </div>
     </div>
   )
