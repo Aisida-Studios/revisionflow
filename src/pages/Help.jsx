@@ -15,7 +15,7 @@ const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level r
 PAGES & FEATURES:
 - Dashboard: Today's sessions, next exam countdown, streak (with weekly streak freezes — 1/week free, 3/week Pro, automatically covers a single missed day so the streak doesn't break), XP level bar (infinite levels, 1.15x XP formula), daily AI briefing, daily quests, predicted grade per subject (blended from quiz history, past paper scores and topic confidence — free shows one subject, Pro shows all), weak topics this week (auto-surfaced from topic confidence ratings), badge showcase, recent papers carousel, referral code entry. New users see a personalised welcome card with their subjects listed and suggested first steps.
 - AI Advisor (/ai): Chat with context-aware AI (30 messages/day free, 150/day Pro), grade predictor, next-topic suggestion, resource recommendations, study plan generator (Pro gets longer, week-by-week multi-week plans; free gets a phase-level plan), exam technique tips.
-- Calendar: Monthly/weekly view, AI-powered 7-step schedule generator, ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
+- Calendar: Monthly/weekly view, 7-step schedule builder (rules-based, not AI), ICS import/export. Tasks appear as coloured multi-day blocks spanning their full duration.
 - Exam Dates: Add upcoming exams with subject, board, paper, date. Emergency Mode triggers when exam is within 7 days.
 - Past Papers: Log paper attempts (score, grade, year, tier). Auto-fills grade boundaries (AQA/Edexcel/OCR, 2019–2025, 2026 estimated). Grade trajectory charts. Mistakes tab — log, view and manage mistakes from papers.
 - Topics: Confidence ratings (1-5) per spec topic. Views: List, Heatmap, Priority (star + drag-reorder), Resources, Notes (per-subject revision notes), Mastery (cross-topic progress summary). All 5 supported boards (AQA, Edexcel, OCR, Eduqas / WJEC, CCEA), GCSE, AS-Level and A-Level, each kept fully separate. Cambridge International is not currently supported. Each topic has a Resources button showing verified links + site-search fallbacks for Corbett Maths, Save My Exams, BBC Bitesize etc.
@@ -24,8 +24,8 @@ PAGES & FEATURES:
   * Flashcards — AI generator (up to 50 cards for Pro, 20 for free), saved sets (private/public), create custom sets, flip-card UI, confidence rating, on-demand AI memory aids for cards you keep missing, Quizlet copy, CSV download, public sets library with search/filter
   * Practice — spaced repetition. Pulls due cards from every saved set (not just one), ranked so the ones you keep getting wrong come back the most often; cards you know well get spaced further apart automatically
   * Quiz — Multiple choice (AI generates plausible wrong answers, not random ones), written, or mixed mode. Timed challenge mode (Pro only). Quiz history with scores saved automatically. Browse and quiz on public sets, not just your own. Filter by subject
-  * Exam Questions — Realistic board-accurate questions (AQA/Edexcel/OCR/Eduqas-WJEC/CCEA). Correct command words per board per mark value. Mark scheme hidden until revealed. Examiner tips. Copy all button
-  * Answer Marker — Submit a question + your answer (typed, pasted, or photographed), choose subject/board/level/marks. AI marks it like a real examiner: awarded marks, credited points, not-credited points, AO breakdown, how to improve, examiner annotation. Inline coaching on what the question's command word (e.g. "evaluate") actually requires. If your marks are consistently weak on one command word, it offers 3 targeted flashcards on just that skill. Recent marking history panel
+  * Exam Questions — AI-generated practice questions in the style of AQA/Edexcel/OCR/Eduqas-WJEC/CCEA. These are drafts, not official exam content: check them and their mark schemes against your teacher's or the board's materials. Command words by mark value. Mark scheme hidden until revealed. Copy all button
+  * Answer Marker — Submit a question, its mark scheme and your answer (typed, pasted, or photographed), choose subject/board/qualification/marks. It returns an AI marking estimate (not official examiner marking): awarded marks, credited points, not-credited points, AO breakdown, how to improve, annotation. Inline coaching on what the question's command word (e.g. "evaluate") actually requires. If your marks are consistently weak on one command word, it offers 3 targeted flashcards on just that skill. Recent marking history panel
 - Tutor (/tutor, Pro only): Maths step-by-step solver (reveals one step at a time rather than the full answer, so it teaches the method) and English essay feedback (strengths, areas to improve, structure, technical accuracy, a rough indicative band). Both accept a photo instead of typing — see Photo scanning below.
 - Photo scanning: on the Tutor page and the Answer Marker, students can take a photo or upload one instead of typing — a maths problem, an exam question, or a handwritten essay/answer. The photo is transcribed into the text box (handwriting gets an educated-guess transcription, not left blank if messy) so it can be checked and corrected before solving or marking.
 - Timer: Countdown with MM:SS input, Stopwatch with laps, 5 ambient sounds (Web Audio API), looping alert on finish, XP awarded on completion (1 XP/min, max 100).
@@ -73,7 +73,7 @@ EXAM QUESTIONS & MARKING:
 - Correct command words per board per mark value (e.g. AQA 6-mark = Evaluate/Discuss)
 - Mark scheme formats: point-mark for lower marks, level-based for higher marks
 - Maths questions use plain-text notation (no LaTeX)
-- Answer Marker gives: score, grade estimate, credited/not-credited points, AO breakdown, how to improve, examiner note, inline command-word coaching, and a targeted flashcard suggestion if one command word is consistently weak
+- Answer Marker gives: score, grade estimate, credited/not-credited points, AO breakdown, how to improve, an AI feedback note, inline command-word coaching, and a targeted flashcard suggestion if one command word is consistently weak
 - Question and answer can be typed, pasted, or photographed
 - Recent marking history stored locally in session
 
@@ -145,7 +145,7 @@ const FAQ = [
   },
   {
     q: 'How do I get my answer marked by AI?',
-    a: 'Go to Study Tools → Answer Marker (or AI Advisor). Select your subject, exam board, level, and how many marks the question is worth. Paste the question and your answer, then hit Mark. The AI marks it like a real examiner — you get awarded marks, an estimated grade, what was credited and what was missed, AO breakdown, and specific tips to reach the next mark band. Your recent marks are saved in the session history panel on the left.'
+    a: 'Go to Study Tools → Answer Marker (or AI Advisor). Select your subject, exam board, qualification, and how many marks the question is worth. Paste the question, its mark scheme and your answer, then hit Mark. You get an AI marking estimate against the mark scheme you supplied — it is not official examiner marking, so compare it with your teacher\'s or the board\'s published mark scheme. It shows awarded marks, an estimated grade, what was credited and what was missed, an AO breakdown, and specific tips to reach the next mark band. Your recent marks are saved in the session history panel on the left.'
   },
   {
     q: 'How do exam questions work?',
@@ -215,13 +215,13 @@ const FAQ = [
 
 const FEATURES = [
   { icon: BookOpen,      title: 'Dashboard',        desc: 'XP, streak, next exam countdown, daily quests, AI briefing, welcome card for new users', colour: 'var(--accent)' },
-  { icon: Calendar,      title: 'Calendar',          desc: 'AI schedule generator, multi-day task blocks, ICS import/export', colour: '#3b82f6' },
+  { icon: Calendar,      title: 'Calendar',          desc: 'Schedule builder (rules-based), multi-day task blocks, ICS import/export', colour: '#3b82f6' },
   { icon: FileText,      title: 'Past Papers',       desc: 'Grade tracking, boundaries (2019–2025, 2026 estimated), mistakes log', colour: '#f59e0b' },
   { icon: Brain,         title: 'Topics',            desc: 'Confidence ratings, heatmap, priority, notes, mastery tab, per-topic resource links', colour: '#0369a1' },
   { icon: Layers,        title: 'Flashcards',        desc: 'AI generator (20 free / 50 Pro), custom sets, public library, on-demand memory aids', colour: '#f43f5e' },
   { icon: Repeat,        title: 'Practice',          desc: 'Spaced repetition across every set — cards you keep missing come back the most', colour: '#14b8a6' },
-  { icon: ClipboardList, title: 'Exam Questions',    desc: 'Board-accurate questions (all 6 boards), real command words, hidden mark schemes, examiner tips', colour: '#84cc16' },
-  { icon: Star,          title: 'Answer Marker',     desc: 'AI marks like a real examiner — score, AO breakdown, command-word coaching, photo input', colour: '#ec4899' },
+  { icon: ClipboardList, title: 'Exam Questions',    desc: 'AI-generated practice questions for AQA, Edexcel, OCR, Eduqas / WJEC and CCEA, command words, hidden mark schemes', colour: '#84cc16' },
+  { icon: Star,          title: 'Answer Marker',     desc: 'AI marking estimate (not official marking) — score, AO breakdown, command-word coaching, photo input', colour: '#ec4899' },
   { icon: MessageSquare, title: 'AI Advisor',        desc: 'Chat, grade predictor, next steps, study plans (longer on Pro), resource recommendations', colour: '#06b6d4' },
   { icon: GraduationCap, title: 'Tutor',             desc: 'Pro only — Maths step-by-step solver and English essay feedback, both accept a photo', colour: '#0891b2' },
   { icon: Timer,         title: 'Timer',             desc: 'Countdown/stopwatch, ambient sounds, XP per minute', colour: '#f97316' },
@@ -339,8 +339,8 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           <span>✦ <strong>On-demand memory aids</strong> — Get an AI mnemonic for any flashcard you keep missing</span>
           <span>✦ <strong>Timed challenge mode (Pro)</strong> — Per-question countdown in Quiz, plus browsing public/premade quizzes by subject and a quiz history viewer</span>
           <span>✦ <strong>Smarter multiple choice</strong> — Wrong answers in Quiz mode are AI-generated to actually look plausible, not just random other cards</span>
-          <span>✦ <strong>Exam Questions revamp</strong> — Real board-accurate questions with correct command words, hidden mark schemes, examiner tips for all 6 boards</span>
-          <span>✦ <strong>Answer Marker revamp</strong> — Full examiner-style marking with AO breakdown, credited/not-credited points, mark band improvement tips</span>
+          <span>✦ <strong>Exam Questions revamp</strong> — AI-generated practice questions in each board's style with command words and hidden mark schemes (drafts, not official content)</span>
+          <span>✦ <strong>Answer Marker revamp</strong> — AI marking estimate against your mark scheme, with AO breakdown, credited/not-credited points and mark band tips (not official marking)</span>
           <span>✦ <strong>Per-topic resources</strong> — Resources button on every topic with verified links + site-search fallbacks</span>
           <span>✦ <strong>Public profiles</strong> — Viewable without login at /u/username</span>
           <span>✦ <strong>Personalised welcome</strong> — New users see a welcome card and personalised tour on first login</span>
@@ -416,7 +416,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
             { action: 'Resolve a mistake',       xp: '+20' },
             { action: 'Add a friend',            xp: '+25 each' },
             { action: 'Daily login',             xp: '+10' },
-            { action: 'Timer session',           xp: '+1/min (max 100)' },
+            { action: 'Timer session',           xp: '+1/min (max 100); a scheduled session pays its own XP instead' },
             { action: 'Complete a quest',        xp: '+15 to +40' },
             { action: 'All 3 quests done',       xp: '+50 bonus' },
             { action: 'Earn a badge',            xp: '+50 to +600' },
