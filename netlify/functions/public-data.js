@@ -65,24 +65,8 @@ async function checkAppCheck(event) {
   }
 }
 
-// ── Same week/month rollover logic as src/utils/firestore.js (currentWeekStart /
-// currentMonthStart / effectivePeriodXP) — duplicated here because Netlify Functions run in a
-// separate CommonJS context from the Vite/ESM frontend. Keep these three in sync if that logic
-// ever changes.
-function currentWeekStart(now = new Date()) {
-  const d = new Date(now)
-  const day = d.getDay()
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-  return d.toISOString().slice(0, 10)
-}
-function currentMonthStart(now = new Date()) {
-  return now.toISOString().slice(0, 7) + '-01'
-}
-function effectivePeriodXP(d, period) {
-  if (period === 'week')  return d.xpWeekStart  === currentWeekStart()  ? (d.xpThisWeek  || 0) : 0
-  if (period === 'month') return d.xpMonthStart === currentMonthStart() ? (d.xpThisMonth || 0) : 0
-  return d.xp || 0
-}
+// Period keys are computed in each user's own timezone (xpTz), matching the client - see lib/periods.js.
+const { effectivePeriodXP } = require('./lib/periods')
 
 // The only fields ever sent back for a user who isn't the caller. Deliberately excludes email,
 // stripe*, pushSubscription, examDates, betaUser/isPro and anything else not already shown by
