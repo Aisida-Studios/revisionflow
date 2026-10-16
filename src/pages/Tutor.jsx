@@ -14,12 +14,13 @@ const ESSAY_LEVELS = ['GCSE', 'A-Level']
 const ESSAY_TYPES = ['Literature analysis', 'Language analysis', 'Creative writing', 'Persuasive / transactional writing']
 const MAX_ESSAY_CHARS = 8000
 
-export default function Tutor() {
+export default function Tutor({ embedded = false }) {
   const { user, profile } = useAuth()
   const [mode, setMode] = useState('maths')
 
   return (
     <div className="fade-in">
+      {!embedded && (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
         <div>
           <h2>Tutor</h2>
@@ -28,6 +29,7 @@ export default function Tutor() {
           </p>
         </div>
       </div>
+      )}
 
       <ProGate feature="the AI Tutor">
         <div className="tabs" style={{ marginBottom:20, padding:4, flexWrap:'wrap' }}>
