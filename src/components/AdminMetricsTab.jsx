@@ -186,7 +186,7 @@ export default function AdminMetricsTab() {
               <StatCard icon={<UserCheck size={16} />} colour="var(--accent)" val={ai.activeAiUsersToday ?? 0} label="Students using AI today" />
             </div>
             {ai.byFeatureWeek?.length > 0 ? (
-              <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
                     <th style={{ padding: '4px 8px 4px 0' }}>Feature</th>
@@ -206,7 +206,7 @@ export default function AdminMetricsTab() {
                     )
                   })}
                 </tbody>
-              </table>
+              </table></div>
             ) : (
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No AI usage recorded in the last 7 days.</p>
             )}
