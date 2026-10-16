@@ -4,7 +4,9 @@ import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts } from '../utils/firestore'
+import { getPaperAttempts, getXpEvents } from '../utils/firestore'
+import { sessionMinutes } from '../utils/sessionTime'
+import { toLocalDateStr, parseLocalDate } from '../utils/localDate'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
@@ -55,12 +57,20 @@ function Section({ title, icon, children, defaultOpen = true }) {
   )
 }
 
+// Local time of a paper attempt: its date (parsed as a LOCAL date) else when it was saved.
+function attemptTime(a) {
+  const d = a.attemptDate ? parseLocalDate(a.attemptDate) : null
+  return d ? d.getTime() : (a.createdAt?.seconds || 0) * 1000
+}
+
 export default function Analytics() {
   const { user, profile } = useAuth()
   const [sessions,  setSessions]  = useState([])
   const [attempts,  setAttempts]  = useState([])
   const [topics,    setTopics]    = useState([])
+  const [xpEvents,  setXpEvents]  = useState([])
   const [loading,   setLoading]   = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [dateRange, setDateRange] = useState(30)
   const [gradeSub,  setGradeSub]  = useState('')
   const [activeTab, setActiveTab] = useState('overview')
@@ -75,13 +85,19 @@ export default function Analytics() {
   useEffect(() => {
     if (!user) return
     Promise.all([
-      getDocs(collection(db, 'users', user.uid, 'sessions')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
+      getDocs(collection(db, 'users', user.uid, 'sessions')).then(s => s.docs.map(d => ({ ...d.data(), id: d.id }))),
       getPaperAttempts(user.uid, null),
-      getDocs(collection(db, 'users', user.uid, 'topics')).then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
-    ]).then(([sess, atts, tops]) => {
+      getDocs(collection(db, 'users', user.uid, 'topics')).then(s => s.docs.map(d => ({ ...d.data(), id: d.id }))),
+      // Real XP awards for the last year (an XP chart that can fail must not block the page).
+      getXpEvents(user.uid, toLocalDateStr(subDays(new Date(), 365))).catch(() => []),
+    ]).then(([sess, atts, tops, xp]) => {
       setSessions(sess)
       setAttempts(atts)
       setTopics(tops)
+      setXpEvents(xp)
+      setLoading(false)
+    }).catch(err => {
+      setLoadError(err?.message || 'Could not load your analytics.')
       setLoading(false)
     })
   }, [user])
@@ -90,16 +106,22 @@ export default function Analytics() {
   useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length])
 
   // ── Core data ──────────────────────────────────────────────────────────────
-  const completedSessions = useMemo(() => sessions.filter(s => s.completed), [sessions])
-  const totalMinutes      = useMemo(() => completedSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [completedSessions])
+  // Study analytics use real study sessions (not to-do tasks) in the student's CURRENT subject
+  // instances. Older sessions that were never stamped with a course are kept in the database but
+  // aren't counted here; `legacySessionCount` says how many, so nothing disappears silently.
+  const studySessions     = useMemo(() => sessions.filter(s => !s.isTask), [sessions])
+  const currentSessions   = useMemo(() => filterToCurrentSubjectInstance(studySessions, profile), [studySessions, profile])
+  const completedSessions = useMemo(() => currentSessions.filter(s => s.completed), [currentSessions])
+  const legacySessionCount = useMemo(() => studySessions.filter(s => s.completed).length - completedSessions.length, [studySessions, completedSessions])
+  const totalMinutes      = useMemo(() => completedSessions.reduce((sum, s) => sum + sessionMinutes(s), 0), [completedSessions])
   const rangeStart        = useMemo(() => subDays(new Date(), dateRange), [dateRange])
 
   const recentSessions = useMemo(() => completedSessions.filter(s => {
-    const d = s.startTime ? new Date(s.startTime) : s.date ? new Date(s.date + 'T00:00:00') : null
+    const d = s.startTime ? new Date(s.startTime) : s.date ? parseLocalDate(s.date) : null
     return d && d >= rangeStart
   }), [completedSessions, rangeStart])
 
-  const recentMinutes    = useMemo(() => recentSessions.reduce((sum, s) => sum + (parseInt(s.duration) || 45), 0), [recentSessions])
+  const recentMinutes    = useMemo(() => recentSessions.reduce((sum, s) => sum + sessionMinutes(s), 0), [recentSessions])
   const avgDailyMinutes  = Math.round(recentMinutes / dateRange)
   const completionRate   = sessions.length ? Math.round((completedSessions.length / sessions.length) * 100) : 0
   const avgSessionLength = completedSessions.length ? Math.round(totalMinutes / completedSessions.length) : 0
@@ -115,7 +137,7 @@ export default function Analytics() {
       const bySubject  = {}
       let total        = 0
       daySess.forEach(s => {
-        const hrs = (parseInt(s.duration) || 45) / 60
+        const hrs = sessionMinutes(s) / 60
         bySubject[s.subject] = (bySubject[s.subject] || 0) + hrs
         total += hrs
       })
@@ -130,7 +152,7 @@ export default function Analytics() {
       const d = s.startTime ? new Date(s.startTime) : s.date ? new Date(s.date + 'T12:00:00') : null
       if (!d) return
       const dow = getDay(d)
-      counts[dow].minutes  += parseInt(s.duration) || 45
+      counts[dow].minutes  += sessionMinutes(s)
       counts[dow].sessions += 1
     })
     return counts.map(c => ({ ...c, hours: Math.round(c.minutes / 60 * 10) / 10 }))
@@ -149,7 +171,7 @@ export default function Analytics() {
       if (!s.startTime) return
       const hr = new Date(s.startTime).getHours()
       const bucket = buckets.find(b => b.hours.includes(hr))
-      if (bucket) { bucket.sessions++; bucket.minutes += parseInt(s.duration) || 45 }
+      if (bucket) { bucket.sessions++; bucket.minutes += sessionMinutes(s) }
     })
     return buckets.map(b => ({ ...b, hours: Math.round(b.minutes / 60 * 10) / 10 }))
   }, [completedSessions])
@@ -159,7 +181,7 @@ export default function Analytics() {
     const counts = {}
     completedSessions.forEach(s => {
       if (!s.subject) return
-      counts[s.subject] = (counts[s.subject] || 0) + (parseInt(s.duration) || 45)
+      counts[s.subject] = (counts[s.subject] || 0) + sessionMinutes(s)
     })
     return Object.entries(counts)
       .map(([name, minutes]) => ({
@@ -207,8 +229,8 @@ export default function Analytics() {
   const gradeTrajectory = useMemo(() => {
     if (!gradeSub) return []
     return currentAttempts
-      .filter(a => a.subject === gradeSub && a.percentage)
-      .sort((a, b) => new Date(a.attemptDate || a.createdAt?.seconds * 1000 || 0) - new Date(b.attemptDate || b.createdAt?.seconds * 1000 || 0))
+      .filter(a => a.subject === gradeSub && a.percentage != null)
+      .sort((a, b) => attemptTime(a) - attemptTime(b))
       .map((a, i) => ({ attempt: i + 1, label: `P${a.paper} ${a.year}`, percentage: Math.round(a.percentage), grade: a.grade || '' }))
   }, [currentAttempts, gradeSub])
 
@@ -230,7 +252,8 @@ export default function Analytics() {
       { label: '90m+',  min: 90,  max: 9999,count: 0 },
     ]
     completedSessions.forEach(s => {
-      const dur = parseInt(s.duration) || 45
+      const dur = sessionMinutes(s)
+      if (!dur) return // no recorded length: not counted, rather than guessed
       const b = buckets.find(b => dur >= b.min && dur < b.max)
       if (b) b.count++
     })
@@ -238,24 +261,21 @@ export default function Analytics() {
   }, [completedSessions])
 
   // ── XP over time ──────────────────────────────────────────────────────────
+  // Real XP awards per local day, read from the xpEvents recorded by awardXP(). Nothing is
+  // estimated: days with no recorded award show 0, and the chart says how far back tracking goes.
   const xpHistory = useMemo(() => {
-    if (!profile?.xp) return []
-    // Approximate from session count — real XP history would need its own subcollection
-    const days = eachDayOfInterval({ start: rangeStart, end: new Date() })
-    let cumXP = Math.max(0, (profile.xp || 0) - recentSessions.length * 50)
-    return days.map(day => {
-      const dayStr  = format(day, 'yyyy-MM-dd')
-      const daySess = recentSessions.filter(s =>
-        s.date === dayStr || (s.startTime && format(new Date(s.startTime), 'yyyy-MM-dd') === dayStr)
-      )
-      cumXP += daySess.length * 50
-      return { date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'), xp: cumXP }
-    })
-  }, [recentSessions, profile, dateRange])
+    const byDay = {}
+    for (const e of xpEvents) byDay[e.day] = (byDay[e.day] || 0) + (e.amount || 0)
+    return eachDayOfInterval({ start: rangeStart, end: new Date() }).map(day => ({
+      date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'),
+      xp: byDay[format(day, 'yyyy-MM-dd')] || 0,
+    }))
+  }, [xpEvents, rangeStart, dateRange])
+  const xpTrackedSince = xpEvents.length ? xpEvents[0].day : null
 
   // ── Personal records ──────────────────────────────────────────────────────
   const records = useMemo(() => {
-    const longestSession = completedSessions.reduce((max, s) => Math.max(max, parseInt(s.duration) || 45), 0)
+    const longestSession = completedSessions.reduce((max, s) => Math.max(max, sessionMinutes(s)), 0)
     const sessionsPerDay = {}
     completedSessions.forEach(s => {
       const d = s.date || (s.startTime ? format(new Date(s.startTime), 'yyyy-MM-dd') : null)
@@ -265,7 +285,7 @@ export default function Analytics() {
     const bestStreak = profile?.bestStreak || profile?.streak || 0
     const subjectMins = {}
     completedSessions.forEach(s => {
-      if (s.subject) subjectMins[s.subject] = (subjectMins[s.subject] || 0) + (parseInt(s.duration) || 45)
+      if (s.subject) subjectMins[s.subject] = (subjectMins[s.subject] || 0) + sessionMinutes(s)
     })
     const topSubject = Object.entries(subjectMins).sort((a, b) => b[1] - a[1])[0]
     return { longestSession, mostProductiveDay, bestStreak, topSubject }
@@ -318,6 +338,13 @@ export default function Analytics() {
           {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}
         </select>
       </div>
+
+      {loadError && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{loadError}</p>}
+      {legacySessionCount > 0 && (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '-8px 0 14px' }}>
+          {legacySessionCount} older completed session{legacySessionCount === 1 ? '' : 's'} without a recorded course {legacySessionCount === 1 ? 'is' : 'are'} not counted below. {legacySessionCount === 1 ? 'It is' : 'They are'} still saved.
+        </p>
+      )}
 
       {/* ── Summary stats row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
@@ -384,8 +411,8 @@ export default function Analytics() {
             const worst = [...weeklyPattern].filter(d => d.sessions > 0).sort((a,b) => a.hours - b.hours)[0]
             return (
               <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-                <span className="badge badge-green">🏆 Most productive: {best.day} ({best.hours}h avg)</span>
-                {worst && worst.day !== best.day && <span className="badge badge-grey">📉 Lightest: {worst.day}</span>}
+                <span className="badge badge-green">Most productive: {best.day} ({best.hours}h avg)</span>
+                {worst && worst.day !== best.day && <span className="badge badge-grey">Lightest: {worst.day}</span>}
               </div>
             )
           })()}
@@ -406,7 +433,7 @@ export default function Analytics() {
           {timeOfDayData.length > 0 && (() => {
             const peak = [...timeOfDayData].sort((a,b) => b.hours - a.hours)[0]
             if (!peak || peak.hours === 0) return null
-            return <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 10 }}>📍 You study most in the <strong>{peak.label.split('\n')[0]}</strong></p>
+            return <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 10 }}>You study most in the <strong>{peak.label.split('\n')[0]}</strong></p>
           })()}
         </Section>
 
@@ -444,12 +471,12 @@ export default function Analytics() {
         <Section title="Personal Records" icon={<Award size={16}/>}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10 }}>
             {[
-              { label: '🏆 Longest session',    val: fmtMins(records.longestSession) || '–' },
-              { label: '🔥 Best streak',         val: `${records.bestStreak} days` },
-              { label: '📅 Most productive day', val: records.mostProductiveDay ? `${records.mostProductiveDay[0]} (${records.mostProductiveDay[1]} sessions)` : '–' },
-              { label: '📚 Top subject',         val: records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–' },
-              { label: '📝 Papers attempted',    val: attempts.length },
-              { label: '🧠 Topics rated',        val: topics.length },
+              { label: 'Longest session',    val: fmtMins(records.longestSession) || '–' },
+              { label: 'Best streak',         val: `${records.bestStreak} days` },
+              { label: 'Most productive day', val: records.mostProductiveDay ? `${records.mostProductiveDay[0]} (${records.mostProductiveDay[1]} sessions)` : '–' },
+              { label: 'Top subject',         val: records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–' },
+              { label: 'Papers attempted',    val: attempts.length },
+              { label: 'Topics rated',        val: topics.filter(t => (t.confidence || 0) > 0).length },
             ].map(r => (
               <div key={r.label} style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>{r.label}</div>
@@ -502,7 +529,7 @@ export default function Analytics() {
                       {s.qualification && <span className="badge badge-grey" style={{ marginLeft: 6, fontSize: '0.65rem' }}>{s.qualification}</span>}
                     </span>
                     <span style={{ fontSize: '0.8rem', color: s.pct < 50 ? 'var(--danger)' : s.pct > 150 ? 'var(--warning)' : 'var(--success)', fontWeight: 600 }}>
-                      {s.pct}%{s.pct < 50 ? ' ⚠️' : s.pct > 150 ? ' 📈' : ' ✓'}
+                      {s.pct}%
                     </span>
                   </div>
                   <div style={{ height: 8, background: 'var(--bg-hover)', borderRadius: 4, overflow: 'hidden' }}>
@@ -516,24 +543,23 @@ export default function Analytics() {
           )}
         </Section>
 
-        <Section title="XP Earned (this period)" icon={<Zap size={16}/>}>
-          {xpHistory.every(d => d.xp === 0) ? <p style={{ color: 'var(--text-muted)' }}>No XP data yet</p> : (
+        <Section title="XP earned per day" icon={<Zap size={16}/>}>
+          {xpHistory.every(d => d.xp === 0) ? (
+            <p style={{ color: 'var(--text-muted)' }}>No XP awards recorded in this period yet.</p>
+          ) : (
             <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={xpHistory}>
-                <defs>
-                  <linearGradient id="xpGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={xpHistory}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} allowDecimals={false} />
                 <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
-                <Area type="monotone" dataKey="xp" stroke="#f59e0b" fill="url(#xpGrad)" strokeWidth={2} dot={false} />
-              </AreaChart>
+                <Bar dataKey="xp" name="XP" fill="var(--accent)" radius={[3, 3, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           )}
+          <p style={{ margin: '8px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+            Real awards only{xpTrackedSince ? `, recorded since ${xpTrackedSince}` : ''}. XP earned before daily records began, and XP from friends and referrals, is not shown.
+          </p>
         </Section>
       </>)}
 
@@ -565,7 +591,7 @@ export default function Analytics() {
                   </div>
                 ))}
                 <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {currentTopics.length} topics rated total
+                  {currentTopics.filter(t => (t.confidence || 0) > 0).length} topics rated total
                 </div>
               </div>
             </div>
@@ -584,7 +610,7 @@ export default function Analytics() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.subject}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 2 }}>
-                    {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: '0.9rem', opacity: n <= t.confidence ? 1 : 0.2 }}>⭐</span>)}
+                    {[1,2,3,4,5].map(n => <Star key={n} size={14} fill="currentColor" style={{ color: 'var(--warning)', opacity: n <= t.confidence ? 1 : 0.2 }} />)}
                   </div>
                 </div>
               ))}
@@ -618,7 +644,7 @@ export default function Analytics() {
             </select>
             {gradeTrend !== null && (
               <span className={`badge ${gradeTrend >= 0 ? 'badge-green' : 'badge-red'}`}>
-                {gradeTrend >= 0 ? '📈' : '📉'} {gradeTrend >= 0 ? '+' : ''}{gradeTrend}% since first attempt
+                {gradeTrend >= 0 ? '+' : ''}{gradeTrend}% since first attempt
               </span>
             )}
           </div>
@@ -715,38 +741,38 @@ export default function Analytics() {
         <Section title="Study Recommendations" icon={<Target size={16}/>} defaultOpen={true}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {avgDailyMinutes < 30 && (
-              <Rec icon="⏱" colour="var(--warning)"
+              <Rec colour="var(--warning)"
                 title="Increase daily study time"
                 desc={`You're averaging ${avgDailyMinutes}m/day this period. Aim for at least 45–60 minutes daily for consistent progress.`} />
             )}
             {weakTopics.length > 3 && (
-              <Rec icon="🎯" colour="var(--danger)"
+              <Rec colour="var(--danger)"
                 title={`Focus on ${weakTopics.length} weak topics`}
                 desc={`Your lowest-confidence topics are: ${weakTopics.slice(0,3).map(t => t.topic).join(', ')}. Prioritise these in your next sessions.`} />
             )}
             {subjectBalance.some(s => s.pct < 40) && (
-              <Rec icon="⚖️" colour="var(--info)"
+              <Rec colour="var(--info)"
                 title="Rebalance your subjects"
                 desc={`${subjectBalance.filter(s => s.pct < 40).map(s => s.name).join(', ')} ${subjectBalance.filter(s => s.pct < 40).length === 1 ? 'is' : 'are'} getting less than 40% of your fair share of study time.`} />
             )}
             {completionRate < 70 && sessions.length > 5 && (
-              <Rec icon="✅" colour="var(--warning)"
+              <Rec colour="var(--warning)"
                 title="Improve session completion"
                 desc={`Only ${completionRate}% of your sessions are marked complete. Try shorter sessions you can fully commit to.`} />
             )}
             {profile?.streak < 3 && (
-              <Rec icon="🔥" colour="var(--accent)"
+              <Rec colour="var(--accent)"
                 title="Build your streak"
                 desc="Short daily sessions beat long irregular ones. Even 20 minutes every day will build momentum and improve retention." />
             )}
             {weeklyPattern.some(d => d.hours === 0 && ['Sat','Sun'].includes(d.day)) && attempts.length > 0 && (
-              <Rec icon="📅" colour="#0d9488"
+              <Rec colour="#0d9488"
                 title="Use weekends for papers"
                 desc="Weekends are great for timed past paper practice when you have longer uninterrupted blocks." />
             )}
             {weakTopics.length === 0 && avgDailyMinutes >= 45 && completionRate >= 80 && (
               <div style={{ padding: '14px 16px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>🌟 You're doing great!</div>
+                <div style={{ fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>You're doing great!</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Strong completion rate, good daily time, and no weak topics. Keep it up and focus on timed past papers to maximise exam performance.</div>
               </div>
             )}
@@ -757,10 +783,10 @@ export default function Analytics() {
   )
 }
 
-function Rec({ icon, colour, title, desc }) {
+function Rec({ colour, title, desc }) {
   return (
     <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${colour}` }}>
-      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{icon} {title}</div>
+      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{title}</div>
       <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{desc}</div>
     </div>
   )
@@ -812,7 +838,7 @@ Keep it under 200 words total. Address them as "you". Don't use bullet points.`
       <p style={{ color: 'var(--text-muted)', marginBottom: 14, fontSize: '0.875rem' }}>
         Get a personalised summary of your study patterns and recommendations
       </p>
-      <button className="btn btn-primary" onClick={generate}>✨ Generate my study summary</button>
+      <button className="btn btn-primary" onClick={generate}>Generate my study summary</button>
     </div>
   )
 
