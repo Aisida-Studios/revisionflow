@@ -6205,29 +6205,33 @@ const L2_2026 = [
 export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...CCEA_ASLEVEL_2026, ...ALEVEL_2026, ...L2_2026]
 
 // ── 2027 EXAM DATES ──────────────────────────────────────────────────────────
-// Source: AQA's official "Exam timetable May/June 2027 – GCSE, AQA Certificates, ELC and
-// Projects" (aqa.org.uk/exams-administration/dates-and-timetables), Version 1.0, checked directly
-// — labelled PROVISIONAL by AQA itself (a 6-week consultation ran 2 Feb–20 Mar 2026; AQA states
-// finals were due "early May 2026", but this Version 1.0 document was still the live one on
-// aqa.org.uk when checked). Treat these as "very likely, not yet contractually final" rather than
-// as certain as the 2026 dates elsewhere in this file — spot check against aqa.org.uk before
-// printing a calendar or sending reminders close to results-affecting deadlines.
+// Source (AQA GCSE rows): AQA's official "Exam timetable May/June 2027 – GCSE, AQA Certificates, ELC and
+// Projects", Version 1.2 (aqa.org.uk) — read in full and compared row by row on 2026-10-10. The document's
+// own version control says it builds on the CONFIRMED timetable published in May 2026; v1.1 only moved a
+// Physical Education submission date and v1.2 only moved the Level 2 Certificate in Further Mathematics
+// Paper 1 to 09 June (PM). Every AQA GCSE row below matches it. The comparison is automated: see
+// scripts/curriculum/inputs/official-timetables-2027.json and `npm run curriculum:validate`.
+// Not included: NEA submission deadlines (except Art and Design), modern-foreign-language speaking-test
+// windows, and AQA qualifications RevisionFlow has no dataset for (Bengali, Italian, Modern Hebrew, Panjabi).
 //
-// SCOPE: AQA GCSE only. Edexcel GCSE 2027 (Pearson has published a FINAL, not provisional,
-// version), Cambridge OCR GCSE 2027 (also FINAL), and WJEC/Eduqas GCSE 2027 (provisional) are
-// all confirmed published and real — sources below — but weren't transcribed into this file in
-// this pass; treat every board except AQA as a documented gap, not an oversight:
-//   - Edexcel GCSE 2027 (FINAL): qualifications.pearson.com/content/dam/pdf/Support/
-//     Examination-timetables-for-UK-Edexcel-GCSE/gcse-summer-2027final.pdf
-//   - Cambridge OCR GCSE 2027 (FINAL, June 2026 edition): ocr.org.uk (search "June 2027 exam
-//     timetable GCSE") — Cambridge OCR is OCR's new name since Sept 2025, same board
-//   - WJEC/Eduqas GCSE 2027 (provisional): wjec.co.uk (Summer 2027 Wales & Eduqas provisional
-//     timetable)
-//   - CCEA GCSE 2027: confirmed final and published at ccea.org.uk (last updated 20/05/2026) —
-//     URL not individually re-verified in this pass
-// AS-Level and A-Level 2027 for every board (including AQA) are also a documented gap here for
-// the same reason — real, sourced, and published (AQA's AS/A-level 2027 provisional timetable was
-// checked earlier in this project), just not yet transcribed into this file's schema.
+// AQA AS-Level and A-Level rows (further down) were verified the same way against AQA's "Exam timetable
+// May/June 2027 – AS, A-level, Applied General, Level 3 Certificates and Level 3 Extended Project", Version 1.2
+// (scripts/curriculum/inputs/official-timetables-2027.json): all 38 AS rows and
+// all 93 A-level rows match.
+//
+// Edexcel GCSE, AS-Level and A-Level rows were verified against Pearson's FINAL 2027 timetables
+// (scripts/curriculum/inputs/official-timetables-2027.json): five wrong GCSE dates were corrected (Chinese and Urdu
+// Listening/Reading, German Writing) and missing rows were added (GCSE French; AS Biology and Economics;
+// A-level Further Mathematics Papers 3 and 4).
+//
+// OCR, EDUQAS/WJEC AND CCEA (GCSE, AS and A-level): their source is NOT recorded here and has NOT been
+// verified — see src/data/curriculum/provenance.json (examDates.blocks) for the status of each block. OCR has
+// no AS/A-level 2027 rows at all. Candidate official sources, not yet transcribed or verified:
+//   - OCR GCSE 2027 (final): ocr.org.uk/Images/758618-june-2027-final-exam-timetable-gcse-and-cambridge-nationals.pdf
+//   - OCR AS/A-level 2027 (final): ocr.org.uk/Images/758622-june-2027-final-exam-timetable-as-a-level-core-maths-and-fsmq.pdf
+//   - WJEC/Eduqas GCSE 2027 (final): wjec.co.uk/media/1awnxucv/summer-2027-wales-and-eduqas-gcse-final-version-080726.pdf
+//   - WJEC/Eduqas AS and A level 2027 (final): wjec.co.uk/media/nwjexxw0/summer-2027-wales-and-eduqas-asplusa-level-final-version.pdf
+//   - CCEA GCSE 2027: ccea.org.uk (last updated 20/05/2026 per an earlier check)
 const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:1, paperName:'Paper 1: Non-Calculator (F/H)', date:'2027-05-14' },
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:2, paperName:'Paper 2: Calculator (F/H)', date:'2027-05-27' },
@@ -6299,6 +6303,12 @@ const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Drama', tier:'N/A', paper:1, paperName:'Understanding Drama', date:'2027-05-14' },
   { board:'AQA', level:'GCSE', subject:'Music', tier:'N/A', paper:1, paperName:'Understanding Music', date:'2027-05-27' },
   { board:'AQA', level:'GCSE', subject:'Dance', tier:'N/A', paper:1, paperName:'Dance Appreciation', date:'2027-06-14' },
+  { board:'AQA', level:'GCSE', subject:'Polish', tier:'N/A', paper:1, paperName:'Listening', date:'2027-05-20' },
+  { board:'AQA', level:'GCSE', subject:'Polish', tier:'N/A', paper:3, paperName:'Reading', date:'2027-05-20' },
+  { board:'AQA', level:'GCSE', subject:'Polish', tier:'N/A', paper:4, paperName:'Writing', date:'2027-06-11' },
+  { board:'AQA', level:'GCSE', subject:'Engineering', tier:'N/A', paper:1, paperName:'Written', date:'2027-06-11' },
+  { board:'AQA', level:'GCSE', subject:'Further Mathematics', tier:'N/A', paper:1, paperName:'Paper 1 (Level 2 Certificate)', date:'2027-06-09' },
+  { board:'AQA', level:'GCSE', subject:'Further Mathematics', tier:'N/A', paper:2, paperName:'Paper 2 (Level 2 Certificate)', date:'2027-06-17' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Fine Art)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Art, Craft & Design)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Graphic Communication)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
@@ -6430,7 +6440,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Listening and understanding in Chinese (F/H)",
-    "date": "2027-05-12"
+    "date": "2027-05-11"
   },
   {
     "board": "Edexcel",
@@ -6439,7 +6449,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Reading and understanding in Chinese (F/H)",
-    "date": "2027-05-12"
+    "date": "2027-05-11"
   },
   {
     "board": "Edexcel",
@@ -6691,7 +6701,34 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 4,
     "paperName": "Paper 4: Writing in German (F/H)",
-    "date": "2027-05-19"
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Listening and understanding in French (F/H)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3: Reading and understanding in French (F/H)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Edexcel",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Paper 4: Writing in French (F/H)",
+    "date": "2027-06-14"
   },
   {
     "board": "Edexcel",
@@ -7141,7 +7178,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Paper 1: Listening and understanding in Urdu (F/H)",
-    "date": "2027-05-17"
+    "date": "2027-05-11"
   },
   {
     "board": "Edexcel",
@@ -7150,7 +7187,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Paper 3: Reading and understanding in Urdu (F/H)",
-    "date": "2027-05-17"
+    "date": "2027-05-11"
   },
   {
     "board": "Edexcel",
@@ -9100,6 +9137,60 @@ const ASLEVEL_2027 = [
   {
     "board": "Edexcel",
     "level": "AS-Level",
+    "subject": "Biology A (Salters Nuffield)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Lifestyle, Transport, Genes and Health",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Biology A (Salters Nuffield)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Development, Plants and the Environment",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Core Cellular Biology and Microbiology",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Biology B",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: Core Physiology and Ecology",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Economics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1: Introduction to Markets and Market Failure",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
+    "subject": "Economics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2: The UK Economy - Performance and Policies",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Edexcel",
+    "level": "AS-Level",
     "subject": "Geography",
     "tier": "N/A",
     "paper": 1,
@@ -10728,6 +10819,78 @@ const ALEVEL_2027 = [
     "paper": 2,
     "paperName": "Paper 2: Core Pure Mathematics 2",
     "date": "2027-05-20"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "3A",
+    "paperName": "Paper 3A: Further Pure Mathematics 1",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "3B",
+    "paperName": "Paper 3B: Further Statistics 1",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "3C",
+    "paperName": "Paper 3C: Further Mechanics 1",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "3D",
+    "paperName": "Paper 3D: Decision Mathematics 1",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "4A",
+    "paperName": "Paper 4A: Further Pure Mathematics 2",
+    "date": "2027-06-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "4B",
+    "paperName": "Paper 4B: Further Statistics 2",
+    "date": "2027-06-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "4C",
+    "paperName": "Paper 4C: Further Mechanics 2",
+    "date": "2027-06-21"
+  },
+  {
+    "board": "Edexcel",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": "4D",
+    "paperName": "Paper 4D: Decision Mathematics 2",
+    "date": "2027-06-21"
   },
   {
     "board": "Edexcel",
