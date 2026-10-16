@@ -24,7 +24,8 @@ import {
   increment,
   where,
   limit,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore'
 import { auth, db, getAppCheckHeader } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
@@ -33,6 +34,8 @@ import { levelFromXP } from '../data/subjects'
 import { buildTopicId, isLegacyTopicId } from './topicId'
 import { buildSubjectKey, isCurrentSubjectInstance } from './subjectKey'
 import { createNotification } from './notificationFeed'
+import { submitContentForReview } from './adminApi'
+import { todayLocalStr, localWeekStartStr, localMonthStartStr } from './localDate'
 
 export { auth, db }
 
@@ -178,56 +181,65 @@ function daysBetweenDateStrings(a, b) {
 
 // Call whenever user logs real revision activity (session, paper, task, note, mistake, quiz).
 export async function recordActivityStreak(uid) {
-  const ref  = doc(db, 'users', uid)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return
+  const ref      = doc(db, 'users', uid)
+  const now      = new Date()
+  const todayStr = now.toDateString()
 
-  const data            = snap.data()
-  const now             = new Date()
-  const todayStr        = now.toDateString()
-  const lastActivityStr = data.lastActivityDate || null
+  // The "already counted today?" check and the streak write happen in ONE transaction, so two
+  // activities finishing together (e.g. a session completing and the timer ending) can't both
+  // extend the streak or both pay the daily streak XP.
+  const result = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) return null
 
-  if (lastActivityStr === todayStr) return // already counted today
+    const data            = snap.data()
+    const lastActivityStr = data.lastActivityDate || null
+    if (lastActivityStr === todayStr) return null // already counted today
 
-  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toDateString()
-  const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-  const twoDaysAgoStr = twoDaysAgo.toDateString()
+    const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toDateString()
+    const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+    const twoDaysAgoStr = twoDaysAgo.toDateString()
 
-  const currentStreak = data.streak || 0
-  const updates = { lastActivityDate: todayStr }
-  let newStreak
-  let freezeUsed = false
+    const currentStreak = data.streak || 0
+    const updates = { lastActivityDate: todayStr }
+    let newStreak
+    let freezeUsed = false
 
-  if (!lastActivityStr || lastActivityStr === yesterdayStr) {
-    // First-ever activity, or a normal consecutive day
-    newStreak = lastActivityStr ? currentStreak + 1 : 1
-  } else if (lastActivityStr === twoDaysAgoStr && currentStreak > 0) {
-    // Exactly one day was missed — a streak freeze can cover this
-    const isPro     = data.isPro === true || data.betaUser === true
-    const allowance = isPro ? STREAK_FREEZE_ALLOWANCE.pro : STREAK_FREEZE_ALLOWANCE.free
-    const weekStart = data.freezeWeekStart || null
-    const freshWeek  = !weekStart || daysBetweenDateStrings(weekStart, todayStr) >= 7
-    const usedThisWeek = freshWeek ? 0 : (data.freezesUsedThisWeek || 0)
+    if (!lastActivityStr || lastActivityStr === yesterdayStr) {
+      // First-ever activity, or a normal consecutive day
+      newStreak = lastActivityStr ? currentStreak + 1 : 1
+    } else if (lastActivityStr === twoDaysAgoStr && currentStreak > 0) {
+      // Exactly one day was missed — a streak freeze can cover this
+      const isPro     = data.isPro === true || data.betaUser === true
+      const allowance = isPro ? STREAK_FREEZE_ALLOWANCE.pro : STREAK_FREEZE_ALLOWANCE.free
+      const weekStart = data.freezeWeekStart || null
+      const freshWeek  = !weekStart || daysBetweenDateStrings(weekStart, todayStr) >= 7
+      const usedThisWeek = freshWeek ? 0 : (data.freezesUsedThisWeek || 0)
 
-    if (usedThisWeek < allowance) {
-      freezeUsed = true
-      newStreak = currentStreak + 1 // the missed day is "filled in" — streak continues
-      updates.freezesUsedThisWeek = usedThisWeek + 1
-      updates.freezeWeekStart = freshWeek ? todayStr : weekStart
-      updates.lastFreezeUsedDate = todayStr
+      if (usedThisWeek < allowance) {
+        freezeUsed = true
+        newStreak = currentStreak + 1 // the missed day is "filled in" — streak continues
+        updates.freezesUsedThisWeek = usedThisWeek + 1
+        updates.freezeWeekStart = freshWeek ? todayStr : weekStart
+        updates.lastFreezeUsedDate = todayStr
+      } else {
+        newStreak = 1 // no freeze left this week — streak breaks as normal
+      }
     } else {
-      newStreak = 1 // no freeze left this week — streak breaks as normal
+      newStreak = 1 // missed two or more days — a single freeze doesn't cover that
     }
-  } else {
-    newStreak = 1 // missed two or more days — a single freeze doesn't cover that
-  }
 
-  const bestStreak = Math.max(newStreak, data.bestStreak || 0)
-  updates.streak = newStreak
-  updates.bestStreak = bestStreak
-  await updateDoc(ref, updates)
-  await awardXP(uid, 10, 'Daily streak')
+    updates.streak     = newStreak
+    updates.bestStreak = Math.max(newStreak, data.bestStreak || 0)
+    tx.update(ref, updates)
+    return { newStreak, freezeUsed }
+  })
+  if (!result) return
+  const { newStreak, freezeUsed } = result
+
+  // Keyed to the calendar day: the daily streak XP can only ever be paid once per day.
+  await awardXP(uid, 10, 'Daily streak', { eventId: 'streak:' + todayStr.replace(/ /g, '_') })
 
   // Same pattern as awardXP's 'xp-awarded' event below — XPToast.jsx listens for both.
   if (freezeUsed && typeof window !== 'undefined') {
@@ -274,49 +286,73 @@ export async function recordActivityStreak(uid) {
 // stored period start doesn't match the CURRENT period is treated as 0 for that period,
 // regardless of what number is sitting in xpThisWeek/xpThisMonth — so an inactive user's stale
 // total from a previous period never has to be reset by anything, it's just never trusted.
+// IANA name of the user's current timezone, stored beside XP period keys (see xpTz above).
+function localTimeZone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
+}
+
 export function currentWeekStart(now = new Date()) {
-  const d   = new Date(now)
-  const day = d.getDay() // 0=Sun..6=Sat
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day)) // ISO week: Monday start
-  return d.toISOString().slice(0, 10) // 'YYYY-MM-DD'
+  return localWeekStartStr(now) // LOCAL Monday, 'YYYY-MM-DD'
 }
 export function currentMonthStart(now = new Date()) {
-  return now.toISOString().slice(0, 7) + '-01' // 'YYYY-MM-01'
+  return localMonthStartStr(now) // LOCAL 'YYYY-MM-01'
 }
-function xpPeriodPatch(existingData, amount) {
-  const weekStart  = currentWeekStart()
-  const monthStart = currentMonthStart()
-  return {
-    xpWeekStart:  weekStart,
-    xpMonthStart: monthStart,
-    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? increment(amount) : amount,
-    xpThisMonth:  existingData?.xpMonthStart === monthStart ? increment(amount) : amount,
-  }
-}
+// Transaction-safe XP award. Reads the user doc and writes xp, level, weekly and monthly XP
+// in ONE Firestore transaction, so two simultaneous awards can never overwrite each other
+// (the old read-then-increment could compute a stale level or reset a period twice).
+// Pass { eventId } to make the award idempotent: the event is recorded at
+// users/{uid}/xpEvents/{eventId} inside the same transaction, and a repeat call with the same
+// eventId is a no-op that returns { awarded: false }.
+export const awardXP = async (uid, amount, reason = '', { eventId } = {}) => {
+  if (!uid || !amount || amount <= 0) return { awarded: false }
+  const userRef  = doc(db, 'users', uid)
+  // Every award leaves a dated event record (keyed when idempotent, auto-id otherwise). That is
+  // what the Analytics XP chart reads, so it shows real awards rather than an estimate.
+  const eventRef = eventId
+    ? doc(db, 'users', uid, 'xpEvents', String(eventId).replace(/\//g, '_'))
+    : doc(collection(db, 'users', uid, 'xpEvents'))
 
-export const awardXP = async (uid, amount, reason = '') => {
-  if (!uid || !amount || amount <= 0) return
-  // Nothing previously ever wrote profile.level — not even an initial value in ensureUser — so
-  // Profile.jsx's `profile?.level || 1` fallback meant every account showed "Level 1" forever
-  // regardless of XP earned. Reading current XP here (rather than reading back AFTER the
-  // increment) avoids an extra round-trip and a staleness window: we know exactly what the new
-  // total will be, so we can compute and write the correct level in the same update.
-  const ref     = doc(db, 'users', uid)
-  const snap    = await getDoc(ref)
-  const data    = snap.exists() ? snap.data() : {}
-  const prevXp  = data.xp || 0
-  const newXp   = prevXp + amount
-  const newLevel = levelFromXP(newXp)
-  await updateDoc(ref, { xp: increment(amount), level: newLevel, ...xpPeriodPatch(data, amount) })
-  // Fire browser event so XPToast component can show the popup
-  if (typeof window !== 'undefined') {
+  const result = await runTransaction(db, async (tx) => {
+    // All reads first, then writes.
+    const userSnap = await tx.get(userRef)
+    if (eventId) {
+      const ev = await tx.get(eventRef)
+      if (ev.exists()) return { awarded: false }
+    }
+    const data       = userSnap.exists() ? userSnap.data() : {}
+    const newXp      = (data.xp || 0) + amount
+    const weekStart  = currentWeekStart()
+    const monthStart = currentMonthStart()
+    tx.set(userRef, {
+      xp:           newXp,
+      level:        levelFromXP(newXp),
+      xpWeekStart:  weekStart,
+      xpMonthStart: monthStart,
+      xpTz:         localTimeZone(), // lets server functions roll periods over in THIS timezone
+      xpThisWeek:   data.xpWeekStart  === weekStart  ? (data.xpThisWeek  || 0) + amount : amount,
+      xpThisMonth:  data.xpMonthStart === monthStart ? (data.xpThisMonth || 0) + amount : amount,
+    }, { merge: true })
+    tx.set(eventRef, { amount, reason, day: todayLocalStr(), createdAt: serverTimestamp() })
+    return { awarded: true, amount }
+  })
+
+  // Fire browser event so XPToast component can show the popup (only for real awards)
+  if (result.awarded && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('xp-awarded', { detail: { amount, reason } }))
   }
+  return result
 }
 
-export const awardTimerXP = async (uid, seconds) => {
+// XP awards recorded on or after `sinceDay` ('YYYY-MM-DD', local), oldest first. These are real
+// awards written by awardXP(); XP paid by server functions (friends, referrals) isn't included.
+export const getXpEvents = async (uid, sinceDay) => {
+  const snap = await getDocs(query(collection(db, 'users', uid, 'xpEvents'), where('day', '>=', sinceDay)))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))
+}
+
+export const awardTimerXP = async (uid, seconds, { eventId } = {}) => {
   const xp = Math.min(Math.floor(seconds / 60), 100)
-  if (xp > 0) await awardXP(uid, xp, 'Timer session')
+  if (xp > 0) await awardXP(uid, xp, 'Timer session', eventId ? { eventId } : {})
   // timer_25 was defined in DAILY_QUEST_POOL with an XP value but nothing ever called
   // autoCompleteQuest for it — meaning it was literally impossible to complete on any day it
   // happened to be selected, short of the removed manual "Done" button in DailyQuests.jsx.
@@ -328,19 +364,35 @@ export const checkAndAwardBadge = async (uid, badgeId) => {
   const badge = BADGE_MAP[badgeId]
   if (!badge) return
 
-  const ref  = doc(db, 'users', uid)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return
-
-  const data   = snap.data()
-  const earned = data.badges || []
-  if (earned.includes(badgeId)) return
-
-  await updateDoc(ref, {
-    badges: [...earned, badgeId],
-    xp:     increment(badge.xp || 0),
-    ...xpPeriodPatch(data, badge.xp || 0),
+  const ref = doc(db, 'users', uid)
+  // Transactional and idempotent: the "already earned?" check and the write happen atomically,
+  // so concurrent calls can't both award the badge's XP.
+  const awarded = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) return false
+    const data   = snap.data()
+    const earned = data.badges || []
+    if (earned.includes(badgeId)) return false
+    const bonus      = badge.xp || 0
+    if (bonus > 0) {
+      tx.set(doc(db, 'users', uid, 'xpEvents', 'badge_' + badgeId), { amount: bonus, reason: 'Badge: ' + badge.name, day: todayLocalStr(), createdAt: serverTimestamp() })
+    }
+    const newXp      = (data.xp || 0) + bonus
+    const weekStart  = currentWeekStart()
+    const monthStart = currentMonthStart()
+    tx.update(ref, {
+      badges:       [...earned, badgeId],
+      xp:           newXp,
+      level:        levelFromXP(newXp),
+      xpWeekStart:  weekStart,
+      xpMonthStart: monthStart,
+      xpTz:         localTimeZone(),
+      xpThisWeek:   data.xpWeekStart  === weekStart  ? (data.xpThisWeek  || 0) + bonus : bonus,
+      xpThisMonth:  data.xpMonthStart === monthStart ? (data.xpThisMonth || 0) + bonus : bonus,
+    })
+    return true
   })
+  if (!awarded) return
 
   // Single choke point for every badge source (streak milestones, quest
   // completion, first session, first paper, etc.) — one call here covers
@@ -382,24 +434,26 @@ export const autoCompleteQuest = async (uid, questId) => {
   // Use same date key format as DailyQuests.jsx component
   const today = new Date().toDateString().replace(/ /g, '_')
   const ref   = doc(db, 'users', uid, 'quests', today)
-  const snap  = await getDoc(ref)
-  const data  = snap.exists() ? snap.data() : {}
 
-  // DailyQuests.jsx stores completion as { [questId]: true } flat keys
-  if (data[questId]) return // already marked complete
+  // The "already complete?" check and the completion flag are written in one transaction, so a
+  // double-fire can't pay the quest (or the all-quests bonus) twice. DailyQuests.jsx stores
+  // completion as flat { [questId]: true } keys, which this keeps.
+  const outcome = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    const data = snap.exists() ? snap.data() : {}
+    if (data[questId]) return { newlyDone: false }
+    const updated = { ...data, [questId]: true }
+    // Bonus for completing all of TODAY's quests (not the full pool).
+    const allDone = todaysQuestIds.every(id => updated[id])
+    const bonus   = allDone && !data.bonusAwarded
+    tx.set(ref, { [questId]: true, ...(bonus ? { bonusAwarded: true } : {}), updatedAt: serverTimestamp() }, { merge: true })
+    return { newlyDone: true, bonus }
+  })
+  if (!outcome.newlyDone) return
 
-  const xp = QUEST_XP[questId] || 10
-  await setDoc(ref, { [questId]: true, updatedAt: serverTimestamp() }, { merge: true })
-  await awardXP(uid, xp, 'Daily quest')
-
-  // Bonus for completing all of TODAY's quests — was checking against the full 8-quest pool
-  // (Object.keys(QUEST_XP)), so three unrelated real actions on a normal day could trigger it
-  // even if none of them were actually today's selected quests.
-  const updatedData = { ...data, [questId]: true }
-  const doneCount   = todaysQuestIds.filter(id => updatedData[id]).length
-  if (doneCount >= todaysQuestIds.length && !data.bonusAwarded) {
-    await setDoc(ref, { bonusAwarded: true }, { merge: true })
-    await awardXP(uid, 50, 'All quests complete!')
+  await awardXP(uid, QUEST_XP[questId] || 10, 'Daily quest', { eventId: 'quest:' + today + ':' + questId })
+  if (outcome.bonus) {
+    await awardXP(uid, 50, 'All quests complete!', { eventId: 'quest-bonus:' + today })
     await checkAndAwardBadge(uid, 'quests_complete')
   }
 }
@@ -407,16 +461,6 @@ export const autoCompleteQuest = async (uid, questId) => {
 /* =========================
    LEADERBOARD
 ========================= */
-
-// effective period XP: a stored xpThisWeek/xpThisMonth is only trusted if its stamped period
-// start matches the CURRENT period — otherwise the user just hasn't earned anything (and so
-// hasn't written anything) since the period rolled over, and their real total for the current
-// period is 0, regardless of what's sitting in the field from last time.
-function effectivePeriodXP(d, period) {
-  if (period === 'week')  return d.xpWeekStart  === currentWeekStart()  ? (d.xpThisWeek  || 0) : 0
-  if (period === 'month') return d.xpMonthStart === currentMonthStart() ? (d.xpThisMonth || 0) : 0
-  return d.xp || 0
-}
 
 // ── netlify/functions/public-data.js client ─────────────────────────────────
 // Firestore rules only allow a user to read their OWN users/{uid} document now (see
@@ -469,23 +513,35 @@ export const addSession = async (uid, data) => {
 
 export const getSessions = async (uid) => {
   const snap = await getDocs(collection(db, 'users', uid, 'sessions'))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  // The real Firestore document id must win over any stray `id` field stored inside the
+  // document — session links (/timer?sessionId=…) and completion are keyed on it.
+  return snap.docs.map(d => ({ ...d.data(), id: d.id, _docId: d.id }))
 }
 
-export const completeSession = async (uid, id, notes = '') => {
-  // Mark the session complete
-  await updateDoc(doc(db, 'users', uid, 'sessions', id), {
-    completed: true,
-    notes:     notes || '',
+// Idempotent: the completed flag flips inside a transaction, and XP is keyed to the session id,
+// so completing the same session twice (double-click, retry, timer + calendar) pays out once.
+export const completeSession = async (uid, id, notes = '', { actualDurationMinutes } = {}) => {
+  const ref = doc(db, 'users', uid, 'sessions', id)
+  const outcome = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) return { missing: true }
+    const d = snap.data()
+    if (d.completed) return { alreadyCompleted: true }
+    const patch = { completed: true, completedAt: serverTimestamp(), notes: notes || d.notes || '' }
+    if (Number.isFinite(actualDurationMinutes)) patch.actualDuration = Math.max(0, Math.round(actualDurationMinutes))
+    tx.update(ref, patch)
+    return { planned: d.duration || 0 }
   })
-  // Award XP: base 50, +25 if session is 60+ mins
-  const snap = await getDoc(doc(db, 'users', uid, 'sessions', id))
-  const dur  = snap.exists() ? (snap.data().duration || 0) : 0
-  const xp   = dur >= 60 ? 75 : 50
-  await awardXP(uid, xp, 'Session complete')
+  if (outcome.missing || outcome.alreadyCompleted) return { completed: !outcome.missing, alreadyCompleted: !!outcome.alreadyCompleted }
+
+  // Award XP: base 50, +25 if the session lasted 60+ mins (actual time when known)
+  const dur = Number.isFinite(actualDurationMinutes) ? actualDurationMinutes : outcome.planned
+  const xp  = dur >= 60 ? 75 : 50
+  await awardXP(uid, xp, 'Session complete', { eventId: 'session:' + id })
   await autoCompleteQuest(uid, 'log_session')
   await recordActivityStreak(uid)
   await checkAndAwardBadge(uid, 'first_session')
+  return { completed: true, alreadyCompleted: false }
 }
 
 export const updateSession = (uid, id, data) =>
@@ -511,7 +567,8 @@ export const getTasks = async (uid) => {
 
 export const completeTask = async (uid, id, done = true) => {
   await updateDoc(doc(db, 'users', uid, 'tasks', id), { completed: done })
-  if (done) await awardXP(uid, 20, 'Task done')
+  // Keyed to the task id: un-ticking and re-ticking cannot farm XP.
+  if (done) await awardXP(uid, 20, 'Task done', { eventId: 'task:' + id })
 }
 
 export const updateTask = (uid, id, data) =>
@@ -563,22 +620,30 @@ export const deleteNote = (uid, id) =>
    XP: +10 on log, +20 on resolve
 ========================= */
 
-export const addMistake = async (uid, data) => {
-  const ref = await addDoc(collection(db, 'users', uid, 'mistakes'), {
-    ...data,
-    createdAt: serverTimestamp(),
-  })
-  // Same principle as the saveNote fix above — no content-length check here meant a one-word
-  // "description" earned the same +10 XP as a real, reflective mistake entry.
-  if ((data.description || '').trim().length >= 10) {
-    await awardXP(uid, 10, 'Mistake logged')
+// Pass { id } (one per open "Log mistake" form) so a double click or a retry re-saves the SAME
+// document instead of logging the mistake twice; the logging XP is keyed to that id and pays once.
+// Returns { id, xpAwarded }.
+export const addMistake = async (uid, data, { id } = {}) => {
+  const col = collection(db, 'users', uid, 'mistakes')
+  const ref = id ? doc(col, String(id)) : doc(col)
+  const existing = id ? await getDoc(ref) : null
+  if (!existing?.exists()) {
+    await setDoc(ref, { ...data, resolved: false, createdAt: serverTimestamp() })
   }
-  return ref.id
+  // Same principle as the saveNote fix above - no content-length check here meant a one-word
+  // "description" earned the same +10 XP as a real, reflective mistake entry.
+  let xpAwarded = false
+  if ((data.description || '').trim().length >= 10) {
+    const res = await awardXP(uid, 10, 'Mistake logged', { eventId: 'mistake-logged:' + ref.id })
+    xpAwarded = !!res.awarded
+  }
+  return { id: ref.id, xpAwarded }
 }
 
-export const getMistakes = async (uid) => {
+export const getMistakes = async (uid, subject = null) => {
   const snap = await getDocs(collection(db, 'users', uid, 'mistakes'))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const rows = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+  return subject ? rows.filter(r => r.subject === subject) : rows
 }
 
 // Daily briefing cache — one doc per user, regenerated once per calendar
@@ -638,11 +703,20 @@ export const saveCachedDistractors = async (setId, cardCount, distractors) => {
   }
 }
 
+// Idempotent: resolving an already-resolved mistake changes nothing and pays no XP.
 export const resolveMistake = async (uid, id) => {
-  await updateDoc(doc(db, 'users', uid, 'mistakes', id), { resolved: true })
-  await awardXP(uid, 20, 'Mistake resolved')
+  const ref = doc(db, 'users', uid, 'mistakes', id)
+  const changed = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists() || snap.data().resolved) return false
+    tx.update(ref, { resolved: true, resolvedAt: serverTimestamp() })
+    return true
+  })
+  if (!changed) return { resolved: true, alreadyResolved: true }
+  await awardXP(uid, 20, 'Mistake resolved', { eventId: 'mistake:' + id })
   await autoCompleteQuest(uid, 'resolve_mistake')
   await recordActivityStreak(uid)
+  return { resolved: true, alreadyResolved: false }
 }
 
 /* =========================
@@ -650,21 +724,35 @@ export const resolveMistake = async (uid, id) => {
    XP: +100 on save
 ========================= */
 
+// Persists the attempt, then awards XP exactly once per attempt id. Pass data.attemptId to make
+// a retry safe: the same id re-saves the same document and the XP event key blocks a second award.
 export const savePaperAttempt = async (uid, data) => {
-  const ref = await addDoc(collection(db, 'users', uid, 'paperAttempts'), {
-    ...data,
-    createdAt: serverTimestamp(),
-  })
-  await awardXP(uid, 100, 'Past paper logged')
+  const { attemptId, ...rest } = data || {}
+  const col = collection(db, 'users', uid, 'paperAttempts')
+  const ref = attemptId ? doc(col, String(attemptId)) : doc(col)
+  const existing = await getDoc(ref)
+  await setDoc(ref, {
+    ...rest,
+    ...(existing.exists() ? {} : { createdAt: serverTimestamp() }),
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+  // Everything below is idempotent (XP is keyed to the attempt id, quests/badges/streak are
+  // once-only), so a retry after a partial failure completes whatever was missed without ever
+  // paying twice.
+  await awardXP(uid, 100, 'Past paper logged', { eventId: 'paper:' + ref.id })
   await autoCompleteQuest(uid, 'log_paper')
   await recordActivityStreak(uid)
   await checkAndAwardBadge(uid, 'first_paper')
   return ref.id
 }
 
-export const getPaperAttempts = async (uid) => {
+// Optional second argument: a subject name to filter to. Callers already pass one
+// (PastPapers, Analytics, Profile); it used to be silently ignored.
+export const getPaperAttempts = async (uid, subject = null) => {
   const snap = await getDocs(collection(db, 'users', uid, 'paperAttempts'))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  // The real document id wins over any `id` field stored inside the document.
+  const rows = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+  return subject ? rows.filter(r => r.subject === subject) : rows
 }
 
 export const updatePaperAttempt = (uid, id, data) =>
@@ -1219,8 +1307,11 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
     const ref = await addDoc(collection(db, 'users', uid, 'flashcardSets'), data)
     refId = ref.id
   }
-  if (isPublic || isOfficial) {
-    // Save to global public collection
+  if (isOfficial) {
+    // Official sets must go through the admin review queue, never a direct client write.
+    refId = await saveOfficialFlashcardSet(board, level, subject, topic, cards)
+  } else if (isPublic) {
+    // Community set: published by its owner (uid is stamped on `data`).
     if (refId) {
       await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
     } else {
@@ -1250,18 +1341,17 @@ export const getOfficialFlashcardSet = async (board, level, subject, topic) => {
 }
 
 export const saveOfficialFlashcardSet = async (board, level, subject, topic, cards) => {
+  // Official content is never written from the client. This submits a DRAFT to the admin
+  // review queue (/api/admin); it only becomes an official set after an admin approves it.
+  // Sets produced by the AI generator are flagged so reviewers know they need checking.
   const id = officialSetId(board, level, subject, topic)
-  await setDoc(doc(db, 'publicFlashcards', id), {
-    uid: 'official',
+  await submitContentForReview('officialFlashcard', id, {
     setId: id,
     title: `${board} ${level} ${subject}${topic ? ' — ' + topic : ''}`,
     subject, topic: topic || '', board, level,
     cards, cardCount: cards.length,
-    isPublic: true,
     author: 'RevisionFlow',
-    authorType: 'official',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    origin: 'ai-generated-draft',
   })
   return id
 }
@@ -1293,41 +1383,12 @@ function parseOfficialTitle(title) {
   return null
 }
 
-// Re-keys any pre-fix official flashcard sets (random Firestore ID, no board/level fields) onto
-// the new deterministic ID scheme, so the cache-check in the auto-generate pipeline and the
-// manual bulk generator both recognize them as already done instead of regenerating duplicates.
-// Safe to call repeatedly — already-migrated sets (which have board/level fields) are skipped.
-export const migrateLegacyOfficialFlashcardSets = async () => {
-  const snap = await getDocs(collection(db, 'publicFlashcards'))
-  let migrated = 0, skipped = 0, unparseable = 0
-  for (const docSnap of snap.docs) {
-    const data = docSnap.data()
-    if (data.authorType !== 'official') continue
-    if (data.board && data.level) { skipped++; continue } // already on the new scheme
-
-    const parsed = parseOfficialTitle(data.title)
-    if (!parsed) { unparseable++; continue }
-
-    const newId = officialSetId(parsed.board, parsed.level, parsed.subject, parsed.topic)
-    if (newId === docSnap.id) { skipped++; continue }
-
-    try {
-      const newRef = doc(db, 'publicFlashcards', newId)
-      const existing = await getDoc(newRef)
-      if (!existing.exists()) {
-        await setDoc(newRef, {
-          ...data, setId: newId,
-          board: parsed.board, level: parsed.level, subject: parsed.subject, topic: parsed.topic,
-        })
-      }
-      await deleteDoc(doc(db, 'publicFlashcards', docSnap.id))
-      migrated++
-    } catch (e) {
-      console.error('Flashcard set migration failed for', docSnap.id, e)
-    }
-  }
-  return { migrated, skipped, unparseable }
-}
+// Retired. This used to re-key old official flashcard sets from the browser, which meant the
+// browser could write official content. Official sets can only be written through /api/admin now
+// (draft -> review -> approval), and Firestore rules reject client writes to them, so there is
+// nothing for the client to migrate. Kept as a no-op so the admin screens that still call it
+// keep working; they will simply report zero migrated.
+export const migrateLegacyOfficialFlashcardSets = async () => ({ migrated: 0, skipped: 0, unparseable: 0, retired: true })
 
 export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
   const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
@@ -1364,12 +1425,16 @@ export const deleteFlashcardSet = async (uid, setId, isPublic = false) => {
   }
 }
 
+// Public sets (official and community) for browsing. `subject` narrows the query; `limitN` is how
+// many to fetch (the browser asks for more with "Load more"). Always newest first, whichever query
+// ran. Whether a set is official, community or unverified is decided by utils/provenance.js.
 export const getPublicFlashcardSets = async (subject = null, limitN = 50) => {
-  let q = subject
+  const q = subject
     ? query(collection(db, 'publicFlashcards'), where('subject', '==', subject), limit(limitN))
     : query(collection(db, 'publicFlashcards'), orderBy('createdAt', 'desc'), limit(limitN))
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const ts = (d) => d.createdAt?.seconds || 0
+  return snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => ts(b) - ts(a))
 }
 
 export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
@@ -1392,7 +1457,7 @@ export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
 export async function checkTopicNoteLimit(uid, profile) {
   if (profile?.isPro || profile?.betaUser) return { allowed: true, remaining: Infinity }
 
-  const today = new Date().toISOString().slice(0, 10)  // YYYY-MM-DD
+  const today = todayLocalStr()  // local YYYY-MM-DD
   const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
   try {
     const snap = await getDoc(ref)
@@ -1410,7 +1475,7 @@ export async function checkTopicNoteLimit(uid, profile) {
 }
 
 export async function incrementTopicNoteUsage(uid) {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayLocalStr()
   const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
   try {
     const snap = await getDoc(ref)
