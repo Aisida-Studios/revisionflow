@@ -9,8 +9,9 @@
 // Topics.jsx / ExamDates.jsx / PastPapers.jsx for reads, at the specific points students
 // actually see this data.
 
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
+import { submitContentForReview } from '../utils/adminApi'
 import { getAllTopicsFlat as getStaticTopics } from './topics'
 import { getExamDates as getStaticExamDates, getAllSubjectsForBoard as getStaticSubjectsForBoard } from './examDates2026'
 import { getPaperSpec as getStaticPaperSpec, getBoundaries as getStaticBoundaries } from './paperDatabase'
@@ -32,13 +33,13 @@ export async function getTopicOverride(board, level, subject) {
 
 export async function saveTopicOverride(board, level, subject, { added, removedNames, renamed }) {
   const id = topicOverrideId(board, level, subject)
-  await setDoc(doc(db, 'topicOverrides', id), {
+  // Writes go to the admin review queue via /api/admin; clients cannot write this collection.
+  await submitContentForReview('topicOverride', id, {
     board: canonicalBoard(board), level, subject,
     added: added || [],
     removedNames: removedNames || [],
     renamed: renamed || {},
-    updatedAt: serverTimestamp(),
-  }, { merge: true })
+  })
 }
 
 // Merged topic list: static data with admin additions/removals/renames applied. Falls back to
@@ -74,17 +75,16 @@ export async function listExamDateOverrides(level) {
 
 export async function saveExamDateOverride(entry) {
   const id = entry.id || examDateKey(entry.board, entry.level, entry.subject, entry.paper)
-  await setDoc(doc(db, 'examDateOverrides', id), {
+  await submitContentForReview('examDateOverride', id, {
     board: canonicalBoard(entry.board), level: entry.level, subject: entry.subject,
     tier: entry.tier || 'N/A', paper: entry.paper, paperName: entry.paperName || '',
     date: entry.date, removed: !!entry.removed,
-    updatedAt: serverTimestamp(),
-  }, { merge: true })
+  })
   return id
 }
 
 export async function deleteExamDateOverride(id) {
-  await deleteDoc(doc(db, 'examDateOverrides', id))
+  await submitContentForReview('examDateOverride', id, null, 'delete')
 }
 
 // Merged exam dates for one subject/board — static entries, with any matching override applied
@@ -123,17 +123,26 @@ export async function getPaperSpecOverride(board, level, subject, paper) {
   return snap.exists() ? snap.data() : null
 }
 
-export async function savePaperSpecOverride(board, level, subject, paper, { maxMarks, duration }) {
+// `questions` is an official per-question structure [{ num, marks }]: pass an array to set it,
+// null to remove an existing one, or leave it undefined to leave it as it is. The server refuses a
+// structure that doesn't add up to maxMarks (or breaks a course limit) when the draft is created.
+export async function savePaperSpecOverride(board, level, subject, paper, { maxMarks, duration, questions }) {
   const id = paperOverrideId(board, level, subject, paper)
-  await setDoc(doc(db, 'paperSpecOverrides', id), {
-    board: canonicalBoard(board), level, subject, paper, maxMarks, duration, updatedAt: serverTimestamp(),
-  }, { merge: true })
+  await submitContentForReview('paperSpecOverride', id, {
+    board: canonicalBoard(board), level, subject, paper, maxMarks, duration,
+    ...(questions !== undefined ? { questions } : {}),
+  })
 }
 
 export async function getMergedPaperSpec(board, subject, tier, paper, level) {
   let override = null
   try { override = await getPaperSpecOverride(board, level, subject, paper) } catch (e) { override = null }
-  if (override) return { maxMarks: override.maxMarks, duration: override.duration, level }
+  if (override) {
+    const hasStructure = Array.isArray(override.questions) && override.questions.length > 0
+    // Overrides only ever reach this collection through the admin review pipeline, so a structure
+    // stored here is a verified one.
+    return { maxMarks: override.maxMarks, duration: override.duration, level, ...(hasStructure ? { questions: override.questions, structureVerified: true } : {}) }
+  }
   return getStaticPaperSpec(board, subject, tier, paper, level)
 }
 
@@ -142,16 +151,31 @@ export async function getBoundaryOverride(board, level, subject) {
   return snap.exists() ? snap.data() : null
 }
 
-export async function saveBoundaryOverride(board, level, subject, { maxMarks, boundaries, grades }) {
+export async function saveBoundaryOverride(board, level, subject, { maxMarks, boundaries, grades, year, source }) {
   const id = boundaryOverrideId(board, level, subject)
-  await setDoc(doc(db, 'boundaryOverrides', id), {
-    board: canonicalBoard(board), level, subject, maxMarks, boundaries, grades: grades || null, updatedAt: serverTimestamp(),
-  }, { merge: true })
+  await submitContentForReview('boundaryOverride', id, {
+    board: canonicalBoard(board), level, subject, maxMarks, boundaries, grades: grades || null,
+    year: Number(year), source: String(source || ''),
+  })
 }
 
 export async function getMergedBoundaries(board, subject, tier, year, level) {
   let override = null
   try { override = await getBoundaryOverride(board, level, subject) } catch (e) { override = null }
-  if (override) return { maxMarks: override.maxMarks, boundaries: override.boundaries, grades: override.grades, level, note: 'admin-edited' }
+  // Docs written before the review pipeline have no `verified` field; they were admin-authored,
+  // so they stay valid. Only an explicit verified:false is ignored.
+  if (override && override.verified !== false) {
+    return {
+      maxMarks: override.maxMarks, boundaries: override.boundaries, grades: override.grades, level, note: 'admin-edited',
+      provenance: {
+        requestedYear: Number(year) || null, sourceYear: override.year ?? null,
+        verified: override.verified === true, estimated: false, fallback: override.year != null && Number(year) !== override.year,
+        source: override.source || 'Admin-edited (source not recorded)', board: canonicalBoard(board),
+        label: override.year != null
+          ? `${override.year} boundaries (admin-reviewed)${Number(year) !== override.year ? ` — shown for ${year}; no ${year} figures recorded` : ''}`
+          : 'Admin-edited boundaries (year not recorded)',
+      },
+    }
+  }
   return getStaticBoundaries(board, subject, tier, year, level)
 }
