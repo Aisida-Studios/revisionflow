@@ -3,7 +3,7 @@
 // All Firestore writes go through /api/admin (server-side) to bypass client rules
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getSubjectList } from '../data/subjects'
+import { getSupportedSubjects } from '../data/curriculumSupport'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
 import AdminDataEditor from '../components/AdminDataEditor'
 import AdminMetricsTab from '../components/AdminMetricsTab'
@@ -15,6 +15,7 @@ import {
   Shield, Users, Star, Search, CheckCircle, XCircle,
   BarChart2, Zap, RefreshCw, AlertTriangle, TrendingUp,
 } from 'lucide-react'
+import { toLocalDateStr } from '../utils/localDate'
 
 const ADMIN_EMAIL = 'femiaisida1@gmail.com'
 
@@ -59,7 +60,8 @@ function ContentTab({ email }) {
   const [log,       setLog]       = useState([])
   const stopRef = useRef(false)  // ref-based stop flag — not subject to stale closure
 
-  const subjectList = getSubjectList(level)
+  const subjectList = getSupportedSubjects(board, level) // valid board + qualification combinations only
+  useEffect(() => { if (subject && !subjectList.includes(subject)) setSubject('') }, [board, level])
 
   async function loadTopics() {
     if (!subject) return
@@ -148,7 +150,7 @@ function ContentTab({ email }) {
     addFcLog('Starting bulk flashcard generation: ' + topics.length + ' topics for ' + board + ' ' + level + ' ' + subject)
 
     try {
-      const { generateFlashcards, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } = await import('../utils/ai')
+      const { generateFlashcardsChunked, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } = await import('../utils/ai')
       const { getOfficialFlashcardSet, saveOfficialFlashcardSet, migrateLegacyOfficialFlashcardSets } = await import('../utils/firestore')
 
       const migResult = await migrateLegacyOfficialFlashcardSets()
@@ -176,7 +178,7 @@ function ContentTab({ email }) {
             cards = cachedRaw.cards
           } else {
             for (let attempt = 1; attempt <= 3 && !cards; attempt++) {
-              const res = await generateFlashcards(subject, topic, 50, null)
+              const res = await generateFlashcardsChunked(subject, topic, 50, null)
               if (res.error) { addFcLog('  attempt ' + attempt + '/3 failed: ' + res.error, 'error'); continue }
               const parsed = parseFlashcards(res.text || '')
               if (parsed.length < 5) { addFcLog('  attempt ' + attempt + '/3 invalid: only ' + parsed.length + ' cards parsed', 'error'); continue }
@@ -604,7 +606,7 @@ function ResourcesTab({ email }) {
                 {bulkPreview.map((r, i) => (
                   <div key={i} style={{ fontSize: '0.75rem', padding: '6px 10px', borderRadius: 6,
                     background: 'var(--bg-hover)', display: 'flex', gap: 8 }}>
-                    <span className="badge badge-purple" style={{ fontSize: '0.68rem' }}>{r.subject}</span>
+                    <span className="badge badge-accent" style={{ fontSize: '0.68rem' }}>{r.subject}</span>
                     <span style={{ fontWeight: 600 }}>{r.name}</span>
                   </div>
                 ))}
@@ -638,7 +640,7 @@ function ResourcesTab({ email }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filteredLinks.map(l => (
             <div key={l.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px' }}>
-              <span className="badge badge-purple" style={{ flexShrink: 0, fontSize: '0.7rem' }}>{l.subject}</span>
+              <span className="badge badge-accent" style={{ flexShrink: 0, fontSize: '0.7rem' }}>{l.subject}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -731,13 +733,13 @@ function UsersTab({ email }) {
                     (u.betaUser ? 'Beta revoked' : 'Beta granted') + ' — ' + (u.displayName || u.email))}
                     className={'btn btn-sm ' + (u.betaUser ? 'btn-primary' : 'btn-secondary')}
                     style={{ fontSize: '0.75rem' }}>
-                    {u.betaUser ? '★ Beta' : '+ Beta'}
+                    {u.betaUser ? 'Beta' : '+ Beta'}
                   </button>
                   <button onClick={() => setField(u.id, 'isPro', !u.isPro,
                     (u.isPro ? 'Pro revoked' : 'Pro granted') + ' — ' + (u.displayName || u.email))}
                     className={'btn btn-sm ' + (u.isPro ? 'btn-primary' : 'btn-secondary')}
                     style={{ fontSize: '0.75rem' }}>
-                    {u.isPro ? '⚡ Pro' : '+ Pro'}
+                    {u.isPro ? 'Pro' : '+ Pro'}
                   </button>
                 </div>
               </div>
@@ -888,11 +890,11 @@ function BetaTab({ email }) {
             <div>
               <div style={{ fontWeight: 600 }}>{found.displayName || '(no name)'}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {found.email} · XP {(found.xp || 0).toLocaleString()} · {found.betaUser ? '★ Already beta' : 'Not beta'}
+                {found.email} · XP {(found.xp || 0).toLocaleString()} · {found.betaUser ? 'Already beta' : 'Not beta'}
               </div>
             </div>
             {found.betaUser
-              ? <span className="badge badge-purple">Beta ✓</span>
+              ? <span className="badge badge-accent">Beta ✓</span>
               : <button className="btn btn-primary btn-sm" onClick={() => grantBeta(found.id, found.displayName || found.email)}>
                   Grant beta
                 </button>
@@ -960,7 +962,7 @@ function toDate(ts) {
   if (typeof ts.seconds  === 'number') return new Date(ts.seconds * 1000)
   return null
 }
-function dayKey(d) { return d.toISOString().slice(0, 10) }
+function dayKey(d) { return toLocalDateStr(d) }
 
 function StatsTab({ email }) {
   const [stats,   setStats]   = useState(null)
@@ -1048,7 +1050,7 @@ function StatsTab({ email }) {
           { label: 'Beta users',   val: stats.beta,                     colour: 'var(--warning)',       icon: <Star size={16} />     },
           { label: 'Pro users',    val: stats.pro,                      colour: 'var(--success)',       icon: <Zap size={16} />      },
           { label: 'Active (7d)',  val: stats.active7,                  colour: 'var(--info)',          icon: <BarChart2 size={16} />},
-          { label: 'Avg XP',       val: stats.avgXP.toLocaleString(),   colour: 'var(--purple-300)',    icon: <Zap size={16} />      },
+          { label: 'Avg XP',       val: stats.avgXP.toLocaleString(),   colour: 'var(--brand-300)',    icon: <Zap size={16} />      },
           { label: 'Avg streak',   val: stats.avgStr + 'd',             colour: 'var(--warning)',       icon: <BarChart2 size={16} />},
         ].map(s => (
           <div key={s.label} className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
@@ -1123,9 +1125,9 @@ function StatsTab({ email }) {
               padding: '8px 14px', borderRadius: 8, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
               <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: 24 }}>#{i+1}</span>
               <span style={{ fontWeight: 600, flex: 1, fontSize: '0.88rem' }}>{u.displayName || '(anon)'}</span>
-              {u.betaUser && <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>Beta</span>}
+              {u.betaUser && <span className="badge badge-accent" style={{ fontSize: '0.65rem' }}>Beta</span>}
               {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>🔥 {u.streak || 0}d</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.streak || 0}d</span>
               <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-light)' }}>
                 {(u.xp || 0).toLocaleString()} XP
               </span>
