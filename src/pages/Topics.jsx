@@ -322,7 +322,7 @@ export default function Topics() {
 
   async function getAIAdvice(topic) {
     setLoadingAI(topic.id)
-    const res = await getTopicAdvice(selSubj, topic.name, topic.confidence||3, [], user.uid)
+    const res = await getTopicAdvice(selSubj, topic.name, topic.confidence||0, [], user.uid)
     setAiAdvice(a=>({...a,[topic.id]:res.text||res.error||'Could not load advice — check your connection'}))
     setLoadingAI(null)
   }
