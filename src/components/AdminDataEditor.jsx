@@ -6,10 +6,10 @@
 
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import { collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, limit as fsLimit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Section } from './Section'
-import { getSubjectList } from '../data/subjects'
+import { getSupportedSubjects } from '../data/curriculumSupport'
 import { canonicalBoard } from '../data/boards'
 import BoardOptions from './BoardOptions'
 import {
@@ -18,6 +18,8 @@ import {
   getPaperSpecOverride, savePaperSpecOverride,
   getBoundaryOverride, saveBoundaryOverride,
 } from '../data/overrides'
+import { submitContentForReview, listContentDrafts, approveContentDraft, rejectContentDraft } from '../utils/adminApi'
+import { validateDistribution, buildQuestions, groupsFromQuestions, distributionTotal } from '../utils/paperQuestions'
 
 const LEVELS = ['GCSE', 'AS-Level', 'A-Level']
 
@@ -27,6 +29,7 @@ const TABS = [
   { id: 'papers',   label: 'Papers & Boundaries' },
   { id: 'notes',    label: 'Topic Notes' },
   { id: 'flashcards', label: 'Flashcards' },
+  { id: 'review',   label: 'Review queue' },
 ]
 
 export default function AdminDataEditor() {
@@ -46,6 +49,7 @@ export default function AdminDataEditor() {
       {tab === 'papers' && <PapersEditor />}
       {tab === 'notes' && <NotesEditor />}
       {tab === 'flashcards' && <FlashcardsEditor />}
+      {tab === 'review' && <ReviewQueue />}
     </div>
   )
 }
@@ -62,9 +66,10 @@ function TopicsEditor() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const subjectList = getSubjectList(level)
+  // Only subjects with real curriculum data for this exact board + qualification.
+  const subjectList = getSupportedSubjects(board, level)
 
-  useEffect(() => { if (subjectList.length && !subject) setSubject(subjectList[0]) }, [level])
+  useEffect(() => { if (!subjectList.includes(subject)) setSubject(subjectList[0] || '') }, [level, board])
 
   useEffect(() => {
     if (!subject || !board || !level) return
@@ -249,29 +254,43 @@ function PapersEditor() {
   const [subject, setSubject] = useState('')
   const [paper, setPaper] = useState('1')
   const [spec, setSpec] = useState({ maxMarks: '', duration: '' })
-  const [bounds, setBounds] = useState({ maxMarks: '', boundaries: '', grades: '' })
+  // Official per-question structure, edited as groups ('5 questions of 4 marks').
+  const [groups, setGroups] = useState([])
+  const [hadStructure, setHadStructure] = useState(false)
+  const [bounds, setBounds] = useState({ maxMarks: '', boundaries: '', grades: '', year: '', source: '' })
   const [saving, setSaving] = useState(false)
 
-  const subjectList = getSubjectList(level)
-  useEffect(() => { if (subjectList.length && !subject) setSubject(subjectList[0]) }, [level])
+  const subjectList = getSupportedSubjects(board, level)
+  useEffect(() => { if (!subjectList.includes(subject)) setSubject(subjectList[0] || '') }, [level, board])
 
   useEffect(() => {
     if (!subject) return
     getPaperSpecOverride(board, level, subject, parseInt(paper) || 1).then(s => {
       setSpec(s ? { maxMarks: s.maxMarks, duration: s.duration } : { maxMarks: '', duration: '' })
+      const existing = Array.isArray(s?.questions) && s.questions.length ? groupsFromQuestions(s.questions) : []
+      setGroups(existing); setHadStructure(existing.length > 0)
     })
     getBoundaryOverride(board, level, subject).then(b => {
-      setBounds(b ? { maxMarks: b.maxMarks, boundaries: (b.boundaries || []).join(', '), grades: (b.grades || []).join(', ') } : { maxMarks: '', boundaries: '', grades: '' })
+      setBounds(b ? { maxMarks: b.maxMarks, boundaries: (b.boundaries || []).join(', '), grades: (b.grades || []).join(', '), year: b.year || '', source: b.source || '' } : { maxMarks: '', boundaries: '', grades: '', year: '', source: '' })
     })
   }, [board, level, subject, paper])
 
   async function saveSpec() {
     setSaving(true)
     try {
+      const parsed = groups.map(g => ({ count: Number(g.count), marks: Number(g.marks) }))
+      let questions // undefined = leave the stored structure alone
+      if (parsed.length) {
+        const check = validateDistribution(parsed, { maxMarks: Number(spec.maxMarks), qualification: level, subject })
+        if (!check.ok) { toast.error(check.errors[0]); setSaving(false); return }
+        questions = buildQuestions(parsed).map(q => ({ num: q.num, marks: q.marks }))
+      } else if (hadStructure) {
+        questions = null // the admin removed every group: take the structure off
+      }
       await savePaperSpecOverride(board, level, subject, parseInt(paper) || 1, {
-        maxMarks: parseInt(spec.maxMarks) || null, duration: parseInt(spec.duration) || null,
+        maxMarks: parseInt(spec.maxMarks) || null, duration: parseInt(spec.duration) || null, questions,
       })
-      toast.success('Paper spec saved')
+      toast.success('Paper spec submitted for review')
     } catch (e) { toast.error('Save failed: ' + e.message) }
     setSaving(false)
   }
@@ -283,8 +302,10 @@ function PapersEditor() {
         maxMarks: parseInt(bounds.maxMarks) || null,
         boundaries: bounds.boundaries.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)),
         grades: bounds.grades.trim() ? bounds.grades.split(',').map(s => s.trim()) : null,
+        year: parseInt(bounds.year),
+        source: bounds.source.trim(),
       })
-      toast.success('Grade boundaries saved')
+      toast.success('Grade boundaries submitted for review')
     } catch (e) { toast.error('Save failed: ' + e.message) }
     setSaving(false)
   }
@@ -309,7 +330,31 @@ function PapersEditor() {
           <input className="input" type="number" placeholder="Max marks" value={spec.maxMarks} onChange={e => setSpec(s => ({ ...s, maxMarks: e.target.value }))} />
           <input className="input" type="number" placeholder="Duration (minutes)" value={spec.duration} onChange={e => setSpec(s => ({ ...s, duration: e.target.value }))} />
         </div>
-        <button className="btn btn-primary btn-sm" onClick={saveSpec} disabled={saving}>Save spec</button>
+        <div style={{ margin: '4px 0 12px' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 4 }}>Official question structure (optional)</div>
+          <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
+            Only enter this from the board's own paper. Once approved, students logging this paper enter marks question by question.
+            The questions must add up to the max marks{level === 'GCSE' && ['Biology', 'Chemistry', 'Physics', 'Combined Science'].includes(subject) ? ', and a GCSE science question is worth at most 6' : ''}.
+          </p>
+          {groups.map((g, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+              <input className="input" type="number" min={1} placeholder="How many" value={g.count} style={{ width: 100 }}
+                onChange={e => setGroups(gs => gs.map((x, j) => j === i ? { ...x, count: e.target.value } : x))} />
+              <span style={{ fontSize: '0.8rem' }}>questions of</span>
+              <input className="input" type="number" min={1} placeholder="Marks each" value={g.marks} style={{ width: 100 }}
+                onChange={e => setGroups(gs => gs.map((x, j) => j === i ? { ...x, marks: e.target.value } : x))} />
+              <span style={{ fontSize: '0.8rem' }}>marks</span>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGroups(gs => gs.filter((_, j) => j !== i))}>Remove</button>
+            </div>
+          ))}
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGroups(gs => [...gs, { count: '', marks: '' }])}>Add a group of questions</button>
+          {groups.length > 0 && (
+            <span style={{ marginLeft: 10, fontSize: '0.8rem', fontWeight: 600, color: distributionTotal(groups.map(g => ({ count: Number(g.count), marks: Number(g.marks) }))) === Number(spec.maxMarks) ? 'var(--success)' : 'var(--text-secondary)' }}>
+              {distributionTotal(groups.map(g => ({ count: Number(g.count), marks: Number(g.marks) })))} of {spec.maxMarks || '?'} marks
+            </span>
+          )}
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={saveSpec} disabled={saving}>Submit spec for review</button>
       </Section>
 
       <Section title="Grade boundaries (whole subject, not per-paper)" icon="📊">
@@ -320,8 +365,12 @@ function PapersEditor() {
           <input className="input" type="number" placeholder="Max marks" value={bounds.maxMarks} onChange={e => setBounds(b => ({ ...b, maxMarks: e.target.value }))} />
           <input className="input" placeholder="Grade labels (optional, e.g. A*,A,B,C,D,E)" value={bounds.grades} onChange={e => setBounds(b => ({ ...b, grades: e.target.value }))} />
         </div>
+        <div className="grid-2" style={{ gap: 10, marginBottom: 10 }}>
+          <input className="input" type="number" placeholder="Exam series year (required, e.g. 2025)" value={bounds.year} onChange={e => setBounds(b => ({ ...b, year: e.target.value }))} />
+          <input className="input" placeholder="Source (required, e.g. AQA published boundaries, June 2025)" value={bounds.source} onChange={e => setBounds(b => ({ ...b, source: e.target.value }))} />
+        </div>
         <input className="input" placeholder="Mark boundaries, comma-separated, highest first" value={bounds.boundaries} onChange={e => setBounds(b => ({ ...b, boundaries: e.target.value }))} style={{ marginBottom: 10, width: '100%' }} />
-        <button className="btn btn-primary btn-sm" onClick={saveBounds} disabled={saving}>Save boundaries</button>
+        <button className="btn btn-primary btn-sm" onClick={saveBounds} disabled={saving || !bounds.year || !bounds.source.trim()}>Submit boundaries for review</button>
       </Section>
     </div>
   )
@@ -349,8 +398,8 @@ function NotesEditor() {
 
   async function saveEdit(id) {
     try {
-      await setDoc(doc(db, 'topicNotes', id), { text: draft, updatedAt: new Date() }, { merge: true })
-      toast.success('Saved')
+      await submitContentForReview('topicNote', id, { text: draft })
+      toast.success('Edit submitted for review')
       setEditing(null)
       load()
     } catch (e) { toast.error('Save failed: ' + e.message) }
@@ -358,7 +407,7 @@ function NotesEditor() {
 
   async function removeNote(id) {
     if (!window.confirm('Delete this note? Students will get a freshly-generated one next time it\'s requested.')) return
-    try { await deleteDoc(doc(db, 'topicNotes', id)); load() } catch (e) { toast.error('Delete failed: ' + e.message) }
+    try { await submitContentForReview('topicNote', id, null, 'delete'); toast.success('Deletion submitted for review'); load() } catch (e) { toast.error('Delete failed: ' + e.message) }
   }
 
   return (
@@ -428,8 +477,8 @@ function FlashcardsEditor() {
 
   async function saveEdit(id) {
     try {
-      await setDoc(doc(db, 'publicFlashcards', id), { cards: draftCards, cardCount: draftCards.length, updatedAt: new Date() }, { merge: true })
-      toast.success('Saved')
+      await submitContentForReview('officialFlashcard', id, { cards: draftCards, cardCount: draftCards.length })
+      toast.success('Edit submitted for review')
       setEditing(null)
       load()
     } catch (e) { toast.error('Save failed: ' + e.message) }
@@ -437,7 +486,7 @@ function FlashcardsEditor() {
 
   async function removeSet(id) {
     if (!window.confirm('Delete this flashcard set? Students browsing premade quizzes will no longer see it.')) return
-    try { await deleteDoc(doc(db, 'publicFlashcards', id)); load() } catch (e) { toast.error('Delete failed: ' + e.message) }
+    try { await submitContentForReview('officialFlashcard', id, null, 'delete'); toast.success('Deletion submitted for review'); load() } catch (e) { toast.error('Delete failed: ' + e.message) }
   }
 
   return (
@@ -481,6 +530,58 @@ function FlashcardsEditor() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+
+/* ── Review queue: nothing goes live until approved here ───────────────── */
+function ReviewQueue() {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  async function load() {
+    setLoading(true)
+    try {
+      const { drafts } = await listContentDrafts()
+      setRows((drafts || []).filter(d => d.status === 'in_review' || d.status === 'draft'))
+    } catch (e) { toast.error('Load failed: ' + e.message) }
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [])
+
+  async function approve(id) {
+    try { await approveContentDraft(id); toast.success('Approved and published'); load() }
+    catch (e) { toast.error('Approve failed: ' + e.message) }
+  }
+  async function reject(id) {
+    const reason = window.prompt('Reason for rejecting (optional)') || ''
+    try { await rejectContentDraft(id, reason); toast.success('Rejected'); load() }
+    catch (e) { toast.error('Reject failed: ' + e.message) }
+  }
+
+  return (
+    <div>
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 14 }}>
+        Changes below are drafts. They only become live, student-visible content once approved.
+      </p>
+      {loading && <p style={{ color: 'var(--text-muted)' }}>Loading…</p>}
+      {!loading && rows.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Nothing waiting for review.</p>}
+      {rows.map(r => (
+        <div key={r.id} className="card" style={{ marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{r.kind} · {r.op === 'delete' ? 'DELETE' : 'set'} · {r.id}</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 8px' }}>Status: {r.status}</div>
+          {r.op !== 'delete' && (
+            <pre style={{ fontSize: '0.72rem', maxHeight: 160, overflow: 'auto', background: 'var(--bg-surface)', padding: 8, borderRadius: 8 }}>
+              {JSON.stringify(r.data, null, 2).slice(0, 2000)}
+            </pre>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary btn-sm" onClick={() => approve(r.id)} disabled={r.status !== 'in_review'}>Approve</button>
+            <button className="btn btn-sm" onClick={() => reject(r.id)}>Reject</button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
