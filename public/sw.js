@@ -67,7 +67,7 @@ self.addEventListener('fetch', e => {
 
 // ── Push ─────────────────────────────────────────────────────────
 self.addEventListener('push', e => {
-  let data = { title: 'RevisionFlow 📚', body: 'Time to revise!', url: '/', icon: '/favicon.svg', badge: '/favicon.svg' }
+  let data = { title: 'RevisionFlow', body: 'Time to revise!', url: '/', icon: '/favicon.svg', badge: '/favicon.svg' }
   try { if (e.data) data = { ...data, ...e.data.json() } } catch(err) {}
 
   e.waitUntil(
@@ -105,18 +105,62 @@ self.addEventListener('notificationclick', e => {
   )
 })
 
-// ── Push subscription change ──────────────────────────────────────
-// Re-subscribe if the push service expires the subscription
+// ── Push subscription lifecycle ───────────────────────────────────
+// A service worker cannot read Vite env vars, so the page hands us the public
+// VAPID key (SET_VAPID_KEY message) and we persist it in Cache Storage.
+const VAPID_CACHE = 'revisionflow-push-config'
+const VAPID_KEY_URL = '/__push-config/vapid-public-key'
+
+async function saveVapidKey(key) {
+  if (!key) return
+  const cache = await caches.open(VAPID_CACHE)
+  await cache.put(VAPID_KEY_URL, new Response(key))
+}
+
+async function loadVapidKey() {
+  const cache = await caches.open(VAPID_CACHE)
+  const res = await cache.match(VAPID_KEY_URL)
+  return res ? res.text() : null
+}
+
+function urlBase64ToUint8Array(base64) {
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'))
+  return Uint8Array.from(raw, c => c.charCodeAt(0))
+}
+
+async function notifyClients(message) {
+  const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+  all.forEach(c => c.postMessage(message))
+}
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SET_VAPID_KEY') e.waitUntil(saveVapidKey(e.data.key))
+})
+
 self.addEventListener('pushsubscriptionchange', e => {
-  e.waitUntil(
-    self.registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: self.VAPID_PUBLIC_KEY,
-    }).then(subscription => {
-      // Post back to app so it can save the new subscription
-      return self.clients.matchAll().then(clients => {
-        clients.forEach(c => c.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED', subscription: subscription.toJSON() }))
+  e.waitUntil((async () => {
+    try {
+      // Prefer the key the expired subscription used; fall back to the stored one.
+      const oldKey = e.oldSubscription && e.oldSubscription.options && e.oldSubscription.options.applicationServerKey
+      let applicationServerKey = oldKey || null
+      if (!applicationServerKey) {
+        const stored = await loadVapidKey()
+        if (stored) applicationServerKey = urlBase64ToUint8Array(stored)
+      }
+      if (!applicationServerKey) {
+        // No key available: ask any open page to resubscribe with its env key.
+        await notifyClients({ type: 'PUSH_RESUBSCRIBE_NEEDED' })
+        return
+      }
+      const subscription = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })
+      await notifyClients({
+        type: 'PUSH_SUBSCRIPTION_CHANGED',
+        subscription: subscription.toJSON(),
+        oldEndpoint: e.oldSubscription ? e.oldSubscription.endpoint : null,
       })
-    }).catch(() => {})
-  )
+    } catch (err) {
+      await notifyClients({ type: 'PUSH_RESUBSCRIBE_NEEDED' })
+    }
+  })())
 })
