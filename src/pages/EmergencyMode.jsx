@@ -10,10 +10,11 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
-  checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes,
+  checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, getSessions,
 } from '../utils/firestore'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
+import GradeEstimate from '../components/GradeEstimate'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { callAI } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
@@ -104,6 +105,7 @@ export default function EmergencyMode() {
   const [topics, setTopics] = useState([])
   const [paperAttempts, setPaperAttempts] = useState([])
   const [quizResults, setQuizResults] = useState([])
+  const [sessions, setSessions] = useState([])
   const [mistakes, setMistakes] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
 
@@ -139,8 +141,10 @@ export default function EmergencyMode() {
       getPaperAttempts(user.uid),
       getQuizResults(user.uid),
       getMistakes(user.uid),
-    ]).then(([t, p, q, m]) => {
+      getSessions(user.uid),
+    ]).then(([t, p, q, m, ss]) => {
       if (cancelled) return
+      setSessions(ss || [])
       setTopics(t || [])
       setPaperAttempts(p || [])
       setQuizResults(q || [])
@@ -161,8 +165,8 @@ export default function EmergencyMode() {
   // Same call, same inputs, as Dashboard.jsx's own predicted-grade widget -- a lookup into the
   // one shared calculation, not a second estimate that could drift from it.
   const allPredictions = useMemo(
-    () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []),
-    [topics, currentPapers, currentQuizzes, profile]
+    () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile, { sessions: filterToCurrentSubjectInstance(sessions, profile) }) : []),
+    [topics, currentPapers, currentQuizzes, profile, sessions]
   )
   const prediction = selectedExam ? allPredictions.find(p => p.subject === selectedExam.subject) : null
 
@@ -319,17 +323,11 @@ export default function EmergencyMode() {
           <div className="card" style={{ background: 'var(--success-pale)', border: '1px solid var(--success-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <Target size={18} style={{ color: 'var(--success)' }} />
-              <h3 style={{ margin: 0, fontSize: '1rem' }}>Estimated current grade</h3>
+              <h3 style={{ margin: 0, fontSize: '1rem' }}>Estimated grade</h3>
             </div>
             {prediction ? (
               <>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--success)', marginBottom: 4 }}>
-                  {prediction.grade}
-                </div>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  {prediction.percentage}% blended estimate, based on your RevisionFlow data
-                  ({prediction.sources.papers} paper{prediction.sources.papers !== 1 ? 's' : ''}, {prediction.sources.quizzes} quiz{prediction.sources.quizzes !== 1 ? 'zes' : ''}, {prediction.sources.topicsRated} rated topic{prediction.sources.topicsRated !== 1 ? 's' : ''}). Not an official prediction.
-                </p>
+                <GradeEstimate prediction={prediction} />
               </>
             ) : (
               <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>
