@@ -38,12 +38,22 @@ export function usePushNotifications() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
     const handler = async (e) => {
-      if (e.data?.type === 'PUSH_SUBSCRIPTION_CHANGED' && user) {
+      if (!user) return
+      if (e.data?.type === 'PUSH_SUBSCRIPTION_CHANGED') {
         try {
           await updateDoc(doc(db, 'users', user.uid), {
             pushSubscription: e.data.subscription,
+            pushEnabled: true,
           })
         } catch(err) {}
+      } else if (e.data?.type === 'PUSH_RESUBSCRIBE_NEEDED' && getPermissionState() === 'granted') {
+        // SW could not resubscribe itself (no key available) — do it from the page.
+        const result = await subscribeToPush()
+        if (result.subscription) {
+          try {
+            await updateDoc(doc(db, 'users', user.uid), { pushSubscription: result.subscription, pushEnabled: true })
+          } catch(err) {}
+        }
       }
     }
     navigator.serviceWorker.addEventListener('message', handler)
