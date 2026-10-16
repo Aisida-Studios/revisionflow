@@ -1,7 +1,9 @@
 // src/pages/PastPapers.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { savePaperAttempt, getPaperAttempts, getPaperStructures, deletePaperAttempt, updatePaperAttempt } from '../utils/firestore'
+import { Link } from 'react-router-dom'
+import { savePaperAttempt, getPaperAttempts, getPaperStructures, deletePaperAttempt, updatePaperAttempt, getTopicsWithConfidence } from '../utils/firestore'
+import { buildQuestions, distributionTotal, validateDistribution, validateScores, lostMarks, MAX_QUESTIONS } from '../utils/paperQuestions'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
 import { calculateGradeFromBoundaries, AVAILABLE_YEARS } from '../data/paperDatabase'
@@ -14,6 +16,7 @@ import { buildSubjectKey, filterToCurrentSubjectInstance } from '../utils/subjec
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'
+import { todayLocalStr } from '../utils/localDate'
 
 export default function PastPapers() {
   const { user, profile } = useAuth()
@@ -22,6 +25,7 @@ export default function PastPapers() {
   const [selSubject, setSelSubject] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showQPrompt, setShowQPrompt] = useState(null)  // attempt to enter question marks for
+  const [expandedId, setExpandedId] = useState(null)    // attempt whose question breakdown is open
   const [showBoundaryEditor, setShowBoundaryEditor] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
@@ -52,7 +56,7 @@ export default function PastPapers() {
   async function handleDelete(id) {
     await deletePaperAttempt(user.uid, id)
     setAttempts(a=>a.filter(x=>x.id!==id))
-    toast.success('Paper deleted (-100 XP)')
+    toast.success('Paper deleted')
   }
 
   async function handleBulkDelete() {
@@ -172,7 +176,8 @@ export default function PastPapers() {
                 </tr></thead>
                 <tbody>
                   {filtered.map(a=>(
-                    <tr key={a.id} style={{background:selected.includes(a.id)?'rgba(34,197,94,0.08)':undefined}}>
+                    <React.Fragment key={a.id}>
+                    <tr style={{background:selected.includes(a.id)?'rgba(34,197,94,0.08)':undefined}}>
                       <td><input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggleSelect(a.id)} style={{accentColor:'var(--accent)'}}/></td>
                       <td><div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[a.subject]||'var(--accent)',flexShrink:0}}/>{a.subject}</div></td>
                       <td><span className="badge badge-accent" style={{fontSize:'0.68rem'}}>{a.qualification||'GCSE'}</span></td>
@@ -184,10 +189,37 @@ export default function PastPapers() {
                       <td><span style={{fontWeight:800,color:gradeColour(a.grade||''),fontSize:'1rem'}}>{a.grade||'–'}</span></td>
                       <td style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>{a.attemptDate||'–'}</td>
                       <td style={{display:'flex',gap:4}}>
+                        <button className="btn btn-ghost btn-sm" style={{fontSize:'0.72rem',whiteSpace:'nowrap'}}
+                          onClick={()=> a.questionMarks?.length ? setExpandedId(expandedId===a.id?null:a.id) : setShowQPrompt(a)}>
+                          {a.questionMarks?.length ? (expandedId===a.id?'Hide questions':'Questions') : 'Add questions'}
+                        </button>
                         <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--accent-light)'}} onClick={()=>setEditEntry(a)} title="Edit"><Edit2 size={13}/></button>
                         <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} onClick={()=>handleDelete(a.id)} title="Delete"><Trash2 size={14}/></button>
                       </td>
                     </tr>
+                    {expandedId===a.id && a.questionMarks?.length>0 && (
+                      <tr>
+                        <td colSpan={11} style={{background:'var(--bg-surface)'}}>
+                          <div style={{fontSize:'0.74rem',color:'var(--text-muted)',marginBottom:6}}>
+                            Question breakdown{a.questionStructure?.verified ? ' (verified structure)' : a.questionStructure?.source==='student-entered' ? ' (entered by you, not official)' : ''}
+                          </div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                            {a.questionMarks.map(q=>(
+                              <div key={q.num} className="card" style={{padding:'6px 10px',minWidth:96}}>
+                                <div style={{fontWeight:700,fontSize:'0.82rem'}}>Q{q.num}: {q.scored}/{q.marks}</div>
+                                {q.topic && <div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>{q.topic}</div>}
+                                {lostMarks(q)>0 && (
+                                  <Link to={`/mistakes?attempt=${encodeURIComponent(a.id)}&q=${encodeURIComponent(q.num)}`} style={{fontSize:'0.72rem'}}>
+                                    Log mistake ({lostMarks(q)} lost)
+                                  </Link>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -236,15 +268,22 @@ export default function PastPapers() {
             const id = await savePaperAttempt(user.uid,a)
             await getPaperAttempts(user.uid,null).then(setAttempts)
             setShowAdd(false)
-            toast.success('Paper logged! +100 XP')
+            toast.success('Paper logged')
             if(promptQ) setShowQPrompt({...a, id})
           }}/>
       )}
 
       {showQPrompt && (
-        <QuestionMarksModal attempt={showQPrompt} user={user}
+        <QuestionMarksModal attempt={showQPrompt} user={user} profile={profile}
           onClose={()=>setShowQPrompt(null)}
-          onSave={async()=>{setShowQPrompt(null);toast.success('Question marks saved')}}/>
+          onSave={async (questions) => {
+            const questionStructure = { source: 'student-entered', verified: false }
+            await updatePaperAttempt(user.uid, showQPrompt.id, { questionMarks: questions, questionStructure })
+            setAttempts(a => a.map(x => x.id === showQPrompt.id ? { ...x, questionMarks: questions, questionStructure } : x))
+            setExpandedId(showQPrompt.id)
+            setShowQPrompt(null)
+            toast.success('Question marks saved')
+          }}/>
       )}
 
       {editEntry && (
@@ -267,9 +306,14 @@ export default function PastPapers() {
 
 function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
   const subjects = profile?.subjects || []
-  const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', year:2024, paper:1, score:'', maxMarks:'', attemptDate:new Date().toISOString().slice(0,10) })
+  const [form, setForm] = useState({ subject:'', board:'AQA', tier:'N/A', year:2024, paper:1, score:'', maxMarks:'', attemptDate:todayLocalStr() })
   const [autoSpec, setAutoSpec] = useState(null)
   const [autoBoundary, setAutoBoundary] = useState(null)
+  // One id per open modal: a double click or a retry after a network error re-saves the SAME
+  // attempt document and can never create a second record or a second XP award.
+  const attemptIdRef = useRef(null)
+  if (!attemptIdRef.current) attemptIdRef.current = 'pa_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  const [saving, setSaving] = useState(false)
   const [questionMarks, setQMarks] = useState([])
   const [useQ, setUseQ] = useState(false)
   const [customBoundaries, setCustomBoundaries] = useState([])
@@ -309,14 +353,29 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
 
   async function submit(e) {
     e.preventDefault()
+    if (saving) return
     const score   = useQ ? totalScored : parseInt(form.score)
     const max     = parseInt(form.maxMarks)
     const pct     = Math.round((score/max)*100)
     const grades  = autoBoundary?.grades || getGradeOptions(form.subject, formQual, form.tier)
     const bounds  = useCustom ? { boundaries:customBoundaries.map(Number), maxMarks:max, grades } : autoBoundary
     const grade   = bounds ? calculateGradeFromBoundaries(score, bounds) : null
+    // Record which boundaries produced the grade so it is never shown as official when it isn't.
+    const prov = useCustom
+      ? { requestedYear: Number(form.year) || null, sourceYear: null, verified: false, estimated: true, source: 'Student-entered boundaries', label: 'Grade from boundaries you entered' }
+      : (autoBoundary?.provenance || null)
+    const gradeProvenance = grade && prov
+      ? { requestedYear: prov.requestedYear, sourceYear: prov.sourceYear, verified: !!prov.verified, estimated: !!prov.estimated, source: prov.source, label: prov.label }
+      : null
     const subjectKey = buildSubjectKey({ board: form.board, qualification: formQual, subject: form.subject, tier: form.tier })
-    await onSave({ ...form, score, maxMarks:max, percentage:pct, grade, qualification:formQual, subjectKey, questionMarks: useQ?questionMarks:[] }, !!autoSpec?.questions)
+    setSaving(true)
+    try {
+      await onSave({ ...form, attemptId: attemptIdRef.current, score, maxMarks:max, percentage:pct, grade, gradeProvenance, qualification:formQual, subjectKey, questionMarks: useQ?questionMarks:[], ...(useQ && autoSpec?.questions ? { questionStructure: { source: 'verified', verified: true } } : {}) }, !(useQ && questionMarks.length > 0))
+    } catch (err) {
+      toast.error('Could not save the paper: ' + (err?.message || 'unknown error'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -398,6 +457,11 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
                       </div>
                     )
                   })}
+                  {autoBoundary.provenance && (
+                    <p style={{gridColumn:'1 / -1',fontSize:'0.72rem',margin:'4px 0 0',color:autoBoundary.provenance.verified?'var(--text-muted)':'var(--warning)'}}>
+                      {autoBoundary.provenance.label}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div>
@@ -428,7 +492,7 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
           {useQ && questionMarks.length > 0 ? (
             <div style={{background:'var(--bg-surface)',padding:12,borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:'0.875rem'}}>
-                <span style={{fontWeight:600}}>Marks per question</span>
+                <span style={{fontWeight:600}}>Marks per question{autoSpec?.questions ? <span style={{marginLeft:8,fontSize:'0.72rem',fontWeight:600,color:'var(--success)'}}>Verified structure</span> : null}</span>
                 <span style={{color:'var(--accent-light)',fontWeight:700}}>{totalScored}/{form.maxMarks||autoSpec?.maxMarks}</span>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))',gap:6}}>
@@ -454,7 +518,7 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
 
           <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save paper</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save paper'}</button>
           </div>
         </form>
       </div>
@@ -462,38 +526,127 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
   )
 }
 
-function QuestionMarksModal({ attempt, user, onClose, onSave }) {
-  const [marks, setMarks] = useState(
-    Array.from({length:20},(_,i)=>({num:i+1,marks:3,scored:0,topic:''}))
-  )
+// Break a logged paper down by question. The student describes how the paper's marks are split
+// (e.g. 5 questions of 4 marks), then enters what they scored on each. Nothing is assumed: the split
+// must add up to the paper's real total, the scores must add up to the score already logged, and
+// the result is saved as student-entered - never presented as an official paper structure.
+function QuestionMarksModal({ attempt, user, profile, onClose, onSave }) {
+  const existing = attempt.questionMarks?.length ? attempt.questionMarks : null
+  const [step, setStep] = useState(existing ? 'scores' : 'structure')
+  const [groups, setGroups] = useState([{ count: '', marks: '' }])
+  const [questions, setQuestions] = useState(existing || [])
+  const [errors, setErrors] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [topicNames, setTopicNames] = useState([])
+  const qualification = attempt.qualification || 'GCSE'
+  const maxMarks = Number(attempt.maxMarks)
+
+  // Topics for THIS subject in the student's current course, so a question can be tied to a real topic.
+  useEffect(() => {
+    let cancelled = false
+    getTopicsWithConfidence(user.uid, profile).then(ts => {
+      if (cancelled) return
+      setTopicNames([...new Set(ts.filter(t => t.subjectId === attempt.subject).map(t => t.name))].sort())
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [user.uid, attempt.subject]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const parsed = groups.map(g => ({ count: Number(g.count), marks: Number(g.marks) }))
+  const planned = distributionTotal(parsed)
+  const scoreCheck = validateScores(questions, { score: attempt.score })
+
+  function continueToScores() {
+    const v = validateDistribution(parsed, { maxMarks, qualification, subject: attempt.subject })
+    setErrors(v.errors)
+    if (!v.ok) return
+    setQuestions(buildQuestions(parsed))
+    setStep('scores')
+  }
+
+  async function save() {
+    const v = validateScores(questions, { score: attempt.score })
+    setErrors(v.errors)
+    if (!v.ok || saving) return
+    setSaving(true)
+    try { await onSave(questions.map(q => ({ num: q.num, marks: q.marks, scored: Number(q.scored), topic: q.topic || '' }))) }
+    catch (err) { setErrors(['Could not save: ' + (err?.message || 'unknown error')]); setSaving(false) }
+  }
+
+  const setGroup = (i, key, val) => setGroups(gs => gs.map((g, j) => j === i ? { ...g, [key]: val } : g))
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:600}} onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Enter marks per question</span>
+          <span className="modal-title">Question breakdown</span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
         </div>
-        <p style={{marginBottom:14,fontSize:'0.875rem'}}>Track your performance per question to identify weak topics. You can do this now or skip and do it later.</p>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8,maxHeight:300,overflowY:'auto',marginBottom:16}}>
-          {marks.map((q,i)=>(
-            <div key={i} style={{padding:8,background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
-              <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:4}}>Q{q.num}</div>
-              <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:4}}>
-                <input className="input" type="number" min={0} max={q.marks} value={q.scored}
-                  onChange={e=>setMarks(ms=>ms.map((m,j)=>j===i?{...m,scored:parseInt(e.target.value)||0}:m))}
-                  style={{flex:1,padding:'3px',textAlign:'center',fontSize:'0.82rem'}}/>
-                <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>/{q.marks}</span>
+        <p style={{marginBottom:14,fontSize:'0.875rem'}}>
+          {attempt.subject} paper {attempt.paper}: {attempt.score}/{attempt.maxMarks}. Add the questions to see where marks were lost. You can skip this and add it later.
+        </p>
+
+        {step === 'structure' && (
+          <>
+            <p style={{fontSize:'0.82rem',color:'var(--text-secondary)',marginBottom:8}}>
+              How are the {maxMarks} marks split? For example 5 questions of 4 marks, then 1 question of 6 marks.
+            </p>
+            {groups.map((g, i) => (
+              <div key={i} style={{display:'flex',gap:8,alignItems:'center',marginBottom:8}}>
+                <input className="input" type="number" min={1} max={MAX_QUESTIONS} placeholder="How many" value={g.count} onChange={e=>setGroup(i,'count',e.target.value)} style={{width:110}}/>
+                <span style={{fontSize:'0.85rem'}}>questions of</span>
+                <input className="input" type="number" min={1} placeholder="Marks each" value={g.marks} onChange={e=>setGroup(i,'marks',e.target.value)} style={{width:110}}/>
+                <span style={{fontSize:'0.85rem'}}>marks</span>
+                {groups.length > 1 && <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={()=>setGroups(gs=>gs.filter((_,j)=>j!==i))} title="Remove group"><X size={14}/></button>}
               </div>
-              <input className="input" placeholder="Topic" value={q.topic}
-                onChange={e=>setMarks(ms=>ms.map((m,j)=>j===i?{...m,topic:e.target.value}:m))}
-                style={{fontSize:'0.75rem',padding:'3px 6px'}}/>
+            ))}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setGroups(gs=>[...gs,{count:'',marks:''}])}>Add another group</button>
+            <p style={{margin:'10px 0',fontSize:'0.85rem',fontWeight:600,color:planned===maxMarks?'var(--success)':'var(--text-secondary)'}}>
+              {planned} of {maxMarks} marks accounted for
+            </p>
+          </>
+        )}
+
+        {step === 'scores' && (
+          <>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:8,maxHeight:320,overflowY:'auto',marginBottom:12}}>
+              {questions.map((q,i)=>(
+                <div key={q.num} style={{padding:8,background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
+                  <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:4}}>Q{q.num}</div>
+                  <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:4}}>
+                    <input className="input" type="number" min={0} max={q.marks} value={q.scored}
+                      onChange={e=>setQuestions(qs=>qs.map((x,j)=>j===i?{...x,scored:e.target.value===''?'':Math.min(Number(e.target.value),x.marks)}:x))}
+                      style={{flex:1,padding:'3px',textAlign:'center',fontSize:'0.82rem'}}/>
+                    <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>/{q.marks}</span>
+                  </div>
+                  {topicNames.length>0 ? (
+                    <select className="select" value={q.topic||''} onChange={e=>setQuestions(qs=>qs.map((x,j)=>j===i?{...x,topic:e.target.value}:x))} style={{fontSize:'0.72rem',padding:'3px 6px'}}>
+                      <option value="">No topic</option>
+                      {topicNames.map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                  ) : (
+                    <input className="input" placeholder="Topic (optional)" value={q.topic||''}
+                      onChange={e=>setQuestions(qs=>qs.map((x,j)=>j===i?{...x,topic:e.target.value}:x))} style={{fontSize:'0.72rem',padding:'3px 6px'}}/>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <p style={{margin:'0 0 10px',fontSize:'0.85rem',fontWeight:600,color:scoreCheck.ok?'var(--success)':'var(--text-secondary)'}}>
+              {scoreCheck.total} of {attempt.score} marks entered
+            </p>
+          </>
+        )}
+
+        {errors.length > 0 && (
+          <ul style={{margin:'0 0 12px',paddingLeft:18,fontSize:'0.8rem',color:'var(--danger)'}}>
+            {errors.map((e,i)=><li key={i}>{e}</li>)}
+          </ul>
+        )}
         <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
           <button className="btn btn-secondary" onClick={onClose}>Skip for now</button>
-          <button className="btn btn-primary" onClick={()=>onSave(marks)}>Save question marks</button>
+          {step === 'scores' && !existing && <button className="btn btn-secondary" onClick={()=>{setErrors([]);setStep('structure')}}>Back</button>}
+          {step === 'structure'
+            ? <button className="btn btn-primary" onClick={continueToScores}>Continue</button>
+            : <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving...':'Save question marks'}</button>}
         </div>
       </div>
     </div>
@@ -563,7 +716,9 @@ function BoundaryEditorModal({ profile, onClose }) {
               ))}
             </div>
             <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:12}}>
-              Historical boundaries from real exam board results{bounds.note?` (${bounds.note.replace('~','approx. ')})`:''}. 2026 boundaries will be published after results day in August.
+              {bounds.provenance?.label || 'Boundary source not recorded'}
+              {bounds.note ? ` (${bounds.note.replace('~','approx. ')})` : ''}.
+              {bounds.provenance && !bounds.provenance.verified ? ' Treat these as estimates, not official boundaries.' : ''}
             </p>
           </div>
         ) : (
