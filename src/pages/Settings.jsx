@@ -434,7 +434,7 @@ export default function Settings() {
             <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>Free plan</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for unlimited AI, all themes, and timed quiz</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Upgrade for higher AI limits, all themes, and timed quiz</div>
               </div>
               <Link to="/pro" className="btn btn-primary btn-sm"><Crown size={13} /> Upgrade to Pro</Link>
             </div>
