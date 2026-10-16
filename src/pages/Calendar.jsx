@@ -28,6 +28,7 @@ import {
   Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,
 } from 'lucide-react'
 import { subjectColour } from '../data/subjects'
+import { toLocalDateStr as localDateStr, parseLocalDate } from '../utils/localDate'
 import './Calendar.css'
 
 // 'Flashcard Session' and 'Past Paper Practice' added per the calendar-as-planning-engine
@@ -36,21 +37,6 @@ import './Calendar.css'
 // session" launches a real study session elsewhere in the app. See the delivery notes.
 const SESSION_TYPES = ['Content Revision', 'Exam Practice', 'Flashcard Session', 'Past Paper Practice', 'Emergency Revision']
 const TASK_PRIORITIES = ['high', 'medium', 'low']
-
-// Local YYYY-MM-DD for "today" — never new Date().toISOString() (that's UTC and can be
-// a day off from the user's actual local date near midnight). Every session/task/exam
-// date in this app is already a local "YYYY-MM-DD" string, so comparisons stay in that
-// same local, lexicographically-sortable format throughout.
-function localDateStr(d) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-}
-
-// "YYYY-MM-DD" -> local Date at midnight. Never new Date(dateString) — that parses as
-// UTC and can land on the wrong local day near a midnight boundary.
-function parseLocalDate(dateStr) {
-  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
 
 export default function Calendar() {
   const { user, profile } = useAuth()
@@ -179,8 +165,9 @@ export default function Calendar() {
       await completeTask(user.uid, session.id, true)
       toast.success('Task completed!')
     } else {
-      await completeSession(user.uid, session.id, notes)
-      toast.success('Session completed! +50 XP 🎉')
+      const res = await completeSession(user.uid, session._docId || session.id, notes)
+      if (res?.alreadyCompleted) toast('That session was already completed')
+      else toast.success('Session completed')
     }
     await loadSessions()
     setShowComplete(null)
@@ -971,10 +958,15 @@ function SessionCard({ session:s, onComplete, onDelete, onEdit }) {
         <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:s.completed?0:8}}>
           {s.start&&<span className="badge badge-grey"><Clock size={9}/> {s.start}</span>}
           {s.duration&&<span className="badge badge-grey">{s.duration}min</span>}
-          {s.type&&<span className={`badge badge-${s.isEmergency?'red':s.type.includes('Exam')?'blue':'purple'}`}>{s.type}</span>}
+          {s.type&&<span className={`badge badge-${s.isEmergency?'red':s.type.includes('Exam')?'blue':'accent'}`}>{s.type}</span>}
         </div>
         {!s.completed&&(
-          <div style={{display:'flex',gap:6}}>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {!s.isTask && (
+              <Link className="btn btn-primary btn-sm" to={`/timer?sessionId=${encodeURIComponent(s._docId || s.id)}`}>
+                Start session
+              </Link>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={onEdit}>Edit</button>
             <button className="btn btn-secondary btn-sm" onClick={onComplete}>
               <CheckCircle2 size={13}/> Done
