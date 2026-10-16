@@ -17,6 +17,7 @@ let _admin = null
 async function getAdmin() {
   if (_admin) return _admin
   const admin = require('firebase-admin')
+const { validateQuestionStructure } = require('./lib/structure')
   if (!admin.apps.length) {
     const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}')
     admin.initializeApp({ credential: admin.credential.cert(sa) })
@@ -410,6 +411,111 @@ module.exports.handler = async function(event) {
 
       logAdminAction(db, 'archiveSupersededQualificationData', { targetUid: onlyUid || 'all users', totalArchived: toArchive.length })
       return respond(200, { ok: true, summary: { ...summary, totalArchived: toArchive.length } })
+    }
+
+    // ── Content pipeline: draft → review → approval ───────────────
+    // Every privileged content write (admin overrides, official flashcards, verified
+    // topic notes) goes through here. Nothing reaches a live collection until an admin
+    // has explicitly moved the draft to review and then approved it.
+    if (action === 'contentDraft' || action === 'contentSubmit' || action === 'contentApprove' ||
+        action === 'contentReject' || action === 'contentListDrafts') {
+      const CONTENT_KINDS = {
+        topicOverride:     'topicOverrides',
+        examDateOverride:  'examDateOverrides',
+        paperSpecOverride: 'paperSpecOverrides',
+        boundaryOverride:  'boundaryOverrides',
+        officialFlashcard: 'publicFlashcards',
+        topicNote:         'topicNotes',
+      }
+      const ID_RE = /^[A-Za-z0-9_-]{1,200}$/
+      const drafts = db.collection('adminDrafts')
+
+      if (action === 'contentListDrafts') {
+        const status = body.status
+        let q = drafts.orderBy('createdAt', 'desc').limit(100)
+        const snap = await q.get()
+        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !status || r.status === status)
+        return respond(200, { drafts: rows })
+      }
+
+      if (action === 'contentDraft') {
+        const { kind, id, op = 'set', data } = body
+        if (!CONTENT_KINDS[kind]) return respond(400, { error: 'Unknown content kind: ' + kind })
+        if (!ID_RE.test(String(id || ''))) return respond(400, { error: 'Invalid content id' })
+        if (op !== 'set' && op !== 'delete') return respond(400, { error: 'op must be set or delete' })
+        let clean = null
+        if (op === 'set') {
+          if (!data || typeof data !== 'object' || Array.isArray(data)) return respond(400, { error: 'data object required' })
+          if (JSON.stringify(data).length > 900000) return respond(400, { error: 'Draft too large' })
+          clean = { ...data }
+          delete clean.provenance; delete clean.updatedAt; delete clean.verified
+          if (kind === 'boundaryOverride') {
+            // Boundaries must carry provenance so the app never passes off another year's data as official.
+            if (!Number.isInteger(clean.year) || !String(clean.source || '').trim()) {
+              return respond(400, { error: 'boundaryOverride requires an integer year and a source' })
+            }
+          }
+          if (kind === 'paperSpecOverride' && clean.questions !== undefined && clean.questions !== null) { // null = remove the structure
+            // An official per-question structure must describe the paper exactly - this is what makes
+            // it "verified" for students, so a structure that doesn't add up is refused outright.
+            const check = validateQuestionStructure(clean.questions, { maxMarks: clean.maxMarks, level: clean.level, subject: clean.subject })
+            if (!check.ok) return respond(400, { error: 'Invalid question structure: ' + check.errors.join(' ') })
+            clean.questions = clean.questions.map(q => ({ num: q.num, marks: q.marks }))
+          }
+          if (kind === 'officialFlashcard') {
+            clean.uid = 'official'; clean.official = true; clean.authorType = 'official'; clean.isPublic = true
+          }
+        }
+        const draftId = kind + '__' + id
+        await drafts.doc(draftId).set({
+          kind, id, op, data: clean, status: 'draft',
+          createdAt: new Date().toISOString(), createdBy: ADMIN_EMAIL,
+          reviewedAt: null, rejectedReason: null,
+        })
+        logAdminAction(db, 'contentDraft', { draftId, op })
+        return respond(200, { ok: true, draftId, status: 'draft' })
+      }
+
+      const { draftId } = body
+      if (!ID_RE.test(String(draftId || '').replace(/__/g, '_'))) return respond(400, { error: 'Invalid draftId' })
+      const ref = drafts.doc(draftId)
+      const snap = await ref.get()
+      if (!snap.exists) return respond(404, { error: 'Draft not found' })
+      const draft = snap.data()
+
+      if (action === 'contentSubmit') {
+        if (draft.status !== 'draft') return respond(409, { error: 'Only drafts can be submitted for review' })
+        await ref.update({ status: 'in_review', submittedAt: new Date().toISOString() })
+        return respond(200, { ok: true, status: 'in_review' })
+      }
+
+      if (action === 'contentReject') {
+        if (draft.status === 'approved') return respond(409, { error: 'Already approved' })
+        await ref.update({ status: 'rejected', rejectedReason: String(body.reason || '').slice(0, 500), reviewedAt: new Date().toISOString() })
+        return respond(200, { ok: true, status: 'rejected' })
+      }
+
+      // contentApprove — idempotent: re-approving an approved draft is a no-op.
+      if (draft.status === 'approved') return respond(200, { ok: true, status: 'approved', alreadyApproved: true })
+      if (draft.status !== 'in_review') return respond(409, { error: 'Draft must be in review before approval' })
+      const target = db.collection(CONTENT_KINDS[draft.kind]).doc(draft.id)
+      if (draft.op === 'delete') {
+        await target.delete()
+      } else {
+        // A doc created by approval needs createdAt: Firestore leaves documents without the field
+        // out of any orderBy('createdAt') query, which would hide approved sets from the community list.
+        const already = await target.get()
+        await target.set({
+          ...(already.exists ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
+          ...draft.data,
+          provenance: { status: 'verified', approvedBy: ADMIN_EMAIL, approvedAt: new Date().toISOString(), draftId },
+          verified: true,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true })
+      }
+      await ref.update({ status: 'approved', reviewedAt: new Date().toISOString() })
+      logAdminAction(db, 'contentApprove', { draftId, kind: draft.kind, op: draft.op })
+      return respond(200, { ok: true, status: 'approved' })
     }
 
     return respond(400, { error: 'Unknown action: ' + action })
