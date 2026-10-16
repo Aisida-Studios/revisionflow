@@ -1,6 +1,7 @@
 // src/components/Layout.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom'
+import ProfileMenu from './ProfileMenu'
 import { doc, updateDoc } from 'firebase/firestore'
 import {
   LayoutDashboard, CalendarDays, Award, ClipboardList, Target,
@@ -44,7 +45,6 @@ const NAV_GROUPS = [
     items: [
       { to: '/study', label: 'Study Tools', icon: BookOpen },
       { to: '/ai', label: 'AI Advisor', icon: Compass },
-      { to: '/tutor', label: 'Tutor', icon: GraduationCap, pro: true },
       { to: '/timer', label: 'Timer', icon: TimerIcon },
       { to: '/mistakes', label: 'Mistakes', icon: AlertCircle },
       { to: '/analytics', label: 'Analytics', icon: BarChart3 },
@@ -494,9 +494,8 @@ export default function Layout() {
                 </div>
               )}
             </div>
-            <Link to="/profile" aria-label="Your profile">
-              <Avatar profile={profile} user={user} size="sm" />
-            </Link>
+            <ProfileMenu user={user} profile={profile} isPro={isPro} onLogout={logout}
+              avatar={<Avatar profile={profile} user={user} size="sm" />} />
           </div>
         )}
         <AnnouncementBanner />
