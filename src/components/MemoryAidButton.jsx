@@ -55,7 +55,7 @@ export default function MemoryAidButton({ front, back, subject, uid, struggling 
           padding: '7px 14px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
           background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--warning)',
         } : { fontSize: '0.78rem' }}>
-        {loading ? 'Thinking…' : struggling ? 'Still not sticking? Get a memory aid' : '💡 Memory aid'}
+        {loading ? 'Thinking…' : struggling ? 'Still not sticking? Get a memory aid' : 'Memory aid'}
       </button>
       {error && <div style={{ marginTop: 4, fontSize: '0.72rem', color: 'var(--danger)' }}>{error}</div>}
     </div>
