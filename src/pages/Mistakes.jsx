@@ -1,8 +1,11 @@
 // src/pages/Mistakes.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { addMistake, getMistakes, getPaperAttempts, resolveMistake } from '../utils/firestore'
 import { subjectIdentityForName, filterToCurrentSubjectInstance } from '../utils/subjectKey'
+import { summariseMistakes } from '../utils/mistakeStats'
+import { lostMarks } from '../utils/paperQuestions'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { SUBJECT_COLOURS } from '../data/subjects'
@@ -19,7 +22,8 @@ const MISTAKE_CATEGORIES = [
   'Careless error', 'Exam technique', 'Misunderstanding', 'Incomplete answer',
 ]
 
-const emptyForm = { subject:'', topic:'', description:'', source:'', priority:'medium', category:'', marksLost:'', paperAttemptId:'' }
+const emptyForm = { subject:'', topic:'', description:'', source:'', priority:'medium', category:'', marksLost:'', paperAttemptId:'', questionNumber:'', correctiveAction:'' }
+const newMistakeId = () => 'mk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 
 export default function Mistakes() {
   const { user, profile } = useAuth()
@@ -30,6 +34,16 @@ export default function Mistakes() {
   const [selected, setSelected] = useState([])
   const [form, setForm] = useState(emptyForm)
   const descriptionRef = useRef(null)
+  // One id per open form: a double click or a retry saves the SAME mistake, never a second one.
+  const mistakeIdRef = useRef(null)
+  const [saving, setSaving] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  function openAdd(prefill = {}) {
+    mistakeIdRef.current = newMistakeId()
+    setForm({ ...emptyForm, ...prefill })
+    setShowAdd(true)
+  }
 
   const subjects = profile?.subjects?.map(s=>s.name)||[]
 
@@ -42,6 +56,22 @@ export default function Mistakes() {
     getPaperAttempts(user.uid).then(setPaperAttempts)
   }, [user])
 
+  // Arriving from a paper's question breakdown (/mistakes?attempt=ID&q=NUM): open the form with
+  // the paper, question, marks lost and topic already filled in.
+  useEffect(() => {
+    const attemptId = searchParams.get('attempt')
+    if (!attemptId || !paperAttempts.length) return
+    const attempt = paperAttempts.find(a => a.id === attemptId)
+    if (attempt) {
+      const q = (attempt.questionMarks || []).find(x => String(x.num) === searchParams.get('q'))
+      openAdd({
+        subject: attempt.subject, paperAttemptId: attempt.id,
+        ...(q ? { questionNumber: String(q.num), marksLost: String(lostMarks(q)), topic: q.topic || '' } : {}),
+      })
+    }
+    setSearchParams({}, { replace: true })
+  }, [paperAttempts, searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Paper attempts for whichever subject is selected in the add-mistake form, newest first --
   // lets a mistake link to a specific real attempt instead of a free-text guess at which one.
   const paperOptionsForSubject = useMemo(() => {
@@ -52,7 +82,7 @@ export default function Mistakes() {
   }, [paperAttempts, form.subject])
 
   async function handleAdd() {
-    if (!form.subject||!form.description) return
+    if (!form.subject||!form.description||saving) return
     const linked = paperOptionsForSubject.find(a => a.id === form.paperAttemptId)
     // board/qualification/tier/subjectKey come from the student's OWN current entry for this
     // subject (profile.subjects), not invented — identityForName returns null for a subject
@@ -68,6 +98,8 @@ export default function Mistakes() {
       ...(identity || {}),
     }
     if (form.category) payload.category = form.category
+    if (form.questionNumber.trim()) payload.questionNumber = form.questionNumber.trim()
+    if (form.correctiveAction.trim()) payload.correctiveAction = form.correctiveAction.trim()
     if (form.marksLost !== '' && !Number.isNaN(Number(form.marksLost))) payload.marksLost = Number(form.marksLost)
     if (linked) {
       payload.paperAttemptId = linked.id
@@ -75,17 +107,24 @@ export default function Mistakes() {
       // same pattern firestore.js already uses for friend requests (fromName/fromAvatarUrl).
       payload.paperLabel = `${linked.board||''} ${linked.subject} Paper ${linked.paper} (${linked.year})`.replace(/\s+/g,' ').trim()
     }
-    await addMistake(user.uid, payload)
-    await getMistakes(user.uid).then(setAllMistakes)
-    setForm(emptyForm)
-    setShowAdd(false)
-    toast.success('Mistake logged +10 XP')
+    setSaving(true)
+    try {
+      await addMistake(user.uid, payload, { id: mistakeIdRef.current })
+      await getMistakes(user.uid).then(setAllMistakes)
+      setForm(emptyForm)
+      setShowAdd(false)
+      toast.success('Mistake logged')
+    } catch (err) {
+      toast.error('Could not save the mistake: ' + (err?.message || 'unknown error'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleResolve(id) {
-    await resolveMistake(user.uid, id)
+    const res = await resolveMistake(user.uid, id)
     setAllMistakes(ms=>ms.map(m=>m.id===id?{...m,resolved:true}:m))
-    toast.success('Resolved ✓')
+    toast(res?.alreadyResolved ? 'Already resolved' : 'Resolved')
   }
 
   async function handleDelete(id) {
@@ -108,6 +147,9 @@ export default function Mistakes() {
     (filter.resolved ? true : !m.resolved) &&
     (!filter.subject || m.subject === filter.subject)
   )
+  const stats = summariseMistakes(mistakes)
+  const linkedAttempt = paperOptionsForSubject.find(a => a.id === form.paperAttemptId)
+  const lostQuestions = (linkedAttempt?.questionMarks || []).filter(q => lostMarks(q) > 0)
   const pCol = p=>p==='high'?'var(--danger)':p==='medium'?'var(--warning)':'var(--info)'
 
   return (
@@ -116,7 +158,7 @@ export default function Mistakes() {
         <div><h2>Mistake Log</h2><p>Track errors to avoid repeating them</p></div>
         <div style={{display:'flex',gap:8}}>
           {selected.length>0&&<button className="btn btn-danger btn-sm" onClick={handleBulkDelete}><Trash2 size={14}/> Delete {selected.length}</button>}
-          <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}><Plus size={14}/> Log mistake</button>
+          <button className="btn btn-primary btn-sm" onClick={()=>openAdd()}><Plus size={14}/> Log mistake</button>
         </div>
       </div>
 
@@ -144,8 +186,40 @@ export default function Mistakes() {
         </p>
       )}
 
+      {stats.total>0&&(
+        <div className="card" style={{marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:10}}>
+            Patterns{stats.openMarksLost>0?` - ${stats.openMarksLost} mark${stats.openMarksLost===1?'':'s'} still to win back`:''}
+          </div>
+          <div className="grid-3" style={{gap:16}}>
+            <div>
+              <div className="label">Costing you most</div>
+              {stats.byTopic.length===0
+                ? <p style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>No open mistakes.</p>
+                : stats.byTopic.map(t=>(
+                  <div key={t.subject+t.topic} style={{fontSize:'0.82rem',marginBottom:4}}>
+                    {t.subject}: {t.topic} <span style={{color:'var(--text-muted)'}}>- {t.openCount} open{t.openMarksLost>0?`, ${t.openMarksLost} mark${t.openMarksLost===1?'':'s'}`:''}</span>
+                  </div>
+                ))}
+            </div>
+            <div>
+              <div className="label">Why it happens</div>
+              {stats.byCategory.map(c=>(
+                <div key={c.category} style={{fontSize:'0.82rem',marginBottom:4}}>{c.category} <span style={{color:'var(--text-muted)'}}>- {c.count}</span></div>
+              ))}
+            </div>
+            <div>
+              <div className="label">Open by priority</div>
+              {['high','medium','low'].map(p=>(
+                <div key={p} style={{fontSize:'0.82rem',marginBottom:4,color:pCol(p)}}>{p.charAt(0).toUpperCase()+p.slice(1)}: <span style={{color:'var(--text-primary)'}}>{stats.byPriority[p]}</span></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {visible.length===0 ? (
-        <EmptyState art="emptyMistakes" title="No mistakes logged" body="Log a slip-up to turn it into targeted revision — spot it, understand it, fix it." action={<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Log first mistake</button>} />
+        <EmptyState art="emptyMistakes" title="No mistakes logged" body="Log a slip-up to turn it into targeted revision — spot it, understand it, fix it." action={<button className="btn btn-primary" onClick={()=>openAdd()}>Log first mistake</button>} />
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {visible.map(m=>(
@@ -162,10 +236,12 @@ export default function Mistakes() {
                       {m.category&&<span className="badge badge-grey">{m.category}</span>}
                       <span className={`badge badge-${m.priority==='high'?'red':m.priority==='medium'?'amber':'blue'}`}>{m.priority}</span>
                       {typeof m.marksLost==='number'&&m.marksLost>0&&<span className="badge badge-red">-{m.marksLost} mark{m.marksLost!==1?'s':''}</span>}
+                      {m.questionNumber&&<span className="badge badge-grey">Q{m.questionNumber}</span>}
                       {m.resolved&&<span className="badge badge-green">Resolved</span>}
                     </div>
                     <p style={{fontSize:'0.875rem',color:'var(--text-primary)',lineHeight:1.6,marginBottom:(m.source||m.paperLabel)?4:0}}>{m.description}</p>
                     {m.paperLabel&&<p style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>From: {m.paperLabel}</p>}
+                    {m.correctiveAction&&<p style={{fontSize:'0.8rem',color:'var(--text-secondary)',marginTop:2}}>Next time: {m.correctiveAction}</p>}
                     {m.source&&<p style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>Source: {m.source}</p>}
                   </div>
                 </div>
@@ -186,7 +262,7 @@ export default function Mistakes() {
             <div style={{display:'flex',flexDirection:'column',gap:12}}>
               <div className="grid-2" style={{gap:10}}>
                 <div><label className="label">Subject</label>
-                  <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value,paperAttemptId:''}))} required>
+                  <select className="select" value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value,paperAttemptId:'',questionNumber:''}))} required>
                     <option value="">Select…</option>{subjects.map(s=><option key={s} value={s}>{s}</option>)}
                   </select></div>
                 <div><label className="label">Topic</label><input className="input" placeholder="e.g. Integration" value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}/></div>
@@ -203,12 +279,29 @@ export default function Mistakes() {
               </div>
               {paperOptionsForSubject.length>0 && (
                 <div><label className="label">Link to a past paper attempt (optional)</label>
-                  <select className="select" value={form.paperAttemptId} onChange={e=>setForm(f=>({...f,paperAttemptId:e.target.value}))}>
+                  <select className="select" value={form.paperAttemptId} onChange={e=>setForm(f=>({...f,paperAttemptId:e.target.value,questionNumber:''}))}>
                     <option value="">None</option>
                     {paperOptionsForSubject.map(a=>(
                       <option key={a.id} value={a.id}>{a.board} Paper {a.paper} ({a.year}) — {a.percentage}%</option>
                     ))}
                   </select>
+                </div>
+              )}
+              {linkedAttempt && (
+                <div>
+                  <label className="label">Question (optional)</label>
+                  {lostQuestions.length>0 ? (
+                    <select className="select" value={form.questionNumber} onChange={e=>{
+                      const q = lostQuestions.find(x=>String(x.num)===e.target.value)
+                      setForm(f=>({...f,questionNumber:e.target.value,
+                        ...(q ? { marksLost:String(lostMarks(q)), topic:f.topic||q.topic||'' } : {})}))
+                    }}>
+                      <option value="">Not specified</option>
+                      {lostQuestions.map(q=><option key={q.num} value={String(q.num)}>Q{q.num} - lost {lostMarks(q)} of {q.marks} mark{q.marks===1?'':'s'}{q.topic?` (${q.topic})`:''}</option>)}
+                    </select>
+                  ) : (
+                    <input className="input" placeholder="e.g. 5b" value={form.questionNumber} onChange={e=>setForm(f=>({...f,questionNumber:e.target.value}))}/>
+                  )}
                 </div>
               )}
               <div className="grid-2" style={{gap:10}}>
@@ -218,9 +311,12 @@ export default function Mistakes() {
                     {['high','medium','low'].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
                   </select></div>
               </div>
+              <div><label className="label">What will you do differently? (optional)</label>
+                <textarea className="textarea" rows={2} placeholder="e.g. Re-read the command word before answering" value={form.correctiveAction} onChange={e=>setForm(f=>({...f,correctiveAction:e.target.value}))}/>
+              </div>
               <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
                 <button className="btn btn-secondary" onClick={()=>setShowAdd(false)}>Cancel</button>
-                <button className="btn btn-primary" onClick={handleAdd} disabled={!form.subject||!form.description}>Log mistake</button>
+                <button className="btn btn-primary" onClick={handleAdd} disabled={!form.subject||!form.description||saving}>{saving?'Saving...':'Log mistake'}</button>
               </div>
             </div>
           </div>
