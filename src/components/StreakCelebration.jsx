@@ -149,7 +149,7 @@ export default function StreakCelebration({ streak, onClose }) {
             lineHeight: 1.6,
           }}>
             {streak >= 30
-              ? "You're absolutely crushing it. Legendary focus! 💪"
+              ? "You're absolutely crushing it. Legendary focus!"
               : streak >= 14
               ? "Two weeks strong! Your dedication is paying off."
               : streak >= 7
