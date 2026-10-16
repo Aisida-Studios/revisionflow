@@ -49,6 +49,10 @@ export async function subscribeToPush() {
 
   try {
     const reg  = await navigator.serviceWorker.ready
+    // Hand the public key to the service worker so it can resubscribe on its own
+    // if the push service expires this subscription (see public/sw.js).
+    const worker = reg.active || navigator.serviceWorker.controller
+    if (worker) worker.postMessage({ type: 'SET_VAPID_KEY', key: VAPID_PUBLIC_KEY })
     const existing = await reg.pushManager.getSubscription()
     if (existing) return { subscription: existing.toJSON() }
 
@@ -111,7 +115,7 @@ export function sendLocalNotification(title, body, options = {}) {
 
 // ── Timer finished notification ───────────────────────────────────
 export function sendTimerNotification(label) {
-  sendLocalNotification('⏱ Timer complete!', label || 'Your revision timer has finished.', {
+  sendLocalNotification('Timer complete!', label || 'Your revision timer has finished.', {
     tag: 'timer-complete',
     requireInteraction: true,
   })
@@ -137,7 +141,7 @@ export function scheduleExamReminders(examDates) {
     if (eveDelay > 0 && eveDelay <= MAX_SAFE_TIMEOUT_MS) {
       const id = setTimeout(() => {
         sendLocalNotification(
-          `📝 Exam tomorrow: ${exam.subject}`,
+          `Exam tomorrow: ${exam.subject}`,
           `${exam.subject} — ${exam.board || ''} ${exam.paper ? 'Paper ' + exam.paper : ''}. Good luck!`,
           { tag: `exam-eve-${exam.id}`, requireInteraction: true }
         )
@@ -152,7 +156,7 @@ export function scheduleExamReminders(examDates) {
     if (dayDelay > 0 && dayDelay <= MAX_SAFE_TIMEOUT_MS) {
       const id = setTimeout(() => {
         sendLocalNotification(
-          `🎯 Exam today: ${exam.subject}`,
+          `Exam today: ${exam.subject}`,
           `Your ${exam.subject} exam is today. You've got this!`,
           { tag: `exam-day-${exam.id}`, requireInteraction: true }
         )
@@ -178,9 +182,9 @@ export function scheduleDailyReminder(timeStr, getSessionCount) {
     dailyReminderTimeout = setTimeout(async () => {
       const count = typeof getSessionCount === 'function' ? await getSessionCount() : 0
       sendLocalNotification(
-        'RevisionFlow — Time to revise! 📚',
+        'RevisionFlow — Time to revise!',
         count > 0
-          ? `You have ${count} session${count !== 1 ? 's' : ''} today. Keep the streak going! 🔥`
+          ? `You have ${count} session${count !== 1 ? 's' : ''} today. Keep the streak going!`
           : "No sessions scheduled today — add one to stay on track.",
         { tag: 'daily-reminder' }
       )
