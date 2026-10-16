@@ -82,7 +82,7 @@ export default function ProGate({ children, feature = 'this feature', compact = 
         {feature.charAt(0).toUpperCase() + feature.slice(1)} is a Pro feature
       </h4>
       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 20, maxWidth: 300, margin: '0 auto 20px', lineHeight: 1.6 }}>
-        Upgrade to RevisionFlow Pro for unlimited AI generations, all themes, timed quiz mode, and more.
+        Upgrade to RevisionFlow Pro for higher AI limits, all themes, timed quiz mode, and more.
       </p>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link to="/pro" className="btn btn-primary" style={{ padding: '10px 24px' }}>
