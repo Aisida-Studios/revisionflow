@@ -191,9 +191,9 @@ export function applyTheme(themeId) {
       --accent-light: ${light} !important;
       --accent-bg: rgba(${rgb}, 0.12) !important;
       --accent-hover: rgba(${rgb}, 0.08) !important;
-      --purple-400: ${light} !important;
-      --purple-300: ${light} !important;
-      --purple-700: ${hex} !important;
+      --brand-400: ${light} !important;
+      --brand-300: ${light} !important;
+      --brand-700: ${hex} !important;
     }
     .progress-fill, .xp-bar-fill { background: ${hex} !important; }
     .gradient-text { background: linear-gradient(135deg, ${hex}, ${light}) !important; -webkit-background-clip: text !important; }
