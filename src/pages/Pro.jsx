@@ -28,7 +28,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   { label: 'AI Tutor — Maths step-by-step solver & English essay feedback', highlight: true },
   { label: 'Predicted grade for every subject', highlight: true },
-  { label: 'Unlimited Topic Note generations', highlight: true },
+  { label: 'Higher AI limits (topic notes, flashcard sets)', highlight: true },
   { label: 'Up to 50 flashcards per generation', highlight: true },
   { label: 'Timed challenge quiz mode', highlight: true },
   { label: '150 AI Advisor messages/day + longer, more detailed study plans', highlight: true },
@@ -109,11 +109,11 @@ export default function Pro() {
             <Crown size={32} color="#fff" />
           </div>
           <h2 style={{ marginBottom: 8 }}>
-            {isBeta ? 'You have lifetime Pro access ✨' : 'Welcome to RevisionFlow Pro! 🎉'}
+            {isBeta ? 'You have lifetime Pro access' : 'Welcome to RevisionFlow Pro!'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
             {isBeta
-              ? 'As a beta user you have lifetime free access to all Pro features — including all themes, unlimited AI, and timed quiz mode.'
+              ? 'As a beta user you have lifetime free access to all Pro features — including all themes, higher AI limits, and timed quiz mode.'
               : 'Your Pro subscription is active. All Pro features are now unlocked. Thank you for supporting RevisionFlow!'}
           </p>
           <div className="card gold-card" style={{ textAlign: 'left', marginBottom: 24 }}>
@@ -158,7 +158,7 @@ export default function Pro() {
             Unlock your full potential
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
-            Unlimited AI, all themes, timed quiz mode — everything you need to get the grade you want.
+            Higher AI limits, all themes, timed quiz mode — everything you need to revise with confidence.
           </p>
         </div>
 
