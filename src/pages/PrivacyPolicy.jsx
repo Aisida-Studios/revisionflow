@@ -97,7 +97,7 @@ export default function PrivacyPolicy() {
 
           <p style={{ ...P_STYLE, fontWeight:600 }}>AI interaction data (lawful basis: contract performance)</p>
           <ul style={UL_STYLE}>
-            <li>Messages sent to the AI Advisor, Mark Answer, Grade Predictor, Flashcard Generator, and Study Plan features</li>
+            <li>Messages sent to the AI Advisor, Mark Answer, Flashcard Generator, and Study Plan features</li>
             <li>Your revision data (subjects, grades, recent sessions) included in AI prompts to personalise responses</li>
             <li>These are processed by <strong>Mistral AI</strong> via their API</li>
           </ul>
@@ -114,7 +114,7 @@ export default function PrivacyPolicy() {
           <h2 style={H2_STYLE}>3. How We Use Your Data</h2>
           <ul style={UL_STYLE}>
             <li>To provide, operate and maintain the RevisionFlow application</li>
-            <li>To personalise AI-generated study advice, grade predictions, and revision plans</li>
+            <li>To personalise AI-generated study advice and revision plans. The Estimated grade shown in the app is calculated in the app from your own results, not by the AI provider; the underlying results it uses (such as past-paper scores and grades) can be included in the revision summary sent to the AI provider, as described below</li>
             <li>To calculate your XP, streaks, badges and leaderboard position</li>
             <li>To enable social features (friends, leaderboard) where you have chosen to use them</li>
             <li>To send browser push notifications for session reminders and timer alerts (only if you grant permission)</li>
@@ -231,7 +231,7 @@ export default function PrivacyPolicy() {
 
         <section style={SECTION_STYLE}>
           <h2 style={H2_STYLE}>11. AI Data Processing</h2>
-          <p style={P_STYLE}>When you use AI features (Chat, Grade Predictor, Mark Answer, Flashcards, Study Plan), your message and a summary of your relevant revision data is sent to Mistral AI's API. This is processed on their servers to generate a response.</p>
+          <p style={P_STYLE}>When you use AI features (Chat, Mark Answer, Flashcards, Study Plan), your message and a summary of your relevant revision data is sent to Mistral AI's API. This is processed on their servers to generate a response.</p>
           <p style={P_STYLE}><strong>Important:</strong> Mistral AI's API terms state that API data is <em>not</em> used to train their models by default. However, Mistral may retain request logs for up to 30 days for abuse detection. We recommend not entering sensitive personal information beyond what is needed for revision advice.</p>
         </section>
 
