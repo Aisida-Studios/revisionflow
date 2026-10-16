@@ -71,3 +71,15 @@ export const lostMarks = (q) => Math.max(0, (Number(q?.marks) || 0) - (Number(q?
 // Questions where marks were dropped, biggest loss first.
 export const questionsWithLostMarks = (questions) =>
   (questions || []).filter(q => lostMarks(q) > 0).sort((a, b) => lostMarks(b) - lostMarks(a) || a.num - b.num)
+
+// Inverse of buildQuestions: a stored structure back into editable groups, merging consecutive
+// questions that are worth the same (5 questions of 4 marks, not five separate rows).
+export function groupsFromQuestions(questions) {
+  const groups = []
+  for (const q of questions || []) {
+    const last = groups[groups.length - 1]
+    if (last && last.marks === q.marks) last.count++
+    else groups.push({ count: 1, marks: q.marks })
+  }
+  return groups
+}
