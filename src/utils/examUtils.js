@@ -1,4 +1,5 @@
 // src/utils/examUtils.js
+import { parseLocalDate } from './localDate'
 // Shared utilities for exam date filtering used across Dashboard,
 // EmergencyBanner, ExamDates, and upcoming exams sections.
 
@@ -7,12 +8,7 @@
  * Date(dateString) — that parses as UTC midnight, which on a device set to a timezone behind
  * UTC can display as the previous day. Returns null for anything falsy/unparseable.
  */
-export function parseLocalDate(dateStr) {
-  if (!dateStr) return null
-  const parts = String(dateStr).slice(0, 10).split('-').map(Number)
-  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null
-  return new Date(parts[0], parts[1] - 1, parts[2])
-}
+export { parseLocalDate }
 
 /**
  * Returns true if an exam should be considered "done" and hidden.
