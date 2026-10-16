@@ -116,7 +116,6 @@ const Admin         = lazy(() => import('./pages/Admin'))
 const Help          = lazy(() => import('./pages/Help'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const Study        = lazy(() => import('./pages/Study'))
-const Tutor        = lazy(() => import('./pages/Tutor'))
 const Pro          = lazy(() => import('./pages/Pro'))
 
 // ── Guards ────────────────────────────────────────────────────────────────────
@@ -196,7 +195,7 @@ export default function App() {
                       <Route path="/topics"      element={<Topics />} />
                       <Route path="/topics/:topicId" element={<TopicDetail />} />
                       <Route path="/study"       element={<Study />} />
-                      <Route path="/tutor"       element={<Tutor />} />
+                      <Route path="/tutor"       element={<Navigate to="/ai?tab=tutor" replace />} />
                       <Route path="/mistakes"    element={<Mistakes />} />
                       <Route path="/timer"       element={<Timer />} />
                       <Route path="/analytics"   element={<Analytics />} />
