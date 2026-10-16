@@ -30,6 +30,11 @@ export const LEGACY_DATASET_IDS = new Set([
   "AQA|AS-Level|Politics",
   "AQA|GCSE|Arabic",
   "AQA|GCSE|Film Studies",
+  "Edexcel|A-Level|Computer Science",
+  "Edexcel|AS-Level|Arabic",
+  "Edexcel|AS-Level|Computer Science",
+  "Edexcel|AS-Level|Mandarin Chinese",
+  "Edexcel|AS-Level|Statistics",
 ])
 
 export function isLegacyDataset(board, qualification, subject) {
