@@ -37,6 +37,7 @@ import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
 import { computeSubjectPredictions } from '../utils/gradeInsights'
+import GradeEstimate from '../components/GradeEstimate'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
 import { gradeColour } from '../utils/calendar'
@@ -268,8 +269,8 @@ export default function Dashboard() {
     [quizResults, profile?.subjects]
   )
   const predictions = useMemo(
-    () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile) : []),
-    [topics, currentPapers, currentQuizzes, profile]
+    () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile, { sessions: filterToCurrentSubjectInstance(sessions, profile) }) : []),
+    [topics, currentPapers, currentQuizzes, profile, sessions]
   )
   const weakTopics = useMemo(
     () => computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 4 }),
@@ -484,7 +485,7 @@ export default function Dashboard() {
                 <div className="next-session-meta">
                   {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
                 </div>
-                <Link to="/timer" className="btn btn-primary next-session-cta">
+                <Link to={`/timer?sessionId=${encodeURIComponent(nextSession._docId || nextSession.id)}`} className="btn btn-primary next-session-cta">
                   Start session <ArrowRight size={16} />
                 </Link>
               </>
@@ -708,13 +709,16 @@ export default function Dashboard() {
 
       <div className="dash-row-3" style={{ marginTop: 16 }}>
         <div className="card">
-          <p className="card-eyebrow"><Award size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Predicted grades</p>
+          <p className="card-eyebrow"><Award size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Estimated grades</p>
           {dataLoading ? <Skeleton height={120} /> : predictions.length ? (
             <>
               <ul className="plain-list">
                 {visiblePredictions.map((p) => (
                   <li key={`${p.board}-${p.subject}`} className="plain-row">
-                    <span className="plain-row-title" style={{ flex: 1 }}>{p.subject}</span>
+                    <span className="plain-row-title" style={{ flex: 1 }}>
+                      {p.subject}
+                      <GradeEstimate prediction={p} variant="compact" />
+                    </span>
                     <span className="mini-tag" style={{ color: gradeColour(p.grade), borderColor: gradeColour(p.grade), fontWeight: 800 }}>
                       {p.grade}
                     </span>
@@ -728,7 +732,7 @@ export default function Dashboard() {
               )}
             </>
           ) : (
-            <EmptyMini text="Complete a quiz or past paper to see predicted grades." to="/papers" label="Try a paper" />
+            <EmptyMini text="Complete a quiz or past paper to see an estimated grade." to="/papers" label="Try a paper" />
           )}
         </div>
 
@@ -757,7 +761,7 @@ export default function Dashboard() {
           <Link to="/timer" className="quick-action"><Target size={18} /><span>Focus timer</span></Link>
           <Link to="/papers" className="quick-action"><ClipboardList size={18} /><span>Past papers</span></Link>
           <Link to="/topics" className="quick-action"><Target size={18} /><span>Topics</span></Link>
-          <Link to="/tutor" className="quick-action"><BookOpen size={18} /><span>Tutor</span></Link>
+          <Link to="/ai?tab=tutor" className="quick-action"><BookOpen size={18} /><span>Tutor</span></Link>
           <Link to="/ai" className="quick-action"><Target size={18} /><span>AI Advisor</span></Link>
           <Link to="/mistakes" className="quick-action"><X size={18} /><span>Mistakes log</span></Link>
           <Link to="/calendar" className="quick-action"><CalendarDays size={18} /><span>Plan my week</span></Link>
