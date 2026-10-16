@@ -21,55 +21,55 @@ function buildSteps(profile) {
   const steps = [
     {
       route: '/dashboard',
-      title: '👋 Hey ' + firstName + '!',
+      title: 'Hey ' + firstName + '!',
       body: subjList
         ? "You're set up for " + qual + ' in ' + subjList + (subjects.length > 3 ? ' and ' + (subjects.length - 3) + ' more' : '') + '. Quick 30-second tour of where everything lives.'
         : "Quick 30-second tour of where everything lives, then you're free to dive in.",
     },
     {
       route: '/dashboard',
-      title: '📅 Your Dashboard',
+      title: 'Your Dashboard',
       body: examCount > 0
         ? "This is home base — today's sessions, your next exam countdown, streak, and a fresh tip every day."
         : "This is home base. Once you add exam dates, you'll see a live countdown here alongside today's sessions and streak.",
     },
     {
       route: '/calendar',
-      title: '📅 Calendar',
+      title: 'Calendar',
       body: subjList
         ? 'Generate a full revision schedule for ' + subjList + ' with one click — built around your exam dates and the availability you set during signup.'
         : 'Generate a full revision schedule with one click, built around your exam dates and availability.',
     },
     {
       route: '/topics',
-      title: '🧠 Topics',
+      title: 'Topics',
       body: subjects.length
         ? 'Every topic for ' + (subjNames[0] || 'your subjects') + ' is already pre-loaded. Rate your confidence 1–5 on each one, and RevisionFlow will know exactly what to prioritise.'
         : 'Topics auto-load once you add subjects in Settings. Rate your confidence 1–5 and RevisionFlow prioritises accordingly.',
     },
     {
       route: '/study',
-      title: '📚 Study Tools',
+      title: 'Study Tools',
       body: 'Generate flashcards for any topic, run a timed quiz, tackle board-accurate exam questions, and get your written answers marked leniently — like a real examiner would, not just exact-match.',
     },
     {
       route: '/ai',
-      title: '✨ AI Advisor',
+      title: 'AI Advisor',
       body: target
         ? "Ask anything about your subjects and get grade predictions toward your target grade " + target + " — all personalised to your actual data, not generic advice."
         : 'Ask anything about your subjects and get grade predictions — all personalised to your actual data, not generic advice.',
     },
     {
       route: '/timer',
-      title: '⏱ Timer',
+      title: 'Timer',
       body: 'Built-in Pomodoro timer or stopwatch for focused sessions. Keeps running even when you switch pages, and earns you XP per minute.',
     },
     {
       route: '/dashboard',
-      title: "🎯 You're all set, " + firstName + '!',
+      title: "You're all set, " + firstName + '!',
       body: examCount === 0
-        ? 'First step: add your exam dates so the countdown and scheduling can kick in. Good luck! 🚀'
-        : "Jump into Calendar to generate your first revision schedule, or head straight to Topics to start rating your confidence. Good luck! 🚀",
+        ? 'First step: add your exam dates so the countdown and scheduling can kick in. Good luck!'
+        : "Jump into Calendar to generate your first revision schedule, or head straight to Topics to start rating your confidence. Good luck!",
     },
   ]
 
@@ -166,7 +166,7 @@ export default function TooltipTour({ onComplete, profile }) {
             borderRadius: 8, padding: '0.5rem 1.25rem', cursor: 'pointer',
             fontSize: '0.875rem', fontWeight: 700,
           }}>
-            {step === TOUR_STEPS.length - 1 ? '🚀 Get started!' : 'Next →'}
+            {step === TOUR_STEPS.length - 1 ? 'Get started!' : 'Next →'}
           </button>
         </div>
 
