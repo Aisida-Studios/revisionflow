@@ -77,29 +77,8 @@ async function unlockRocketIcon(db, uid) {
   }
 }
 
-// Mirrors currentWeekStart/currentMonthStart/xpPeriodPatch in src/utils/firestore.js — same
-// duplication reasoning as REFERRAL_BADGE above. Keep in sync with the client-side and
-// friends.js copies if this logic ever changes.
-function currentWeekStart(now = new Date()) {
-  const d = new Date(now)
-  const day = d.getDay()
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-  return d.toISOString().slice(0, 10)
-}
-function currentMonthStart(now = new Date()) {
-  return now.toISOString().slice(0, 7) + '-01'
-}
-function xpPeriodPatch(admin, existingData, amount) {
-  const weekStart  = currentWeekStart()
-  const monthStart = currentMonthStart()
-  const inc = admin.firestore.FieldValue.increment(amount)
-  return {
-    xpWeekStart:  weekStart,
-    xpMonthStart: monthStart,
-    xpThisWeek:   existingData?.xpWeekStart  === weekStart  ? inc : amount,
-    xpThisMonth:  existingData?.xpMonthStart === monthStart ? inc : amount,
-  }
-}
+// Period keys are computed in the user's own timezone (xpTz), matching the client - see lib/periods.js.
+const { xpPeriodPatch } = require('./lib/periods')
 
 async function awardReferralBadge(db, uid) {
   const ref = db.collection('users').doc(uid)
