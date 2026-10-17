@@ -1,0 +1,929 @@
+{
+ "version": 1,
+ "files": {
+  "pages/Dashboard.jsx": {
+   "owner": "Dashboard / Navigation",
+   "hunks": [
+    {
+     "find": "import { useEffect, useMemo, useState } from 'react'\nimport { Link } from 'react-router-dom'\nimport {\n  ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,\n  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,\n  Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,\n} from 'lucide-react'\n// Same lucide badge-icon set as Profile.jsx (src/data/badges.js has a lucideIcon name on every\n// badge) — Trophy/Award/CalendarDays are already imported above, the rest are badge-only icons.\nimport {\n  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal,\n  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n} from 'lucide-react'\nconst BADGE_ICONS = {\n  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,\n  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n}\n\nimport { useAuth } from '../context/AuthContext'\nimport { useIsPro } from '../components/ProGate'\n",
+     "replace": "import { useEffect, useMemo, useState } from 'react'\nimport { Link } from 'react-router-dom'\nimport {\n  ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare, Trophy, Award, PartyPopper, Gift,\n  X, CalendarDays, Target,\n} from 'lucide-react'\n\nimport { useAuth } from '../context/AuthContext'\nimport { useIsPro } from '../components/ProGate'\n",
+     "swaps": [
+      "dash-badge-imports"
+     ]
+    },
+    {
+     "find": "import ReferralCard from '../components/ReferralCard'\nimport ReferralRewardPopup from '../components/ReferralRewardPopup'\nimport { componentForSubject } from '../data/illustrationThemes'\nimport AIOutput from '../components/AIOutput'\nimport {\n  getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,\n",
+     "replace": "import ReferralCard from '../components/ReferralCard'\nimport ReferralRewardPopup from '../components/ReferralRewardPopup'\nimport { componentForSubject } from '../data/illustrationThemes'\nimport BadgeArt from '../components/illustrations/BadgeArt'\nimport Illustration from '../components/illustrations/Illustration'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport AIOutput from '../components/AIOutput'\nimport {\n  getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,\n",
+     "swaps": []
+    },
+    {
+     "find": "  return componentForSubject(subject)\n}\n\n/* Small subject-colour icon badge for list rows (Upcoming Exams, Subject\n   Overview). No per-topic icon set exists in the codebase yet — grepped\n   Topics.jsx/TopicDetail.jsx to confirm — so this is a deliberately light,\n   easily-swappable stand-in built from SUBJECT_COLOURS (real, existing\n   data) and lucide-react (already a dependency), not a second\n   illustration architecture. Swap the icon map for real per-topic\n   illustrations here, in one place, once they exist. */\nconst SUBJECT_ICONS = {\n  Biology: Leaf, Chemistry: FlaskConical, Physics: Atom,\n  Mathematics: Calculator, 'Further Mathematics': Calculator, Statistics: Calculator,\n  'English Language': BookOpen, 'English Literature': BookOpen,\n  History: Landmark, Geography: Globe2, 'Computer Science': Cpu,\n}\nfunction SubjectBadge({ subject }) {\n  const Icon = SUBJECT_ICONS[subject] || GraduationCap\n  const colour = SUBJECT_COLOURS?.[subject] || 'var(--text-muted)'\n  return (\n    <span className=\"subject-badge\" style={{ color: colour, background: `${colour}1a` }}>\n      <Icon size={14} />\n    </span>\n  )\n}\n\nfunction EmptyMini({ text, to, label }) {\n  return (\n    <div className=\"mini-empty\">\n      <p>{text}</p>\n      {to && <Link to={to} className=\"card-footer-link\">{label} <ArrowRight size={13} /></Link>}\n    </div>\n",
+     "replace": "  return componentForSubject(subject)\n}\n\n/* Small subject tile for list rows (Upcoming Exams, Subject Overview): the subject's own picture\n   from src/components/illustrations. SubjectTile uses the compact tier — one object, cropped to the\n   tile — so it stays legible at this size. */\nfunction SubjectBadge({ subject }) {\n  return <SubjectTile subject={subject} size={32} />\n}\n\nfunction EmptyMini({ text, to, label, art }) {\n  return (\n    <div className=\"mini-empty\" style={art ? { textAlign: 'center' } : undefined}>\n      {art && (\n        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>\n          <Illustration name={art} width={120} />\n        </div>\n      )}\n      <p>{text}</p>\n      {to && <Link to={to} className=\"card-footer-link\">{label} <ArrowRight size={13} /></Link>}\n    </div>\n",
+     "swaps": [
+      "dash-subject-badge",
+      "dash-empty-mini"
+     ]
+    },
+    {
+     "find": "function BadgeShowcase({ earnedIds }) {\n  const earned = (earnedIds || []).map((id) => BADGE_MAP[id]).filter(Boolean)\n  if (!earned.length) {\n    return <EmptyMini text=\"No badges yet — keep revising to unlock your first one.\" />\n  }\n  return (\n    <div className=\"badge-showcase\">\n      {earned.slice(0, 8).map((b) => {\n        const Icon = BADGE_ICONS[b.lucideIcon]\n        return (\n          <span key={b.id} className=\"badge-icon\" title={`${b.name}${b.description ? ` — ${b.description}` : ''}`}>\n            {Icon ? <Icon size={16} /> : b.icon}\n          </span>\n        )\n      })}\n      {earned.length > 8 && <span className=\"badge-icon badge-icon--more\">+{earned.length - 8}</span>}\n    </div>\n  )\n",
+     "replace": "function BadgeShowcase({ earnedIds }) {\n  const earned = (earnedIds || []).map((id) => BADGE_MAP[id]).filter(Boolean)\n  if (!earned.length) {\n    // The first badge, locked: shows what there is to win instead of a bare sentence.\n    return (\n      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>\n        <span className=\"rfi-holder\"><BadgeArt id=\"first_session\" size={48} earned={false} /></span>\n        <EmptyMini text=\"No badges yet — keep revising to unlock your first one.\" />\n      </div>\n    )\n  }\n  return (\n    <div className=\"badge-showcase\">\n      {earned.slice(0, 8).map((b) => (\n        <span key={b.id} className=\"rfi-holder\" title={`${b.name} — ${b.desc}`}>\n          <BadgeArt id={b.id} size={40} label={b.name} />\n        </span>\n      ))}\n      {earned.length > 8 && <span className=\"badge-icon badge-icon--more\">+{earned.length - 8}</span>}\n    </div>\n  )\n",
+     "swaps": [
+      "dash-badge-showcase"
+     ]
+    },
+    {
+     "find": "              ))}\n            </ul>\n          ) : (\n            <EmptyMini text=\"Nothing scheduled yet.\" to=\"/calendar\" label=\"Plan your week\" />\n          )}\n          <Link to=\"/calendar\" className=\"card-footer-link\">View full calendar <ArrowRight size={13} /></Link>\n        </div>\n",
+     "replace": "              ))}\n            </ul>\n          ) : (\n            <EmptyMini art=\"emptySessions\" text=\"Nothing scheduled yet.\" to=\"/calendar\" label=\"Plan your week\" />\n          )}\n          <Link to=\"/calendar\" className=\"card-footer-link\">View full calendar <ArrowRight size={13} /></Link>\n        </div>\n",
+     "swaps": [
+      "dash-empty-upcoming"
+     ]
+    },
+    {
+     "find": "              ))}\n            </ul>\n          ) : (\n            <EmptyMini text=\"Your first session will show up here.\" to=\"/study\" label=\"Start studying\" />\n          )}\n          <Link to=\"/analytics\" className=\"card-footer-link\">View all activity <ArrowRight size={13} /></Link>\n        </div>\n",
+     "replace": "              ))}\n            </ul>\n          ) : (\n            <EmptyMini art=\"study\" text=\"Your first session will show up here.\" to=\"/study\" label=\"Start studying\" />\n          )}\n          <Link to=\"/analytics\" className=\"card-footer-link\">View all activity <ArrowRight size={13} /></Link>\n        </div>\n",
+     "swaps": [
+      "dash-empty-recent"
+     ]
+    },
+    {
+     "find": "              )}\n            </>\n          ) : (\n            <EmptyMini text=\"Complete a quiz or past paper to see predicted grades.\" to=\"/papers\" label=\"Try a paper\" />\n          )}\n        </div>\n\n",
+     "replace": "              )}\n            </>\n          ) : (\n            <EmptyMini art=\"emptyAnalytics\" text=\"Complete a quiz or past paper to see predicted grades.\" to=\"/papers\" label=\"Try a paper\" />\n          )}\n        </div>\n\n",
+     "swaps": [
+      "dash-empty-grades"
+     ]
+    }
+   ],
+   "swaps": [
+    "dash-badge-imports",
+    "dash-badge-showcase",
+    "dash-subject-badge",
+    "dash-empty-mini",
+    "dash-empty-upcoming",
+    "dash-empty-recent",
+    "dash-empty-grades"
+   ]
+  },
+  "pages/Profile.jsx": {
+   "owner": "Analytics / Progress",
+   "hunks": [
+    {
+     "find": "import { getPaperAttempts, getMistakes } from '../utils/firestore'\nimport { generateProgressReport } from '../utils/pdfReport'\nimport { generateTimetablePDF } from '../utils/pdfTimetable'\nimport { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'\nimport { BADGE_LIST } from '../data/badges'\nimport { resolveProfileIcon } from '../data/themes'\nimport { gradeColour } from '../utils/calendar'\nimport ReferralCard from '../components/ReferralCard'\nimport { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'\nimport {\n  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Medal, Award, Trophy,\n  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n} from 'lucide-react'\n\n// Every badge carries a lucideIcon name (src/data/badges.js) — this looks it up to a real\n// component. Kept as an explicit map rather than a dynamic import because ES imports need\n// static names; Dashboard.jsx still uses the emoji `icon` field directly and is unaffected.\nconst BADGE_ICONS = {\n  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,\n  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n}\nimport { useIsPro, ProBadge } from '../components/ProGate'\nimport toast from 'react-hot-toast'\nimport BadgeAuditButton from '../components/BadgeAuditButton'\n",
+     "replace": "import { getPaperAttempts, getMistakes } from '../utils/firestore'\nimport { generateProgressReport } from '../utils/pdfReport'\nimport { generateTimetablePDF } from '../utils/pdfTimetable'\nimport { LEVELS, getSubjectQualification } from '../data/subjects'\nimport { BADGE_LIST } from '../data/badges'\nimport { resolveProfileIcon } from '../data/themes'\nimport { gradeColour } from '../utils/calendar'\nimport ReferralCard from '../components/ReferralCard'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport BadgeArt from '../components/illustrations/BadgeArt'\nimport { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'\nimport { useIsPro, ProBadge } from '../components/ProGate'\nimport toast from 'react-hot-toast'\nimport BadgeAuditButton from '../components/BadgeAuditButton'\n",
+     "swaps": [
+      "profile-badge-imports",
+      "profile-colours-import"
+     ]
+    },
+    {
+     "find": "      {showMilestone && (\n        <div className=\"modal-overlay\" onClick={() => setShowMilestone(false)}>\n          <div className=\"modal\" style={{ maxWidth: 440, textAlign: 'center', padding: '2rem' }} onClick={e => e.stopPropagation()}>\n            <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>\n              {milestoneStreak >= 100 ? '👑' : milestoneStreak >= 30 ? '💎' : milestoneStreak >= 14 ? '💪' : '⚡'}\n            </div>\n            <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak!</h3>\n            <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>\n",
+     "replace": "      {showMilestone && (\n        <div className=\"modal-overlay\" onClick={() => setShowMilestone(false)}>\n          <div className=\"modal\" style={{ maxWidth: 440, textAlign: 'center', padding: '2rem' }} onClick={e => e.stopPropagation()}>\n            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>\n              <BadgeArt\n                id={milestoneStreak >= 100 ? 'streak_100' : milestoneStreak >= 30 ? 'streak_30' : milestoneStreak >= 14 ? 'streak_14' : 'streak_7'}\n                size={104}\n              />\n            </div>\n            <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak!</h3>\n            <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>\n",
+     "swaps": [
+      "profile-milestone"
+     ]
+    },
+    {
+     "find": "          <div className=\"ap-person-list\" style={{ marginTop: 8 }}>\n            {(profile?.subjects || []).map(s => (\n              <div key={s.name} className=\"ap-person-row\">\n                <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />\n                <div className=\"ap-person-main\" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>\n                  <span className=\"ap-person-name\" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{s.name}</span>\n                  <span className=\"badge badge-grey\">{s.board}</span>\n",
+     "replace": "          <div className=\"ap-person-list\" style={{ marginTop: 8 }}>\n            {(profile?.subjects || []).map(s => (\n              <div key={s.name} className=\"ap-person-row\">\n                <SubjectTile subject={s.name} size={32} />\n                <div className=\"ap-person-main\" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>\n                  <span className=\"ap-person-name\" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{s.name}</span>\n                  <span className=\"badge badge-grey\">{s.board}</span>\n",
+     "swaps": [
+      "profile-subject-tile"
+     ]
+    },
+    {
+     "find": "        <div className=\"ap-badge-tile-grid\">\n          {BADGE_LIST.map(b => {\n            const unlocked = earnedIds.includes(b.id)\n            const Icon = BADGE_ICONS[b.lucideIcon]\n            return (\n              <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>\n                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>\n                  {Icon ? <Icon size={22} /> : b.icon}\n                </div>\n                <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>\n                <div className=\"ap-badge-tile-desc\">{b.desc}</div>\n",
+     "replace": "        <div className=\"ap-badge-tile-grid\">\n          {BADGE_LIST.map(b => {\n            const unlocked = earnedIds.includes(b.id)\n            return (\n              <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>\n                <div className=\"ap-badge-tile-icon\">\n                  <BadgeArt id={b.id} size={56} earned={unlocked} />\n                </div>\n                <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>\n                <div className=\"ap-badge-tile-desc\">{b.desc}</div>\n",
+     "swaps": [
+      "profile-badge-tiles"
+     ]
+    }
+   ],
+   "swaps": [
+    "profile-badge-imports",
+    "profile-badge-tiles",
+    "profile-milestone",
+    "profile-subject-tile",
+    "profile-colours-import"
+   ]
+  },
+  "pages/PublicProfile.jsx": {
+   "owner": "Unassigned (nearest: Analytics / Progress)",
+   "hunks": [
+    {
+     "find": "// src/pages/PublicProfile.jsx\nimport React, { useState, useEffect } from 'react'\nimport { useParams, Link } from 'react-router-dom'\nimport { LEVELS, SUBJECT_COLOURS } from '../data/subjects'\nimport { BADGE_LIST } from '../data/badges'\nimport { resolveProfileIcon } from '../data/themes'\nimport { Zap, Star } from 'lucide-react'\nimport {\n  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Crown, Medal, Award, Trophy,\n  TrendingUp, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n} from 'lucide-react'\n\n// Same badge icon lookup as Profile.jsx — see src/data/badges.js for the lucideIcon field.\nconst BADGE_ICONS = {\n  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,\n  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,\n  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,\n}\nimport LoadingScreen from '../components/LoadingScreen'\nimport './AccountPages.css'\n\n",
+     "replace": "// src/pages/PublicProfile.jsx\nimport React, { useState, useEffect } from 'react'\nimport { useParams, Link } from 'react-router-dom'\nimport { LEVELS } from '../data/subjects'\nimport { BADGE_LIST } from '../data/badges'\nimport { resolveProfileIcon } from '../data/themes'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport BadgeArt from '../components/illustrations/BadgeArt'\nimport { Zap, Star } from 'lucide-react'\nimport LoadingScreen from '../components/LoadingScreen'\nimport './AccountPages.css'\n\n",
+     "swaps": [
+      "public-badge-imports",
+      "public-colours-import"
+     ]
+    },
+    {
+     "find": "            <h4 className=\"card-eyebrow\" style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>\n            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>\n              {p.subjects.map(s => (\n                <span key={s.name} className=\"badge\" style={{\n                  background: SUBJECT_COLOURS[s.name] || 'var(--accent)',\n                  color:'#fff', borderColor:'transparent' }}>\n                  {s.name}\n                </span>\n              ))}\n",
+     "replace": "            <h4 className=\"card-eyebrow\" style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>\n            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>\n              {p.subjects.map(s => (\n                <span key={s.name} className=\"badge badge-grey\"\n                  style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'4px 12px 4px 4px', borderRadius:999 }}>\n                  <SubjectTile subject={s.name} size={28} />\n                  {s.name}\n                </span>\n              ))}\n",
+     "swaps": [
+      "public-subject-chips"
+     ]
+    },
+    {
+     "find": "              Badges <span style={{ color:'var(--text-muted)', fontWeight:400 }}>({unlockedBadges.length})</span>\n            </h4>\n            <div className=\"ap-badge-grid\">\n              {unlockedBadges.map(b => {\n                const Icon = BADGE_ICONS[b.lucideIcon]\n                return (\n                  <div key={b.id} className=\"ap-badge-chip ap-badge-chip--earned\" title={b.name + ': ' + b.desc}>\n                    <span className=\"ap-badge-chip-icon\">{Icon ? <Icon size={20} /> : b.icon}</span>\n                  </div>\n                )\n              })}\n            </div>\n          </div>\n        )}\n",
+     "replace": "              Badges <span style={{ color:'var(--text-muted)', fontWeight:400 }}>({unlockedBadges.length})</span>\n            </h4>\n            <div className=\"ap-badge-grid\">\n              {unlockedBadges.map(b => (\n                <div key={b.id} className=\"ap-badge-chip ap-badge-chip--earned\" title={b.name + ': ' + b.desc}>\n                  <span className=\"ap-badge-chip-icon\"><BadgeArt id={b.id} size={44} label={b.name} /></span>\n                </div>\n              ))}\n            </div>\n          </div>\n        )}\n",
+     "swaps": [
+      "public-badge-chips"
+     ]
+    }
+   ],
+   "swaps": [
+    "public-badge-imports",
+    "public-badge-chips",
+    "public-subject-chips",
+    "public-colours-import"
+   ]
+  },
+  "components/BadgeAuditButton.jsx": {
+   "owner": "Unassigned",
+   "hunks": [
+    {
+     "find": "import { BADGE_MAP } from '../data/badges'\nimport { ShieldCheck, Loader2 } from 'lucide-react'\nimport toast from 'react-hot-toast'\n\nexport default function BadgeAuditButton() {\n  const { user } = useAuth()\n",
+     "replace": "import { BADGE_MAP } from '../data/badges'\nimport { ShieldCheck, Loader2 } from 'lucide-react'\nimport toast from 'react-hot-toast'\nimport BadgeArt from './illustrations/BadgeArt'\n\nexport default function BadgeAuditButton() {\n  const { user } = useAuth()\n",
+     "swaps": []
+    },
+    {
+     "find": "        awarded.forEach(badgeId => {\n          const badge = BADGE_MAP[badgeId]\n          if (badge) {\n            toast.success(`${badge.icon} Badge unlocked: ${badge.name} (+${badge.xp} XP)`, { duration: 4000 })\n          }\n        })\n      }\n",
+     "replace": "        awarded.forEach(badgeId => {\n          const badge = BADGE_MAP[badgeId]\n          if (badge) {\n            toast.success(`Badge unlocked: ${badge.name} (+${badge.xp} XP)`, { duration: 4000, icon: <BadgeArt id={badge.id} size={28} /> })\n          }\n        })\n      }\n",
+     "swaps": [
+      "audit-toast"
+     ]
+    }
+   ],
+   "swaps": [
+    "audit-toast"
+   ]
+  },
+  "components/LevelUpPopup.jsx": {
+   "owner": "Unassigned (app-shell pop-up)",
+   "hunks": [
+    {
+     "find": "// src/components/LevelUpPopup.jsx\nimport { PartyPopper } from 'lucide-react'\n\nexport default function LevelUpPopup({ level, title, onClose }) {\n  return (\n    <div className=\"modal-overlay\" onClick={onClose}>\n      <div className=\"modal\" style={{ maxWidth: 360, textAlign: 'center' }} onClick={e => e.stopPropagation()}>\n        <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎊</div>\n        <h3 style={{ marginBottom: 4 }}>Level {level}!</h3>\n        <p style={{ color: 'var(--accent-light)', fontWeight: 700, marginBottom: 4 }}>{title}</p>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: 22 }}>\n",
+     "replace": "// src/components/LevelUpPopup.jsx\nimport { PartyPopper } from 'lucide-react'\nimport { LazyIllustration } from './illustrations/lazy'\n\nexport default function LevelUpPopup({ level, title, onClose }) {\n  return (\n    <div className=\"modal-overlay\" onClick={onClose}>\n      <div className=\"modal\" style={{ maxWidth: 360, textAlign: 'center' }} onClick={e => e.stopPropagation()}>\n        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>\n          <LazyIllustration name=\"achievement\" width={200} />\n        </div>\n        <h3 style={{ marginBottom: 4 }}>Level {level}!</h3>\n        <p style={{ color: 'var(--accent-light)', fontWeight: 700, marginBottom: 4 }}>{title}</p>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: 22 }}>\n",
+     "swaps": [
+      "levelup"
+     ]
+    }
+   ],
+   "swaps": [
+    "levelup"
+   ]
+  },
+  "components/OnboardingRecapPopup.jsx": {
+   "owner": "Unassigned (app-shell pop-up)",
+   "hunks": [
+    {
+     "find": "// Onboarding.jsx stashes on the profile at save time rather than local component state, since\n// this component may render long after Onboarding.jsx itself has unmounted.\nimport { Zap } from 'lucide-react'\n\nexport default function OnboardingRecapPopup({ breakdown, displayName, onClose }) {\n  const firstName = (displayName || '').split(' ')[0] || 'friend'\n",
+     "replace": "// Onboarding.jsx stashes on the profile at save time rather than local component state, since\n// this component may render long after Onboarding.jsx itself has unmounted.\nimport { Zap } from 'lucide-react'\nimport { LazyIllustration } from './illustrations/lazy'\n\nexport default function OnboardingRecapPopup({ breakdown, displayName, onClose }) {\n  const firstName = (displayName || '').split(' ')[0] || 'friend'\n",
+     "swaps": []
+    },
+    {
+     "find": "  return (\n    <div className=\"modal-overlay\">\n      <div className=\"modal\" style={{ maxWidth: 400, textAlign: 'center' }}>\n        <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎉</div>\n        <h3 style={{ marginBottom: 4 }}>You're in, {firstName}!</h3>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>\n          Here's the XP you've already earned before doing a single revision session:\n",
+     "replace": "  return (\n    <div className=\"modal-overlay\">\n      <div className=\"modal\" style={{ maxWidth: 400, textAlign: 'center' }}>\n        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>\n          <LazyIllustration name=\"success\" width={180} />\n        </div>\n        <h3 style={{ marginBottom: 4 }}>You're in, {firstName}!</h3>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>\n          Here's the XP you've already earned before doing a single revision session:\n",
+     "swaps": [
+      "recap"
+     ]
+    }
+   ],
+   "swaps": [
+    "recap"
+   ]
+  },
+  "components/ReferralRewardPopup.jsx": {
+   "owner": "Unassigned (app-shell pop-up)",
+   "hunks": [
+    {
+     "find": "// values this mirrors: referrer +200 XP + Recruiter badge + Rocket icon; referred +100 XP +\n// Rocket icon). Built as one component with two variants rather than two separate components,\n// since the visual shell and dismiss behaviour are identical — only the copy and reward list differ.\nimport { Gift, X } from 'lucide-react'\n\nconst COPY = {\n  referrer: {\n    emoji: '📣',\n    title: 'Referral successful!',\n    body: 'Someone just joined RevisionFlow using your link.',\n    rewards: [\n      { icon: '⚡', label: '+200 XP' },\n      { icon: '📣', label: 'Recruiter badge earned' },\n      { icon: '🚀', label: 'Rocket icon unlocked' },\n    ],\n  },\n  referred: {\n    emoji: '🚀',\n    title: 'Referral applied!',\n    body: \"You've been credited for signing up with a referral link.\",\n    rewards: [\n      { icon: '⚡', label: '+100 XP' },\n      { icon: '🚀', label: 'Rocket icon unlocked' },\n    ],\n  },\n",
+     "replace": "// values this mirrors: referrer +200 XP + Recruiter badge + Rocket icon; referred +100 XP +\n// Rocket icon). Built as one component with two variants rather than two separate components,\n// since the visual shell and dismiss behaviour are identical — only the copy and reward list differ.\nimport { Gift, X, Zap } from 'lucide-react'\nimport { LazyBadgeArt, LazyIllustration } from './illustrations/lazy'\n\nconst COPY = {\n  referrer: {\n    badge: 'referral',          // the Recruiter badge they just earned\n    title: 'Referral successful!',\n    body: 'Someone just joined RevisionFlow using your link.',\n    rewards: [\n      { icon: <Zap size={18} />, label: '+200 XP' },\n      { icon: <LazyBadgeArt id=\"referral\" size={26} />, label: 'Recruiter badge earned' },\n      { icon: '🚀', label: 'Rocket icon unlocked' },   // 🚀 stays: it IS the emoji avatar being unlocked\n    ],\n  },\n  referred: {\n    scene: 'welcome',\n    title: 'Referral applied!',\n    body: \"You've been credited for signing up with a referral link.\",\n    rewards: [\n      { icon: <Zap size={18} />, label: '+100 XP' },\n      { icon: '🚀', label: 'Rocket icon unlocked' },\n    ],\n  },\n",
+     "swaps": [
+      "referral-copy",
+      "referral-copy2"
+     ]
+    },
+    {
+     "find": "          <X size={18} />\n        </button>\n\n        <div style={{ fontSize: '3rem', marginBottom: 8 }}>{copy.emoji}</div>\n        <h3 style={{ marginBottom: 6 }}>{copy.title}</h3>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>{copy.body}</p>\n\n",
+     "replace": "          <X size={18} />\n        </button>\n\n        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>\n          {copy.badge\n            ? <LazyBadgeArt id={copy.badge} size={88} />\n            : <LazyIllustration name={copy.scene} width={180} />}\n        </div>\n        <h3 style={{ marginBottom: 6 }}>{copy.title}</h3>\n        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>{copy.body}</p>\n\n",
+     "swaps": [
+      "referral-art"
+     ]
+    }
+   ],
+   "swaps": [
+    "referral-copy",
+    "referral-copy2",
+    "referral-art"
+   ]
+  },
+  "components/StreakCelebration.jsx": {
+   "owner": "Unassigned (app-shell pop-up)",
+   "hunks": [
+    {
+     "find": "// Usage: <StreakCelebration streak={7} onClose={() => setShowStreak(false)} />\n\nimport { useState, useEffect } from 'react'\n\n// Confetti piece\nfunction Piece({ colour, x, delay, duration, size }) {\n",
+     "replace": "// Usage: <StreakCelebration streak={7} onClose={() => setShowStreak(false)} />\n\nimport { useState, useEffect } from 'react'\nimport { LazyIllustration } from './illustrations/lazy'\n\n// Confetti piece\nfunction Piece({ colour, x, delay, duration, size }) {\n",
+     "swaps": []
+    },
+    {
+     "find": "          70%  { transform: scale(0.95) rotate(-2deg); }\n          100% { transform: scale(1) rotate(0deg); opacity: 1; }\n        }\n        @keyframes fireWobble {\n          0%,100% { transform: scale(1) rotate(-3deg); filter: brightness(1); }\n          25%      { transform: scale(1.1) rotate(3deg); filter: brightness(1.3); }\n          75%      { transform: scale(0.95) rotate(-1deg); filter: brightness(0.95); }\n        }\n        @keyframes bgFadeIn {\n          from { opacity: 0; }\n          to   { opacity: 1; }\n",
+     "replace": "          70%  { transform: scale(0.95) rotate(-2deg); }\n          100% { transform: scale(1) rotate(0deg); opacity: 1; }\n        }\n        @keyframes bgFadeIn {\n          from { opacity: 0; }\n          to   { opacity: 1; }\n",
+     "swaps": [
+      "streak-wobble-css"
+     ]
+    },
+    {
+     "find": "            overflowY: 'auto',\n          }}>\n\n          {/* Fire emoji with wobble */}\n          <div style={{\n            fontSize: '5rem', lineHeight: 1, marginBottom: 8,\n            animation: 'fireWobble 1.4s ease-in-out infinite',\n            display: 'inline-block',\n          }}>🔥</div>\n\n          {/* Streak count */}\n          <div style={{\n",
+     "replace": "            overflowY: 'auto',\n          }}>\n\n          {/* Seven plants, each a little taller than the last */}\n          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>\n            <LazyIllustration name=\"streak\" width={220} />\n          </div>\n\n          {/* Streak count */}\n          <div style={{\n",
+     "swaps": [
+      "streak-art"
+     ]
+    },
+    {
+     "find": "            fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-primary)',\n            marginTop: 8, marginBottom: 6, letterSpacing: '-0.01em',\n          }}>\n            Day Streak! 🎉\n          </div>\n\n          <p style={{\n",
+     "replace": "            fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-primary)',\n            marginTop: 8, marginBottom: 6, letterSpacing: '-0.01em',\n          }}>\n            Day streak!\n          </div>\n\n          <p style={{\n",
+     "swaps": [
+      "streak-copy1"
+     ]
+    },
+    {
+     "find": "            lineHeight: 1.6,\n          }}>\n            {streak >= 30\n              ? \"You're absolutely crushing it. Legendary focus! 💪\"\n              : streak >= 14\n              ? \"Two weeks strong! Your dedication is paying off.\"\n              : streak >= 7\n",
+     "replace": "            lineHeight: 1.6,\n          }}>\n            {streak >= 30\n              ? \"You're absolutely crushing it. Legendary focus!\"\n              : streak >= 14\n              ? \"Two weeks strong! Your dedication is paying off.\"\n              : streak >= 7\n",
+     "swaps": [
+      "streak-copy2"
+     ]
+    },
+    {
+     "find": "            onClick={() => { setVisible(false); onClose?.() }}\n            className=\"btn btn-primary btn-lg\"\n            style={{ width: '100%' }}>\n            Keep it up! 💪\n          </button>\n        </div>\n      </div>\n",
+     "replace": "            onClick={() => { setVisible(false); onClose?.() }}\n            className=\"btn btn-primary btn-lg\"\n            style={{ width: '100%' }}>\n            Keep it up!\n          </button>\n        </div>\n      </div>\n",
+     "swaps": [
+      "streak-copy3"
+     ]
+    }
+   ],
+   "swaps": [
+    "streak-art",
+    "streak-wobble-css",
+    "streak-copy1",
+    "streak-copy2",
+    "streak-copy3"
+   ]
+  },
+  "pages/NotFound.jsx": {
+   "owner": "Unassigned",
+   "hunks": [
+    {
+     "find": "// src/pages/NotFound.jsx\nimport { Link } from 'react-router-dom'\nimport { useAuth } from '../context/AuthContext'\nimport { Compass, ArrowLeft } from 'lucide-react'\n\nexport default function NotFound() {\n  const { user } = useAuth()\n",
+     "replace": "// src/pages/NotFound.jsx\nimport { Link } from 'react-router-dom'\nimport { useAuth } from '../context/AuthContext'\nimport { ArrowLeft } from 'lucide-react'\nimport Illustration from '../components/illustrations/Illustration'\n\nexport default function NotFound() {\n  const { user } = useAuth()\n",
+     "swaps": [
+      "notfound-import"
+     ]
+    },
+    {
+     "find": "      alignItems: 'center', justifyContent: 'center', textAlign: 'center',\n      padding: '40px 20px', gap: 16,\n    }}>\n      <div style={{\n        width: 64, height: 64, borderRadius: 'var(--radius-lg)',\n        background: 'var(--accent-pale)', display: 'flex',\n        alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',\n      }}>\n        <Compass size={30} />\n      </div>\n      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Page not found</h1>\n      <p style={{ color: 'var(--text-secondary)', maxWidth: 360, margin: 0 }}>\n        The page you're looking for doesn't exist, or the link may be out of date.\n",
+     "replace": "      alignItems: 'center', justifyContent: 'center', textAlign: 'center',\n      padding: '40px 20px', gap: 16,\n    }}>\n      <Illustration name=\"notFound\" width={260} />\n      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Page not found</h1>\n      <p style={{ color: 'var(--text-secondary)', maxWidth: 360, margin: 0 }}>\n        The page you're looking for doesn't exist, or the link may be out of date.\n",
+     "swaps": [
+      "notfound-art"
+     ]
+    }
+   ],
+   "swaps": [
+    "notfound-import",
+    "notfound-art"
+   ]
+  },
+  "components/ErrorBoundary.jsx": {
+   "owner": "Global / infrastructure",
+   "hunks": [
+    {
+     "find": "import { Component } from 'react'\n\nexport default class ErrorBoundary extends Component {\n  constructor(props) {\n",
+     "replace": "import { Component } from 'react'\nimport { LazyIllustration } from './illustrations/lazy'\n\nexport default class ErrorBoundary extends Component {\n  constructor(props) {\n",
+     "swaps": [
+      "errorboundary"
+     ]
+    },
+    {
+     "find": "        <div style={{\n          minHeight: '100vh', display: 'flex', flexDirection: 'column',\n          alignItems: 'center', justifyContent: 'center',\n          background: 'var(--bg, #0f0f0f)', color: 'var(--text-primary, #fff)',\n          padding: '2rem', textAlign: 'center',\n        }}>\n          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>\n          <h2 style={{ marginBottom: '0.5rem' }}>Something went wrong</h2>\n          <p style={{ color: '#aaa', marginBottom: '1.5rem', maxWidth: 400 }}>\n            {this.state.error?.message || 'An unexpected error occurred.'}\n          </p>\n          <button\n            onClick={() => { this.setState({ error: null }); window.location.reload() }}\n            style={{\n              background: '#6c63ff', color: 'white', border: 'none',\n              borderRadius: 8, padding: '0.65rem 1.5rem', cursor: 'pointer',\n              fontWeight: 700, fontSize: '0.95rem',\n            }}\n          >\n            Reload app\n          </button>\n          <button\n            onClick={() => this.setState({ error: null })}\n            style={{\n              marginTop: '0.75rem', background: 'transparent',\n              color: '#aaa', border: 'none', cursor: 'pointer', fontSize: '0.85rem',\n            }}\n          >\n            Try without reloading\n          </button>\n",
+     "replace": "        <div style={{\n          minHeight: '100vh', display: 'flex', flexDirection: 'column',\n          alignItems: 'center', justifyContent: 'center',\n          background: 'var(--bg-base, #0c0f0d)', color: 'var(--text-primary, #fff)',\n          padding: '2rem', textAlign: 'center',\n        }}>\n          {/* Lazy + self-guarded: this screen must never throw, or the user is back to a blank page. */}\n          <LazyIllustration name=\"error\" width={240} />\n          <h2 style={{ margin: '0.5rem 0' }}>Something went wrong</h2>\n          <p style={{ color: 'var(--text-secondary, #aaa)', marginBottom: '1.5rem', maxWidth: 400 }}>\n            {this.state.error?.message || 'An unexpected error occurred.'}\n          </p>\n          <button\n            className=\"btn btn-primary\"\n            onClick={() => { this.setState({ error: null }); window.location.reload() }}\n          >\n            Reload app\n          </button>\n          <button\n            className=\"btn btn-ghost\"\n            style={{ marginTop: '0.75rem' }}\n            onClick={() => this.setState({ error: null })}\n          >\n            Try without reloading\n          </button>\n",
+     "swaps": []
+    }
+   ],
+   "swaps": [
+    "errorboundary"
+   ]
+  },
+  "main.jsx": {
+   "owner": "Global / infrastructure",
+   "hunks": [
+    {
+     "find": "import ReactDOM from 'react-dom/client'\nimport './styles/globals.css'\nimport App from './App'\n\nReactDOM.createRoot(document.getElementById('root')).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n)\n\n",
+     "replace": "import ReactDOM from 'react-dom/client'\nimport './styles/globals.css'\nimport App from './App'\nimport ErrorBoundary from './components/ErrorBoundary'\n\nReactDOM.createRoot(document.getElementById('root')).render(\n  <React.StrictMode>\n    <ErrorBoundary>\n      <App />\n    </ErrorBoundary>\n  </React.StrictMode>\n)\n\n",
+     "swaps": [
+      "main-mount-eb"
+     ]
+    }
+   ],
+   "swaps": [
+    "main-mount-eb"
+   ]
+  },
+  "pages/Pro.jsx": {
+   "owner": "Pro / Monetisation",
+   "hunks": [
+    {
+     "find": "import { useIsPro } from '../components/ProGate'\nimport { auth, getAppCheckHeader } from '../firebase'\nimport { Check, Lock, Crown, ArrowLeft, RotateCcw, Code2, GraduationCap } from 'lucide-react'\nimport toast from 'react-hot-toast'\nimport './AccountPages.css'\n\n",
+     "replace": "import { useIsPro } from '../components/ProGate'\nimport { auth, getAppCheckHeader } from '../firebase'\nimport { Check, Lock, Crown, ArrowLeft, RotateCcw, Code2, GraduationCap } from 'lucide-react'\nimport Illustration from '../components/illustrations/Illustration'\nimport toast from 'react-hot-toast'\nimport './AccountPages.css'\n\n",
+     "swaps": []
+    },
+    {
+     "find": "        background: 'var(--bg-base)', padding: 24,\n      }}>\n        <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>\n          <div style={{\n            width: 72, height: 72, borderRadius: '50%', background: 'var(--gold)',\n            display: 'flex', alignItems: 'center', justifyContent: 'center',\n            margin: '0 auto 20px',\n          }}>\n            <Crown size={32} color=\"#fff\" />\n          </div>\n          <h2 style={{ marginBottom: 8 }}>\n            {isBeta ? 'You have lifetime Pro access ✨' : 'Welcome to RevisionFlow Pro! 🎉'}\n          </h2>\n          <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>\n            {isBeta\n",
+     "replace": "        background: 'var(--bg-base)', padding: 24,\n      }}>\n        <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>\n          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>\n            <Illustration name=\"achievement\" width={220} />\n          </div>\n          <h2 style={{ marginBottom: 8 }}>\n            {isBeta ? 'You have lifetime Pro access' : 'Welcome to RevisionFlow Pro!'}\n          </h2>\n          <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>\n            {isBeta\n",
+     "swaps": [
+      "pro-success"
+     ]
+    }
+   ],
+   "swaps": [
+    "pro-success"
+   ]
+  },
+  "pages/Onboarding.jsx": {
+   "owner": "Onboarding",
+   "hunks": [
+    {
+     "find": "import { buildTopicId } from '../utils/topicId'\nimport toast from 'react-hot-toast'\nimport { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'\n\nconst STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']\nconst DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']\n",
+     "replace": "import { buildTopicId } from '../utils/topicId'\nimport toast from 'react-hot-toast'\nimport { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'\nimport Illustration from '../components/illustrations/Illustration'\nimport SubjectTile from '../components/illustrations/SubjectTile'\n\nconst STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']\nconst DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']\n",
+     "swaps": []
+    },
+    {
+     "find": "  Monday:'17:00', Tuesday:'17:00', Wednesday:'16:00',\n  Thursday:'17:00', Friday:'17:00', Saturday:'12:00', Sunday:'Rest day',\n}\n\nconst STEP_ICONS = ['👋','🎓','📚','🎯','📅','🤖','👥','🎉']\n\n// Tiny inline confetti\nfunction Confetti() {\n",
+     "replace": "  Monday:'17:00', Tuesday:'17:00', Wednesday:'16:00',\n  Thursday:'17:00', Friday:'17:00', Saturday:'12:00', Sunday:'Rest day',\n}\n\n// Tiny inline confetti\nfunction Confetti() {\n",
+     "swaps": [
+      "onb-stepicons"
+     ]
+    },
+    {
+     "find": "          {/* Step 0 — Welcome */}\n          {step===0 && (\n            <div className=\"fade-in\" style={{ textAlign:'center' }}>\n              <div style={{ fontSize:'3.5rem', marginBottom:12 }}>👋</div>\n              <h2 style={{ marginBottom:8 }}>Let&apos;s set you up</h2>\n              <p style={{ marginBottom:6, color:'var(--text-secondary)', lineHeight:1.7 }}>\n                5 minutes. We&apos;ll pre-load all your spec topics, auto-fill your exam dates,\n",
+     "replace": "          {/* Step 0 — Welcome */}\n          {step===0 && (\n            <div className=\"fade-in\" style={{ textAlign:'center' }}>\n              <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Illustration name=\"welcome\" width={200} /></div>\n              <h2 style={{ marginBottom:8 }}>Let&apos;s set you up</h2>\n              <p style={{ marginBottom:6, color:'var(--text-secondary)', lineHeight:1.7 }}>\n                5 minutes. We&apos;ll pre-load all your spec topics, auto-fill your exam dates,\n",
+     "swaps": [
+      "onb-step0",
+      "onb-step6",
+      "onb-step7"
+     ]
+    },
+    {
+     "find": "                <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:14 }}>\n                  {subjects.map(s => (\n                    <div key={s.id} style={{\n                      display:'flex', alignItems:'center', gap:6, padding:'6px 12px',\n                      borderRadius:999, fontWeight:700, fontSize:'0.8rem',\n                      background: (SUBJECT_COLOURS[s.name] || 'var(--accent)') + '22',\n                      border: `1px solid ${SUBJECT_COLOURS[s.name] || 'var(--accent)'}55`,\n                      color: SUBJECT_COLOURS[s.name] || 'var(--accent)',\n                      animation:'chipIn 0.25s ease',\n                    }}>\n                      {s.name}\n                      <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>\n                      <button onClick={() => setSubjects(ss => ss.filter(x => x.id !== s.id))}\n",
+     "replace": "                <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:14 }}>\n                  {subjects.map(s => (\n                    <div key={s.id} style={{\n                      display:'flex', alignItems:'center', gap:6, padding:'4px 12px 4px 4px',\n                      borderRadius:999, fontWeight:700, fontSize:'0.8rem',\n                      background: (SUBJECT_COLOURS[s.name] || 'var(--accent)') + '22',\n                      border: `1px solid ${SUBJECT_COLOURS[s.name] || 'var(--accent)'}55`,\n                      color: SUBJECT_COLOURS[s.name] || 'var(--accent)',\n                      animation:'chipIn 0.25s ease',\n                    }}>\n                      <SubjectTile subject={s.name} size={28} />\n                      {s.name}\n                      <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>\n                      <button onClick={() => setSubjects(ss => ss.filter(x => x.id !== s.id))}\n",
+     "swaps": [
+      "onb-subject-chip",
+      "onb-subject-chip2"
+     ]
+    },
+    {
+     "find": "          {/* Step 6 — Friends */}\n          {step===6 && (\n            <div className=\"fade-in\" style={{ textAlign:'center' }}>\n              <div style={{ fontSize:'3rem', marginBottom:12 }}>👥</div>\n              <h3 style={{ marginBottom:8 }}>RevisionFlow is better with friends</h3>\n              <p style={{ marginBottom:20, color:'var(--text-secondary)', fontSize:'0.9rem' }}>\n                Compete on leaderboards, share streaks, and stay accountable together.\n",
+     "replace": "          {/* Step 6 — Friends */}\n          {step===6 && (\n            <div className=\"fade-in\" style={{ textAlign:'center' }}>\n              <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Illustration name=\"friends\" width={200} /></div>\n              <h3 style={{ marginBottom:8 }}>RevisionFlow is better with friends</h3>\n              <p style={{ marginBottom:20, color:'var(--text-secondary)', fontSize:'0.9rem' }}>\n                Compete on leaderboards, share streaks, and stay accountable together.\n",
+     "swaps": [
+      "onb-step0",
+      "onb-step6",
+      "onb-step7"
+     ]
+    },
+    {
+     "find": "          {step===7 && (\n            <div className=\"fade-in\" style={{ textAlign:'center', position:'relative' }}>\n              <Confetti />\n              <div style={{ fontSize:'4rem', marginBottom:12, position:'relative', zIndex:1 }}>🎉</div>\n              <h2 style={{ marginBottom:8, position:'relative', zIndex:1 }}>You&apos;re all set!</h2>\n              <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 16px', borderRadius:999, background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)', marginBottom:20, position:'relative', zIndex:1 }}>\n                <Zap size={15} color=\"var(--accent-light)\" />\n",
+     "replace": "          {step===7 && (\n            <div className=\"fade-in\" style={{ textAlign:'center', position:'relative' }}>\n              <Confetti />\n              <div style={{ display:'flex', justifyContent:'center', marginBottom:8, position:'relative', zIndex:1 }}><Illustration name=\"success\" width={200} /></div>\n              <h2 style={{ marginBottom:8, position:'relative', zIndex:1 }}>You&apos;re all set!</h2>\n              <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 16px', borderRadius:999, background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)', marginBottom:20, position:'relative', zIndex:1 }}>\n                <Zap size={15} color=\"var(--accent-light)\" />\n",
+     "swaps": [
+      "onb-step0",
+      "onb-step6",
+      "onb-step7"
+     ]
+    }
+   ],
+   "swaps": [
+    "onb-stepicons",
+    "onb-step0",
+    "onb-step6",
+    "onb-step7",
+    "onb-subject-chip",
+    "onb-subject-chip2"
+   ]
+  },
+  "pages/Friends.jsx": {
+   "owner": "Unassigned (social UI)",
+   "hunks": [
+    {
+     "find": "import ReferralCard from '../components/ReferralCard'\nimport toast from 'react-hot-toast'\nimport { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'\nimport './AccountPages.css'\n\n// Shows a real profile photo when one is available (Google sign-in), falling back to the\n",
+     "replace": "import ReferralCard from '../components/ReferralCard'\nimport toast from 'react-hot-toast'\nimport { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport './AccountPages.css'\n\n// Shows a real profile photo when one is available (Google sign-in), falling back to the\n",
+     "swaps": []
+    },
+    {
+     "find": "\n      {tab === 'friends' && (\n        friends.length === 0 ? (\n          <div className=\"empty-state\">\n            <div className=\"ap-icon-circle\" style={{ width: 56, height: 56 }}><Users size={26} /></div>\n            <h4>No friends yet</h4>\n            <p>Share your referral link above or search by username to add friends.</p>\n          </div>\n        ) : (\n          <div className=\"card\" style={{ padding: '4px 16px' }}>\n            <div className=\"ap-person-list\">\n",
+     "replace": "\n      {tab === 'friends' && (\n        friends.length === 0 ? (\n          <EmptyState\n            art=\"friends\"\n            title=\"No friends yet\"\n            body=\"Share your referral link above or search by username to add friends.\"\n          />\n        ) : (\n          <div className=\"card\" style={{ padding: '4px 16px' }}>\n            <div className=\"ap-person-list\">\n",
+     "swaps": [
+      "friends-empty"
+     ]
+    }
+   ],
+   "swaps": [
+    "friends-empty"
+   ]
+  },
+  "pages/Leaderboard.jsx": {
+   "owner": "Unassigned (social UI)",
+   "hunks": [
+    {
+     "find": "import { resolveProfileIcon } from '../data/themes'\nimport toast from 'react-hot-toast'\nimport { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'\nimport './AccountPages.css'\n\nconst PERIODS = [\n",
+     "replace": "import { resolveProfileIcon } from '../data/themes'\nimport toast from 'react-hot-toast'\nimport { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport './AccountPages.css'\n\nconst PERIODS = [\n",
+     "swaps": []
+    },
+    {
+     "find": "          </div>\n        </div>\n      ) : topBoard.length === 0 ? (\n        <div className=\"empty-state\">\n          {tab === 'friends' ? (\n            <>\n              <div className=\"ap-icon-circle\" style={{ width: 56, height: 56 }}><Users size={26} /></div>\n              <p>{period === 'allTime' ? 'No friends yet — add friends to see them here!' : `No friend XP logged ${periodLabel} yet.`}</p>\n              {period === 'allTime' && <Link to=\"/friends\" className=\"btn btn-primary btn-sm\">Find friends</Link>}\n            </>\n          ) : (\n            <>\n              <div className=\"ap-icon-circle\" style={{ width: 56, height: 56 }}><Globe size={26} /></div>\n              <p>{period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet — be the first!`}</p>\n            </>\n          )}\n        </div>\n      ) : (\n        <div className=\"card\" style={{ padding: '4px 16px' }}>\n          <div className=\"ap-person-list\">\n",
+     "replace": "          </div>\n        </div>\n      ) : topBoard.length === 0 ? (\n        <EmptyState\n          art={tab === 'friends' ? 'friends' : 'leaderboard'}\n          title={tab === 'friends'\n            ? (period === 'allTime' ? 'No friends yet' : `No friend XP logged ${periodLabel} yet`)\n            : (period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet`)}\n          body={tab === 'friends'\n            ? (period === 'allTime' ? 'Add friends to see them here.' : undefined)\n            : (period === 'allTime' ? undefined : 'Be the first!')}\n          action={tab === 'friends' && period === 'allTime'\n            ? <Link to=\"/friends\" className=\"btn btn-primary btn-sm\">Find friends</Link>\n            : undefined}\n        />\n      ) : (\n        <div className=\"card\" style={{ padding: '4px 16px' }}>\n          <div className=\"ap-person-list\">\n",
+     "swaps": [
+      "leaderboard-empty"
+     ]
+    }
+   ],
+   "swaps": [
+    "leaderboard-empty"
+   ]
+  },
+  "pages/AIAdvisor.jsx": {
+   "owner": "Unassigned",
+   "hunks": [
+    {
+     "find": "import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'\nimport { daysUntilExam } from '../utils/examUtils'\nimport { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'\nimport './AccountPages.css'\n\nconst QUICK_PROMPTS = [\n",
+     "replace": "import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'\nimport { daysUntilExam } from '../utils/examUtils'\nimport { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw } from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport Illustration from '../components/illustrations/Illustration'\nimport './AccountPages.css'\n\nconst QUICK_PROMPTS = [\n",
+     "swaps": []
+    },
+    {
+     "find": "        <div className=\"ap-chat-shell\">\n          {messages.length === 0 ? (\n            <div className=\"ap-chat-empty\">\n              <div className=\"ap-chat-empty-icon\"><Compass size={24} /></div>\n              <div>\n                <div style={{fontWeight:700,marginBottom:4}}>Ask me anything about your revision</div>\n                <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, papers and confidence ratings</div>\n",
+     "replace": "        <div className=\"ap-chat-shell\">\n          {messages.length === 0 ? (\n            <div className=\"ap-chat-empty\">\n              <Illustration name=\"assistant\" width={190} />\n              <div>\n                <div style={{fontWeight:700,marginBottom:4}}>Ask me anything about your revision</div>\n                <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, papers and confidence ratings</div>\n",
+     "swaps": [
+      "ai-chat-empty"
+     ]
+    },
+    {
+     "find": "            </div>\n          ))}\n          {(profile?.subjects||[]).length === 0 && (\n            <div className=\"empty-state\">\n              <div className=\"ap-icon-circle\" style={{width:56,height:56}}><BookOpen size={26} /></div>\n              <p>Add subjects in Settings to get personalised resources</p>\n            </div>\n          )}\n        </div>\n      )}\n",
+     "replace": "            </div>\n          ))}\n          {(profile?.subjects||[]).length === 0 && (\n            <EmptyState art=\"resources\" size=\"sm\" as=\"p\" title=\"Add subjects in Settings to get personalised resources\" />\n          )}\n        </div>\n      )}\n",
+     "swaps": [
+      "ai-plan-empty",
+      "ai-resources-empty"
+     ]
+    },
+    {
+     "find": "          {planLoading&&<div className=\"loading-center\"><div className=\"spinner\"/></div>}\n          {studyPlan&&!planLoading&&<div style={{marginTop:14}}><AIOutput text={studyPlan} label=\"Generated Study Plan\" /></div>}\n          {!studyPlan&&!planLoading&&!planPrefs.showForm&&(\n            <div className=\"empty-state\">\n              <div className=\"ap-icon-circle\" style={{width:56,height:56}}><TrendingUp size={26} /></div>\n              <p>Click Generate to build your personalised revision plan</p>\n              <p style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Uses your exam dates, subjects, and grade targets</p>\n            </div>\n          )}\n        </div>\n      )}\n",
+     "replace": "          {planLoading&&<div className=\"loading-center\"><div className=\"spinner\"/></div>}\n          {studyPlan&&!planLoading&&<div style={{marginTop:14}}><AIOutput text={studyPlan} label=\"Generated Study Plan\" /></div>}\n          {!studyPlan&&!planLoading&&!planPrefs.showForm&&(\n            <EmptyState\n              art=\"emptyPlan\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"Click Generate to build your personalised revision plan\"\n              body=\"Uses your exam dates, subjects, and grade targets\"\n            />\n          )}\n        </div>\n      )}\n",
+     "swaps": [
+      "ai-plan-empty",
+      "ai-resources-empty"
+     ]
+    }
+   ],
+   "swaps": [
+    "ai-chat-empty",
+    "ai-plan-empty",
+    "ai-resources-empty"
+   ]
+  },
+  "pages/Topics.jsx": {
+   "owner": "Unassigned (nearest: Study)",
+   "hunks": [
+    {
+     "find": "import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'\nimport toast from 'react-hot-toast'\nimport {\n  Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,\n  StickyNote, Layers, Link2, Search, GraduationCap, CheckCircle2, Pencil,\n} from 'lucide-react'\nimport { format } from 'date-fns'\nimport './Topics.css'\n\n",
+     "replace": "import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from '../utils/topicDisplay'\nimport toast from 'react-hot-toast'\nimport {\n  Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen, StickyNote, Layers, Link2,\n  Search, CheckCircle2, Pencil,\n} from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport { format } from 'date-fns'\nimport './Topics.css'\n\n",
+     "swaps": []
+    },
+    {
+     "find": "      </div>\n\n      {subjects.length === 0 ? (\n        <div className=\"empty-state\">\n          <GraduationCap size={40} className=\"topics-empty-illustration\" style={{opacity:0.35}} />\n          <p>Add your subjects to start tracking topics</p>\n          <button className=\"btn btn-primary\" onClick={()=>navigate('/settings')}>Go to settings</button>\n        </div>\n      ) : (\n        <>\n          {/* Toolbar: search + subject rail */}\n",
+     "replace": "      </div>\n\n      {subjects.length === 0 ? (\n        <EmptyState\n          art=\"welcome\"\n          title=\"Add your subjects to start tracking topics\"\n          action={<button className=\"btn btn-primary\" onClick={()=>navigate('/settings')}>Go to settings</button>}\n        />\n      ) : (\n        <>\n          {/* Toolbar: search + subject rail */}\n",
+     "swaps": [
+      "topics-nomatch-topics",
+      "topics-nomatch-subjects",
+      "topics-nosubjects"
+     ]
+    },
+    {
+     "find": "          {selSubj === 'All' ? (\n            // ── All Subjects — summary cards ──\n            visibleSubjectSummaries.length === 0 ? (\n              <div className=\"empty-state\">\n                <Search size={28} style={{opacity:0.3}}/>\n                <p>No subjects match \"{search}\"</p>\n              </div>\n            ) : (\n              <div className=\"subject-summary-grid\">\n                {visibleSubjectSummaries.map(s => {\n",
+     "replace": "          {selSubj === 'All' ? (\n            // ── All Subjects — summary cards ──\n            visibleSubjectSummaries.length === 0 ? (\n              <EmptyState art=\"notFound\" size=\"sm\" as=\"p\" title={`No subjects match \"${search}\"`} />\n            ) : (\n              <div className=\"subject-summary-grid\">\n                {visibleSubjectSummaries.map(s => {\n",
+     "swaps": [
+      "topics-nomatch-topics",
+      "topics-nomatch-subjects",
+      "topics-nosubjects"
+     ]
+    },
+    {
+     "find": "              {topics.length===0 ? (\n                <div className=\"empty-state\">\n                  {SubjectIllustration\n                    ? <SubjectIllustration size={64} className=\"topics-empty-illustration\" style={{opacity:0.4}}/>\n                    : <Layers size={36} className=\"topics-empty-illustration\" style={{opacity:0.3}}/>}\n                  <p>No topics yet for {selSubj}</p>\n                  <div style={{display:'flex',gap:8}}>\n",
+     "replace": "              {topics.length===0 ? (\n                <div className=\"empty-state\">\n                  {SubjectIllustration\n                    ? <SubjectIllustration size={120} className=\"topics-empty-illustration\"/>\n                    : <Layers size={36} className=\"topics-empty-illustration\" style={{opacity:0.3}}/>}\n                  <p>No topics yet for {selSubj}</p>\n                  <div style={{display:'flex',gap:8}}>\n",
+     "swaps": [
+      "topics-nomatch-topics",
+      "topics-nomatch-subjects",
+      "topics-nosubjects",
+      "topics-subject-art"
+     ]
+    },
+    {
+     "find": "                          </div>\n                        </div>\n                        {notes.length===0?(\n                          <div className=\"empty-state\" style={{padding:'20px 0'}}>\n                            <StickyNote size={28} style={{opacity:0.3}}/>\n                            <p style={{fontSize:'0.875rem'}}>No notes yet for {selSubj}</p>\n                          </div>\n                        ):(\n                          <div style={{display:'flex',flexDirection:'column',gap:8}}>\n                            {notes.map(n=>(\n",
+     "replace": "                          </div>\n                        </div>\n                        {notes.length===0?(\n                          <EmptyState art=\"emptyNotes\" size=\"sm\" as=\"p\" title={`No notes yet for ${selSubj}`} />\n                        ):(\n                          <div style={{display:'flex',flexDirection:'column',gap:8}}>\n                            {notes.map(n=>(\n",
+     "swaps": [
+      "topics-notes",
+      "topics-nosubjects"
+     ]
+    },
+    {
+     "find": "                  ) : (\n                    // ── List view ──\n                    sortedFiltered.length===0 ? (\n                      <div className=\"empty-state\">\n                        <Search size={28} style={{opacity:0.3}}/>\n                        <p>No topics match your search or filter</p>\n                      </div>\n                    ) : (\n                      <div>\n                        {paperGroups.map(group => (\n",
+     "replace": "                  ) : (\n                    // ── List view ──\n                    sortedFiltered.length===0 ? (\n                      <EmptyState art=\"notFound\" size=\"sm\" as=\"p\" title=\"No topics match your search or filter\" />\n                    ) : (\n                      <div>\n                        {paperGroups.map(group => (\n",
+     "swaps": [
+      "topics-nomatch-topics",
+      "topics-nomatch-subjects",
+      "topics-nosubjects"
+     ]
+    }
+   ],
+   "swaps": [
+    "topics-nomatch-topics",
+    "topics-notes",
+    "topics-nomatch-subjects",
+    "topics-nosubjects",
+    "topics-subject-art"
+   ]
+  },
+  "pages/Analytics.jsx": {
+   "owner": "Analytics / Progress",
+   "hunks": [
+    {
+     "find": "import { SUBJECT_COLOURS } from '../data/subjects'\nimport { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,\n         Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'\n\nconst COLOURS = ['#0d9488','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#166534']\nconst HOUR_LABELS = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am',\n",
+     "replace": "import { SUBJECT_COLOURS } from '../data/subjects'\nimport { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,\n         Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\n\nconst COLOURS = ['#0d9488','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#166534']\nconst HOUR_LABELS = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am',\n",
+     "swaps": []
+    },
+    {
+     "find": "        {/* Daily study chart */}\n        <Section title=\"Daily Study Hours\" icon={<Clock size={16}/>}>\n          {dailyData.every(d => d.total === 0) ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}><p>No completed sessions in this period</p></div>\n          ) : (\n            <ResponsiveContainer width=\"100%\" height={200}>\n              <AreaChart data={dailyData}>\n",
+     "replace": "        {/* Daily study chart */}\n        <Section title=\"Daily Study Hours\" icon={<Clock size={16}/>}>\n          {dailyData.every(d => d.total === 0) ? (\n            <EmptyState art=\"emptyAnalytics\" size=\"sm\" as=\"p\" title=\"No completed sessions in this period\" />\n          ) : (\n            <ResponsiveContainer width=\"100%\" height={200}>\n              <AreaChart data={dailyData}>\n",
+     "swaps": [
+      "analytics-nopapers",
+      "analytics-trajectory",
+      "analytics-noconfidence",
+      "analytics-nosessions",
+      "analytics-nocompleted"
+     ]
+    },
+    {
+     "find": "\n        <Section title=\"Time by Subject\" icon={<BookOpen size={16}/>}>\n          {subjectDist.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}><p>No sessions logged yet</p></div>\n          ) : (\n            <>\n              <ResponsiveContainer width=\"100%\" height={220}>\n",
+     "replace": "\n        <Section title=\"Time by Subject\" icon={<BookOpen size={16}/>}>\n          {subjectDist.length === 0 ? (\n            <EmptyState art=\"emptySessions\" size=\"sm\" as=\"p\" title=\"No sessions logged yet\" />\n          ) : (\n            <>\n              <ResponsiveContainer width=\"100%\" height={220}>\n",
+     "swaps": [
+      "analytics-nopapers",
+      "analytics-trajectory",
+      "analytics-noconfidence",
+      "analytics-nosessions",
+      "analytics-nocompleted"
+     ]
+    },
+    {
+     "find": "\n        <Section title=\"Confidence Breakdown\" icon={<Brain size={16}/>}>\n          {confidenceBreakdown.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <Brain size={32} style={{ opacity: 0.3 }} />\n              <p>Rate topics in the Topics page to see your confidence breakdown</p>\n            </div>\n          ) : (\n            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>\n              <ResponsiveContainer width={200} height={200}>\n",
+     "replace": "\n        <Section title=\"Confidence Breakdown\" icon={<Brain size={16}/>}>\n          {confidenceBreakdown.length === 0 ? (\n            <EmptyState\n              art=\"emptyAnalytics\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"No confidence ratings yet\"\n              body=\"Rate topics in the Topics page to see your confidence breakdown.\"\n            />\n          ) : (\n            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>\n              <ResponsiveContainer width={200} height={200}>\n",
+     "swaps": [
+      "analytics-nopapers",
+      "analytics-trajectory",
+      "analytics-noconfidence"
+     ]
+    },
+    {
+     "find": "            )}\n          </div>\n          {gradeTrajectory.length < 2 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}><p>Log at least 2 papers for {gradeSub} to see your trajectory</p></div>\n          ) : (\n            <ResponsiveContainer width=\"100%\" height={220}>\n              <LineChart data={gradeTrajectory}>\n",
+     "replace": "            )}\n          </div>\n          {gradeTrajectory.length < 2 ? (\n            <EmptyState\n              art=\"emptyAnalytics\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"Not enough papers yet\"\n              body={`Log at least 2 papers for ${gradeSub} to see your trajectory.`}\n            />\n          ) : (\n            <ResponsiveContainer width=\"100%\" height={220}>\n              <LineChart data={gradeTrajectory}>\n",
+     "swaps": [
+      "analytics-nopapers",
+      "analytics-trajectory",
+      "analytics-noconfidence",
+      "analytics-nosessions",
+      "analytics-nocompleted"
+     ]
+    },
+    {
+     "find": "\n        <Section title=\"Papers by Subject\" icon={<BookOpen size={16}/>}>\n          {currentAttempts.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}><p>No papers logged yet — log papers in Past Papers</p></div>\n          ) : (() => {\n            const bySubject = {}\n            currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })\n",
+     "replace": "\n        <Section title=\"Papers by Subject\" icon={<BookOpen size={16}/>}>\n          {currentAttempts.length === 0 ? (\n            <EmptyState\n              art=\"emptyPapers\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"No papers logged yet\"\n              body=\"Log papers in Past Papers to see your scores here.\"\n            />\n          ) : (() => {\n            const bySubject = {}\n            currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })\n",
+     "swaps": [
+      "analytics-nopapers",
+      "analytics-trajectory",
+      "analytics-noconfidence",
+      "analytics-nosessions",
+      "analytics-nocompleted"
+     ]
+    }
+   ],
+   "swaps": [
+    "analytics-nopapers",
+    "analytics-trajectory",
+    "analytics-noconfidence",
+    "analytics-nosessions",
+    "analytics-nocompleted"
+   ]
+  },
+  "pages/TopicDetail.jsx": {
+   "owner": "Unassigned (nearest: Study)",
+   "hunks": [
+    {
+     "find": "  ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,\n  BookOpen, RotateCcw, Eye, EyeOff, Target,\n} from 'lucide-react'\nimport { format } from 'date-fns'\nimport './Topics.css'\n\n",
+     "replace": "  ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,\n  BookOpen, RotateCcw, Eye, EyeOff, Target,\n} from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport { format } from 'date-fns'\nimport './Topics.css'\n\n",
+     "swaps": []
+    },
+    {
+     "find": "\n  if (!topic) {\n    return (\n      <div className=\"fade-in empty-state\">\n        <ClipboardList size={32} style={{ opacity: 0.35 }} />\n        <p>That topic couldn't be found — it may have been deleted.</p>\n        <button className=\"btn btn-primary\" onClick={() => navigate('/topics')}>Back to topics</button>\n      </div>\n    )\n  }\n\n",
+     "replace": "\n  if (!topic) {\n    return (\n      <EmptyState\n        className=\"fade-in\"\n        art=\"notFound\"\n        title=\"That topic couldn't be found\"\n        body=\"It may have been deleted.\"\n        action={<button className=\"btn btn-primary\" onClick={() => navigate('/topics')}>Back to topics</button>}\n      />\n    )\n  }\n\n",
+     "swaps": [
+      "topicdetail-papers",
+      "topicdetail-guide-failed",
+      "topicdetail-missing"
+     ]
+    },
+    {
+     "find": "            </div>\n          )}\n          {!guide && !loadingGuide && (\n            <div className=\"empty-state\">\n              <BookOpen size={32} style={{ opacity: 0.3 }} />\n              <p>Couldn't load a guide for this topic — check your connection and try again.</p>\n              <button className=\"btn btn-primary btn-sm\" onClick={() => loadGuide(false)}>Try again</button>\n            </div>\n          )}\n          {guide && (\n            <div className=\"card\">\n",
+     "replace": "            </div>\n          )}\n          {!guide && !loadingGuide && (\n            <EmptyState\n              art=\"error\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"Couldn't load a guide for this topic\"\n              body=\"Check your connection and try again.\"\n              action={<button className=\"btn btn-primary btn-sm\" onClick={() => loadGuide(false)}>Try again</button>}\n            />\n          )}\n          {guide && (\n            <div className=\"card\">\n",
+     "swaps": [
+      "topicdetail-papers",
+      "topicdetail-guide-failed",
+      "topicdetail-missing"
+     ]
+    },
+    {
+     "find": "            </div>\n          </div>\n          {notes.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '20px 0' }}>\n              <StickyNote size={28} style={{ opacity: 0.3 }} />\n              <p style={{ fontSize: '0.875rem' }}>No notes yet on {displayName}</p>\n            </div>\n          ) : (\n            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>\n              {notes.map(n => (\n",
+     "replace": "            </div>\n          </div>\n          {notes.length === 0 ? (\n            <EmptyState art=\"emptyNotes\" size=\"sm\" as=\"p\" title={`No notes yet on ${displayName}`} />\n          ) : (\n            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>\n              {notes.map(n => (\n",
+     "swaps": [
+      "topicdetail-papers",
+      "topicdetail-questions",
+      "topicdetail-notes",
+      "topicdetail-guide-failed",
+      "topicdetail-missing"
+     ]
+    },
+    {
+     "find": "              <AIOutput text={questions} label={`Practice questions — ${displayName}`} />\n            )\n          ) : (\n            <div className=\"empty-state\" style={{ padding: '20px 0' }}>\n              <Brain size={28} style={{ opacity: 0.3 }} />\n              <p style={{ fontSize: '0.875rem' }}>Generate exam-style questions for exactly this topic</p>\n            </div>\n          )}\n        </div>\n      )}\n",
+     "replace": "              <AIOutput text={questions} label={`Practice questions — ${displayName}`} />\n            )\n          ) : (\n            <EmptyState art=\"emptyPapers\" size=\"sm\" as=\"p\" title=\"Generate exam-style questions for exactly this topic\" />\n          )}\n        </div>\n      )}\n",
+     "swaps": [
+      "topicdetail-papers",
+      "topicdetail-questions",
+      "topicdetail-notes",
+      "topicdetail-guide-failed",
+      "topicdetail-missing"
+     ]
+    },
+    {
+     "find": "            this exact topic, not a claim that it's exhaustive.\n          </p>\n          {matched.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '20px 0' }}>\n              <ClipboardList size={28} style={{ opacity: 0.3 }} />\n              <p style={{ fontSize: '0.875rem' }}>No logged past-paper questions tagged with this topic yet</p>\n              <button className=\"btn btn-secondary btn-sm\" onClick={() => navigate('/papers')}>Log a past paper</button>\n            </div>\n          ) : (\n            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>\n              {matched.map(a => {\n",
+     "replace": "            this exact topic, not a claim that it's exhaustive.\n          </p>\n          {matched.length === 0 ? (\n            <EmptyState\n              art=\"emptyPapers\"\n              size=\"sm\"\n              as=\"p\"\n              title=\"No logged past-paper questions tagged with this topic yet\"\n              action={<button className=\"btn btn-secondary btn-sm\" onClick={() => navigate('/papers')}>Log a past paper</button>}\n            />\n          ) : (\n            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>\n              {matched.map(a => {\n",
+     "swaps": [
+      "topicdetail-papers",
+      "topicdetail-questions",
+      "topicdetail-notes",
+      "topicdetail-guide-failed",
+      "topicdetail-missing"
+     ]
+    }
+   ],
+   "swaps": [
+    "topicdetail-papers",
+    "topicdetail-questions",
+    "topicdetail-notes",
+    "topicdetail-guide-failed",
+    "topicdetail-missing"
+   ]
+  },
+  "pages/Calendar.jsx": {
+   "owner": "Unassigned (nearest: Dashboard / Navigation)",
+   "hunks": [
+    {
+     "find": "import { useIsPro, ProBadge } from '../components/ProGate'\nimport { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV, hoursBySubject, formatDuration } from '../utils/calendar'\nimport { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'\nimport { getSubjectIcon } from '../utils/subjectIcons'\nimport { computeTopicRecommendations } from '../utils/recommendations'\nimport CalendarGenerator from '../components/CalendarGenerator'\nimport CalendarTimetable from '../components/CalendarTimetable'\nimport toast from 'react-hot-toast'\nimport { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'\nimport {\n  ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,\n  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye, Lock,\n  CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,\n  Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,\n} from 'lucide-react'\nimport { subjectColour } from '../data/subjects'\nimport './Calendar.css'\n\n",
+     "replace": "import { useIsPro, ProBadge } from '../components/ProGate'\nimport { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV, hoursBySubject, formatDuration } from '../utils/calendar'\nimport { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'\nimport { computeTopicRecommendations } from '../utils/recommendations'\nimport CalendarGenerator from '../components/CalendarGenerator'\nimport CalendarTimetable from '../components/CalendarTimetable'\nimport toast from 'react-hot-toast'\nimport { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'\nimport {\n  ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X, CheckCircle2, Clock, Trash2,\n  AlertTriangle, Check, Eye, Lock, CalendarDays, GraduationCap, ListTodo, ArrowLeft, Lightbulb,\n  AlertCircle, Info, BookOpen, ClipboardCheck,\n} from 'lucide-react'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport { subjectColour } from '../data/subjects'\nimport './Calendar.css'\n\n",
+     "swaps": [
+      "calendar-icon-import"
+     ]
+    },
+    {
+     "find": "                  {[1,2,3].map(i => <Skeleton key={i} height={60} />)}\n                </div>\n              ) : (selectedSessions.length===0 && (examsByDate[format(selected,'yyyy-MM-dd')]||[]).length===0) ? (\n                <div className=\"empty-state\" style={{padding:'28px 0'}}>\n                  <CalendarX2 size={28} style={{opacity:0.35}}/>\n                  <p style={{fontSize:'0.875rem'}}>Nothing scheduled on this day</p>\n                  <button className=\"btn btn-primary btn-sm\" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>Add session</button>\n                </div>\n              ) : (\n                <div className=\"rf-day-list\">\n                  {(examsByDate[format(selected,'yyyy-MM-dd')]||[]).map(e=>(\n                    <div key={'exam-'+(e.id||e.subject)} className=\"rf-upcoming-item\">\n                      <div className=\"rf-upcoming-icon\" style={{background:subjectColour(e.subject)}}><GraduationCap size={15}/></div>\n                      <div className=\"rf-upcoming-main\">\n                        <div className=\"rf-upcoming-title\">{e.subject} exam</div>\n                        <div className=\"rf-upcoming-meta\">Paper {e.paper}{e.paperName?` · ${e.paperName}`:''}</div>\n",
+     "replace": "                  {[1,2,3].map(i => <Skeleton key={i} height={60} />)}\n                </div>\n              ) : (selectedSessions.length===0 && (examsByDate[format(selected,'yyyy-MM-dd')]||[]).length===0) ? (\n                <EmptyState\n                  art=\"emptySessions\"\n                  size=\"sm\"\n                  as=\"p\"\n                  title=\"Nothing scheduled on this day\"\n                  action={<button className=\"btn btn-primary btn-sm\" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>Add session</button>}\n                />\n              ) : (\n                <div className=\"rf-day-list\">\n                  {(examsByDate[format(selected,'yyyy-MM-dd')]||[]).map(e=>(\n                    <div key={'exam-'+(e.id||e.subject)} className=\"rf-upcoming-item\">\n                      <SubjectTile subject={e.subject} size={32} />\n                      <div className=\"rf-upcoming-main\">\n                        <div className=\"rf-upcoming-title\">{e.subject} exam</div>\n                        <div className=\"rf-upcoming-meta\">Paper {e.paper}{e.paperName?` · ${e.paperName}`:''}</div>\n",
+     "swaps": [
+      "calendar-recs",
+      "calendar-upcoming",
+      "calendar-day",
+      "calendar-exam-tile"
+     ]
+    },
+    {
+     "find": "                  {[1,2,3].map(i => <Skeleton key={i} height={54} />)}\n                </div>\n              ) : upcomingItems.length === 0 ? (\n                <div className=\"empty-state\" style={{padding:'28px 0'}}>\n                  <CalendarDays size={28} style={{opacity:0.35}}/>\n                  <p style={{fontSize:'0.875rem'}}>Nothing coming up yet</p>\n                  <p style={{fontSize:'0.78rem'}}>Add a session, or set your exam dates so they show up here.</p>\n                </div>\n              ) : (\n                <div className=\"rf-upcoming-list\">\n                  {upcomingItems.map(item => {\n                    const ItemIcon = item.kind==='exam' ? GraduationCap : item.kind==='task' ? ListTodo : getSubjectIcon(item.subject)\n                    const urgency  = item.kind==='exam' ? countdownUrgency(item.date) : null\n                    return (\n                      <button key={item.id} className=\"rf-upcoming-item\"\n                        style={{cursor:'pointer', width:'100%', textAlign:'left', font:'inherit'}}\n                        onClick={()=>setSelected(parseLocalDate(item.date))}>\n                        <div className=\"rf-upcoming-icon\" style={{background: item.subject ? subjectColour(item.subject) : 'var(--text-muted)'}}>\n                          <ItemIcon size={15}/>\n                        </div>\n                        <div className=\"rf-upcoming-main\">\n                          <div className=\"rf-upcoming-title\">{item.title}</div>\n                          <div className=\"rf-upcoming-meta\">{item.meta}</div>\n",
+     "replace": "                  {[1,2,3].map(i => <Skeleton key={i} height={54} />)}\n                </div>\n              ) : upcomingItems.length === 0 ? (\n                <EmptyState\n                  art=\"emptyExams\"\n                  size=\"sm\"\n                  as=\"p\"\n                  title=\"Nothing coming up yet\"\n                  body=\"Add a session, or set your exam dates so they show up here.\"\n                />\n              ) : (\n                <div className=\"rf-upcoming-list\">\n                  {upcomingItems.map(item => {\n                    const urgency  = item.kind==='exam' ? countdownUrgency(item.date) : null\n                    return (\n                      <button key={item.id} className=\"rf-upcoming-item\"\n                        style={{cursor:'pointer', width:'100%', textAlign:'left', font:'inherit'}}\n                        onClick={()=>setSelected(parseLocalDate(item.date))}>\n                        {item.kind==='task' || !item.subject\n                          ? <div className=\"rf-upcoming-icon\" style={{background: item.subject ? subjectColour(item.subject) : 'var(--text-muted)'}}><ListTodo size={15}/></div>\n                          : <SubjectTile subject={item.subject} size={32} />}\n                        <div className=\"rf-upcoming-main\">\n                          <div className=\"rf-upcoming-title\">{item.title}</div>\n                          <div className=\"rf-upcoming-meta\">{item.meta}</div>\n",
+     "swaps": [
+      "calendar-recs",
+      "calendar-upcoming",
+      "calendar-day",
+      "calendar-upcoming-itemicon",
+      "calendar-upcoming-tile"
+     ]
+    },
+    {
+     "find": "            {loading ? (\n              <div className=\"rf-recs-grid\">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>\n            ) : filteredRecommendations.length === 0 ? (\n              <div className=\"empty-state\" style={{padding:'18px 0'}}>\n                <CheckCircle2 size={26} style={{opacity:0.35}}/>\n                <p style={{fontSize:'0.85rem'}}>\n                  {recommendations.length === 0\n                    ? 'Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.'\n                    : 'No recommendations for that subject right now.'}\n                </p>\n              </div>\n            ) : (\n              <div className=\"rf-recs-grid\">\n                {filteredRecommendations.map(rec=>(\n                  <div key={rec.id} className=\"rf-rec-card\">\n                    <div className=\"rf-rec-card-top\">\n                      <div className=\"rf-rec-icon\" style={{background:subjectColour(rec.subject)}}>\n                        {React.createElement(getSubjectIcon(rec.subject), {size:15})}\n                      </div>\n                      <div style={{minWidth:0}}>\n                        <div className=\"rf-rec-title\">{rec.topic}</div>\n                        <div className=\"rf-rec-subject\">{rec.subject}</div>\n",
+     "replace": "            {loading ? (\n              <div className=\"rf-recs-grid\">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>\n            ) : filteredRecommendations.length === 0 ? (\n              <EmptyState\n                art=\"emptyAnalytics\"\n                size=\"sm\"\n                as=\"p\"\n                title={recommendations.length === 0\n                  ? 'Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.'\n                  : 'No recommendations for that subject right now.'}\n              />\n            ) : (\n              <div className=\"rf-recs-grid\">\n                {filteredRecommendations.map(rec=>(\n                  <div key={rec.id} className=\"rf-rec-card\">\n                    <div className=\"rf-rec-card-top\">\n                      <SubjectTile subject={rec.subject} size={32} />\n                      <div style={{minWidth:0}}>\n                        <div className=\"rf-rec-title\">{rec.topic}</div>\n                        <div className=\"rf-rec-subject\">{rec.subject}</div>\n",
+     "swaps": [
+      "calendar-recs",
+      "calendar-upcoming",
+      "calendar-day",
+      "calendar-rec-tile"
+     ]
+    },
+    {
+     "find": "\n// ── Session Card ──────────────────────────────────────────────────────────────\nfunction SessionCard({ session:s, onComplete, onDelete, onEdit }) {\n  const Icon   = s.isTask ? ListTodo : getSubjectIcon(s.subject)\n  const accent = s.isTask ? (s.taskColor || 'var(--text-muted)') : subjectColour(s.subject)\n  return (\n    <div style={{display:'flex',gap:10,padding:12,borderRadius:'var(--radius-md)',background:'var(--bg-surface)',\n      border:`1px solid ${s.completed?'var(--success)':s.isEmergency?'var(--danger)':'var(--border)'}`,\n      opacity:s.completed?0.72:1}}>\n      <div style={{width:32,height:32,borderRadius:9,background:accent,flexShrink:0,\n        display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>\n        <Icon size={15}/>\n      </div>\n      <div style={{flex:1,minWidth:0}}>\n        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>\n          <div style={{fontWeight:700,fontSize:'0.85rem',marginBottom:5,\n",
+     "replace": "\n// ── Session Card ──────────────────────────────────────────────────────────────\nfunction SessionCard({ session:s, onComplete, onDelete, onEdit }) {\n  const accent = s.isTask ? (s.taskColor || 'var(--text-muted)') : subjectColour(s.subject)\n  return (\n    <div style={{display:'flex',gap:10,padding:12,borderRadius:'var(--radius-md)',background:'var(--bg-surface)',\n      border:`1px solid ${s.completed?'var(--success)':s.isEmergency?'var(--danger)':'var(--border)'}`,\n      opacity:s.completed?0.72:1}}>\n      {s.isTask\n        ? <div style={{width:32,height:32,borderRadius:9,background:accent,flexShrink:0,\n            display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}><ListTodo size={15}/></div>\n        : <SubjectTile subject={s.subject} size={32} />}\n      <div style={{flex:1,minWidth:0}}>\n        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>\n          <div style={{fontWeight:700,fontSize:'0.85rem',marginBottom:5,\n",
+     "swaps": [
+      "calendar-sessioncard-tile",
+      "calendar-sessioncard-icon"
+     ]
+    }
+   ],
+   "swaps": [
+    "calendar-recs",
+    "calendar-upcoming",
+    "calendar-day",
+    "calendar-exam-tile",
+    "calendar-upcoming-itemicon",
+    "calendar-upcoming-tile",
+    "calendar-rec-tile",
+    "calendar-sessioncard-tile",
+    "calendar-sessioncard-icon",
+    "calendar-icon-import"
+   ]
+  },
+  "pages/Study.jsx": {
+   "owner": "Study",
+   "hunks": [
+    {
+     "find": "import { getSubjectQualification, subjectColour } from '../data/subjects'\nimport { canonicalBoard, boardLabel } from '../data/boards'\nimport BoardOptions from '../components/BoardOptions'\nimport { getSubjectIcon } from '../utils/subjectIcons'\nimport { detectCommandWord } from '../utils/commandWords'\nimport { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'\nimport { generateFlashcardsPDF } from '../utils/pdfFlashcards'\n",
+     "replace": "import { getSubjectQualification, subjectColour } from '../data/subjects'\nimport { canonicalBoard, boardLabel } from '../data/boards'\nimport BoardOptions from '../components/BoardOptions'\nimport { detectCommandWord } from '../utils/commandWords'\nimport { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'\nimport { generateFlashcardsPDF } from '../utils/pdfFlashcards'\n",
+     "swaps": [
+      "study-icon-import"
+     ]
+    },
+    {
+     "find": "  Trophy, PartyPopper, Flame, FileText, Timer, CheckCircle2,\n  Maximize2, Minimize2,\n} from 'lucide-react'\nimport './Study.css'\n\n// Subject-aware hero illustration — delegates to the shared illustrationThemes.js\n",
+     "replace": "  Trophy, PartyPopper, Flame, FileText, Timer, CheckCircle2,\n  Maximize2, Minimize2,\n} from 'lucide-react'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport EmptyState from '../components/illustrations/EmptyState'\nimport './Study.css'\n\n// Subject-aware hero illustration — delegates to the shared illustrationThemes.js\n",
+     "swaps": []
+    },
+    {
+     "find": "\n        {setSource === 'mine' ? (\n          mySets.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <BookOpen size={32} style={{ opacity: 0.3 }} />\n              <p>No saved sets yet — generate or create flashcards first</p>\n            </div>\n          ) : filteredMine.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <p>No sets match those filters</p>\n",
+     "replace": "\n        {setSource === 'mine' ? (\n          mySets.length === 0 ? (\n            <EmptyState art=\"emptyFlashcards\" size=\"sm\" as=\"p\" title=\"No saved sets yet\" body=\"Generate or create flashcards first.\" />\n          ) : filteredMine.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <p>No sets match those filters</p>\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker",
+      "study-nopublic",
+      "study-nosets"
+     ]
+    },
+    {
+     "find": "              {filteredMine.map(set => (\n                <button key={set.id} onClick={() => setSelectedSet(set)}\n                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>\n                  <div className=\"rf-set-row-top\">\n                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>\n                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),\n                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>\n                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}\n                      </div>\n                      <div style={{ minWidth: 0 }}>\n                        <div className=\"rf-set-row-title\">{set.title}</div>\n                        <div className=\"rf-set-row-meta\">\n                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards\n                        </div>\n",
+     "replace": "              {filteredMine.map(set => (\n                <button key={set.id} onClick={() => setSelectedSet(set)}\n                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>\n                  <div className=\"rf-set-row-top\">\n                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>\n                      <SubjectTile subject={set.subject} size={32} />\n                      <div style={{ minWidth: 0 }}>\n                        <div className=\"rf-set-row-title\">{set.title}</div>\n                        <div className=\"rf-set-row-meta\">\n                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards\n                        </div>\n",
+     "swaps": [
+      "study-set-tiles"
+     ]
+    },
+    {
+     "find": "          publicLoading ? (\n            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading public sets…</p>\n          ) : publicSets.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <Users size={32} style={{ opacity: 0.3 }} />\n              <p>No public sets for this subject yet</p>\n            </div>\n          ) : filteredPublic.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <p>No sets match those filters</p>\n",
+     "replace": "          publicLoading ? (\n            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading public sets…</p>\n          ) : publicSets.length === 0 ? (\n            <EmptyState art=\"emptyFlashcards\" size=\"sm\" as=\"p\" title=\"No public sets for this subject yet\" />\n          ) : filteredPublic.length === 0 ? (\n            <div className=\"empty-state\" style={{ padding: '16px 0' }}>\n              <p>No sets match those filters</p>\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker",
+      "study-nopublic",
+      "study-nosets"
+     ]
+    },
+    {
+     "find": "              {filteredPublic.map(set => (\n                <button key={set.id} onClick={() => setSelectedSet(set)}\n                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>\n                  <div className=\"rf-set-row-top\">\n                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>\n                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),\n                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>\n                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}\n                      </div>\n                      <div style={{ minWidth: 0 }}>\n                        <div className=\"rf-set-row-title\">{set.title}</div>\n                        <div className=\"rf-set-row-meta\">\n                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}\n                        </div>\n",
+     "replace": "              {filteredPublic.map(set => (\n                <button key={set.id} onClick={() => setSelectedSet(set)}\n                  className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>\n                  <div className=\"rf-set-row-top\">\n                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>\n                      <SubjectTile subject={set.subject} size={32} />\n                      <div style={{ minWidth: 0 }}>\n                        <div className=\"rf-set-row-title\">{set.title}</div>\n                        <div className=\"rf-set-row-meta\">\n                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards {set.topic ? `· ${set.topic}` : ''}\n                        </div>\n",
+     "swaps": [
+      "study-set-tiles"
+     ]
+    },
+    {
+     "find": "            </>\n          )}\n          {!mkLoading && !mkResult && (\n            <div className=\"card empty-state\" style={{ padding: '48px 24px' }}>\n              <div className=\"rf-hero-icon\" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><PenLine size={26}/></div>\n              <h4>Your marked result appears here</h4>\n              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: 280, textAlign: 'center' }}>\n                Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve.\n              </p>\n            </div>\n          )}\n        </div>\n      </div>\n",
+     "replace": "            </>\n          )}\n          {!mkLoading && !mkResult && (\n            <EmptyState\n              className=\"card\"\n              art=\"emptyMistakes\"\n              title=\"Your marked result appears here\"\n              body=\"Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve.\"\n              style={{ padding: '48px 24px' }}\n            />\n          )}\n        </div>\n      </div>\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker"
+     ]
+    },
+    {
+     "find": "                    <button className=\"btn btn-secondary btn-sm\" onClick={() => { setMyFcSubjectFilter(''); setMyFcBoardFilter(''); setMyFcLevelFilter(''); setMySearch('') }}>Clear filters</button>\n                  </div>\n                ) : filteredMy.length === 0 ? (\n                  <div className=\"empty-state\">\n                    <div className=\"rf-hero-icon\" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><Layers size={26}/></div>\n                    <p>No saved sets yet</p>\n                    <div style={{ display: 'flex', gap: 8 }}>\n                      <button className=\"btn btn-primary btn-sm\" onClick={() => setFlashTab('generate')}>Generate with AI</button>\n                      <button className=\"btn btn-secondary btn-sm\" onClick={() => setShowCreate(true)}>Create manually</button>\n                      <button className=\"btn btn-secondary btn-sm\" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>\n                    </div>\n                  </div>\n                ) : (\n                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>\n                    {filteredMy.map(set => (\n                      <div key={set.id} className=\"card\" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>\n                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>\n                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, overflow: 'hidden' }}>\n                            <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),\n                              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>\n                              {React.createElement(getSubjectIcon(set.subject), { size: 15 })}\n                            </div>\n                            <div style={{ minWidth: 0 }}>\n                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>\n                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>\n",
+     "replace": "                    <button className=\"btn btn-secondary btn-sm\" onClick={() => { setMyFcSubjectFilter(''); setMyFcBoardFilter(''); setMyFcLevelFilter(''); setMySearch('') }}>Clear filters</button>\n                  </div>\n                ) : filteredMy.length === 0 ? (\n                  <EmptyState\n                    art=\"emptyFlashcards\"\n                    title=\"No saved sets yet\"\n                    action={<>\n                      <button className=\"btn btn-primary btn-sm\" onClick={() => setFlashTab('generate')}>Generate with AI</button>\n                      <button className=\"btn btn-secondary btn-sm\" onClick={() => setShowCreate(true)}>Create manually</button>\n                      <button className=\"btn btn-secondary btn-sm\" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>\n                    </>}\n                  />\n                ) : (\n                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>\n                    {filteredMy.map(set => (\n                      <div key={set.id} className=\"card\" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>\n                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>\n                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, overflow: 'hidden' }}>\n                            <SubjectTile subject={set.subject} size={32} />\n                            <div style={{ minWidth: 0 }}>\n                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>\n                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker",
+      "study-set-tiles"
+     ]
+    },
+    {
+     "find": "              </div>\n              {setsLoad ? <div className=\"loading-center\"><div className=\"spinner\" /></div>\n                : filteredPub.length === 0 ? (\n                  <div className=\"empty-state\">\n                    <Users size={32} style={{ opacity: 0.3 }} />\n                    {pubSets.length === 0 ? <p>No public sets yet — be the first to share one!</p> : (\n                      <>\n                        <p>No sets match those filters</p>\n                        <button className=\"btn btn-secondary btn-sm\" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>\n                      </>\n                    )}\n                  </div>\n                ) : (\n                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>\n                    {filteredPub.map(set => (\n",
+     "replace": "              </div>\n              {setsLoad ? <div className=\"loading-center\"><div className=\"spinner\" /></div>\n                : filteredPub.length === 0 ? (\n                  <EmptyState\n                    art=\"emptyFlashcards\"\n                    size=\"sm\"\n                    as=\"p\"\n                    title={pubSets.length === 0 ? 'No public sets yet — be the first to share one!' : 'No sets match those filters'}\n                    action={pubSets.length === 0 ? undefined : (\n                      <button className=\"btn btn-secondary btn-sm\" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>\n                    )}\n                  />\n                ) : (\n                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>\n                    {filteredPub.map(set => (\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker"
+     ]
+    },
+    {
+     "find": "          )}\n\n          {!eqResult && !eqLoading && (\n            <div className=\"empty-state\">\n              <div className=\"rf-hero-icon\" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><ClipboardList size={26}/></div>\n              <h4>Generate exam-style questions</h4>\n              <p style={{ maxWidth: 360, textAlign: 'center', fontSize: '0.875rem' }}>\n                Select your subject, board, and topic above. Try answering each one yourself, then reveal the mark scheme when you're ready.\n              </p>\n            </div>\n          )}\n        </div>\n      )}\n",
+     "replace": "          )}\n\n          {!eqResult && !eqLoading && (\n            <EmptyState\n              art=\"emptyPapers\"\n              title=\"Generate exam-style questions\"\n              body=\"Select your subject, board, and topic above. Try answering each one yourself, then reveal the mark scheme when you're ready.\"\n            />\n          )}\n        </div>\n      )}\n",
+     "swaps": [
+      "study-questions",
+      "study-pubsets",
+      "study-nosets2",
+      "study-marker"
+     ]
+    }
+   ],
+   "swaps": [
+    "study-questions",
+    "study-pubsets",
+    "study-nosets2",
+    "study-marker",
+    "study-nopublic",
+    "study-nosets",
+    "study-set-tiles",
+    "study-icon-import"
+   ]
+  },
+  "pages/PastPapers.jsx": {
+   "owner": "Analytics / Progress",
+   "hunks": [
+    {
+     "find": "import BoardOptions from '../components/BoardOptions'\nimport toast from 'react-hot-toast'\nimport { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'\nimport { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'\n\nexport default function PastPapers() {\n  const { user, profile } = useAuth()\n",
+     "replace": "import BoardOptions from '../components/BoardOptions'\nimport toast from 'react-hot-toast'\nimport { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'\nimport { Plus, X, Brain, Trash2, Edit2, Check } from 'lucide-react'\nimport EmptyState from '../components/illustrations/EmptyState'\n\nexport default function PastPapers() {\n  const { user, profile } = useAuth()\n",
+     "swaps": []
+    },
+    {
+     "find": "          </div>\n\n          {filtered.length===0 ? (\n            <div className=\"empty-state\"><FileText size={40} style={{opacity:0.3}}/><h4>No papers logged</h4><button className=\"btn btn-primary\" onClick={()=>setShowAdd(true)}>Log your first paper</button></div>\n          ) : (\n            <div className=\"table-wrapper\">\n              <table>\n",
+     "replace": "          </div>\n\n          {filtered.length===0 ? (\n            <EmptyState art=\"emptyPapers\" title=\"No papers logged\" body=\"Log a paper to see your grade, your trend and where marks were lost.\" action={<button className=\"btn btn-primary\" onClick={()=>setShowAdd(true)}>Log your first paper</button>} />\n          ) : (\n            <div className=\"table-wrapper\">\n              <table>\n",
+     "swaps": [
+      "papers-empty"
+     ]
+    },
+    {
+     "find": "\n      {tab==='progress' && (\n        chartData.length<2 ? (\n          <div className=\"empty-state\"><p>Log at least 2 papers to see a progress graph</p></div>\n        ) : (\n          <div className=\"card\">\n            <h4 style={{marginBottom:16}}>Score progression</h4>\n",
+     "replace": "\n      {tab==='progress' && (\n        chartData.length<2 ? (\n          <EmptyState art=\"emptyAnalytics\" size=\"sm\" as=\"p\" title=\"Log at least 2 papers to see a progress graph\" />\n        ) : (\n          <div className=\"card\">\n            <h4 style={{marginBottom:16}}>Score progression</h4>\n",
+     "swaps": [
+      "papers-graph"
+     ]
+    }
+   ],
+   "swaps": [
+    "papers-empty",
+    "papers-graph"
+   ]
+  },
+  "pages/Landing.jsx": {
+   "owner": "Landing",
+   "hunks": [
+    {
+     "find": "import React, { useState } from 'react'\nimport { Link } from 'react-router-dom'\nimport { useTheme } from '../context/ThemeContext'\nimport CellIllustration from '../components/illustrations/CellIllustration'\nimport {\n  Zap, Calendar, Brain, Trophy, Users, FileText,\n  BarChart2, CheckSquare, MessageSquare, Sun, Moon,\n",
+     "replace": "import React, { useState } from 'react'\nimport { Link } from 'react-router-dom'\nimport { useTheme } from '../context/ThemeContext'\nimport SubjectIllustration from '../components/illustrations/SubjectIllustration'\nimport {\n  Zap, Calendar, Brain, Trophy, Users, FileText,\n  BarChart2, CheckSquare, MessageSquare, Sun, Moon,\n",
+     "swaps": [
+      "landing-hero-import"
+     ]
+    },
+    {
+     "find": "                  <div className=\"lp-preview-topic\">Cell Biology</div>\n                  <div className=\"lp-preview-meta\">45 min</div>\n                </div>\n                <CellIllustration size={88} style={{flexShrink:0}}/>\n              </div>\n              <Link to=\"/signup\" className=\"btn btn-primary btn-sm\" style={{width:'100%',justifyContent:'center'}}>\n                Start revising <ArrowRight size={14}/>\n",
+     "replace": "                  <div className=\"lp-preview-topic\">Cell Biology</div>\n                  <div className=\"lp-preview-meta\">45 min</div>\n                </div>\n                <SubjectIllustration subject=\"Biology\" size={88} style={{flexShrink:0}}/>\n              </div>\n              <Link to=\"/signup\" className=\"btn btn-primary btn-sm\" style={{width:'100%',justifyContent:'center'}}>\n                Start revising <ArrowRight size={14}/>\n",
+     "swaps": [
+      "landing-hero"
+     ]
+    }
+   ],
+   "swaps": [
+    "landing-hero",
+    "landing-hero-import"
+   ]
+  },
+  "pages/Settings.jsx": {
+   "owner": "Unassigned",
+   "hunks": [
+    {
+     "find": "import { canonicalBoard, boardLabel } from '../data/boards'\nimport { getSupportedSubjects } from '../data/curriculumSupport'\nimport BoardOptions from '../components/BoardOptions'\nimport { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'\nimport { gradeColour } from '../utils/calendar'\nimport ThemeSelector from '../components/ThemeSelector'\n",
+     "replace": "import { canonicalBoard, boardLabel } from '../data/boards'\nimport { getSupportedSubjects } from '../data/curriculumSupport'\nimport BoardOptions from '../components/BoardOptions'\nimport SubjectTile from '../components/illustrations/SubjectTile'\nimport { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'\nimport { gradeColour } from '../utils/calendar'\nimport ThemeSelector from '../components/ThemeSelector'\n",
+     "swaps": []
+    },
+    {
+     "find": "                return (\n                <div key={s.id || i} className=\"ap-subject-row\">\n                  <div className=\"ap-subject-row-id\">\n                    <span className=\"ap-subject-row-name\">{s.name}</span>\n                    <span className=\"badge badge-grey\">{boardLabel(s.board)}</span>\n                    {subjQual !== (profile?.qualification || 'GCSE') && <span className=\"badge badge-grey\">{subjQual}</span>}\n",
+     "replace": "                return (\n                <div key={s.id || i} className=\"ap-subject-row\">\n                  <div className=\"ap-subject-row-id\">\n                    <SubjectTile subject={s.name} size={32} />\n                    <span className=\"ap-subject-row-name\">{s.name}</span>\n                    <span className=\"badge badge-grey\">{boardLabel(s.board)}</span>\n                    {subjQual !== (profile?.qualification || 'GCSE') && <span className=\"badge badge-grey\">{subjQual}</span>}\n",
+     "swaps": [
+      "settings-subject-tile"
+     ]
+    }
+   ],
+   "swaps": [
+    "settings-subject-tile"
+   ]
+  }
+ }
+}
