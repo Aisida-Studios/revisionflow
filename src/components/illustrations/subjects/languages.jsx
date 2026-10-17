@@ -12,8 +12,6 @@ import { C, G, Shadow, BookStack, Deco, DecoFront } from '../kit'
 import { useDetail } from '../IllustrationFrame'
 import { GLYPHS } from './glyphs'
 
-const r1 = (v) => Math.round(v * 10) / 10
-
 /* ───────────────────────────── landmarks (origin = ground centre) ───────────────────────────── */
 
 /** Iron lattice tower. ~150 tall. */
