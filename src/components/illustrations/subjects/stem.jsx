@@ -4,6 +4,7 @@ import React from 'react'
 import { C, G, Shadow, Sheet, Pencil, Laptop, Deco, DecoFront, useUid } from '../kit'
 import { useDetail } from '../IllustrationFrame'
 import { GlyphMark } from './GlyphMark'
+import { Cog } from '../props'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
@@ -107,28 +108,6 @@ export function Chip({ x = 0, y = 0, r = 0, s = 1 }) {
   )
 }
 
-/** Gear. Origin = centre. */
-export function Cog({ x = 0, y = 0, s = 1, n = 10, ro = 40, ri = 31, hole = 11, tone = 'deep' }) {
-  const pts = []
-  for (let i = 0; i < n; i += 1) {
-    const a0 = (i / n) * Math.PI * 2
-    const w = (Math.PI * 2) / n
-    const seg = [[a0 - w * 0.34, ri], [a0 - w * 0.2, ro], [a0 + w * 0.2, ro], [a0 + w * 0.34, ri]]
-    seg.forEach(([a, rr]) => pts.push(`${r1(Math.cos(a) * rr)} ${r1(Math.sin(a) * rr)}`))
-  }
-  const base = tone === 'deep' ? C.deep : tone === 'mid' ? C.mid : C.soft
-  const hi = tone === 'deep' ? C.mid : C.mist
-  return (
-    <G x={x} y={y} s={s}>
-      <path d={`M${pts.join('L')}Z`} fill={base} />
-      <path d={`M${pts.slice(0, Math.ceil(pts.length / 2)).join('L')}`} fill="none" stroke={hi} strokeWidth="2.4" strokeLinejoin="round" opacity="0.55" />
-      <circle r={ri - 8} fill="none" stroke={hi} strokeWidth="1.2" opacity="0.6" />
-      <circle r={hole} fill={C.display} />
-      <circle r={hole} fill="none" stroke={C.ink} strokeWidth="1.2" opacity="0.35" />
-    </G>
-  )
-}
-
 /* ───────────────────────── compositions ───────────────────────── */
 
 export function MathsArt() {
@@ -204,7 +183,6 @@ export function DesignTechArt() {
     </g>
   )
 }
-
 
 /* ═════════════════ Further Mathematics · Statistics · Engineering ═════════════════ */
 
