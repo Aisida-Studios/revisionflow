@@ -4,8 +4,7 @@
 import React from 'react'
 import { C, G, Shadow, Sheet, Pencil, BookStack, Laptop, PottedPlant } from '../kit'
 import { useDetail } from '../IllustrationFrame'
-import { OpenBook, Bubble } from '../subjects/humanities'
-import { ChartCard, Calculator, Clipboard } from '../subjects/applied'
+import { OpenBook, Bubble, ChartCard, Calculator, Clipboard } from '../props'
 import {
   Desk, WindowFrame, Mug, Clock, Headphones, Highlighter, StickyNote, CardFan, Planner,
   Notebook, Worksheet, PencilCase, Shelf, Folder, SceneDeco,
