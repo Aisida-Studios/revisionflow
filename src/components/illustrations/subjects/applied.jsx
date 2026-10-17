@@ -2,33 +2,13 @@
 // Business & Economics · PE & Sport · Food & Nutrition · Health & Care · Generic study desk.
 import React from 'react'
 import { C, G, Leaf, Shadow, Pencil, BookStack, PottedPlant, Foliage, Deco, DecoFront, useUid } from '../kit'
-import { OpenBook } from './humanities'
+import { OpenBook, ChartCard, Calculator, Clipboard } from '../props'
 import { useDetail } from '../IllustrationFrame'
 import { GlyphMark } from './GlyphMark'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
 /* ───────────────────────────── parts ───────────────────────────── */
-
-/** Bar chart on a card. Origin = top-left; 100 × 78. */
-export function ChartCard({ x = 0, y = 0, r = 0, s = 1, w = 100, h = 78, empty = false }) {
-  const bars = [0.32, 0.5, 0.42, 0.68, 0.86]
-  const bw = (w - 28) / 5 - 4
-  return (
-    <G x={x} y={y} r={r} s={s}>
-      <rect x="3" y="4" width={w} height={h} rx="7" fill={C.shadow} opacity="0.28" />
-      <rect width={w} height={h} rx="7" fill={C.paper} stroke={C.paper2} strokeWidth="1" />
-      <path d={`M12 ${h - 14}H${w - 10}M12 12V${h - 14}`} stroke={C.soft} strokeWidth="1.4" strokeLinecap="round" />
-      {!empty && bars.map((b, i) => (
-        <rect key={i} x={16 + i * (bw + 4)} y={h - 14 - b * (h - 30)} width={bw} height={b * (h - 30)} rx="2.2" fill={[C.mist, C.soft, C.mist, C.leaf, C.deep][i]} />
-      ))}
-      {!empty && <path d={`M16 ${h - 30}L${w * 0.36} ${h - 40}L${w * 0.54} ${h - 34}L${w - 16} ${h - 58}`} fill="none" stroke={C.amber} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />}
-      {!empty && <circle cx={w - 16} cy={h - 58} r="3.4" fill={C.paper} stroke={C.amber} strokeWidth="2" />}
-      {empty && <path d={`M12 ${h * 0.3}H${w - 10}M12 ${h * 0.5}H${w - 10}M12 ${h * 0.7}H${w - 10}`} stroke={C.mist} strokeWidth="1.2" strokeLinecap="round" opacity="0.9" />}
-      {empty && <path d={`M16 ${h - 24}Q${w * 0.35} ${h - 40} ${w * 0.55} ${h - 34}T${w - 16} ${h - 48}`} fill="none" stroke={C.soft} strokeWidth="2" strokeDasharray="3 5" strokeLinecap="round" />}
-    </G>
-  )
-}
 
 /** Stack of coins (plain discs — no currency symbols). Origin = base centre. */
 export function Coins({ x = 0, y = 0, s = 1, n = 4 }) {
@@ -47,22 +27,6 @@ export function Coins({ x = 0, y = 0, s = 1, n = 4 }) {
     <G x={x} y={y} s={s}>
       <Shadow cx={2} cy={1} rx={22} />
       {out}
-    </G>
-  )
-}
-
-/** Pocket calculator. Origin = bottom-centre. */
-export function Calculator({ x = 0, y = 0, r = 0, s = 1 }) {
-  return (
-    <G x={x} y={y} r={r} s={s}>
-      <Shadow cx={2} cy={2} rx={28} />
-      <rect x="-24" y="-66" width="48" height="66" rx="7" fill={C.deep} />
-      <rect x="-24" y="-66" width="16" height="66" rx="7" fill={C.mid} opacity="0.35" />
-      <rect x="-18" y="-60" width="36" height="16" rx="3" fill={C.display} />
-      <path d="M2-52H14" stroke={C.leaf} strokeWidth="3" strokeLinecap="round" />
-      {[0, 1, 2].flatMap((row) => [0, 1, 2].map((col) => (
-        <rect key={`${row}${col}`} x={-17 + col * 12.4} y={-38 + row * 11} width="9" height="8" rx="2.2" fill={col === 2 && row === 2 ? C.amber : C.soft} />
-      )))}
     </G>
   )
 }
@@ -167,32 +131,6 @@ export function Heart({ x = 0, y = 0, s = 1 }) {
   )
 }
 
-/** Clipboard with checklist. Origin = top-left; 74 × 98. */
-export function Clipboard({ x = 0, y = 0, r = 0, s = 1, ticks = 3, w = 74, h = 98 }) {
-  const rows = []
-  for (let i = 0; i < 4; i += 1) {
-    const yy = 28 + i * 17
-    const done = i < ticks
-    rows.push(
-      <g key={i}>
-        <rect x="11" y={yy} width="11" height="11" rx="3" fill={done ? C.leaf : C.display} stroke={done ? 'none' : C.soft} strokeWidth="1.4" />
-        {done && <path d={`M13.4 ${yy + 5.6}L16.2 ${yy + 8.4}L20 ${yy + 3}`} fill="none" stroke={C.paper} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
-        <rect x="28" y={yy + 2.6} width={i === 3 ? 22 : 34} height="4.4" rx="2.2" fill={C.mist} />
-      </g>,
-    )
-  }
-  return (
-    <G x={x} y={y} r={r} s={s}>
-      <rect x="3" y="5" width={w} height={h} rx="8" fill={C.shadow} opacity="0.28" />
-      <rect width={w} height={h} rx="8" fill={C.mid} />
-      <rect x="6" y="12" width={w - 12} height={h - 20} rx="4" fill={C.paper} />
-      {rows}
-      <rect x={w / 2 - 15} y="2" width="30" height="14" rx="5" fill={C.n2} />
-      <rect x={w / 2 - 10} y="-2" width="20" height="9" rx="4.4" fill={C.n3} />
-    </G>
-  )
-}
-
 /* ───────────────────────── compositions ───────────────────────── */
 
 export function BusinessArt() {
@@ -281,7 +219,6 @@ export function GenericArt() {
     </g>
   )
 }
-
 
 /* ═══════════════════════════ Economics · Accounting ═══════════════════════════ */
 
