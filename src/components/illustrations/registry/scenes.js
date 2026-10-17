@@ -10,6 +10,7 @@ import {
   EmptySessionsScene, EmptyAnalyticsScene, EmptyMistakesScene, EmptyPapersScene, EmptyNotesScene,
   EmptyFlashcardsScene, EmptyExamsScene, EmptyPlanScene,
 } from '../scenes/empty'
+import { FriendsScene, LeaderboardScene, NotFoundScene, ErrorScene } from '../scenes/states'
 
 
 /**
@@ -19,6 +20,7 @@ import {
  *   rewards   success · streak · achievement · mastery
  *   empty     emptySessions · emptyMistakes · emptyPapers · emptyAnalytics · emptyNotes ·
  *             emptyFlashcards · emptyExams · emptyPlan
+ *   states    friends · leaderboard · notFound · error
  */
 export const SCENE_ART = {
   dashboard: DashboardScene, study: StudyScene, calendar: CalendarScene, pastPapers: PastPapersScene,
@@ -28,6 +30,7 @@ export const SCENE_ART = {
   emptySessions: EmptySessionsScene, emptyMistakes: EmptyMistakesScene, emptyPapers: EmptyPapersScene,
   emptyAnalytics: EmptyAnalyticsScene, emptyNotes: EmptyNotesScene, emptyFlashcards: EmptyFlashcardsScene,
   emptyExams: EmptyExamsScene, emptyPlan: EmptyPlanScene,
+  friends: FriendsScene, leaderboard: LeaderboardScene, notFound: NotFoundScene, error: ErrorScene,
 }
 export const SCENE_NAMES = Object.keys(SCENE_ART)
 
