@@ -4,69 +4,11 @@ import React from 'react'
 import { C, G, Leaf, Shadow, BookStack, Pencil, Deco, DecoFront, useUid } from '../kit'
 import { useDetail } from '../IllustrationFrame'
 import { GlyphBubble } from './languages'
+import { OpenBook, Bubble, Magnifier } from '../props'
 
 const r1 = (v) => Math.round(v * 10) / 10
 
 /* ───────────────────────────── parts ───────────────────────────── */
-
-/** Open book, front-on. Origin = gutter at the bottom; ~128 wide × 84 tall. */
-export function OpenBook({ x = 0, y = 0, s = 1, r = 0, cover = 'deep', lines = true }) {
-  const d = useDetail()
-  const cv = cover === 'blue' ? [C.blue, C.ink] : cover === 'cream' ? [C.warm2, C.warm3] : [C.deep, C.ink]
-  const page = 'M0 10C-14 0-40-4-60-8V-60C-40-62-14-56 0-44Z'
-  const rows = []
-  if (lines && d !== 'compact') {
-    for (let i = 0; i < 5; i += 1) {
-      const dy = 14 + i * 7
-      const p = `M-52 ${-60.5 + dy}C-38 ${-61 + dy} -18 ${-56 + dy} -8 ${-47 + dy}`
-      const q = `M52 ${-60.5 + dy}C38 ${-61 + dy} 18 ${-56 + dy} 8 ${-47 + dy}`
-      rows.push(<path key={`l${i}`} d={p} fill="none" stroke={C.mist} strokeWidth="2.3" strokeLinecap="round" />)
-      rows.push(<path key={`r${i}`} d={q} fill="none" stroke={C.mist} strokeWidth="2.3" strokeLinecap="round" />)
-    }
-  }
-  return (
-    <G x={x} y={y} s={s} r={r}>
-      <Shadow cx={2} cy={18} rx={76} />
-      {/* cover boards, then the page block, then the pages — all built from the page outline */}
-      <g transform="translate(0 10) scale(1.1 1)"><path d={page} fill={cv[0]} /></g>
-      <g transform="translate(0 10) scale(-1.1 1)"><path d={page} fill={cv[0]} /></g>
-      <g transform="translate(0 10) scale(1.1 1)"><path d={page} fill={cv[1]} opacity="0.25" /></g>
-      <g transform="translate(0 5) scale(1.04 1)"><path d={page} fill={C.paper2} /></g>
-      <g transform="translate(0 5) scale(-1.04 1)"><path d={page} fill={C.paper2} /></g>
-      <path d={page} fill={C.paper} />
-      <g transform="scale(-1 1)"><path d={page} fill={C.paper} /></g>
-      <path d={page} fill={C.paper2} opacity="0.4" />
-      <path d="M0 10V-44" stroke={C.paper2} strokeWidth="2.4" />
-      {rows}
-      {d !== 'compact' && <path d="M-4.5-44V-8L-0.5-12L3.5-8V-44Z" fill={C.amber} opacity="0.92" />}
-    </G>
-  )
-}
-
-/** Speech bubble. Origin = top-left. */
-export function Bubble({ x = 0, y = 0, w = 70, h = 44, tone = 'paper', tail = 'left', marks = 'bars' }) {
-  const fill = tone === 'deep' ? C.deep : tone === 'mint' ? C.mist : C.paper
-  const mark = tone === 'deep' ? C.mist : C.leaf
-  const tx = tail === 'left' ? w * 0.22 : w * 0.78
-  const dir = tail === 'left' ? -1 : 1
-  return (
-    <G x={x} y={y}>
-      <path d={`M${tx} ${h + 3}L${tx + dir * 12} ${h + 15}L${tx + dir * 16 - dir * 6} ${h + 3}Z`} fill={C.shadow} opacity="0.25" />
-      <rect x="2" y="3" width={w} height={h} rx="12" fill={C.shadow} opacity="0.28" />
-      <path d={`M${tx + dir * 14} ${h - 1}L${tx + dir * 12} ${h + 14}L${tx - dir * 2} ${h - 1}Z`} fill={fill} />
-      <rect width={w} height={h} rx="12" fill={fill} stroke={tone === 'paper' ? C.paper2 : 'none'} strokeWidth="1" />
-      {marks === 'bars' ? (
-        <g stroke={mark} strokeWidth="3.4" strokeLinecap="round">
-          <path d={`M${w * 0.18} ${h * 0.34}H${w * 0.82}M${w * 0.18} ${h * 0.64}H${w * 0.58}`} />
-        </g>
-      ) : (
-        <g fill="none" stroke={mark} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <path d={`M${w * 0.2} ${h * 0.55}Q${w * 0.3} ${h * 0.2} ${w * 0.4} ${h * 0.55}T${w * 0.6} ${h * 0.55}T${w * 0.8} ${h * 0.55}`} />
-        </g>
-      )}
-    </G>
-  )
-}
 
 /** Globe on a brass-and-wood stand. Origin = base centre on the ground. */
 export function Globe({ x = 0, y = 0, s = 1 }) {
@@ -282,13 +224,26 @@ export function EnglishArt() {
 
 export function HistoryArt() {
   const d = useDetail()
+  if (d === 'full') {
+    return (
+      <g>
+        <Deco v="c" />
+        <Hourglass x={176} y={166} s={1.0} />
+        <Column x={100} y={192} s={1.04} />
+        <Scroll x={152} y={188} r={-8} s={1.05} />
+        <DecoFront side="right" />
+      </g>
+    )
+  }
+  // Compact + standard: column and hourglass side by side; the scroll is full-tier only. At tile sizes a
+  // column with the scroll lying off to one side made an "L" (it read as a letter, not as History), and a
+  // column centred on the scroll looked like the Leaning Tower on its book (Italian).
   const compact = d === 'compact'
   return (
     <g>
       <Deco v="c" />
-      {d === 'full' && <Hourglass x={176} y={166} s={1.0} />}
-      <Column x={compact ? 98 : 100} y={compact ? 196 : 192} s={compact ? 1.06 : 1.04} />
-      <Scroll x={compact ? 152 : 152} y={compact ? 186 : 188} r={-8} s={compact ? 1.2 : 1.05} />
+      <Hourglass x={compact ? 168 : 170} y={compact ? 196 : 194} s={compact ? 1.12 : 1.0} />
+      <Column x={compact ? 92 : 100} y={compact ? 196 : 192} s={compact ? 1.06 : 1.04} />
       <DecoFront side="right" />
     </g>
   )
@@ -384,23 +339,7 @@ export function LanguagesArt() {
   )
 }
 
-
 /* ═════ English Language · English Language & Literature · Religious Studies · Sociology · Politics ═════ */
-
-/** Magnifying glass. Origin = lens centre. */
-export function Magnifier({ x = 0, y = 0, r = 0, s = 1 }) {
-  return (
-    <G x={x} y={y} r={r} s={s}>
-      <circle cx="3" cy="5" r="24" fill={C.shadow} opacity="0.25" />
-      <rect x="20" y="-5.4" width="38" height="10.8" rx="5.4" fill={C.warm3} transform="rotate(45)" />
-      <rect x="20" y="-5.4" width="38" height="3.4" rx="1.7" fill={C.hi} opacity="0.3" transform="rotate(45)" />
-      <circle r="23" fill={C.bluePale} opacity="0.45" />
-      <circle r="23" fill="none" stroke={C.n2} strokeWidth="5.4" />
-      <circle r="23" fill="none" stroke={C.n3} strokeWidth="1.6" opacity="0.8" />
-      <path d="M-14-12A18 18 0 0 1-2-18" fill="none" stroke={C.hi} strokeWidth="3.4" strokeLinecap="round" opacity="0.7" />
-    </G>
-  )
-}
 
 /** Ink bottle. Origin = base centre. */
 export function Inkwell({ x = 0, y = 0, s = 1 }) {
