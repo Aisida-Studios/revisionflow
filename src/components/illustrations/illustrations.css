@@ -118,8 +118,33 @@
   pointer-events: none;        /* decorative by default — never steals taps */
 }
 
-/* Locked badges: same artwork, drained of colour. */
+/* Locked badges: same artwork, drained of colour. Do not dim the parent as well — the two multiply. */
 .rfi.rfi-locked { filter: grayscale(1); opacity: 0.45; }
+
+/* Holder for artwork that needs a tooltip (title=), a link or a button around it. The SVG is
+   pointer-events:none, so the hover/click target must be the wrapper; this keeps the wrapper the
+   same size as the art (no baseline gap under the <svg>) so flex rows and chips stay tight. */
+.rfi-holder { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 0; }
+
+/* ── SubjectTile (SubjectTile.jsx) ────────────────────────────────────────────
+   A subject picture on a small rounded tile. The tokens live on the tile itself because the
+   --rfi-* palette belongs to the <svg> root. Dark mode keeps the same mint family, dimmed. */
+.rfi-tile {
+  --rfi-tile-bg:   #ebf3ee;
+  --rfi-tile-ring: rgba(15, 81, 50, 0.10);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  overflow: hidden;
+  background: var(--rfi-tile-bg);
+  box-shadow: inset 0 0 0 1px var(--rfi-tile-ring);
+}
+[data-theme="dark"] .rfi-tile {
+  --rfi-tile-bg:   rgba(125, 195, 155, 0.12);
+  --rfi-tile-ring: rgba(125, 195, 155, 0.20);
+}
 
 /* ── Empty-state wrapper (EmptyState.jsx) ─────────────────────────────────────
    Builds on the app's existing .empty-state (flex column, centred, padding, gap). */
