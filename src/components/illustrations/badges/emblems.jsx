@@ -4,9 +4,8 @@
 // small as 40px. Emblems take { a, b } = the category's primary and secondary accent colours.
 import React from 'react'
 import { C, G, Leaf, Sprig } from '../kit'
-import { Cog } from '../subjects/stem'
+import { Cog } from '../props'
 
-const SW = 3.4
 const line = { fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }
 
 /* ── building blocks ───────────────────────────────────────────── */
