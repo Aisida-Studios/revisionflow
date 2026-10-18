@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom'
 import ProfileMenu from './ProfileMenu'
+import MiniTimer from './MiniTimer'
 import { doc, updateDoc } from 'firebase/firestore'
 import {
   LayoutDashboard, CalendarDays, Award, ClipboardList, Target,
@@ -398,6 +399,9 @@ export default function Layout() {
             </button>
           </div>
 
+          {/* The timer, popped out: shows while a timer is running and you are off the Timer page */}
+          <MiniTimer variant={collapsed ? 'collapsed' : 'sidebar'} />
+
           <nav className="sidebar-nav" aria-label="Primary">
             {NAV_GROUPS.map((group, gi) => (
               <div className="nav-group" key={group.label || `group-${gi}`}>
@@ -445,6 +449,7 @@ export default function Layout() {
             <span className="sidebar-logo"><Zap size={16} /></span>
             <span>RevisionFlow</span>
           </Link>
+          <MiniTimer variant="pill" />
           <button type="button" className="topbar-avatar-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Avatar profile={profile} user={user} size="sm" />
           </button>
