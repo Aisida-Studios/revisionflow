@@ -6,7 +6,8 @@ import { savePaperAttempt, getPaperAttempts, getPaperStructures, deletePaperAtte
 import { buildQuestions, distributionTotal, validateDistribution, validateScores, lostMarks, MAX_QUESTIONS } from '../utils/paperQuestions'
 import { analyseWeaknesses } from '../utils/ai'
 import { gradeColour } from '../utils/calendar'
-import { calculateGradeFromBoundaries, AVAILABLE_YEARS } from '../data/paperDatabase'
+import { scaleBoundariesToPaper, AVAILABLE_YEARS } from '../data/paperDatabase'
+import { gradePaper, staleGradeFix, customBoundarySetFor } from '../utils/attemptGrade'
 import { getMergedPaperSpec, getMergedBoundaries } from '../data/overrides'
 import { isTiered } from '../data/examDates2026'
 import { SUBJECT_COLOURS, getGradeOptions, getSubjectQualification } from '../data/subjects'
@@ -52,6 +53,51 @@ export default function PastPapers() {
     getPaperAttempts(user.uid, selSubject||null).then(setAttempts)
     getPaperStructures({}).then(setStructures)
   }, [user, selSubject])
+
+  // Re-grade an attempt after its score, total or year was edited. A grade comes from the same
+  // boundaries it was first given: the student's own (if they entered any and they were saved),
+  // otherwise the board boundaries for the (possibly changed) year. If the student's own boundaries
+  // were never saved (older entries) the grade is left as it was rather than guessed.
+  async function regradeEdited(att, updated) {
+    const own = customBoundarySetFor(att)
+    if (own) return gradePaper({ score: updated.score, maxMarks: updated.maxMarks, boundarySet: own, custom: true, year: updated.year })
+    if (att.gradeProvenance?.source === 'Student-entered boundaries') return {}
+    const set = await getMergedBoundaries(att.board, att.subject, att.tier, updated.year, att.qualification || 'GCSE')
+    const r = gradePaper({ score: updated.score, maxMarks: updated.maxMarks, boundarySet: set, year: updated.year })
+    return r.grade ? r : {}
+  }
+
+  // Repairs grades saved by the old behaviour, which compared a paper's raw mark with boundaries for
+  // the WHOLE subject (75/80 measured against marks out of 240 came out as a 4). Only a grade that
+  // matches exactly what the old behaviour would have saved is changed; each attempt is checked once.
+  const repairChecked = useRef(new Set())
+  const mounted = useRef(true)
+  useEffect(() => () => { mounted.current = false }, [])
+  useEffect(() => {
+    if (!user || !attempts.length) return
+    const todo = attempts.filter(a => !repairChecked.current.has(a.id))
+    if (!todo.length) return
+    todo.forEach(a => repairChecked.current.add(a.id))
+    ;(async () => {
+      const cache = new Map()
+      const fixes = []
+      for (const a of todo) {
+        const level = a.qualification || 'GCSE'
+        const key = [a.board, level, a.subject, a.tier, a.year].join('|')
+        if (!cache.has(key)) cache.set(key, await getMergedBoundaries(a.board, a.subject, a.tier, a.year, level).catch(() => null))
+        const set = cache.get(key)
+        const fix = staleGradeFix(a, set)
+        if (!fix) continue
+        const r = gradePaper({ score: a.score, maxMarks: a.maxMarks, boundarySet: set, year: a.year })
+        fixes.push({ id: a.id, grade: fix.grade, ...(r.gradeProvenance ? { gradeProvenance: r.gradeProvenance } : {}) })
+      }
+      if (!fixes.length) return
+      await Promise.all(fixes.map(({ id, ...patch }) => updatePaperAttempt(user.uid, id, patch).catch(() => {})))
+      if (!mounted.current) return
+      setAttempts(list => list.map(x => { const f = fixes.find(y => y.id === x.id); return f ? { ...x, grade: f.grade, ...(f.gradeProvenance ? { gradeProvenance: f.gradeProvenance } : {}) } : x }))
+      toast.success('Corrected ' + fixes.length + ' past paper grade' + (fixes.length === 1 ? '' : 's') + ' that had been measured against the whole subject instead of the paper.')
+    })()
+  }, [attempts, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDelete(id) {
     await deletePaperAttempt(user.uid, id)
@@ -291,8 +337,11 @@ export default function PastPapers() {
           attempt={editEntry}
           onClose={()=>setEditEntry(null)}
           onSave={async (updated) => {
-            await updatePaperAttempt(user.uid, editEntry.id, updated)
-            setAttempts(a => a.map(x => x.id === editEntry.id ? {...x, ...updated} : x))
+            // Changing the score, total or year changes the grade too (it used to stay as it was).
+            const regrade = await regradeEdited(editEntry, updated).catch(() => ({}))
+            const patch = { ...updated, ...regrade }
+            await updatePaperAttempt(user.uid, editEntry.id, patch)
+            setAttempts(a => a.map(x => x.id === editEntry.id ? {...x, ...patch} : x))
             setEditEntry(null)
             toast.success('Entry updated')
           }}/>
@@ -350,6 +399,8 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
   }, [form.subject, form.board, form.paper, form.year, formQual])
 
   const totalScored = questionMarks.reduce((s,q)=>s+parseInt(q.scored||0),0)
+  // Boundary sets are usually for the whole subject (e.g. out of 240); show them in this paper's marks.
+  const gridBoundary = scaleBoundariesToPaper(autoBoundary, parseInt(form.maxMarks) || autoSpec?.maxMarks || 0)
 
   async function submit(e) {
     e.preventDefault()
@@ -358,19 +409,15 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
     const max     = parseInt(form.maxMarks)
     const pct     = Math.round((score/max)*100)
     const grades  = autoBoundary?.grades || getGradeOptions(form.subject, formQual, form.tier)
-    const bounds  = useCustom ? { boundaries:customBoundaries.map(Number), maxMarks:max, grades } : autoBoundary
-    const grade   = bounds ? calculateGradeFromBoundaries(score, bounds) : null
-    // Record which boundaries produced the grade so it is never shown as official when it isn't.
-    const prov = useCustom
-      ? { requestedYear: Number(form.year) || null, sourceYear: null, verified: false, estimated: true, source: 'Student-entered boundaries', label: 'Grade from boundaries you entered' }
-      : (autoBoundary?.provenance || null)
-    const gradeProvenance = grade && prov
-      ? { requestedYear: prov.requestedYear, sourceYear: prov.sourceYear, verified: !!prov.verified, estimated: !!prov.estimated, source: prov.source, label: prov.label }
-      : null
+    // A blank custom box means "no boundary for this grade", not a boundary of 0 marks.
+    const customSet = customBoundaries.map(b => (b === '' || b == null ? null : Number(b)))
+    const bounds  = useCustom ? { boundaries: customSet, maxMarks: max, grades } : autoBoundary
+    // Graded by PERCENTAGE of this paper: whole-subject boundaries are converted to the paper's total.
+    const { grade, gradeProvenance } = gradePaper({ score, maxMarks: max, boundarySet: bounds, custom: useCustom, year: form.year })
     const subjectKey = buildSubjectKey({ board: form.board, qualification: formQual, subject: form.subject, tier: form.tier })
     setSaving(true)
     try {
-      await onSave({ ...form, attemptId: attemptIdRef.current, score, maxMarks:max, percentage:pct, grade, gradeProvenance, qualification:formQual, subjectKey, questionMarks: useQ?questionMarks:[], ...(useQ && autoSpec?.questions ? { questionStructure: { source: 'verified', verified: true } } : {}) }, !(useQ && questionMarks.length > 0))
+      await onSave({ ...form, attemptId: attemptIdRef.current, score, maxMarks:max, percentage:pct, grade, gradeProvenance, qualification:formQual, subjectKey, ...(useCustom ? { customBoundaries: customSet, customBoundariesMax: max, customGrades: grades } : {}), questionMarks: useQ?questionMarks:[], ...(useQ && autoSpec?.questions ? { questionStructure: { source: 'verified', verified: true } } : {}) }, !(useQ && questionMarks.length > 0))
     } catch (err) {
       toast.error('Could not save the paper: ' + (err?.message || 'unknown error'))
     } finally {
@@ -432,7 +479,7 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
                 </span>
                 {!useCustom ? (
                   <button type="button" style={{background:'none',border:'none',fontSize:'0.75rem',color:'var(--accent-light)',cursor:'pointer'}}
-                    onClick={()=>{setUseCustom(true);setCustomBoundaries((autoBoundary?.boundaries||[]).map(b=>b||''))}}>
+                    onClick={()=>{setUseCustom(true);setCustomBoundaries((gridBoundary?.boundaries||[]).map(b=>b||''))}}>
                     Edit
                   </button>
                 ) : (
@@ -446,17 +493,22 @@ function AddAttemptModal({ user, profile, structures, onClose, onSave }) {
               {!useCustom && autoBoundary ? (
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(60px,1fr))',gap:4}}>
                   {(autoBoundary.grades || ['9','8','7','6','5','4','3','2','1']).map((g,i)=>{
-                    const marks = autoBoundary.boundaries[i]
+                    const marks = gridBoundary.boundaries[i]
                     if (marks === null || marks === undefined) return null
-                    const pct = Math.round((marks / autoBoundary.maxMarks)*100)
+                    const pct = Math.round((autoBoundary.boundaries[i] / autoBoundary.maxMarks)*100)
                     return (
                       <div key={g} style={{textAlign:'center',padding:'4px 2px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)'}}>
                         <div style={{fontWeight:800,color:gradeColour(g),fontSize:'0.9rem'}}>{g.startsWith('G') || g.includes('-') || g.includes('*') || /^[A-Z]$/.test(g) ? g : `G${g}`}</div>
-                        <div style={{fontSize:'0.72rem',fontWeight:600}}>{marks}/{autoBoundary.maxMarks}</div>
+                        <div style={{fontSize:'0.72rem',fontWeight:600}}>{marks}/{gridBoundary.maxMarks}</div>
                         <div style={{fontSize:'0.68rem',color:'var(--text-muted)'}}>{pct}%</div>
                       </div>
                     )
                   })}
+                  {gridBoundary.scaledFrom && (
+                    <p style={{gridColumn:'1 / -1',fontSize:'0.72rem',margin:'4px 0 0',color:'var(--text-muted)'}}>
+                      These are whole-subject boundaries (out of {gridBoundary.scaledFrom}) converted to this paper (out of {gridBoundary.maxMarks}) by percentage.
+                    </p>
+                  )}
                   {autoBoundary.provenance && (
                     <p style={{gridColumn:'1 / -1',fontSize:'0.72rem',margin:'4px 0 0',color:autoBoundary.provenance.verified?'var(--text-muted)':'var(--warning)'}}>
                       {autoBoundary.provenance.label}
