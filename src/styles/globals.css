@@ -827,14 +827,23 @@ tr:hover td { background:var(--bg-hover); }
 }
 
 /* ── Top row: next session (dominant) + Today / Streak ──────────────────── */
-/* One row of three boxes: Next session, Today, Streak. The side column's wrapper uses
-   display: contents so its two cards become direct grid items of the top row. */
-.dash-top-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+/* The top of the dashboard: Next session, Today, Streak.
+   Default (and anywhere narrower than the thresholds below): Next session spans the full width and
+   Today and Streak sit side by side beneath it, so no box is squeezed. The sidebar takes 252px, so the
+   thresholds are about the CONTENT width, not the screen width.
+   The side column's wrapper is display: contents so its two cards act as direct grid items.
+   To change when the single row appears, change the two min-width values below
+   (1440px = sidebar open, 1280px = sidebar collapsed). */
+.dash-top-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
 .dash-side-col { display: contents; }
-@media (max-width: 1200px) {
-  /* Not enough width for three: Next session spans the top, Today and Streak share the row below. */
-  .dash-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .next-session-card { grid-column: 1 / -1; }
+.next-session-card { grid-column: 1 / -1; }
+@media (min-width: 1440px) {
+  .dash-top-row { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
+  .next-session-card { grid-column: auto; }
+}
+@media (min-width: 1280px) {
+  .sidebar--collapsed ~ .main-content .dash-top-row { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
+  .sidebar--collapsed ~ .main-content .next-session-card { grid-column: auto; }
 }
 
 .next-session-card { position: relative; overflow: hidden; min-height: 200px; }
@@ -1097,3 +1106,30 @@ a.notif-item { cursor: pointer; }
 .mobile-drawer-head { display: flex; align-items: center; gap: 10px; padding: 16px; border-bottom: 1.5px solid var(--border); flex-shrink: 0; }
 .mobile-drawer-head .sidebar-user-name { flex: 1; }
 .mobile-drawer-nav { padding: 10px; flex: 1; }
+
+/* ── Pop-out timer (components/MiniTimer.jsx) ─────────────────────────────────────────────── */
+.mini-timer { display: flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: var(--bg-surface); border-radius: var(--radius-md); }
+.mini-timer-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px; color: var(--text-primary); text-decoration: none; }
+.mini-timer-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.mini-timer-time { font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.mini-timer-label { font-size: 0.7rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-timer-btn { flex-shrink: 0; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer; }
+.mini-timer-btn:hover { background: var(--bg-hover, rgba(0,0,0,0.05)); color: var(--text-primary); }
+.mini-timer.is-running { border-color: var(--accent); }
+.mini-timer.is-running .mini-timer-main > svg { color: var(--accent); }
+.mini-timer.is-done { border-color: var(--warning); animation: mini-timer-pulse 1.6s ease-in-out infinite; }
+@keyframes mini-timer-pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.18); } }
+@media (prefers-reduced-motion: reduce) { .mini-timer.is-done { animation: none; } }
+
+/* In the sidebar: a card between the logo row and the navigation. */
+.mini-timer--sidebar { margin: 4px 10px 0; }
+/* In the collapsed 64px rail: just the time, stacked over the button. */
+.mini-timer--collapsed { flex-direction: column; gap: 0; margin: 4px 6px 0; padding: 4px 0; }
+.mini-timer--collapsed .mini-timer-main { flex-direction: column; gap: 2px; padding: 4px 2px; text-align: center; }
+.mini-timer--collapsed .mini-timer-time { font-size: 0.74rem; }
+.mini-timer--collapsed .mini-timer-btn { width: 36px; height: 36px; }
+/* In the mobile top bar: a compact pill beside the menu button. */
+.mini-timer--pill { margin-left: auto; margin-right: 8px; }
+.mini-timer--pill .mini-timer-main { padding: 4px 6px 4px 10px; }
+.mini-timer--pill .mini-timer-time { font-size: 0.9rem; }
+.mini-timer--pill .mini-timer-btn { width: 40px; height: 40px; }
