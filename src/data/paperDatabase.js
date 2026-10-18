@@ -1885,9 +1885,32 @@ export function getBoundariesForPaper(board, subject, tier, year, paper, level) 
   return getBoundaries(board, subject, tier, year, level)
 }
 
-export function calculateGradeFromBoundaries(score, boundaryData) {
+// Boundary sets are usually out of the WHOLE subject (e.g. 240 for three 80-mark papers), but a
+// single past paper is worth fewer marks (e.g. 80). Comparing a paper's raw mark with the
+// whole-subject boundaries is wrong: 75/80 would be measured against marks out of 240 and come out
+// as a low grade. This converts the boundaries to the paper by PERCENTAGE: the marks needed on a
+// paper worth `paperMaxMarks` to reach the same percentage as each boundary (rounded up, because
+// scores are whole marks). A boundary set that is already out of the paper's total is returned as is.
+export function scaleBoundariesToPaper(boundaryData, paperMaxMarks) {
   if (!boundaryData) return null
-  const { boundaries, grades } = boundaryData
+  const paperMax = Number(paperMaxMarks)
+  const setMax = Number(boundaryData.maxMarks)
+  if (!(paperMax > 0) || !(setMax > 0) || paperMax === setMax) return boundaryData
+  return {
+    ...boundaryData,
+    maxMarks: paperMax,
+    scaledFrom: setMax,
+    // 1e-9 stops float noise (e.g. 68.00000000000001) from demanding an extra mark.
+    boundaries: boundaryData.boundaries.map(b => (b === null || b === undefined ? b : Math.max(0, Math.ceil((b / setMax) * paperMax - 1e-9)))),
+  }
+}
+
+// score is out of paperMaxMarks. Pass paperMaxMarks whenever the boundary set might be out of a
+// different total (any whole-subject set); omit it only when score and boundaries share a total.
+export function calculateGradeFromBoundaries(score, boundaryData, paperMaxMarks) {
+  if (!boundaryData) return null
+  const scaled = paperMaxMarks ? scaleBoundariesToPaper(boundaryData, paperMaxMarks) : boundaryData
+  const { boundaries, grades } = scaled
   const gradeLabels = grades || ['9','8','7','6','5','4','3','2','1']
   for (let i = 0; i < boundaries.length; i++) {
     if (boundaries[i] !== null && score >= boundaries[i]) return gradeLabels[i]
