@@ -155,3 +155,10 @@
   .rf-config-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
   .rf-flip-card { height: 240px; }
 }
+
+/* Long topic or set names (including unbroken strings) wrap inside their card instead of pushing it
+   wider than the page. min-width: 0 lets a flex or grid child shrink below its content's width. */
+.rf-set-row, .rf-set-row-top, .rf-set-row-top > div { min-width: 0; }
+.rf-set-row-title, .rf-set-row-meta { overflow-wrap: anywhere; }
+.rf-flip-q, .rf-flip-a { overflow-wrap: anywhere; max-width: 100%; }
+.rf-flip-face { min-width: 0; }
