@@ -875,7 +875,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       <div className="rf-mode-hero">
         <div className="rf-illustration-mount"><SubjectIllustration subject={subject} size={58} /></div>
         <div className="rf-mode-hero-text">
-          <h3>{title}</h3>
+          <h3 style={{ overflowWrap: 'anywhere' }}>{title}</h3>
           <div className="rf-mode-hero-meta">
             <span className="badge badge-accent">{filteredCards.length}{masteryFilter!=='all'?' / '+cards.length:''} cards</span>
             {subject&&<span className="badge badge-grey">{subject}</span>}
@@ -2994,7 +2994,7 @@ export default function Study() {
                               {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
                             </div>
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                             </div>
                           </div>
@@ -3051,7 +3051,7 @@ export default function Study() {
                     {filteredPub.map(set => (
                       <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>{set.title}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                             {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
                             {set.author && <span style={{ marginLeft: 4, fontWeight: 600, color: set.author === 'RevisionFlow' ? 'var(--accent-light)' : 'var(--text-muted)' }}>
