@@ -148,3 +148,10 @@
 /* ── AI summary ──────────────────────────────────────────────────────────── */
 .analytics-summary-empty { text-align: center; padding: 20px 0; }
 .analytics-summary-empty p { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 14px; }
+
+/* Summary cards: all eight on one line whenever there is room (including with the sidebar open).
+   minmax(0, 1fr) lets each card shrink instead of wrapping; below 1280px they become two even rows
+   of four, and on phones two per row. */
+.analytics-stat-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 1279px) { .analytics-stat-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .analytics-stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
