@@ -2,6 +2,11 @@ import assert from 'node:assert/strict'
 import { toLocalDateStr, parseLocalDate, localWeekStartStr, localMonthStartStr, addLocalDays, diffLocalDays } from '../src/utils/localDate.js'
 import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPatch as srvPatch, effectivePeriodXP as srvEffective } from '../netlify/functions/lib/periods.js'
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../src/utils/provenance.js'
+import { getBoundaries, scaleBoundariesToPaper, calculateGradeFromBoundaries } from '../src/data/paperDatabase.js'
+import { miniTimerState, formatClock } from '../src/utils/miniTimerState.js'
+import { ANALYTICS_START_DATE, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
+import { buildSubjectKey } from '../src/utils/subjectKey.js'
+import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
 import { groupsFromQuestions } from '../src/utils/paperQuestions.js'
 import { buildQuestions, distributionTotal, validateDistribution, validateScores, lostMarks, questionsWithLostMarks, maxQuestionMarks } from '../src/utils/paperQuestions.js'
@@ -388,6 +393,127 @@ ok('a stored structure round-trips into editable groups, merging equal neighbour
   assert.deepEqual(groupsFromQuestions(buildQuestions(groups)), groups)
   assert.deepEqual(groupsFromQuestions(buildQuestions([{ count: 2, marks: 3 }, { count: 1, marks: 3 }])), [{ count: 3, marks: 3 }])
   assert.deepEqual(groupsFromQuestions([]), []); assert.deepEqual(groupsFromQuestions(null), [])
+})
+
+// ───────────────── past paper grades: percentage, not raw marks ─────────────────
+ok('REGRESSION: 75/80 is graded by percentage, not as 75 out of the whole subject (240)', () => {
+  const maths = getBoundaries('AQA', 'Mathematics', 'Higher', 2025, 'GCSE')
+  assert.equal(maths.maxMarks, 240)                                             // the boundary set is for the whole subject
+  assert.equal(calculateGradeFromBoundaries(75, maths), '4')                    // the old behaviour: 75 vs marks out of 240
+  assert.equal(calculateGradeFromBoundaries(75, maths, 80), '9')                // by percentage: 93.75%
+  assert.equal(gradePaper({ score: 75, maxMarks: 80, boundarySet: maths }).grade, '9')
+  const alevel = getBoundaries('AQA', 'Physics', null, 2025, 'A-Level')
+  assert.equal(calculateGradeFromBoundaries(75, alevel), 'D'); assert.equal(calculateGradeFromBoundaries(75, alevel, 80), 'A*')
+})
+ok('boundaries convert to the paper by percentage, rounded UP to whole marks', () => {
+  const set = { maxMarks: 240, boundaries: [219, 190, 160, null, 0], grades: ['9', '8', '7', '6', '5'] }
+  const sc = scaleBoundariesToPaper(set, 80)
+  assert.deepEqual(sc.boundaries, [73, 64, 54, null, 0]); assert.equal(sc.maxMarks, 80); assert.equal(sc.scaledFrom, 240)
+  assert.equal(calculateGradeFromBoundaries(73, set, 80), '9'); assert.equal(calculateGradeFromBoundaries(72, set, 80), '8')   // 72/80 = 90% < 219/240 = 91.25%
+  assert.equal(scaleBoundariesToPaper(set, 240), set)                                                                         // same total: untouched
+  assert.equal(scaleBoundariesToPaper(null, 80), null); assert.equal(scaleBoundariesToPaper(set, 0), set)
+})
+ok('a boundary set already out of the paper total is compared on raw marks (custom boundaries)', () => {
+  const custom = { maxMarks: 80, boundaries: [70, 60, 50], grades: ['9', '8', '7'] }
+  assert.equal(gradePaper({ score: 65, maxMarks: 80, boundarySet: custom, custom: true, year: 2025 }).grade, '8')
+  const g = gradePaper({ score: 65, maxMarks: 80, boundarySet: custom, custom: true, year: 2025 }).gradeProvenance
+  assert.deepEqual([g.source, g.verified, g.estimated], ['Student-entered boundaries', false, true])
+})
+ok('the saved provenance says when marks were converted, and flags the grade as an estimate', () => {
+  const maths = getBoundaries('AQA', 'Mathematics', 'Higher', 2025, 'GCSE')
+  const r = gradePaper({ score: 75, maxMarks: 80, boundarySet: maths, year: 2025 })
+  assert.equal(r.gradeProvenance.scaledFrom, 240); assert.equal(r.gradeProvenance.estimated, true)
+  assert.match(r.gradeProvenance.label, /Converted by percentage from the whole-subject total \(240\) to this paper \(80\)/)
+  assert.deepEqual(gradePaper({ score: 'x', maxMarks: 80, boundarySet: maths }), { grade: null, gradeProvenance: null })
+  assert.deepEqual(gradePaper({ score: 5, maxMarks: 0, boundarySet: maths }), { grade: null, gradeProvenance: null })
+})
+ok('saved grades produced by the old behaviour are corrected; anything else is left alone', () => {
+  const maths = getBoundaries('AQA', 'Mathematics', 'Higher', 2025, 'GCSE')
+  const base = { score: 75, maxMarks: 80, grade: '4' }
+  assert.deepEqual(staleGradeFix(base, maths), { grade: '9' })                                        // the reported case
+  assert.equal(staleGradeFix({ ...base, grade: '9' }, maths), null)                                  // already right
+  assert.equal(staleGradeFix({ ...base, grade: '6' }, maths), null)                                  // matches neither: typed by hand / custom, don't touch
+  assert.equal(staleGradeFix({ ...base, customBoundaries: [70, 60] }, maths), null)                  // custom boundaries
+  assert.equal(staleGradeFix({ ...base, gradeProvenance: { source: 'Student-entered boundaries' } }, maths), null)
+  assert.equal(staleGradeFix({ ...base, maxMarks: 240, score: 200 }, maths), null)                   // paper = whole subject: nothing to fix
+  assert.equal(staleGradeFix(base, null), null); assert.equal(staleGradeFix(null, maths), null)
+})
+ok('stored custom boundaries can be rebuilt for a later edit', () => {
+  assert.deepEqual(customBoundarySetFor({ customBoundaries: [70, 60], customBoundariesMax: 80, customGrades: ['9', '8'] }), { boundaries: [70, 60], maxMarks: 80, grades: ['9', '8'] })
+  assert.equal(customBoundarySetFor({ score: 5 }), null); assert.equal(customBoundarySetFor(null), null)
+})
+
+// ───────────────── analytics window: counted from 1 September 2026 ─────────────────
+ok('analytics start on 1 Sep 2026 for every record type, using the local calendar day', () => {
+  assert.equal(ANALYTICS_START_DATE, '2026-09-01')
+  assert.equal(inAnalyticsWindow({ date: '2026-08-31' }), false)
+  assert.equal(inAnalyticsWindow({ date: '2026-09-01' }), true)
+  assert.equal(inAnalyticsWindow({ attemptDate: '2026-09-02' }), true)
+  assert.equal(inAnalyticsWindow({ attemptDate: '2026-08-15' }), false)
+  assert.equal(recordDay({ date: '2026-09-05', attemptDate: '2026-01-01' }), '2026-09-05')            // the record's own date wins
+  assert.equal(inAnalyticsWindow({}), false); assert.equal(inAnalyticsWindow(null), false)             // no usable date: not counted
+})
+okLondon('timestamps are converted to the LOCAL day (00:30 BST on 1 Sep is still 1 Sep)', () => {
+  const justAfterMidnightBST = Date.UTC(2026, 7, 31, 23, 30) / 1000                                    // 2026-08-31T23:30Z = 00:30 on 1 Sep in London
+  assert.equal(recordDay({ createdAt: { seconds: justAfterMidnightBST } }), '2026-09-01')
+  assert.equal(inAnalyticsWindow({ createdAt: { seconds: justAfterMidnightBST } }), true)
+  assert.equal(inAnalyticsWindow({ startTime: '2026-08-31T22:59:00Z' }), false)                       // 23:59 BST on 31 Aug
+})
+ok('timestamps, Dates and ISO strings all resolve to a day', () => {
+  const noon = new Date(2026, 8, 10, 12, 0)
+  assert.equal(recordDay({ createdAt: noon }), '2026-09-10')
+  assert.equal(recordDay({ createdAt: { seconds: Math.floor(noon.getTime() / 1000) } }), '2026-09-10')
+  assert.equal(recordDay({ completedAt: noon.toISOString() }), '2026-09-10')
+  assert.equal(recordDay({ createdAt: 'not a date' }), null)
+})
+ok('ranges never reach back before 1 Sep 2026; 0 means since that day', () => {
+  const now = new Date(2026, 9, 15, 14, 0)                                                            // 15 Oct 2026
+  assert.equal(toLocalDateStr(analyticsRangeStart(0, now)), '2026-09-01')
+  assert.equal(toLocalDateStr(analyticsRangeStart(7, now)), '2026-10-08')
+  assert.equal(toLocalDateStr(analyticsRangeStart(30, now)), '2026-09-15')
+  assert.equal(toLocalDateStr(analyticsRangeStart(90, now)), '2026-09-01')                            // clamped: 90 days back would be July
+  assert.equal(analyticsRangeStart(0, now).getHours(), 0)                                            // local midnight
+  assert.equal(analyticsRangeDays(analyticsRangeStart(0, now), now), 45)                             // 1 Sep .. 15 Oct inclusive
+  assert.equal(analyticsRangeDays(analyticsRangeStart(7, now), now), 8)
+  assert.equal(analyticsRangeDays(new Date(2030, 0, 1), now), 1)                                     // never below 1
+})
+ok('current-course filter keeps unstamped records, drops other courses and hidden ones', () => {
+  const profile = { qualification: 'GCSE', subjects: [{ name: 'Physics', board: 'AQA', qualification: 'GCSE', tier: 'Higher' }] }
+  const mine = buildSubjectKey({ board: 'AQA', qualification: 'GCSE', subject: 'Physics', tier: 'Higher' })
+  const other = buildSubjectKey({ board: 'OCR', qualification: 'A-Level', subject: 'Physics' })
+  const recs = [
+    { id: 'legacy', subject: 'Physics' },                                                            // never stamped: kept
+    { id: 'mine', subject: 'Physics', subjectKey: mine },
+    { id: 'other', subject: 'Physics', subjectKey: other },                                          // a different course: dropped
+    { id: 'hidden', subject: 'Physics', subjectKey: mine, archived: true },                          // the student hid it: dropped
+    { id: 'derived', subject: 'Physics', qualification: 'GCSE', board: 'AQA', tier: 'Higher' },       // no key but matches: kept
+    { id: 'wrongqual', subject: 'Physics', qualification: 'A-Level', board: 'AQA' },
+  ]
+  assert.deepEqual(currentOrUnstamped(recs, profile).map(r => r.id), ['legacy', 'mine', 'derived'])
+  assert.deepEqual(currentOrUnstamped(null, profile), [])
+})
+
+// ───────────────── pop-out timer ─────────────────
+ok('clock formatting', () => {
+  assert.equal(formatClock(0), '00:00'); assert.equal(formatClock(65), '01:05'); assert.equal(formatClock(1500), '25:00')
+  assert.equal(formatClock(3600), '1:00:00'); assert.equal(formatClock(3725), '1:02:05')
+  assert.equal(formatClock(-5), '00:00'); assert.equal(formatClock('x'), '00:00'); assert.equal(formatClock(59.9), '00:59')
+})
+ok('the pop-out shows only when a timer is actually in use', () => {
+  const idle = { cdRunning: false, cdFinished: false, cdRemaining: 1500, cdTotal: 1500, swRunning: false, swElapsed: 0, alarmFired: false, linkedSessionId: null }
+  assert.equal(miniTimerState(idle), null)                                              // untouched countdown: nothing to show
+  assert.equal(miniTimerState(null), null)
+  assert.deepEqual(miniTimerState({ ...idle, cdRunning: true, cdRemaining: 1490 }), { kind: 'countdown', running: true, seconds: 1490, label: 'Countdown' })
+  assert.deepEqual(miniTimerState({ ...idle, cdRemaining: 900 }), { kind: 'countdown', running: false, seconds: 900, label: 'Countdown' })   // paused part-way
+  assert.deepEqual(miniTimerState({ ...idle, swRunning: true, swElapsed: 42 }), { kind: 'stopwatch', running: true, seconds: 42, label: 'Stopwatch' })
+  assert.equal(miniTimerState({ ...idle, swElapsed: 90 }).running, false)               // paused stopwatch with time on it still shows
+})
+ok('a linked session reads as a session timer; finished and alarm states are shown until dismissed', () => {
+  const base = { cdRunning: true, cdFinished: false, cdRemaining: 600, cdTotal: 1500, swRunning: false, swElapsed: 0, alarmFired: false, linkedSessionId: 'abc' }
+  assert.equal(miniTimerState(base).label, 'Session timer')
+  assert.deepEqual(miniTimerState({ ...base, cdRunning: false, cdFinished: true, cdRemaining: 0 }), { kind: 'finished', running: false, seconds: 0, label: "Time's up" })
+  assert.equal(miniTimerState({ ...base, alarmFired: true }).kind, 'alarm')              // an alarm outranks a running countdown
+  assert.equal(miniTimerState({ ...base, cdRunning: true, swRunning: true, swElapsed: 5 }).kind, 'countdown')   // countdown wins over stopwatch
 })
 
 console.log(`\n${n} checks passed`)
