@@ -8,11 +8,11 @@ import { summariseMistakes } from '../utils/mistakeStats'
 import { lostMarks } from '../utils/paperQuestions'
 import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { SUBJECT_COLOURS } from '../data/subjects'
 import toast from 'react-hot-toast'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { Plus, X, CheckCircle2, Trash2 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
+import SubjectTile from '../components/illustrations/SubjectTile'
 
 // Only used where the underlying reason is actually distinguishable by the student logging
 // it -- these are the categories section 17 of the brief asks for, kept optional since
@@ -230,7 +230,7 @@ export default function Mistakes() {
                     style={{width:15,height:15,accentColor:'var(--accent)',marginTop:3,flexShrink:0}}/>
                   <div style={{flex:1}}>
                     <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5,flexWrap:'wrap'}}>
-                      <div style={{width:7,height:7,borderRadius:'50%',background:SUBJECT_COLOURS[m.subject]||'var(--accent)',flexShrink:0}}/>
+                      <SubjectTile subject={m.subject} size={28} />
                       <span style={{fontWeight:600,fontSize:'0.875rem'}}>{m.subject}</span>
                       {m.topic&&<span className="badge badge-grey">{m.topic}</span>}
                       {m.category&&<span className="badge badge-grey">{m.category}</span>}
