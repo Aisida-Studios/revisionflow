@@ -111,7 +111,7 @@ export const COMPACT_VIEWBOX = {
   englishLiterature: '22 38 201 201',
   englishLanguage: '30 41 170 170',
   englishLangLit: '36 45 170 170',
-  history: '50 61 164 164',
+  history: '52 61 149 149',
   geography: '15 12 206 206',
   religiousStudies: '26 23 191 191',
   philosophy: '51 67 142 142',
