@@ -1,4 +1,5 @@
 // src/pages/Analytics.jsx
+import './Analytics.css'
 import React, { useState, useEffect, useMemo } from 'react'
 import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
@@ -7,6 +8,7 @@ import { db } from '../firebase'
 import { getPaperAttempts, getXpEvents } from '../utils/firestore'
 import { sessionMinutes } from '../utils/sessionTime'
 import { toLocalDateStr, parseLocalDate } from '../utils/localDate'
+import { inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../utils/analyticsWindow'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
@@ -25,9 +27,9 @@ const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 function StatCard({ icon, label, val, sub, colour, loading }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '14px 10px' }}>
+    <div className="card" style={{ textAlign: 'center', padding: '12px 6px', minWidth: 0 }}>
       <div style={{ color: colour || 'var(--accent-light)', marginBottom: 4 }}>{icon}</div>
-      <div style={{ fontWeight: 800, fontSize: '1.35rem', color: colour || 'var(--accent-light)' }}>
+      <div style={{ fontWeight: 800, fontSize: 'clamp(1.05rem, 0.35rem + 1.05vw, 1.35rem)', color: colour || 'var(--accent-light)', overflowWrap: 'anywhere' }}>
         {loading ? <Skeleton height={26} width={60} style={{ margin: '0 auto' }} /> : val}
       </div>
       <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.3 }}>
@@ -71,7 +73,7 @@ export default function Analytics() {
   const [xpEvents,  setXpEvents]  = useState([])
   const [loading,   setLoading]   = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [dateRange, setDateRange] = useState(30)
+  const [dateRange, setDateRange] = useState(0) // 0 = since 1 Sep 2026; otherwise the last N days (never before that date)
   const [gradeSub,  setGradeSub]  = useState('')
   const [activeTab, setActiveTab] = useState('overview')
 
@@ -80,7 +82,9 @@ export default function Analytics() {
   // archived flag alone did. The two lifetime stats (top bar "Papers logged", and "Papers
   // attempted"/"Topics rated" under Personal Records) deliberately keep using the raw, unfiltered
   // `attempts`/`topics` instead — those are meant to count everything, forever.
-  const currentAttempts = useMemo(() => filterToCurrentSubjectInstance(attempts, profile), [attempts, profile])
+  // Every analytics figure counts activity from 1 September 2026 (see utils/analyticsWindow.js).
+  const windowAttempts  = useMemo(() => attempts.filter(inAnalyticsWindow), [attempts])
+  const currentAttempts = useMemo(() => currentOrUnstamped(windowAttempts, profile), [windowAttempts, profile])
 
   useEffect(() => {
     if (!user) return
@@ -106,15 +110,15 @@ export default function Analytics() {
   useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length])
 
   // ── Core data ──────────────────────────────────────────────────────────────
-  // Study analytics use real study sessions (not to-do tasks) in the student's CURRENT subject
-  // instances. Older sessions that were never stamped with a course are kept in the database but
-  // aren't counted here; `legacySessionCount` says how many, so nothing disappears silently.
-  const studySessions     = useMemo(() => sessions.filter(s => !s.isTask), [sessions])
-  const currentSessions   = useMemo(() => filterToCurrentSubjectInstance(studySessions, profile), [studySessions, profile])
+  // Study analytics use real study sessions (not to-do tasks) from 1 September 2026. Sessions for
+  // a different course than the student is on now are left out; sessions that were never stamped
+  // with a course are kept, because there is no way to tell them apart.
+  const studySessions     = useMemo(() => sessions.filter(s => !s.isTask && inAnalyticsWindow(s)), [sessions])
+  const currentSessions   = useMemo(() => currentOrUnstamped(studySessions, profile), [studySessions, profile])
   const completedSessions = useMemo(() => currentSessions.filter(s => s.completed), [currentSessions])
-  const legacySessionCount = useMemo(() => studySessions.filter(s => s.completed).length - completedSessions.length, [studySessions, completedSessions])
   const totalMinutes      = useMemo(() => completedSessions.reduce((sum, s) => sum + sessionMinutes(s), 0), [completedSessions])
-  const rangeStart        = useMemo(() => subDays(new Date(), dateRange), [dateRange])
+  const rangeStart        = useMemo(() => analyticsRangeStart(dateRange), [dateRange])
+  const rangeDays         = useMemo(() => analyticsRangeDays(rangeStart), [rangeStart]) // days in the range, both ends counted
 
   const recentSessions = useMemo(() => completedSessions.filter(s => {
     const d = s.startTime ? new Date(s.startTime) : s.date ? parseLocalDate(s.date) : null
@@ -122,8 +126,8 @@ export default function Analytics() {
   }), [completedSessions, rangeStart])
 
   const recentMinutes    = useMemo(() => recentSessions.reduce((sum, s) => sum + sessionMinutes(s), 0), [recentSessions])
-  const avgDailyMinutes  = Math.round(recentMinutes / dateRange)
-  const completionRate   = sessions.length ? Math.round((completedSessions.length / sessions.length) * 100) : 0
+  const avgDailyMinutes  = Math.round(recentMinutes / rangeDays)
+  const completionRate   = currentSessions.length ? Math.round((completedSessions.length / currentSessions.length) * 100) : 0
   const avgSessionLength = completedSessions.length ? Math.round(totalMinutes / completedSessions.length) : 0
 
   // ── Daily study chart ─────────────────────────────────────────────────────
@@ -141,9 +145,9 @@ export default function Analytics() {
         bySubject[s.subject] = (bySubject[s.subject] || 0) + hrs
         total += hrs
       })
-      return { date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'), total: Math.round(total * 10) / 10, sessions: daySess.length, ...bySubject }
+      return { date: format(day, rangeDays <= 14 ? 'EEE d' : 'd MMM'), total: Math.round(total * 10) / 10, sessions: daySess.length, ...bySubject }
     })
-  }, [recentSessions, dateRange])
+  }, [recentSessions, rangeStart, rangeDays])
 
   // ── Weekly pattern ────────────────────────────────────────────────────────
   const weeklyPattern = useMemo(() => {
@@ -267,10 +271,10 @@ export default function Analytics() {
     const byDay = {}
     for (const e of xpEvents) byDay[e.day] = (byDay[e.day] || 0) + (e.amount || 0)
     return eachDayOfInterval({ start: rangeStart, end: new Date() }).map(day => ({
-      date: format(day, dateRange <= 14 ? 'EEE d' : 'd MMM'),
+      date: format(day, rangeDays <= 14 ? 'EEE d' : 'd MMM'),
       xp: byDay[format(day, 'yyyy-MM-dd')] || 0,
     }))
-  }, [xpEvents, rangeStart, dateRange])
+  }, [xpEvents, rangeStart, rangeDays])
   const xpTrackedSince = xpEvents.length ? xpEvents[0].day : null
 
   // ── Personal records ──────────────────────────────────────────────────────
@@ -335,25 +339,24 @@ export default function Analytics() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 2 }}>Your complete revision analytics</p>
         </div>
         <select className="select" style={{ width: 'auto' }} value={dateRange} onChange={e => setDateRange(parseInt(e.target.value))}>
+          <option value={0}>Since 1 Sep 2026</option>
           {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}
         </select>
       </div>
 
       {loadError && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{loadError}</p>}
-      {legacySessionCount > 0 && (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '-8px 0 14px' }}>
-          {legacySessionCount} older completed session{legacySessionCount === 1 ? '' : 's'} without a recorded course {legacySessionCount === 1 ? 'is' : 'are'} not counted below. {legacySessionCount === 1 ? 'It is' : 'They are'} still saved.
-        </p>
-      )}
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '-8px 0 14px' }}>
+        Counting your activity from 1 September 2026.
+      </p>
 
       {/* ── Summary stats row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
+      <div className="analytics-stat-row">
         <StatCard icon={<Clock size={18}/>}    label="Total study time"    val={fmtMins(totalMinutes)}        colour="var(--accent-light)" />
         <StatCard icon={<Activity size={18}/>} label="Sessions completed"  val={completedSessions.length}     colour="var(--info)" />
         <StatCard icon={<Zap size={18}/>}      label="Avg session length"  val={`${avgSessionLength}m`}       colour="#0d9488" />
         <StatCard icon={<Flame size={18}/>}    label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
         <StatCard icon={<Target size={18}/>}   label="Completion rate"     val={`${completionRate}%`}         colour="var(--success)" />
-        <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={attempts.length}              colour="var(--accent)" />
+        <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={windowAttempts.length}              colour="var(--accent)" />
         <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={topics.length}                colour="#0891b2" />
         <StatCard icon={<BarChart2 size={18}/>}label="Avg daily (period)"  val={`${avgDailyMinutes}m`}        colour="var(--info)" />
       </div>
@@ -475,7 +478,7 @@ export default function Analytics() {
               { label: 'Best streak',         val: `${records.bestStreak} days` },
               { label: 'Most productive day', val: records.mostProductiveDay ? `${records.mostProductiveDay[0]} (${records.mostProductiveDay[1]} sessions)` : '–' },
               { label: 'Top subject',         val: records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–' },
-              { label: 'Papers attempted',    val: attempts.length },
+              { label: 'Papers attempted',    val: windowAttempts.length },
               { label: 'Topics rated',        val: topics.filter(t => (t.confidence || 0) > 0).length },
             ].map(r => (
               <div key={r.label} style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
@@ -728,7 +731,7 @@ export default function Analytics() {
             topics={currentTopics}
             attempts={currentAttempts}
             profile={profile}
-            dateRange={dateRange}
+            dateRange={rangeDays}
             recentMinutes={recentMinutes}
             avgDailyMinutes={avgDailyMinutes}
             weeklyPattern={weeklyPattern}
@@ -755,7 +758,7 @@ export default function Analytics() {
                 title="Rebalance your subjects"
                 desc={`${subjectBalance.filter(s => s.pct < 40).map(s => s.name).join(', ')} ${subjectBalance.filter(s => s.pct < 40).length === 1 ? 'is' : 'are'} getting less than 40% of your fair share of study time.`} />
             )}
-            {completionRate < 70 && sessions.length > 5 && (
+            {completionRate < 70 && currentSessions.length > 5 && (
               <Rec colour="var(--warning)"
                 title="Improve session completion"
                 desc={`Only ${completionRate}% of your sessions are marked complete. Try shorter sessions you can fully commit to.`} />
@@ -765,7 +768,7 @@ export default function Analytics() {
                 title="Build your streak"
                 desc="Short daily sessions beat long irregular ones. Even 20 minutes every day will build momentum and improve retention." />
             )}
-            {weeklyPattern.some(d => d.hours === 0 && ['Sat','Sun'].includes(d.day)) && attempts.length > 0 && (
+            {weeklyPattern.some(d => d.hours === 0 && ['Sat','Sun'].includes(d.day)) && windowAttempts.length > 0 && (
               <Rec colour="#0d9488"
                 title="Use weekends for papers"
                 desc="Weekends are great for timed past paper practice when you have longer uninterrupted blocks." />
