@@ -15,11 +15,11 @@ function StarRating({ value = 3, onChange }) {
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(n)}
           style={{
-            fontSize: '1.1rem', cursor: 'pointer',
+            display: 'inline-flex', cursor: 'pointer',
             color: n <= (hover || value) ? '#f59e0b' : 'var(--text-muted)',
             transition: 'color 0.1s',
           }}
-        >★</span>
+        ><StarIcon size={18} fill={n <= (hover || value) ? 'currentColor' : 'none'} aria-hidden="true" /></span>
       ))}
     </div>
   )
