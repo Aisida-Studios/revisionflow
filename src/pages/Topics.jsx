@@ -20,8 +20,9 @@ import { buildSubjectKey, filterToCurrentSubjectInstance, isCurrentSubjectInstan
 import toast from 'react-hot-toast'
 import {
   Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,
-  StickyNote, Layers, Link2, Search, GraduationCap, CheckCircle2, Pencil,
+  StickyNote, Layers, Link2, Search, CheckCircle2, Pencil,
 } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 import { format } from 'date-fns'
 import './Topics.css'
 
@@ -385,11 +386,11 @@ export default function Topics() {
       </div>
 
       {subjects.length === 0 ? (
-        <div className="empty-state">
-          <GraduationCap size={40} className="topics-empty-illustration" style={{opacity:0.35}} />
-          <p>Add your subjects to start tracking topics</p>
-          <button className="btn btn-primary" onClick={()=>navigate('/settings')}>Go to settings</button>
-        </div>
+        <EmptyState
+          art="welcome"
+          title="Add your subjects to start tracking topics"
+          action={<button className="btn btn-primary" onClick={()=>navigate('/settings')}>Go to settings</button>}
+        />
       ) : (
         <>
           {/* Toolbar: search + subject rail */}
@@ -426,10 +427,7 @@ export default function Topics() {
           {selSubj === 'All' ? (
             // ── All Subjects — summary cards ──
             visibleSubjectSummaries.length === 0 ? (
-              <div className="empty-state">
-                <Search size={28} style={{opacity:0.3}}/>
-                <p>No subjects match "{search}"</p>
-              </div>
+              <EmptyState art="notFound" size="sm" as="p" title={`No subjects match "${search}"`} />
             ) : (
               <div className="subject-summary-grid">
                 {visibleSubjectSummaries.map(s => {
@@ -475,7 +473,7 @@ export default function Topics() {
               {topics.length===0 ? (
                 <div className="empty-state">
                   {SubjectIllustration
-                    ? <SubjectIllustration size={64} className="topics-empty-illustration" style={{opacity:0.4}}/>
+                    ? <SubjectIllustration size={120} className="topics-empty-illustration"/>
                     : <Layers size={36} className="topics-empty-illustration" style={{opacity:0.3}}/>}
                   <p>No topics yet for {selSubj}</p>
                   <div style={{display:'flex',gap:8}}>
@@ -534,10 +532,7 @@ export default function Topics() {
                           </div>
                         </div>
                         {notes.length===0?(
-                          <div className="empty-state" style={{padding:'20px 0'}}>
-                            <StickyNote size={28} style={{opacity:0.3}}/>
-                            <p style={{fontSize:'0.875rem'}}>No notes yet for {selSubj}</p>
-                          </div>
+                          <EmptyState art="emptyNotes" size="sm" as="p" title={`No notes yet for ${selSubj}`} />
                         ):(
                           <div style={{display:'flex',flexDirection:'column',gap:8}}>
                             {notes.map(n=>(
@@ -642,10 +637,7 @@ export default function Topics() {
                   ) : (
                     // ── List view ──
                     sortedFiltered.length===0 ? (
-                      <div className="empty-state">
-                        <Search size={28} style={{opacity:0.3}}/>
-                        <p>No topics match your search or filter</p>
-                      </div>
+                      <EmptyState art="notFound" size="sm" as="p" title="No topics match your search or filter" />
                     ) : (
                       <div>
                         {paperGroups.map(group => (
