@@ -3,25 +3,26 @@
 // values this mirrors: referrer +200 XP + Recruiter badge + Rocket icon; referred +100 XP +
 // Rocket icon). Built as one component with two variants rather than two separate components,
 // since the visual shell and dismiss behaviour are identical — only the copy and reward list differ.
-import { Gift, X } from 'lucide-react'
+import { Gift, X, Zap } from 'lucide-react'
+import { LazyBadgeArt, LazyIllustration } from './illustrations/lazy'
 
 const COPY = {
   referrer: {
-    emoji: '📣',
+    badge: 'referral',          // the Recruiter badge they just earned
     title: 'Referral successful!',
     body: 'Someone just joined RevisionFlow using your link.',
     rewards: [
-      { icon: '⚡', label: '+200 XP' },
-      { icon: '📣', label: 'Recruiter badge earned' },
-      { icon: '🚀', label: 'Rocket icon unlocked' },
+      { icon: <Zap size={18} />, label: '+200 XP' },
+      { icon: <LazyBadgeArt id="referral" size={26} />, label: 'Recruiter badge earned' },
+      { icon: '🚀', label: 'Rocket icon unlocked' },   // stays an emoji: it is the Rocket profile avatar being unlocked
     ],
   },
   referred: {
-    emoji: '🚀',
+    scene: 'welcome',
     title: 'Referral applied!',
     body: "You've been credited for signing up with a referral link.",
     rewards: [
-      { icon: '⚡', label: '+100 XP' },
+      { icon: <Zap size={18} />, label: '+100 XP' },
       { icon: '🚀', label: 'Rocket icon unlocked' },
     ],
   },
@@ -37,7 +38,11 @@ export default function ReferralRewardPopup({ variant, onClose }) {
           <X size={18} />
         </button>
 
-        <div style={{ fontSize: '3rem', marginBottom: 8 }}>{copy.emoji}</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+          {copy.badge
+            ? <LazyBadgeArt id={copy.badge} size={88} />
+            : <LazyIllustration name={copy.scene} width={180} />}
+        </div>
         <h3 style={{ marginBottom: 6 }}>{copy.title}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>{copy.body}</p>
 
