@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
+import { BookOpen } from 'lucide-react'
 
 // ── Bump this version string whenever you push a topics update ──
 const CURRENT_TOPICS_VERSION = '3.0-as-level'
@@ -80,12 +81,11 @@ export default function TopicUpdateBanner() {
 
       {/* Icon */}
       <div style={{
-        fontSize: '1.4rem',
         lineHeight: 1,
         flexShrink: 0,
         marginTop: '2px',
       }}>
-        📚
+        <BookOpen size={22} />
       </div>
 
       {/* Text */}
