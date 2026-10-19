@@ -236,7 +236,7 @@ export default function AdminAutoGenerate() {
       if (stopRef.current) { addLog('Stopped — click Start again any time to resume (already-done items are skipped for free)', 'error'); break }
 
       const batch = queue.slice(i, i + BATCH_SIZE)
-      const labels = batch.map(item => `${item.kind === 'note' ? '📝' : '🃏'} ${item.board} ${item.level} ${item.subject} — ${item.topic}`)
+      const labels = batch.map(item => `${item.kind === 'note' ? 'Notes' : 'Flashcards'}: ${item.board} ${item.level} ${item.subject} — ${item.topic}`)
       setProgress(p => ({ ...p, current: labels.join('  ·  ') }))
 
       // Batch runs concurrently — up to BATCH_SIZE items in flight at once, instead of one
