@@ -96,14 +96,14 @@ export function calculateXPWithMultipliers(baseXP, profile) {
 
 // ── Daily quests ─────────────────────────────────────────────────────────────
 export const DAILY_QUEST_POOL = [
-  { id: 'log_session',     desc: 'Log a revision session',          xp: 30, icon: '📖' },
-  { id: 'rate_topics',     desc: 'Rate a topic confidence',         xp: 20, icon: '⭐' },
-  { id: 'log_paper',       desc: 'Log a past paper result',         xp: 40, icon: '📄' },
-  { id: 'use_ai',          desc: 'Ask the AI Advisor a question',   xp: 15, icon: '🤖' },
-  { id: 'timer_25',        desc: 'Complete a 25-minute timer',      xp: 25, icon: '⏱️' },
-  { id: 'resolve_mistake', desc: 'Resolve a logged mistake',        xp: 20, icon: '✅' },
-  { id: 'add_note',        desc: 'Write a revision note',           xp: 15, icon: '📝' },
-  { id: 'add_friend',      desc: 'Add a friend',                    xp: 20, icon: '🤝' },
+  { id: 'log_session',     desc: 'Log a revision session',          xp: 30, lucideIcon: 'BookOpen' },
+  { id: 'rate_topics',     desc: 'Rate a topic confidence',         xp: 20, lucideIcon: 'Star' },
+  { id: 'log_paper',       desc: 'Log a past paper result',         xp: 40, lucideIcon: 'ClipboardList' },
+  { id: 'use_ai',          desc: 'Ask the AI Advisor a question',   xp: 15, lucideIcon: 'Compass' },
+  { id: 'timer_25',        desc: 'Complete a 25-minute timer',      xp: 25, lucideIcon: 'Timer' },
+  { id: 'resolve_mistake', desc: 'Resolve a logged mistake',        xp: 20, lucideIcon: 'AlertCircle' },
+  { id: 'add_note',        desc: 'Write a revision note',           xp: 15, lucideIcon: 'StickyNote' },
+  { id: 'add_friend',      desc: 'Add a friend',                    xp: 20, lucideIcon: 'UserPlus' },
 ]
 
 export function getDailyQuests(uid) {
@@ -123,8 +123,8 @@ function simpleHash(str) {
 }
 
 export const WEEKLY_CHALLENGES = [
-  { id: 'week_streak',    desc: 'Revise every day this week',           xp: 300, icon: '🔥' },
-  { id: 'week_papers_3',  desc: 'Log 3 past papers this week',          xp: 200, icon: '📄' },
-  { id: 'week_topics_15', desc: 'Rate 15 topic confidences this week',  xp: 150, icon: '⭐' },
-  { id: 'week_ai_5',      desc: 'Use the AI Advisor 5 times this week', xp: 100, icon: '🤖' },
+  { id: 'week_streak',    desc: 'Revise every day this week',           xp: 300, lucideIcon: 'Flame' },
+  { id: 'week_papers_3',  desc: 'Log 3 past papers this week',          xp: 200, lucideIcon: 'ClipboardList' },
+  { id: 'week_topics_15', desc: 'Rate 15 topic confidences this week',  xp: 150, lucideIcon: 'Star' },
+  { id: 'week_ai_5',      desc: 'Use the AI Advisor 5 times this week', xp: 100, lucideIcon: 'Compass' },
 ]
