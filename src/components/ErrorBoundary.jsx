@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { LazyIllustration } from './illustrations/lazy'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -17,30 +18,25 @@ export default class ErrorBoundary extends Component {
         <div style={{
           minHeight: '100vh', display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          background: 'var(--bg, #0f0f0f)', color: 'var(--text-primary, #fff)',
+          background: 'var(--bg-base, #0c0f0d)', color: 'var(--text-primary, #fff)',
           padding: '2rem', textAlign: 'center',
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
-          <h2 style={{ marginBottom: '0.5rem' }}>Something went wrong</h2>
-          <p style={{ color: '#aaa', marginBottom: '1.5rem', maxWidth: 400 }}>
+          {/* Lazy + self-guarded: this screen must never throw, or the user is back to a blank page. */}
+          <LazyIllustration name="error" width={240} />
+          <h2 style={{ margin: '0.5rem 0' }}>Something went wrong</h2>
+          <p style={{ color: 'var(--text-secondary, #aaa)', marginBottom: '1.5rem', maxWidth: 400 }}>
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <button
+            className="btn btn-primary"
             onClick={() => { this.setState({ error: null }); window.location.reload() }}
-            style={{
-              background: '#6c63ff', color: 'white', border: 'none',
-              borderRadius: 8, padding: '0.65rem 1.5rem', cursor: 'pointer',
-              fontWeight: 700, fontSize: '0.95rem',
-            }}
           >
             Reload app
           </button>
           <button
+            className="btn btn-ghost"
+            style={{ marginTop: '0.75rem' }}
             onClick={() => this.setState({ error: null })}
-            style={{
-              marginTop: '0.75rem', background: 'transparent',
-              color: '#aaa', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
-            }}
           >
             Try without reloading
           </button>
