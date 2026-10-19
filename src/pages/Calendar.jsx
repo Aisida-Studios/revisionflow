@@ -14,7 +14,6 @@ import { db } from '../firebase'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV, hoursBySubject, formatDuration } from '../utils/calendar'
 import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
-import { getSubjectIcon } from '../utils/subjectIcons'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { subjectIdentityForName } from '../utils/subjectKey'
 import CalendarGenerator from '../components/CalendarGenerator'
@@ -24,9 +23,11 @@ import { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } 
 import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
   CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye, Lock,
-  CalendarDays, GraduationCap, ListTodo, ArrowLeft, CalendarX2,
+  CalendarDays, GraduationCap, ListTodo, ArrowLeft,
   Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,
 } from 'lucide-react'
+import SubjectTile from '../components/illustrations/SubjectTile'
+import EmptyState from '../components/illustrations/EmptyState'
 import { subjectColour } from '../data/subjects'
 import { toLocalDateStr as localDateStr, parseLocalDate } from '../utils/localDate'
 import './Calendar.css'
@@ -628,16 +629,18 @@ export default function Calendar() {
                   {[1,2,3].map(i => <Skeleton key={i} height={60} />)}
                 </div>
               ) : (selectedSessions.length===0 && (examsByDate[format(selected,'yyyy-MM-dd')]||[]).length===0) ? (
-                <div className="empty-state" style={{padding:'28px 0'}}>
-                  <CalendarX2 size={28} style={{opacity:0.35}}/>
-                  <p style={{fontSize:'0.875rem'}}>Nothing scheduled on this day</p>
-                  <button className="btn btn-primary btn-sm" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>Add session</button>
-                </div>
+                <EmptyState
+                  art="emptySessions"
+                  size="sm"
+                  as="p"
+                  title="Nothing scheduled on this day"
+                  action={<button className="btn btn-primary btn-sm" onClick={()=>{setAddPrefill(null);setShowAdd(true)}}>Add session</button>}
+                />
               ) : (
                 <div className="rf-day-list">
                   {(examsByDate[format(selected,'yyyy-MM-dd')]||[]).map(e=>(
                     <div key={'exam-'+(e.id||e.subject)} className="rf-upcoming-item">
-                      <div className="rf-upcoming-icon" style={{background:subjectColour(e.subject)}}><GraduationCap size={15}/></div>
+                      <SubjectTile subject={e.subject} size={32} />
                       <div className="rf-upcoming-main">
                         <div className="rf-upcoming-title">{e.subject} exam</div>
                         <div className="rf-upcoming-meta">Paper {e.paper}{e.paperName?` · ${e.paperName}`:''}</div>
@@ -663,23 +666,24 @@ export default function Calendar() {
                   {[1,2,3].map(i => <Skeleton key={i} height={54} />)}
                 </div>
               ) : upcomingItems.length === 0 ? (
-                <div className="empty-state" style={{padding:'28px 0'}}>
-                  <CalendarDays size={28} style={{opacity:0.35}}/>
-                  <p style={{fontSize:'0.875rem'}}>Nothing coming up yet</p>
-                  <p style={{fontSize:'0.78rem'}}>Add a session, or set your exam dates so they show up here.</p>
-                </div>
+                <EmptyState
+                  art="emptyExams"
+                  size="sm"
+                  as="p"
+                  title="Nothing coming up yet"
+                  body="Add a session, or set your exam dates so they show up here."
+                />
               ) : (
                 <div className="rf-upcoming-list">
                   {upcomingItems.map(item => {
-                    const ItemIcon = item.kind==='exam' ? GraduationCap : item.kind==='task' ? ListTodo : getSubjectIcon(item.subject)
                     const urgency  = item.kind==='exam' ? countdownUrgency(item.date) : null
                     return (
                       <button key={item.id} className="rf-upcoming-item"
                         style={{cursor:'pointer', width:'100%', textAlign:'left', font:'inherit'}}
                         onClick={()=>setSelected(parseLocalDate(item.date))}>
-                        <div className="rf-upcoming-icon" style={{background: item.subject ? subjectColour(item.subject) : 'var(--text-muted)'}}>
-                          <ItemIcon size={15}/>
-                        </div>
+                        {item.kind==='task' || !item.subject
+                          ? <div className="rf-upcoming-icon" style={{background: item.subject ? subjectColour(item.subject) : 'var(--text-muted)'}}><ListTodo size={15}/></div>
+                          : <SubjectTile subject={item.subject} size={32} />}
                         <div className="rf-upcoming-main">
                           <div className="rf-upcoming-title">{item.title}</div>
                           <div className="rf-upcoming-meta">{item.meta}</div>
@@ -745,22 +749,20 @@ export default function Calendar() {
             {loading ? (
               <div className="rf-recs-grid">{[1,2,3].map(i=><Skeleton key={i} height={104}/>)}</div>
             ) : filteredRecommendations.length === 0 ? (
-              <div className="empty-state" style={{padding:'18px 0'}}>
-                <CheckCircle2 size={26} style={{opacity:0.35}}/>
-                <p style={{fontSize:'0.85rem'}}>
-                  {recommendations.length === 0
-                    ? 'Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.'
-                    : 'No recommendations for that subject right now.'}
-                </p>
-              </div>
+              <EmptyState
+                art="emptyAnalytics"
+                size="sm"
+                as="p"
+                title={recommendations.length === 0
+                  ? 'Nothing stands out right now — rate a few topics in Topics to get personalised suggestions here.'
+                  : 'No recommendations for that subject right now.'}
+              />
             ) : (
               <div className="rf-recs-grid">
                 {filteredRecommendations.map(rec=>(
                   <div key={rec.id} className="rf-rec-card">
                     <div className="rf-rec-card-top">
-                      <div className="rf-rec-icon" style={{background:subjectColour(rec.subject)}}>
-                        {React.createElement(getSubjectIcon(rec.subject), {size:15})}
-                      </div>
+                      <SubjectTile subject={rec.subject} size={32} />
                       <div style={{minWidth:0}}>
                         <div className="rf-rec-title">{rec.topic}</div>
                         <div className="rf-rec-subject">{rec.subject}</div>
@@ -937,16 +939,15 @@ export default function Calendar() {
 
 // ── Session Card ──────────────────────────────────────────────────────────────
 function SessionCard({ session:s, onComplete, onDelete, onEdit }) {
-  const Icon   = s.isTask ? ListTodo : getSubjectIcon(s.subject)
   const accent = s.isTask ? (s.taskColor || 'var(--text-muted)') : subjectColour(s.subject)
   return (
     <div style={{display:'flex',gap:10,padding:12,borderRadius:'var(--radius-md)',background:'var(--bg-surface)',
       border:`1px solid ${s.completed?'var(--success)':s.isEmergency?'var(--danger)':'var(--border)'}`,
       opacity:s.completed?0.72:1}}>
-      <div style={{width:32,height:32,borderRadius:9,background:accent,flexShrink:0,
-        display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
-        <Icon size={15}/>
-      </div>
+      {s.isTask
+        ? <div style={{width:32,height:32,borderRadius:9,background:accent,flexShrink:0,
+            display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}><ListTodo size={15}/></div>
+        : <SubjectTile subject={s.subject} size={32} />}
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
           <div style={{fontWeight:700,fontSize:'0.85rem',marginBottom:5,
