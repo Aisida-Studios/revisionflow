@@ -9,7 +9,7 @@ import {
 import { LEVELS } from '../data/subjects'
 import ReferralCard from '../components/ReferralCard'
 import toast from 'react-hot-toast'
-import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
+import { UserPlus, UserCheck, UserX, Users, Search, Flame } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 
@@ -214,7 +214,7 @@ export default function Friends() {
                     <div className="ap-person-main">
                       <div className="ap-person-name">{f.displayName}</div>
                       <div className="ap-person-meta">
-                        Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · <span className="streak-fire">🔥</span> {f.streak || 0} · {(f.xp || 0).toLocaleString()} XP
+                        Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · <Flame size={12} style={{ verticalAlign: '-1px' }} /> {f.streak || 0} · {(f.xp || 0).toLocaleString()} XP
                       </div>
                     </div>
                     <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.uid)} aria-label={`Remove ${f.displayName}`}>
@@ -230,10 +230,7 @@ export default function Friends() {
 
       {tab === 'requests' && (
         requests.length === 0 ? (
-          <div className="empty-state">
-            <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><UserPlus size={26} /></div>
-            <p>No pending friend requests</p>
-          </div>
+          <EmptyState art="friends" size="sm" as="p" title="No pending friend requests" />
         ) : (
           <div className="card" style={{ padding: '4px 16px' }}>
             <div className="ap-person-list">
