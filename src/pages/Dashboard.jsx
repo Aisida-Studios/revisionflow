@@ -2,22 +2,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare,
-  Trophy, Award, PartyPopper, Gift, X, CalendarDays, Target,
-  Leaf, FlaskConical, Atom, Calculator, Landmark, Globe2, Cpu, GraduationCap,
+  ArrowRight, BookOpen, ClipboardList, CheckCircle2, CheckSquare, Trophy, Award, PartyPopper, Gift,
+  X, CalendarDays, Target,
 } from 'lucide-react'
-// Same lucide badge-icon set as Profile.jsx (src/data/badges.js has a lucideIcon name on every
-// badge) — Trophy/Award/CalendarDays are already imported above, the rest are badge-only icons.
-import {
-  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-} from 'lucide-react'
-const BADGE_ICONS = {
-  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-}
 
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
@@ -28,6 +15,9 @@ import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
 import { componentForSubject } from '../data/illustrationThemes'
+import BadgeArt from '../components/illustrations/BadgeArt'
+import Illustration from '../components/illustrations/Illustration'
+import SubjectTile from '../components/illustrations/SubjectTile'
 import AIOutput from '../components/AIOutput'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
@@ -98,32 +88,21 @@ function illustrationFor(subject) {
   return componentForSubject(subject)
 }
 
-/* Small subject-colour icon badge for list rows (Upcoming Exams, Subject
-   Overview). No per-topic icon set exists in the codebase yet — grepped
-   Topics.jsx/TopicDetail.jsx to confirm — so this is a deliberately light,
-   easily-swappable stand-in built from SUBJECT_COLOURS (real, existing
-   data) and lucide-react (already a dependency), not a second
-   illustration architecture. Swap the icon map for real per-topic
-   illustrations here, in one place, once they exist. */
-const SUBJECT_ICONS = {
-  Biology: Leaf, Chemistry: FlaskConical, Physics: Atom,
-  Mathematics: Calculator, 'Further Mathematics': Calculator, Statistics: Calculator,
-  'English Language': BookOpen, 'English Literature': BookOpen,
-  History: Landmark, Geography: Globe2, 'Computer Science': Cpu,
-}
+/* Small subject tile for list rows (Upcoming Exams, Subject Overview): the subject's own picture
+   from src/components/illustrations. SubjectTile uses the compact tier — one object, cropped to the
+   tile — so it stays legible at this size. */
 function SubjectBadge({ subject }) {
-  const Icon = SUBJECT_ICONS[subject] || GraduationCap
-  const colour = SUBJECT_COLOURS?.[subject] || 'var(--text-muted)'
-  return (
-    <span className="subject-badge" style={{ color: colour, background: `${colour}1a` }}>
-      <Icon size={14} />
-    </span>
-  )
+  return <SubjectTile subject={subject} size={32} />
 }
 
-function EmptyMini({ text, to, label }) {
+function EmptyMini({ text, to, label, art }) {
   return (
-    <div className="mini-empty">
+    <div className="mini-empty" style={art ? { textAlign: 'center' } : undefined}>
+      {art && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+          <Illustration name={art} width={120} />
+        </div>
+      )}
       <p>{text}</p>
       {to && <Link to={to} className="card-footer-link">{label} <ArrowRight size={13} /></Link>}
     </div>
@@ -194,18 +173,21 @@ function SetupChecklist({ profile }) {
 function BadgeShowcase({ earnedIds }) {
   const earned = (earnedIds || []).map((id) => BADGE_MAP[id]).filter(Boolean)
   if (!earned.length) {
-    return <EmptyMini text="No badges yet — keep revising to unlock your first one." />
+    // The first badge, locked: shows what there is to win instead of a bare sentence.
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span className="rfi-holder"><BadgeArt id="first_session" size={48} earned={false} /></span>
+        <EmptyMini text="No badges yet — keep revising to unlock your first one." />
+      </div>
+    )
   }
   return (
     <div className="badge-showcase">
-      {earned.slice(0, 8).map((b) => {
-        const Icon = BADGE_ICONS[b.lucideIcon]
-        return (
-          <span key={b.id} className="badge-icon" title={`${b.name}${b.description ? ` — ${b.description}` : ''}`}>
-            {Icon ? <Icon size={16} /> : b.icon}
-          </span>
-        )
-      })}
+      {earned.slice(0, 8).map((b) => (
+        <span key={b.id} className="rfi-holder" title={`${b.name} — ${b.desc}`}>
+          <BadgeArt id={b.id} size={40} label={b.name} />
+        </span>
+      ))}
       {earned.length > 8 && <span className="badge-icon badge-icon--more">+{earned.length - 8}</span>}
     </div>
   )
@@ -567,7 +549,7 @@ export default function Dashboard() {
               ))}
             </ul>
           ) : (
-            <EmptyMini text="Nothing scheduled yet." to="/calendar" label="Plan your week" />
+            <EmptyMini art="emptySessions" text="Nothing scheduled yet." to="/calendar" label="Plan your week" />
           )}
           <Link to="/calendar" className="card-footer-link">View full calendar <ArrowRight size={13} /></Link>
         </div>
@@ -614,7 +596,7 @@ export default function Dashboard() {
               ))}
             </ul>
           ) : (
-            <EmptyMini text="Your first session will show up here." to="/study" label="Start studying" />
+            <EmptyMini art="study" text="Your first session will show up here." to="/study" label="Start studying" />
           )}
           <Link to="/analytics" className="card-footer-link">View all activity <ArrowRight size={13} /></Link>
         </div>
@@ -732,7 +714,7 @@ export default function Dashboard() {
               )}
             </>
           ) : (
-            <EmptyMini text="Complete a quiz or past paper to see an estimated grade." to="/papers" label="Try a paper" />
+            <EmptyMini art="emptyAnalytics" text="Complete a quiz or past paper to see an estimated grade." to="/papers" label="Try a paper" />
           )}
         </div>
 
