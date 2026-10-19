@@ -299,15 +299,15 @@ function playLofi(master) {
 // ── Public API ───────────────────────────────────────────────────
 
 export const TIMER_SOUNDS = [
-  { id: 'none',       label: 'Off',           emoji: '○'  },
-  { id: 'rain',       label: 'Rain',          emoji: '🌧' },
-  { id: 'ocean',      label: 'Ocean waves',   emoji: '🌊' },
-  { id: 'forest',     label: 'Forest',        emoji: '🌿' },
-  { id: 'fireplace',  label: 'Fireplace',     emoji: '🔥' },
-  { id: 'brownnoise', label: 'Brown noise',   emoji: '🟤' },
-  { id: 'whitenoise', label: 'White noise',   emoji: '〰' },
-  { id: 'cafe',       label: 'Coffee shop',   emoji: '☕' },
-  { id: 'lofi',       label: 'Lo-fi',         emoji: '🎵' },
+  { id: 'none',       label: 'Off' },
+  { id: 'rain',       label: 'Rain' },
+  { id: 'ocean',      label: 'Ocean waves' },
+  { id: 'forest',     label: 'Forest' },
+  { id: 'fireplace',  label: 'Fireplace' },
+  { id: 'brownnoise', label: 'Brown noise' },
+  { id: 'whitenoise', label: 'White noise' },
+  { id: 'cafe',       label: 'Coffee shop' },
+  { id: 'lofi',       label: 'Lo-fi' },
 ]
 
 export function startSound(id, volume = 0.6) {
