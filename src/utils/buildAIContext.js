@@ -88,8 +88,7 @@ export function buildAIContext(profile, opts = {}) {
       .slice(0, 10)
     if (top.length) {
       top.forEach(p => {
-        const stars = '★'.repeat(p.rating) + '☆'.repeat(5 - p.rating)
-        lines.push(`• ${p.topicName} (${p.subjectId}) ${stars}`)
+        lines.push(`• ${p.topicName} (${p.subjectId}) priority ${p.rating} of 5`)
       })
     } else {
       lines.push('No high-priority topics set yet.')
