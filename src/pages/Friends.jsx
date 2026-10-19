@@ -10,6 +10,7 @@ import { LEVELS } from '../data/subjects'
 import ReferralCard from '../components/ReferralCard'
 import toast from 'react-hot-toast'
 import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 
 // Shows a real profile photo when one is available (Google sign-in), falling back to the
@@ -197,11 +198,11 @@ export default function Friends() {
 
       {tab === 'friends' && (
         friends.length === 0 ? (
-          <div className="empty-state">
-            <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Users size={26} /></div>
-            <h4>No friends yet</h4>
-            <p>Share your referral link above or search by username to add friends.</p>
-          </div>
+          <EmptyState
+            art="friends"
+            title="No friends yet"
+            body="Share your referral link above or search by username to add friends."
+          />
         ) : (
           <div className="card" style={{ padding: '4px 16px' }}>
             <div className="ap-person-list">
