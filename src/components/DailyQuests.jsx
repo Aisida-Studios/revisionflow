@@ -17,7 +17,10 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getDailyQuests } from '../data/badges'
-import { CheckCircle, Circle } from 'lucide-react'
+import { CheckCircle, Circle, BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Flame } from 'lucide-react'
+
+// Each quest in data/badges.js names its icon (lucideIcon); this turns the name into a component.
+const QUEST_ICONS = { BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Flame }
 
 export default function DailyQuests() {
   const { user } = useAuth()
@@ -57,13 +60,14 @@ export default function DailyQuests() {
           padding: '2px 8px',
           borderRadius: 20,
         }}>
-          {completedCount}/{quests.length} done {completedCount === quests.length && quests.length > 0 ? '🎉 +50 bonus XP' : ''}
+          {completedCount}/{quests.length} done {completedCount === quests.length && quests.length > 0 ? '· +50 bonus XP' : ''}
         </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {quests.map(quest => {
           const done = !!progress[quest.id]
+          const QuestIcon = QUEST_ICONS[quest.lucideIcon]
           return (
             <div
               key={quest.id}
@@ -79,7 +83,7 @@ export default function DailyQuests() {
                 transition: 'all 0.2s',
               }}
             >
-              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{quest.icon}</span>
+              <span style={{ display: 'inline-flex', flexShrink: 0, color: 'var(--text-secondary)' }}>{QuestIcon ? <QuestIcon size={18} /> : null}</span>
               <span style={{
                 flex: 1,
                 fontSize: '0.85rem',
