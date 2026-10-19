@@ -20,12 +20,26 @@ import AIOutput from '../components/AIOutput'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { daysUntilExam } from '../utils/examUtils'
-import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap } from 'lucide-react'
+import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap, AlertTriangle, Star } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
+import Illustration from '../components/illustrations/Illustration'
 import './AccountPages.css'
 import { toLocalDateStr } from '../utils/localDate'
 
 // Maths solver + essay feedback live inside /ai now (the old /tutor page redirects here).
 const TutorPanel = lazy(() => import('./Tutor'))
+
+// Evidence rating shown as filled / outline star icons (not text glyphs), with a spoken label.
+function EvidenceStars({ value, color }) {
+  return (
+    <span role="img" aria-label={`Evidence rating: ${value} out of 5`}
+      style={{ display: 'inline-flex', gap: 1, color, flexShrink: 0 }}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <Star key={n} size={12} aria-hidden="true" fill={n <= value ? 'currentColor' : 'none'} />
+      ))}
+    </span>
+  )
+}
 
 const QUICK_PROMPTS = [
   'What should I revise today?',
@@ -288,7 +302,7 @@ export default function AIAdvisor() {
         <div className="ap-chat-shell">
           {messages.length === 0 ? (
             <div className="ap-chat-empty">
-              <div className="ap-chat-empty-icon"><Compass size={24} /></div>
+              <Illustration name="assistant" width={190} />
               <div>
                 <div style={{fontWeight:700,marginBottom:4}}>Ask me anything about your revision</div>
                 <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, papers and confidence ratings</div>
@@ -452,10 +466,7 @@ export default function AIAdvisor() {
             </div>
           ))}
           {(profile?.subjects||[]).length === 0 && (
-            <div className="empty-state">
-              <div className="ap-icon-circle" style={{width:56,height:56}}><BookOpen size={26} /></div>
-              <p>Add subjects in Settings to get personalised resources</p>
-            </div>
+            <EmptyState art="resources" size="sm" as="p" title="Add subjects in Settings to get personalised resources" />
           )}
         </div>
       )}
@@ -530,8 +541,9 @@ export default function AIAdvisor() {
                   <span>{(profile.examDates||[]).filter(e=>daysUntilExam(e.examDate)!=null&&daysUntilExam(e.examDate)>=0).length} upcoming exam dates found — plan will be capped to your exam period</span>
                 </div>
               ) : (
-                <div style={{padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--warning-pale)',border:'1.5px solid var(--warning-border)',color:'var(--warning)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
-                  ⚠ No exam dates set — add them in Exam Dates for a more accurate plan
+                <div style={{display:'flex',alignItems:'flex-start',gap:8,padding:'9px 12px',marginBottom:10,borderRadius:'var(--r-md)',background:'var(--warning-pale)',border:'1.5px solid var(--warning-border)',color:'var(--warning)',fontSize:'0.82rem',fontWeight:600,lineHeight:1.5}}>
+                  <AlertTriangle size={13} style={{flexShrink:0,marginTop:2}}/>
+                  <span>No exam dates set — add them in Exam Dates for a more accurate plan</span>
                 </div>
               )}
               <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
@@ -546,11 +558,13 @@ export default function AIAdvisor() {
           {planLoading&&<div className="loading-center"><div className="spinner"/></div>}
           {studyPlan&&!planLoading&&<div style={{marginTop:14}}><AIOutput text={studyPlan} label="Generated Study Plan" /></div>}
           {!studyPlan&&!planLoading&&!planPrefs.showForm&&(
-            <div className="empty-state">
-              <div className="ap-icon-circle" style={{width:56,height:56}}><TrendingUp size={26} /></div>
-              <p>Click Generate to build your personalised revision plan</p>
-              <p style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>Uses your exam dates, subjects, and grade targets</p>
-            </div>
+            <EmptyState
+              art="emptyPlan"
+              size="sm"
+              as="p"
+              title="Click Generate to build your personalised revision plan"
+              body="Uses your exam dates, subjects, and grade targets"
+            />
           )}
         </div>
       )}
@@ -593,17 +607,17 @@ export default function AIAdvisor() {
             <h4 style={{marginBottom:12}}>The 6 most effective revision techniques (research-backed)</h4>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:10}}>
               {[
-                {name:'Retrieval Practice',rating:'★★★★★',ratingCol:'var(--success)',desc:'Testing yourself on content rather than re-reading it. The act of retrieving strengthens memory far more than passive review.',how:'Use flashcards, practice questions, past papers, or cover your notes and write down everything you remember.',avoid:'Passive re-reading and highlighting — these feel productive but produce almost no durable learning.'},
-                {name:'Spaced Repetition',rating:'★★★★★',ratingCol:'var(--success)',desc:'Reviewing material at increasing intervals (e.g. 1 day → 3 days → 7 days → 21 days). Exploits the spacing effect to dramatically reduce forgetting.',how:'Anki, Quizlet, or RevisionFlow flashcard system. Review topics you found hard more frequently.',avoid:'Cramming the night before — this produces short-term recall but very little long-term retention.'},
-                {name:'Interleaving',rating:'★★★★☆',ratingCol:'var(--success)',desc:'Mixing different topics or subjects within a single study session instead of blocking all of one topic before moving on.',how:'In a 90-minute session, spend 30 min on Topic A, 30 min on Topic B, 30 min on Topic C — not 90 min on Topic A.',avoid:'Blocked practice — feels easier but builds weaker memories.'},
-                {name:'Elaborative Interrogation',rating:'★★★★☆',ratingCol:'var(--warning)',desc:'Asking "why?" and "how?" about facts rather than accepting them at face value. Forces deeper processing.',how:'For each fact, ask: "Why is this true? How does this connect to what I already know?"',avoid:'Learning facts in isolation without connecting them to wider knowledge.'},
-                {name:'Concrete Examples',rating:'★★★★☆',ratingCol:'var(--warning)',desc:'Grounding abstract concepts in specific, memorable examples. Particularly powerful for sciences, economics, and law.',how:'For every abstract principle, write down 2–3 real-world examples. Draw diagrams that show the concept in action.',avoid:'Abstract definitions without application — hard to recall under exam pressure.'},
-                {name:'Dual Coding',rating:'★★★☆☆',ratingCol:'var(--warning)',desc:'Combining verbal and visual information — words plus diagrams, charts, or mind maps.',how:'Draw diagrams from memory, create visual summaries, annotate your notes with sketches.',avoid:'Relying on either text OR visuals alone — the combination is what matters.'},
+                {name:'Retrieval Practice',stars:5,ratingCol:'var(--success)',desc:'Testing yourself on content rather than re-reading it. The act of retrieving strengthens memory far more than passive review.',how:'Use flashcards, practice questions, past papers, or cover your notes and write down everything you remember.',avoid:'Passive re-reading and highlighting — these feel productive but produce almost no durable learning.'},
+                {name:'Spaced Repetition',stars:5,ratingCol:'var(--success)',desc:'Reviewing material at increasing intervals (e.g. 1 day → 3 days → 7 days → 21 days). Exploits the spacing effect to dramatically reduce forgetting.',how:'Anki, Quizlet, or RevisionFlow flashcard system. Review topics you found hard more frequently.',avoid:'Cramming the night before — this produces short-term recall but very little long-term retention.'},
+                {name:'Interleaving',stars:4,ratingCol:'var(--success)',desc:'Mixing different topics or subjects within a single study session instead of blocking all of one topic before moving on.',how:'In a 90-minute session, spend 30 min on Topic A, 30 min on Topic B, 30 min on Topic C — not 90 min on Topic A.',avoid:'Blocked practice — feels easier but builds weaker memories.'},
+                {name:'Elaborative Interrogation',stars:4,ratingCol:'var(--warning)',desc:'Asking "why?" and "how?" about facts rather than accepting them at face value. Forces deeper processing.',how:'For each fact, ask: "Why is this true? How does this connect to what I already know?"',avoid:'Learning facts in isolation without connecting them to wider knowledge.'},
+                {name:'Concrete Examples',stars:4,ratingCol:'var(--warning)',desc:'Grounding abstract concepts in specific, memorable examples. Particularly powerful for sciences, economics, and law.',how:'For every abstract principle, write down 2–3 real-world examples. Draw diagrams that show the concept in action.',avoid:'Abstract definitions without application — hard to recall under exam pressure.'},
+                {name:'Dual Coding',stars:3,ratingCol:'var(--warning)',desc:'Combining verbal and visual information — words plus diagrams, charts, or mind maps.',how:'Draw diagrams from memory, create visual summaries, annotate your notes with sketches.',avoid:'Relying on either text OR visuals alone — the combination is what matters.'},
               ].map(t=>(
                 <div key={t.name} style={{padding:'12px 14px',background:'var(--bg-hover)',borderRadius:'var(--r-md)'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
                     <span style={{fontWeight:700,fontSize:'0.9rem'}}>{t.name}</span>
-                    <span style={{fontSize:'0.75rem',color:t.ratingCol,fontWeight:700}}>{t.rating}</span>
+                    <EvidenceStars value={t.stars} color={t.ratingCol} />
                   </div>
                   <p style={{fontSize:'0.78rem',color:'var(--text-secondary)',lineHeight:1.6,marginBottom:6}}>{t.desc}</p>
                   <div style={{fontSize:'0.75rem',lineHeight:1.5}}>
