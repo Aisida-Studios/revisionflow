@@ -69,7 +69,7 @@ export async function generateStreakCard({
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#ffffff'
-  ctx.fillText(profileIcon || displayName?.[0]?.toUpperCase() || '📚', avatarX, avatarY + 4)
+  ctx.fillText(profileIcon || displayName?.[0]?.toUpperCase() || 'R', avatarX, avatarY + 4)
 
   // ── Display name + level ────────────────────────────────────────────
   ctx.textBaseline = 'alphabetic'
@@ -89,9 +89,8 @@ export async function generateStreakCard({
   ctx.fillStyle = '#fff4e8'
   ctx.fill()
 
-  ctx.font = '90px serif'
   ctx.textAlign = 'center'
-  ctx.fillText('🔥', W / 2, streakBadgeY + 95)
+  drawIcon(ctx, 'flame', W / 2, streakBadgeY + 56, 84, { fill: '#f97316', stroke: '#f97316', lineWidth: 1.5 })
 
   ctx.font = 'bold 110px -apple-system, system-ui, sans-serif'
   ctx.fillStyle = '#f97316'
@@ -104,9 +103,9 @@ export async function generateStreakCard({
   // ── Stats row — solid coloured badges, high-contrast white text ────
   const statsY = streakBadgeY + 260
   const stats = [
-    { label: 'XP',          val: formatXP(xp),              emoji: '⚡', bg: accentColor },
-    { label: 'Best streak', val: `${bestStreak || streak}d`, emoji: '🏆', bg: dark },
-    { label: 'Badges',      val: String(badges),             emoji: '🎖', bg: accentColor },
+    { label: 'XP',          val: formatXP(xp),              icon: 'zap',    bg: accentColor },
+    { label: 'Best streak', val: `${bestStreak || streak}d`, icon: 'trophy', bg: dark },
+    { label: 'Badges',      val: String(badges),             icon: 'award',  bg: accentColor },
   ]
   const gap = 20
   const statW = (cardW - 64 - gap * 2) / 3
@@ -118,9 +117,8 @@ export async function generateStreakCard({
     ctx.fillStyle = s.bg
     ctx.fill()
 
-    ctx.font = '30px serif'
     ctx.textAlign = 'center'
-    ctx.fillText(s.emoji, cx, statsY + 40)
+    drawIcon(ctx, s.icon, cx, statsY + 30, 32, { stroke: '#ffffff', lineWidth: 2 })
 
     ctx.font = 'bold 34px -apple-system, system-ui, sans-serif'
     ctx.fillStyle = '#ffffff'
@@ -160,6 +158,40 @@ export async function generateStreakCard({
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
+// Small icons for the card, drawn as vector paths so the image never depends on an emoji font.
+// Geometry is lucide's (the same shapes the app's UI icons use), in a 24 x 24 box.
+const ICON_PATHS = {
+  flame: ['M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'],
+  zap: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
+  trophy: [
+    'M6 9H4.5a2.5 2.5 0 0 1 0-5H6', 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18', 'M4 22h16',
+    'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22',
+    'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22',
+    'M18 2H6v7a6 6 0 0 0 12 0V2Z',
+  ],
+  award: [
+    'm15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526',
+    'M18 8a6 6 0 1 1-12 0 6 6 0 0 1 12 0z',
+  ],
+}
+
+function drawIcon(ctx, name, cx, cy, size, { stroke, fill, lineWidth = 2 } = {}) {
+  const paths = ICON_PATHS[name]
+  if (!paths || typeof Path2D === 'undefined') return
+  ctx.save()
+  ctx.translate(cx - size / 2, cy - size / 2)
+  ctx.scale(size / 24, size / 24)
+  ctx.lineWidth = lineWidth
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  paths.forEach(d => {
+    const p = new Path2D(d)
+    if (fill)   { ctx.fillStyle = fill;     ctx.fill(p) }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(p) }
+  })
+  ctx.restore()
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   if (typeof r === 'number') r = [r, r, r, r]
   ctx.beginPath()
