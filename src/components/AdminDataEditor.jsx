@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { Plus, ClipboardList, EyeOff, FileText, BarChart2 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit as fsLimit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Section } from './Section'
@@ -130,7 +131,7 @@ function TopicsEditor() {
 
       {loading ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p> : (
         <>
-          <Section title={`Add a topic (${visibleStatic.length + (override.added?.length || 0)} currently listed)`} icon="➕">
+          <Section title={`Add a topic (${visibleStatic.length + (override.added?.length || 0)} currently listed)`} icon={<Plus size={15} aria-hidden="true" />}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input className="input" placeholder="Topic name" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} style={{ flex: 2 }} />
               <input className="input" placeholder="Paper/component (optional)" value={newTopicPaper} onChange={e => setNewTopicPaper(e.target.value)} style={{ flex: 1 }} />
@@ -138,7 +139,7 @@ function TopicsEditor() {
             </div>
           </Section>
 
-          <Section title="Current topics" icon="📋" defaultOpen={false}>
+          <Section title="Current topics" icon={<ClipboardList size={15} aria-hidden="true" />} defaultOpen={false}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto' }}>
               {visibleStatic.map(name => (
                 <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--bg-card)', borderRadius: 8 }}>
@@ -156,7 +157,7 @@ function TopicsEditor() {
           </Section>
 
           {hiddenStatic.length > 0 && (
-            <Section title={`Hidden topics (${hiddenStatic.length})`} icon="🙈" defaultOpen={false}>
+            <Section title={`Hidden topics (${hiddenStatic.length})`} icon={<EyeOff size={15} aria-hidden="true" />} defaultOpen={false}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {hiddenStatic.map(name => (
                   <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--bg-card)', borderRadius: 8, opacity: 0.6 }}>
@@ -215,7 +216,7 @@ function ExamDatesEditor() {
         {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
       </select>
 
-      <Section title="Add / override an exam date" icon="➕">
+      <Section title="Add / override an exam date" icon={<Plus size={15} aria-hidden="true" />}>
         <form onSubmit={addEntry} className="grid-3" style={{ gap: 10 }}>
           <select className="select" value={canonicalBoard(form.board)} onChange={e => setForm(f => ({ ...f, board: e.target.value }))}>
             <BoardOptions current={form.board} />
@@ -229,7 +230,7 @@ function ExamDatesEditor() {
         </form>
       </Section>
 
-      <Section title={`Admin entries for ${level} (${entries.length})`} icon="📋" defaultOpen={false}>
+      <Section title={`Admin entries for ${level} (${entries.length})`} icon={<ClipboardList size={15} aria-hidden="true" />} defaultOpen={false}>
         {loading ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p> : entries.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No admin overrides for {level} yet — the static 2026 dates are used as-is.</p>
         ) : (
@@ -324,7 +325,7 @@ function PapersEditor() {
         </select>
       </div>
 
-      <Section title="Paper spec (max marks + duration)" icon="📄">
+      <Section title="Paper spec (max marks + duration)" icon={<FileText size={15} aria-hidden="true" />}>
         <div className="grid-3" style={{ gap: 10, marginBottom: 10 }}>
           <input className="input" placeholder="Paper number" value={paper} onChange={e => setPaper(e.target.value)} />
           <input className="input" type="number" placeholder="Max marks" value={spec.maxMarks} onChange={e => setSpec(s => ({ ...s, maxMarks: e.target.value }))} />
@@ -357,7 +358,7 @@ function PapersEditor() {
         <button className="btn btn-primary btn-sm" onClick={saveSpec} disabled={saving}>Submit spec for review</button>
       </Section>
 
-      <Section title="Grade boundaries (whole subject, not per-paper)" icon="📊">
+      <Section title="Grade boundaries (whole subject, not per-paper)" icon={<BarChart2 size={15} aria-hidden="true" />}>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
           Boundaries as a comma-separated list, highest grade first (e.g. GCSE: 9,8,7,6,5,4,3,2,1 marks — A-Level: A*,A,B,C,D,E marks). Grades field is optional; defaults to 9-1.
         </p>
