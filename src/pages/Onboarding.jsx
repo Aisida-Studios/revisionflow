@@ -16,6 +16,8 @@ import { buildTopicId } from '../utils/topicId'
 import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'
+import Illustration from '../components/illustrations/Illustration'
+import SubjectTile from '../components/illustrations/SubjectTile'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -23,8 +25,6 @@ const DEFAULT_TIMES = {
   Monday:'17:00', Tuesday:'17:00', Wednesday:'16:00',
   Thursday:'17:00', Friday:'17:00', Saturday:'12:00', Sunday:'Rest day',
 }
-
-const STEP_ICONS = ['👋','🎓','📚','🎯','📅','🤖','👥','🎉']
 
 // Tiny inline confetti
 function Confetti() {
@@ -243,7 +243,7 @@ export default function Onboarding() {
           {/* Step 0 — Welcome */}
           {step===0 && (
             <div className="fade-in" style={{ textAlign:'center' }}>
-              <div style={{ fontSize:'3.5rem', marginBottom:12 }}>👋</div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Illustration name="welcome" width={200} /></div>
               <h2 style={{ marginBottom:8 }}>Let&apos;s set you up</h2>
               <p style={{ marginBottom:6, color:'var(--text-secondary)', lineHeight:1.7 }}>
                 5 minutes. We&apos;ll pre-load all your spec topics, auto-fill your exam dates,
@@ -342,13 +342,14 @@ export default function Onboarding() {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:14 }}>
                   {subjects.map(s => (
                     <div key={s.id} style={{
-                      display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
+                      display:'flex', alignItems:'center', gap:6, padding:'4px 12px 4px 4px',
                       borderRadius:999, fontWeight:700, fontSize:'0.8rem',
                       background: (SUBJECT_COLOURS[s.name] || 'var(--accent)') + '22',
                       border: `1px solid ${SUBJECT_COLOURS[s.name] || 'var(--accent)'}55`,
                       color: SUBJECT_COLOURS[s.name] || 'var(--accent)',
                       animation:'chipIn 0.25s ease',
                     }}>
+                      <SubjectTile subject={s.name} size={28} />
                       {s.name}
                       <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>
                       <button onClick={() => setSubjects(ss => ss.filter(x => x.id !== s.id))}
@@ -540,7 +541,7 @@ export default function Onboarding() {
           {/* Step 6 — Friends */}
           {step===6 && (
             <div className="fade-in" style={{ textAlign:'center' }}>
-              <div style={{ fontSize:'3rem', marginBottom:12 }}>👥</div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><Illustration name="friends" width={200} /></div>
               <h3 style={{ marginBottom:8 }}>RevisionFlow is better with friends</h3>
               <p style={{ marginBottom:20, color:'var(--text-secondary)', fontSize:'0.9rem' }}>
                 Compete on leaderboards, share streaks, and stay accountable together.
@@ -572,7 +573,7 @@ export default function Onboarding() {
           {step===7 && (
             <div className="fade-in" style={{ textAlign:'center', position:'relative' }}>
               <Confetti />
-              <div style={{ fontSize:'4rem', marginBottom:12, position:'relative', zIndex:1 }}>🎉</div>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:8, position:'relative', zIndex:1 }}><Illustration name="success" width={200} /></div>
               <h2 style={{ marginBottom:8, position:'relative', zIndex:1 }}>You&apos;re all set!</h2>
               <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 16px', borderRadius:999, background:'rgba(34,197,94,0.12)', border:'1px solid rgba(34,197,94,0.3)', marginBottom:20, position:'relative', zIndex:1 }}>
                 <Zap size={15} color="var(--accent-light)" />
