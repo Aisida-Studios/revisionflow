@@ -88,7 +88,7 @@ export default function ThemeSelector() {
                 <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{theme.name}</div>
                 {!unlocked && (
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    🔒 {theme.unlockLabel}
+                    <Lock size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />{theme.unlockLabel}
                   </div>
                 )}
                 {active && unlocked && (
@@ -119,7 +119,7 @@ export default function ThemeSelector() {
                 key={id}
                 onClick={() => selectIcon(id)}
                 disabled={!unlocked}
-                title={unlocked ? icon.name : `🔒 ${icon.unlockLabel}`}
+                title={unlocked ? icon.name : "Locked: " + icon.unlockLabel}
                 style={{
                   width: 52, height: 52,
                   borderRadius: 12,
@@ -165,7 +165,7 @@ export default function ThemeSelector() {
                 key={badge.id}
                 onClick={() => selectBadgeIcon(badge.id)}
                 disabled={!earned}
-                title={earned ? badge.name : `🔒 ${badge.name} — ${badge.desc}`}
+                title={earned ? badge.name : "Locked: " + badge.name + " — " + badge.desc}
                 style={{
                   width: 52, height: 52,
                   borderRadius: 12,
