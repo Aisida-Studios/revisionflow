@@ -230,7 +230,7 @@ function BadgeCelebration({ badge, onClose }) {
           borderRadius: 999,
           color: 'var(--warning)', fontWeight: 700, fontSize: '1.1rem',
         }}>
-          ✨ +{badge.xp} XP
+          +{badge.xp} XP
         </div>
 
         <div style={{ marginTop: 20, fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
