@@ -7,26 +7,14 @@ import { db, auth, getAppCheckHeader } from '../firebase'
 import { getPaperAttempts, getMistakes } from '../utils/firestore'
 import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
-import { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
+import { LEVELS, getSubjectQualification } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
+import SubjectTile from '../components/illustrations/SubjectTile'
+import BadgeArt from '../components/illustrations/BadgeArt'
 import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'
-import {
-  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-} from 'lucide-react'
-
-// Every badge carries a lucideIcon name (src/data/badges.js) — this looks it up to a real
-// component. Kept as an explicit map rather than a dynamic import because ES imports need
-// static names; Dashboard.jsx still uses the emoji `icon` field directly and is unaffected.
-const BADGE_ICONS = {
-  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-}
 import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
@@ -209,8 +197,11 @@ export default function Profile() {
       {showMilestone && (
         <div className="modal-overlay" onClick={() => setShowMilestone(false)}>
           <div className="modal" style={{ maxWidth: 440, textAlign: 'center', padding: '2rem' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>
-              {milestoneStreak >= 100 ? '👑' : milestoneStreak >= 30 ? '💎' : milestoneStreak >= 14 ? '💪' : '⚡'}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <BadgeArt
+                id={milestoneStreak >= 100 ? 'streak_100' : milestoneStreak >= 30 ? 'streak_30' : milestoneStreak >= 14 ? 'streak_14' : 'streak_7'}
+                size={104}
+              />
             </div>
             <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak!</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>
@@ -386,7 +377,7 @@ export default function Profile() {
           <div className="ap-person-list" style={{ marginTop: 8 }}>
             {(profile?.subjects || []).map(s => (
               <div key={s.name} className="ap-person-row">
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />
+                <SubjectTile subject={s.name} size={32} />
                 <div className="ap-person-main" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span className="ap-person-name" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{s.name}</span>
                   <span className="badge badge-grey">{s.board}</span>
@@ -423,11 +414,10 @@ export default function Profile() {
         <div className="ap-badge-tile-grid">
           {BADGE_LIST.map(b => {
             const unlocked = earnedIds.includes(b.id)
-            const Icon = BADGE_ICONS[b.lucideIcon]
             return (
               <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>
-                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>
-                  {Icon ? <Icon size={22} /> : b.icon}
+                <div className="ap-badge-tile-icon">
+                  <BadgeArt id={b.id} size={56} earned={unlocked} />
                 </div>
                 <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>
                 <div className="ap-badge-tile-desc">{b.desc}</div>
