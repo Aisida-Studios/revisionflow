@@ -6,7 +6,7 @@ import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import BadgeArt from '../components/illustrations/BadgeArt'
-import { Zap, Star } from 'lucide-react'
+import { Zap, Star, Flame } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
 import './AccountPages.css'
 
@@ -90,7 +90,7 @@ export default function PublicProfile() {
               <div className="stat-cap">XP earned</div>
             </div>
             <div>
-              <div className="stat-num" style={{ color:'var(--warning)' }}><span className="streak-fire">🔥</span> {p.streak||0}</div>
+              <div className="stat-num" style={{ color:'var(--warning)' }}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Flame size={22} />{p.streak||0}</span></div>
               <div className="stat-cap">Day streak</div>
             </div>
             <div>
