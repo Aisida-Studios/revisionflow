@@ -19,6 +19,7 @@ import {
 import { SUBJECT_COLOURS } from '../data/subjects'
 import { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,
          Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 
 const COLOURS = ['#0d9488','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#166534']
 const HOUR_LABELS = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am',
@@ -375,7 +376,7 @@ export default function Analytics() {
         {/* Daily study chart */}
         <Section title="Daily Study Hours" icon={<Clock size={16}/>}>
           {dailyData.every(d => d.total === 0) ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>No completed sessions in this period</p></div>
+            <EmptyState art="emptyAnalytics" size="sm" as="p" title="No completed sessions in this period" />
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={dailyData}>
@@ -495,7 +496,7 @@ export default function Analytics() {
 
         <Section title="Time by Subject" icon={<BookOpen size={16}/>}>
           {subjectDist.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>No sessions logged yet</p></div>
+            <EmptyState art="emptySessions" size="sm" as="p" title="No sessions logged yet" />
           ) : (
             <>
               <ResponsiveContainer width="100%" height={220}>
@@ -571,10 +572,13 @@ export default function Analytics() {
 
         <Section title="Confidence Breakdown" icon={<Brain size={16}/>}>
           {confidenceBreakdown.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}>
-              <Brain size={32} style={{ opacity: 0.3 }} />
-              <p>Rate topics in the Topics page to see your confidence breakdown</p>
-            </div>
+            <EmptyState
+              art="emptyAnalytics"
+              size="sm"
+              as="p"
+              title="No confidence ratings yet"
+              body="Rate topics in the Topics page to see your confidence breakdown."
+            />
           ) : (
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
               <ResponsiveContainer width={200} height={200}>
@@ -652,7 +656,13 @@ export default function Analytics() {
             )}
           </div>
           {gradeTrajectory.length < 2 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>Log at least 2 papers for {gradeSub} to see your trajectory</p></div>
+            <EmptyState
+              art="emptyAnalytics"
+              size="sm"
+              as="p"
+              title="Not enough papers yet"
+              body={`Log at least 2 papers for ${gradeSub} to see your trajectory.`}
+            />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={gradeTrajectory}>
@@ -668,7 +678,13 @@ export default function Analytics() {
 
         <Section title="Papers by Subject" icon={<BookOpen size={16}/>}>
           {currentAttempts.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}><p>No papers logged yet — log papers in Past Papers</p></div>
+            <EmptyState
+              art="emptyPapers"
+              size="sm"
+              as="p"
+              title="No papers logged yet"
+              body="Log papers in Past Papers to see your scores here."
+            />
           ) : (() => {
             const bySubject = {}
             currentAttempts.forEach(a => { bySubject[a.subject] = (bySubject[a.subject] || 0) + 1 })
