@@ -15,7 +15,6 @@ import { getSubjectQualification, subjectColour, getSubjectList } from '../data/
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
 import { subjectIdentityForName } from '../utils/subjectKey'
-import { getSubjectIcon } from '../utils/subjectIcons'
 import { detectCommandWord } from '../utils/commandWords'
 import { buildDueQueue, nextSchedule, daysOverdue, subjectsNotPracticedThisWeek } from '../utils/spacedRepetition'
 import { generateFlashcardsPDF } from '../utils/pdfFlashcards'
@@ -36,6 +35,8 @@ import {
   Trophy, PartyPopper, Flame, FileText, Timer, CheckCircle2,
   Maximize2, Minimize2,
 } from 'lucide-react'
+import SubjectTile from '../components/illustrations/SubjectTile'
+import EmptyState from '../components/illustrations/EmptyState'
 import './Study.css'
 
 // Subject-aware hero illustration — delegates to the shared illustrationThemes.js
@@ -1619,10 +1620,7 @@ function QuizTab({ mySets, uid, profile }) {
 
         {setSource === 'mine' ? (
           mySets.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}>
-              <BookOpen size={32} style={{ opacity: 0.3 }} />
-              <p>No saved sets yet — generate or create flashcards first</p>
-            </div>
+            <EmptyState art="emptyFlashcards" size="sm" as="p" title="No saved sets yet" body="Generate or create flashcards first." />
           ) : filteredMine.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}>
               <p>No sets match those filters</p>
@@ -1635,10 +1633,7 @@ function QuizTab({ mySets, uid, profile }) {
                   className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
                   <div className="rf-set-row-top">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
-                      </div>
+                      <SubjectTile subject={set.subject} size={32} />
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
@@ -1656,10 +1651,7 @@ function QuizTab({ mySets, uid, profile }) {
           publicLoading ? (
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading public sets…</p>
           ) : publicSets.length === 0 ? (
-            <div className="empty-state" style={{ padding: '16px 0' }}>
-              <Users size={32} style={{ opacity: 0.3 }} />
-              <p>No public sets for this subject yet</p>
-            </div>
+            <EmptyState art="emptyFlashcards" size="sm" as="p" title="No public sets for this subject yet" />
           ) : filteredPublic.length === 0 ? (
             <div className="empty-state" style={{ padding: '16px 0' }}>
               <p>No sets match those filters</p>
@@ -1672,10 +1664,7 @@ function QuizTab({ mySets, uid, profile }) {
                   className={`rf-set-row${selectedSet?.id === set.id ? ' is-selected' : ''}`}>
                   <div className="rf-set-row-top">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                        {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
-                      </div>
+                      <SubjectTile subject={set.subject} size={32} />
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}<ProvenanceBadge source={flashcardSetSource(set, uid)} /></div>
                         <div className="rf-set-row-meta">
@@ -2576,13 +2565,13 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
             </>
           )}
           {!mkLoading && !mkResult && (
-            <div className="card empty-state" style={{ padding: '48px 24px' }}>
-              <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><PenLine size={26}/></div>
-              <h4>Your marked result appears here</h4>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: 280, textAlign: 'center' }}>
-                Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve.
-              </p>
-            </div>
+            <EmptyState
+              className="card"
+              art="emptyMistakes"
+              title="Your marked result appears here"
+              body="Fill in the form, paste your answer, and hit Mark. You get awarded marks, what was missing, examiner annotation, and how to improve."
+              style={{ padding: '48px 24px' }}
+            />
           )}
         </div>
       </div>
@@ -2974,25 +2963,22 @@ export default function Study() {
                     <button className="btn btn-secondary btn-sm" onClick={() => { setMyFcSubjectFilter(''); setMyFcBoardFilter(''); setMyFcLevelFilter(''); setMySearch('') }}>Clear filters</button>
                   </div>
                 ) : filteredMy.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><Layers size={26}/></div>
-                    <p>No saved sets yet</p>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                  <EmptyState
+                    art="emptyFlashcards"
+                    title="No saved sets yet"
+                    action={<>
                       <button className="btn btn-primary btn-sm" onClick={() => setFlashTab('generate')}>Generate with AI</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setShowCreate(true)}>Create manually</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(true)}><ClipboardList size={13}/> Import</button>
-                    </div>
-                  </div>
+                    </>}
+                  />
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
                     {filteredMy.map(set => (
                       <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, overflow: 'hidden' }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: subjectColour(set.subject),
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                              {React.createElement(getSubjectIcon(set.subject), { size: 15 })}
-                            </div>
+                            <SubjectTile subject={set.subject} size={32} />
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
@@ -3037,15 +3023,15 @@ export default function Study() {
               </div>
               {setsLoad ? <div className="loading-center"><div className="spinner" /></div>
                 : filteredPub.length === 0 ? (
-                  <div className="empty-state">
-                    <Users size={32} style={{ opacity: 0.3 }} />
-                    {pubSets.length === 0 ? <p>No public sets yet — be the first to share one!</p> : (
-                      <>
-                        <p>No sets match those filters</p>
-                        <button className="btn btn-secondary btn-sm" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>
-                      </>
+                  <EmptyState
+                    art="emptyFlashcards"
+                    size="sm"
+                    as="p"
+                    title={pubSets.length === 0 ? 'No public sets yet — be the first to share one!' : 'No sets match those filters'}
+                    action={pubSets.length === 0 ? undefined : (
+                      <button className="btn btn-secondary btn-sm" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>
                     )}
-                  </div>
+                  />
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
                     {filteredPub.map(set => (
@@ -3261,13 +3247,11 @@ export default function Study() {
           )}
 
           {!eqResult && !eqLoading && (
-            <div className="empty-state">
-              <div className="rf-hero-icon" style={{ background: 'var(--accent-pale)', color: 'var(--accent)' }}><ClipboardList size={26}/></div>
-              <h4>Generate exam-style questions</h4>
-              <p style={{ maxWidth: 360, textAlign: 'center', fontSize: '0.875rem' }}>
-                Select your subject, board, and topic above. Try answering each one yourself, then reveal the mark scheme when you're ready.
-              </p>
-            </div>
+            <EmptyState
+              art="emptyPapers"
+              title="Generate exam-style questions"
+              body="Select your subject, board, and topic above. Try answering each one yourself, then reveal the mark scheme when you're ready."
+            />
           )}
         </div>
       )}
