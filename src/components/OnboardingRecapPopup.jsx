@@ -5,6 +5,7 @@
 // Onboarding.jsx stashes on the profile at save time rather than local component state, since
 // this component may render long after Onboarding.jsx itself has unmounted.
 import { Zap } from 'lucide-react'
+import { LazyIllustration } from './illustrations/lazy'
 
 export default function OnboardingRecapPopup({ breakdown, displayName, onClose }) {
   const firstName = (displayName || '').split(' ')[0] || 'friend'
@@ -12,7 +13,9 @@ export default function OnboardingRecapPopup({ breakdown, displayName, onClose }
   return (
     <div className="modal-overlay">
       <div className="modal" style={{ maxWidth: 400, textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 8 }}>🎉</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+          <LazyIllustration name="success" width={180} />
+        </div>
         <h3 style={{ marginBottom: 4 }}>You're in, {firstName}!</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>
           Here's the XP you've already earned before doing a single revision session:
