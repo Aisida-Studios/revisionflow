@@ -15,7 +15,7 @@ import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
 import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
-import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles } from 'lucide-react'
+import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles, BookOpen, CalendarDays, ListChecks, Trophy, Flame, Link2, BarChart2, CheckCircle2, Target, Compass } from 'lucide-react'
 import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
 
@@ -250,9 +250,9 @@ export default function Onboarding() {
                 and generate a personalised revision plan.
               </p>
               <div style={{ display:'flex', justifyContent:'center', gap:16, margin:'20px 0', flexWrap:'wrap' }}>
-                {[['📚','Topics pre-loaded'],['⏰','Exam dates auto-filled'],['🤖','Study plan'],['🏆','Start earning XP']].map(([e,t]) => (
+                {[[BookOpen,'Topics pre-loaded'],[CalendarDays,'Exam dates auto-filled'],[ListChecks,'Study plan'],[Trophy,'Start earning XP']].map(([Icon,t]) => (
                   <div key={t} style={{ display:'flex', alignItems:'center', gap:6, fontSize:'0.82rem', fontWeight:600, color:'var(--text-secondary)' }}>
-                    <span>{e}</span> {t}
+                    <Icon size={16} style={{ color:'var(--accent-light)', flexShrink:0 }} /> {t}
                   </div>
                 ))}
               </div>
@@ -548,17 +548,17 @@ export default function Onboarding() {
               </p>
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20, textAlign:'left' }}>
                 {[
-                  ['🏆','XP leaderboard with your friends'],
-                  ['🔥','See each other\'s streaks'],
-                  ['🌐','Share your profile link'],
-                  ['📊','Compare grade progress'],
-                ].map(([e, t]) => (
+                  [Trophy,'XP leaderboard with your friends'],
+                  [Flame,"See each other's streaks"],
+                  [Link2,'Share your profile link'],
+                  [BarChart2,'Compare grade progress'],
+                ].map(([Icon, t]) => (
                   <div key={t} style={{
                     display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
                     background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--border)',
                     fontSize:'0.875rem',
                   }}>
-                    <span style={{ fontSize:'1.2rem' }}>{e}</span> {t}
+                    <Icon size={20} style={{ color:'var(--accent-light)', flexShrink:0 }} /> {t}
                   </div>
                 ))}
               </div>
@@ -581,18 +581,18 @@ export default function Onboarding() {
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:20, textAlign:'left', position:'relative', zIndex:1 }}>
                 {[
-                  { label:`${subjects.length} subject${subjects.length!==1?'s':''} added`, icon:'📚' },
-                  { label:'All spec topics pre-loaded', icon:'✅' },
-                  { label:'Grade targets set', icon:'🎯' },
-                  { label:'AI advisor ready to use', icon:'🤖' },
-                  { label:'Streak tracking starts today', icon:'🔥' },
-                  { label:`Revision schedule ${planDone ? 'generated' : 'ready to generate in Calendar'}`, icon:'📅' },
-                ].map(({ label, icon }) => (
+                  { label:`${subjects.length} subject${subjects.length!==1?'s':''} added`, icon: BookOpen },
+                  { label:'All spec topics pre-loaded', icon: CheckCircle2 },
+                  { label:'Grade targets set', icon: Target },
+                  { label:'AI advisor ready to use', icon: Compass },
+                  { label:'Streak tracking starts today', icon: Flame },
+                  { label:`Revision schedule ${planDone ? 'generated' : 'ready to generate in Calendar'}`, icon: CalendarDays },
+                ].map(({ label, icon: Icon }) => (
                   <div key={label} style={{
                     display:'flex', alignItems:'center', gap:10, padding:'9px 14px',
                     background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--border)', fontSize:'0.875rem',
                   }}>
-                    <span>{icon}</span> {label}
+                    <Icon size={16} style={{ color:'var(--accent-light)', flexShrink:0 }} /> {label}
                   </div>
                 ))}
               </div>
