@@ -42,6 +42,7 @@ import {
   ClipboardList, TrendingUp, TrendingDown, Layers, CheckCircle2, Circle,
   BookOpen, RotateCcw, Eye, EyeOff, Target,
 } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 import { format } from 'date-fns'
 import './Topics.css'
 
@@ -298,11 +299,13 @@ export default function TopicDetail() {
 
   if (!topic) {
     return (
-      <div className="fade-in empty-state">
-        <ClipboardList size={32} style={{ opacity: 0.35 }} />
-        <p>That topic couldn't be found — it may have been deleted.</p>
-        <button className="btn btn-primary" onClick={() => navigate('/topics')}>Back to topics</button>
-      </div>
+      <EmptyState
+        className="fade-in"
+        art="notFound"
+        title="That topic couldn't be found"
+        body="It may have been deleted."
+        action={<button className="btn btn-primary" onClick={() => navigate('/topics')}>Back to topics</button>}
+      />
     )
   }
 
@@ -525,11 +528,14 @@ export default function TopicDetail() {
             </div>
           )}
           {!guide && !loadingGuide && (
-            <div className="empty-state">
-              <BookOpen size={32} style={{ opacity: 0.3 }} />
-              <p>Couldn't load a guide for this topic — check your connection and try again.</p>
-              <button className="btn btn-primary btn-sm" onClick={() => loadGuide(false)}>Try again</button>
-            </div>
+            <EmptyState
+              art="error"
+              size="sm"
+              as="p"
+              title="Couldn't load a guide for this topic"
+              body="Check your connection and try again."
+              action={<button className="btn btn-primary btn-sm" onClick={() => loadGuide(false)}>Try again</button>}
+            />
           )}
           {guide && (
             <div className="card">
@@ -568,10 +574,7 @@ export default function TopicDetail() {
             </div>
           </div>
           {notes.length === 0 ? (
-            <div className="empty-state" style={{ padding: '20px 0' }}>
-              <StickyNote size={28} style={{ opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>No notes yet on {displayName}</p>
-            </div>
+            <EmptyState art="emptyNotes" size="sm" as="p" title={`No notes yet on ${displayName}`} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {notes.map(n => (
@@ -617,10 +620,7 @@ export default function TopicDetail() {
               <AIOutput text={questions} label={`Practice questions — ${displayName}`} />
             )
           ) : (
-            <div className="empty-state" style={{ padding: '20px 0' }}>
-              <Brain size={28} style={{ opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>Generate exam-style questions for exactly this topic</p>
-            </div>
+            <EmptyState art="emptyPapers" size="sm" as="p" title="Generate exam-style questions for exactly this topic" />
           )}
         </div>
       )}
@@ -634,11 +634,13 @@ export default function TopicDetail() {
             this exact topic, not a claim that it's exhaustive.
           </p>
           {matched.length === 0 ? (
-            <div className="empty-state" style={{ padding: '20px 0' }}>
-              <ClipboardList size={28} style={{ opacity: 0.3 }} />
-              <p style={{ fontSize: '0.875rem' }}>No logged past-paper questions tagged with this topic yet</p>
-              <button className="btn btn-secondary btn-sm" onClick={() => navigate('/papers')}>Log a past paper</button>
-            </div>
+            <EmptyState
+              art="emptyPapers"
+              size="sm"
+              as="p"
+              title="No logged past-paper questions tagged with this topic yet"
+              action={<button className="btn btn-secondary btn-sm" onClick={() => navigate('/papers')}>Log a past paper</button>}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {matched.map(a => {
