@@ -14,7 +14,7 @@ import { gradeColour } from '../utils/calendar'
 import ReferralCard from '../components/ReferralCard'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import BadgeArt from '../components/illustrations/BadgeArt'
-import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'
+import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock, Flame } from 'lucide-react'
 import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
@@ -277,7 +277,7 @@ export default function Profile() {
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
           {[
             { label: 'XP',      val: (profile?.xp || 0).toLocaleString(),                                col: 'var(--accent-light)' },
-            { label: 'Streak',  val: <><span className="streak-fire">🔥</span>{profile?.streak || 0}</>, col: 'var(--warning)' },
+            { label: 'Streak',  val: <><Flame size={20} />{profile?.streak || 0}</>, col: 'var(--warning)' },
             { label: 'Level',   val: `Lv.${profile?.level || 1}`,                                        col: 'var(--info)' },
             { label: 'Badges',  val: unlockedBadges.length,                                               col: 'var(--success)' },
           ].map(s => (
