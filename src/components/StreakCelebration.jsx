@@ -3,6 +3,7 @@
 // Usage: <StreakCelebration streak={7} onClose={() => setShowStreak(false)} />
 
 import { useState, useEffect } from 'react'
+import { LazyIllustration } from './illustrations/lazy'
 
 // Confetti piece
 function Piece({ colour, x, delay, duration, size }) {
@@ -67,11 +68,6 @@ export default function StreakCelebration({ streak, onClose }) {
           70%  { transform: scale(0.95) rotate(-2deg); }
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        @keyframes fireWobble {
-          0%,100% { transform: scale(1) rotate(-3deg); filter: brightness(1); }
-          25%      { transform: scale(1.1) rotate(3deg); filter: brightness(1.3); }
-          75%      { transform: scale(0.95) rotate(-1deg); filter: brightness(0.95); }
-        }
         @keyframes bgFadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
@@ -120,12 +116,10 @@ export default function StreakCelebration({ streak, onClose }) {
             overflowY: 'auto',
           }}>
 
-          {/* Fire emoji with wobble */}
-          <div style={{
-            fontSize: '5rem', lineHeight: 1, marginBottom: 8,
-            animation: 'fireWobble 1.4s ease-in-out infinite',
-            display: 'inline-block',
-          }}>🔥</div>
+          {/* Seven plants, each a little taller than the last */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+            <LazyIllustration name="streak" width={220} />
+          </div>
 
           {/* Streak count */}
           <div style={{
@@ -141,7 +135,7 @@ export default function StreakCelebration({ streak, onClose }) {
             fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-primary)',
             marginTop: 8, marginBottom: 6, letterSpacing: '-0.01em',
           }}>
-            Day Streak! 🎉
+            Day streak!
           </div>
 
           <p style={{
@@ -171,7 +165,7 @@ export default function StreakCelebration({ streak, onClose }) {
             onClick={() => { setVisible(false); onClose?.() }}
             className="btn btn-primary btn-lg"
             style={{ width: '100%' }}>
-            Keep it up! 💪
+            Keep it up!
           </button>
         </div>
       </div>
