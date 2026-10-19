@@ -8,6 +8,7 @@ import { runBadgeAudit } from '../utils/firestore'
 import { BADGE_MAP } from '../data/badges'
 import { ShieldCheck, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import BadgeArt from './illustrations/BadgeArt'
 
 export default function BadgeAuditButton() {
   const { user } = useAuth()
@@ -26,7 +27,7 @@ export default function BadgeAuditButton() {
         awarded.forEach(badgeId => {
           const badge = BADGE_MAP[badgeId]
           if (badge) {
-            toast.success(`${badge.icon} Badge unlocked: ${badge.name} (+${badge.xp} XP)`, { duration: 4000 })
+            toast.success(`Badge unlocked: ${badge.name} (+${badge.xp} XP)`, { duration: 4000, icon: <BadgeArt id={badge.id} size={28} /> })
           }
         })
       }
