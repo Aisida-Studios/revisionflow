@@ -16,7 +16,8 @@ import BoardOptions from '../components/BoardOptions'
 import { buildSubjectKey, filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Plus, X, Brain, FileText, Trash2, Edit2, Check } from 'lucide-react'
+import { Plus, X, Brain, Trash2, Edit2, Check } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 import { todayLocalStr } from '../utils/localDate'
 
 export default function PastPapers() {
@@ -196,7 +197,7 @@ export default function PastPapers() {
           </div>
 
           {filtered.length===0 ? (
-            <div className="empty-state"><FileText size={40} style={{opacity:0.3}}/><h4>No papers logged</h4><button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Log your first paper</button></div>
+            <EmptyState art="emptyPapers" title="No papers logged" body="Log a paper to see your grade, your trend and where marks were lost." action={<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Log your first paper</button>} />
           ) : (
             <div className="table-wrapper">
               <table>
@@ -276,7 +277,7 @@ export default function PastPapers() {
 
       {tab==='progress' && (
         chartData.length<2 ? (
-          <div className="empty-state"><p>Log at least 2 papers to see a progress graph</p></div>
+          <EmptyState art="emptyAnalytics" size="sm" as="p" title="Log at least 2 papers to see a progress graph" />
         ) : (
           <div className="card">
             <h4 style={{marginBottom:16}}>Score progression</h4>
