@@ -328,7 +328,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
 
       {/* What's new banner */}
       <div className="card" style={{ marginBottom: 24, background: 'var(--accent-pale)', borderColor: 'var(--border-strong)' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-light)', marginBottom: 8 }}>🆕 Recently added</div>
+        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-light)', marginBottom: 8 }}>Recently added</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
           <span>✦ <strong>Tutor (Pro)</strong> — Maths step-by-step solver and English essay feedback, both accept a photo instead of typing</span>
           <span>✦ <strong>Photo scanning</strong> — Take or upload a photo of a question, problem or handwritten essay on the Tutor page and Answer Marker; it's transcribed into the text box for you to check before solving</span>
