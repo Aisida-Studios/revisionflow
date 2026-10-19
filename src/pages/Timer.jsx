@@ -35,11 +35,11 @@ const SCENES = [
 
 /* ─── Ambient sounds ──────────────────────────────────────────── */
 const AMBIENTS = [
-  { id: 'none',        label: 'Off',          emoji: '○'  },
+  { id: 'none',        label: 'Off' },
   { id: 'rain',        label: 'Rainfall' },
   { id: 'ocean',       label: 'Ocean waves' },
   { id: 'forest',      label: 'Forest birds' },
-  { id: 'whitenoise',  label: 'White noise',   emoji: '〰' },
+  { id: 'whitenoise',  label: 'White noise' },
   { id: 'brownnoise',  label: 'Brown noise' },
   { id: 'cafe',        label: 'Coffee shop' },
   { id: 'fireplace',   label: 'Fireplace' },
