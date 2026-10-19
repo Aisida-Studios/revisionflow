@@ -9,6 +9,7 @@ import {
 import { resolveProfileIcon } from '../data/themes'
 import toast from 'react-hot-toast'
 import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
+import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 
 const PERIODS = [
@@ -191,20 +192,18 @@ export default function Leaderboard() {
           </div>
         </div>
       ) : topBoard.length === 0 ? (
-        <div className="empty-state">
-          {tab === 'friends' ? (
-            <>
-              <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Users size={26} /></div>
-              <p>{period === 'allTime' ? 'No friends yet — add friends to see them here!' : `No friend XP logged ${periodLabel} yet.`}</p>
-              {period === 'allTime' && <Link to="/friends" className="btn btn-primary btn-sm">Find friends</Link>}
-            </>
-          ) : (
-            <>
-              <div className="ap-icon-circle" style={{ width: 56, height: 56 }}><Globe size={26} /></div>
-              <p>{period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet — be the first!`}</p>
-            </>
-          )}
-        </div>
+        <EmptyState
+          art={tab === 'friends' ? 'friends' : 'leaderboard'}
+          title={tab === 'friends'
+            ? (period === 'allTime' ? 'No friends yet' : `No friend XP logged ${periodLabel} yet`)
+            : (period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet`)}
+          body={tab === 'friends'
+            ? (period === 'allTime' ? 'Add friends to see them here.' : undefined)
+            : (period === 'allTime' ? undefined : 'Be the first!')}
+          action={tab === 'friends' && period === 'allTime'
+            ? <Link to="/friends" className="btn btn-primary btn-sm">Find friends</Link>
+            : undefined}
+        />
       ) : (
         <div className="card" style={{ padding: '4px 16px' }}>
           <div className="ap-person-list">
