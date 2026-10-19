@@ -245,7 +245,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
   checkSpace(40)
   sectionHeader('Gamification Summary')
   const gW=(W-M*2-10)/3,gY=y
-  ;[{label:'Total XP',value:(profile?.xp||0).toLocaleString(),col:ACCENT},{label:'Level',value:String(profile?.level||1),col:[37,99,235]},{label:'Day Streak',value:`${profile?.streak||0} 🔥`,col:WARNING}].forEach((s,i)=>{
+  ;[{label:'Total XP',value:(profile?.xp||0).toLocaleString(),col:ACCENT},{label:'Level',value:String(profile?.level||1),col:[37,99,235]},{label:'Day Streak',value:String(profile?.streak||0),col:WARNING}].forEach((s,i)=>{
     const bx=M+i*(gW+5)
     doc.setFillColor(...s.col);doc.roundedRect(bx,gY,gW,20,3,3,'F')
     doc.setTextColor(...WHITE);doc.setFont('helvetica','bold');doc.setFontSize(15)
