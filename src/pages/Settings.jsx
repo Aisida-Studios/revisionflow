@@ -10,6 +10,7 @@ import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isT
 import { canonicalBoard, boardLabel } from '../data/boards'
 import { getSupportedSubjects } from '../data/curriculumSupport'
 import BoardOptions from '../components/BoardOptions'
+import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
 import ThemeSelector from '../components/ThemeSelector'
@@ -237,6 +238,7 @@ export default function Settings() {
                 return (
                 <div key={s.id || i} className="ap-subject-row">
                   <div className="ap-subject-row-id">
+                    <SubjectTile subject={s.name} size={32} />
                     <span className="ap-subject-row-name">{s.name}</span>
                     <span className="badge badge-grey">{boardLabel(s.board)}</span>
                     {subjQual !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{subjQual}</span>}
