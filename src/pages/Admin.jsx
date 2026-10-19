@@ -722,7 +722,7 @@ function UsersTab({ email }) {
                     {u.isPro    && <span className="badge badge-green"  style={{ fontSize: '0.65rem' }}>Pro</span>}
                   </div>
                   <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    {u.email || u.id.slice(0, 16)} · {(u.xp || 0).toLocaleString()} XP · 🔥 {u.streak || 0}d
+                    {u.email || u.id.slice(0, 16)} · {(u.xp || 0).toLocaleString()} XP · {u.streak || 0}d streak
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
