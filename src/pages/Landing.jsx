@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
-import CellIllustration from '../components/illustrations/CellIllustration'
+import SubjectIllustration from '../components/illustrations/SubjectIllustration'
 import {
   Zap, Calendar, Brain, Trophy, Users, FileText,
   BarChart2, CheckSquare, MessageSquare, Sun, Moon,
@@ -125,7 +125,7 @@ export default function Landing() {
                   <div className="lp-preview-topic">Cell Biology</div>
                   <div className="lp-preview-meta">45 min</div>
                 </div>
-                <CellIllustration size={88} style={{flexShrink:0}}/>
+                <SubjectIllustration subject="Biology" size={88} style={{flexShrink:0}}/>
               </div>
               <Link to="/signup" className="btn btn-primary btn-sm" style={{width:'100%',justifyContent:'center'}}>
                 Start revising <ArrowRight size={14}/>
