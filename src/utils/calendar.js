@@ -29,7 +29,7 @@ const BOARD_PREFIXES = ['AQA','Edexcel','OCR','WJEC','CCEA','Cambridge','Pearson
 const SESSION_TYPE_KEYWORDS = {
   'Content Revision':   ['content revision','content session','notes','learning'],
   'Exam Practice':      ['exam practice','past paper','exam question','mock','specimen'],
-  'Emergency Revision': ['emergency','final revision','last minute','⚠'],
+  'Emergency Revision': ['emergency','final revision','last minute','\u26a0'],
 }
 
 // ── SESSION TITLE PARSER ──────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ export function parseSessionTitle(title) {
 
   // Subject — strip known prefixes then match
   let cleaned = title
-    .replace(/^⚠\s*EMERGENCY:\s*/i, '')
+    .replace(/^(?:\u26a0\ufe0f?\s*)?EMERGENCY:\s*/i, '')
     .replace(/\s*[–\-]\s*.+$/, '')              // remove after dash
     .replace(new RegExp(`^(${BOARD_PREFIXES.join('|')})\\s+`, 'i'), '')
     .replace(/\b(Higher|Foundation|Level\s*2)\b/gi, '')
