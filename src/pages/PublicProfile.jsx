@@ -1,22 +1,12 @@
 // src/pages/PublicProfile.jsx
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { LEVELS, SUBJECT_COLOURS } from '../data/subjects'
+import { LEVELS } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
+import SubjectTile from '../components/illustrations/SubjectTile'
+import BadgeArt from '../components/illustrations/BadgeArt'
 import { Zap, Star } from 'lucide-react'
-import {
-  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Crown, Medal, Award, Trophy,
-  TrendingUp, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-} from 'lucide-react'
-
-// Same badge icon lookup as Profile.jsx — see src/data/badges.js for the lucideIcon field.
-const BADGE_ICONS = {
-  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-}
 import LoadingScreen from '../components/LoadingScreen'
 import './AccountPages.css'
 
@@ -116,9 +106,9 @@ export default function PublicProfile() {
             <h4 className="card-eyebrow" style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
               {p.subjects.map(s => (
-                <span key={s.name} className="badge" style={{
-                  background: SUBJECT_COLOURS[s.name] || 'var(--accent)',
-                  color:'#fff', borderColor:'transparent' }}>
+                <span key={s.name} className="badge badge-grey"
+                  style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'4px 12px 4px 4px', borderRadius:999 }}>
+                  <SubjectTile subject={s.name} size={28} />
                   {s.name}
                 </span>
               ))}
@@ -132,15 +122,14 @@ export default function PublicProfile() {
             <h4 className="card-eyebrow" style={{ marginBottom:12, fontSize:'0.9rem' }}>
               Badges <span style={{ color:'var(--text-muted)', fontWeight:400 }}>({unlockedBadges.length})</span>
             </h4>
-            <div className="ap-badge-grid">
-              {unlockedBadges.map(b => {
-                const Icon = BADGE_ICONS[b.lucideIcon]
-                return (
-                  <div key={b.id} className="ap-badge-chip ap-badge-chip--earned" title={b.name + ': ' + b.desc}>
-                    <span className="ap-badge-chip-icon">{Icon ? <Icon size={20} /> : b.icon}</span>
-                  </div>
-                )
-              })}
+            <div className="ap-badge-tile-grid">
+              {unlockedBadges.map(b => (
+                <div key={b.id} className="ap-badge-tile ap-badge-tile--earned">
+                  <div className="ap-badge-tile-icon"><BadgeArt id={b.id} size={56} /></div>
+                  <div className="ap-badge-tile-name">{b.name}</div>
+                  <div className="ap-badge-tile-desc">{b.desc}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
