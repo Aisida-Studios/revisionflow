@@ -1429,12 +1429,24 @@ export const deleteFlashcardSet = async (uid, setId, isPublic = false) => {
 // many to fetch (the browser asks for more with "Load more"). Always newest first, whichever query
 // ran. Whether a set is official, community or unverified is decided by utils/provenance.js.
 export const getPublicFlashcardSets = async (subject = null, limitN = 50) => {
-  const q = subject
-    ? query(collection(db, 'publicFlashcards'), where('subject', '==', subject), limit(limitN))
-    : query(collection(db, 'publicFlashcards'), orderBy('createdAt', 'desc'), limit(limitN))
-  const snap = await getDocs(q)
-  const ts = (d) => d.createdAt?.seconds || 0
-  return snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => ts(b) - ts(a))
+  const col = collection(db, 'publicFlashcards')
+  const ts = (d) => d.createdAt?.seconds || d.updatedAt?.seconds || 0
+  const rows = new Map()
+  const add = (snap) => snap.docs.forEach(d => rows.set(d.id, { ...d.data(), id: d.id }))
+  if (subject) {
+    // No orderBy here: ordering by createdAt would silently drop any set stored without that field.
+    add(await getDocs(query(col, where('subject', '==', subject), limit(limitN))))
+  } else {
+    // "All subjects": the newest sets, plus the admin-reviewed official sets queried on their own,
+    // because orderBy('createdAt') excludes any set that has no createdAt (admin-generated sets).
+    const [recent, official] = await Promise.all([
+      getDocs(query(col, orderBy('createdAt', 'desc'), limit(limitN))),
+      getDocs(query(col, where('authorType', '==', 'official'), limit(limitN))).catch(() => null),
+    ])
+    add(recent)
+    if (official) add(official)
+  }
+  return [...rows.values()].sort((a, b) => ts(b) - ts(a))
 }
 
 export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
