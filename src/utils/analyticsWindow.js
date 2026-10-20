@@ -1,15 +1,35 @@
 // src/utils/analyticsWindow.js
-// Which records Analytics counts.
+// Which records Analytics counts, and from when.
 //
-// Every account's analytics start on 1 September 2026 (the start of this academic year): sessions,
-// papers and XP from before that day are not counted, and everything from that day on is. This is a
-// fixed date, not a rolling window, so the same activity counts for everyone and nothing disappears
-// because of how a record happened to be tagged. (A previous version also dropped every record that
+// The student chooses the day their analytics start counting from (profile.analyticsStart: a
+// 'YYYY-MM-DD' day, or 'all' for everything recorded). Until they choose, analytics start at the
+// beginning of the current academic year (the most recent 1 September). Nothing is deleted or
+// hidden for good: records before the start day are simply not counted, and moving the day brings
+// them back. (An earlier version fixed the start for everyone and also dropped every record that
 // had never been stamped with a course, which removed far more than intended.)
 import { toLocalDateStr, parseLocalDate, diffLocalDays, addLocalDays } from './localDate'
 import { isCurrentSubjectInstance } from './subjectKey'
 
-export const ANALYTICS_START_DATE = '2026-09-01'
+export const ALL_TIME = 'all'
+
+const isRealDay = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && toLocalDateStr(parseLocalDate(s)) === s
+
+/** The most recent 1 September on or before `now`, as 'YYYY-MM-DD' (the UK academic year starts then). */
+export function academicYearStart(now = new Date()) {
+  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1   // September is month 8
+  return `${year}-09-01`
+}
+
+/**
+ * The day analytics count from: the student's choice, otherwise the start of the academic year.
+ * Returns '' for "all time" (no start day). An unreadable stored value falls back to the default.
+ */
+export function resolveAnalyticsStart(profile, now = new Date()) {
+  const chosen = profile?.analyticsStart
+  if (chosen === ALL_TIME) return ''
+  if (isRealDay(chosen)) return chosen
+  return academicYearStart(now)
+}
 
 // The local calendar day ('YYYY-MM-DD') a record belongs to, or null if it has no usable date.
 // A session's own `date` and a paper's `attemptDate` are the student's calendar day and win; failing
@@ -31,9 +51,10 @@ export function recordDay(r) {
   return Number.isFinite(ms) ? toLocalDateStr(new Date(ms)) : null
 }
 
-export const inAnalyticsWindow = (record) => {
+/** Is this record on or after the start day? `start` '' means all time. A record with no usable date is not counted. */
+export const inAnalyticsWindow = (record, start = '') => {
   const day = recordDay(record)
-  return !!day && day >= ANALYTICS_START_DATE
+  return !!day && (!start || day >= start)
 }
 
 // Keep a record unless it is hidden (archived) or is clearly stamped for a course the student is not
@@ -46,12 +67,24 @@ export function currentOrUnstamped(records, profile) {
   })
 }
 
-// First day of an analytics range: `rangeDays` days back, never earlier than the start date.
-// 0 (or nothing) means "since the start date". Returns a Date at local midnight.
-export function analyticsRangeStart(rangeDays, now = new Date()) {
-  const floor = parseLocalDate(ANALYTICS_START_DATE)
+/** The earliest day any of these records belongs to ('YYYY-MM-DD'), or null. */
+export function earliestRecordDay(records) {
+  let min = null
+  for (const r of records || []) {
+    const d = recordDay(r)
+    if (d && (!min || d < min)) min = d
+  }
+  return min
+}
+
+// First day of an analytics range: `rangeDays` days back, never earlier than the start day.
+// 0 (or nothing) means "the whole period". With no start day (all time) the whole period begins on
+// the earliest recorded day, or today when there is nothing yet. Returns a Date at local midnight.
+export function analyticsRangeStart(rangeDays, { start = '', earliestDay = null, now = new Date() } = {}) {
+  const today = toLocalDateStr(now)
+  const floor = parseLocalDate(start || earliestDay || today)
   if (!rangeDays) return floor
-  const wanted = addLocalDays(toLocalDateStr(now), -Number(rangeDays))
+  const wanted = addLocalDays(today, -Number(rangeDays))
   return wanted > floor ? wanted : floor
 }
 
