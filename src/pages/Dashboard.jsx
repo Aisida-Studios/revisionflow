@@ -114,11 +114,9 @@ function DashboardSkeleton() {
     <div className="dash">
       <Skeleton width={220} height={32} />
       <Skeleton width={160} height={16} style={{ marginTop: 8 }} />
-      <div className="dash-top-row" style={{ marginTop: 24 }}>
-        <Skeleton height={220} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Skeleton height={100} />
-          <Skeleton height={100} />
+      <div className="dash-top" style={{ marginTop: 24 }}>
+        <div className="dash-top-row">
+          <Skeleton height={200} /><Skeleton height={200} /><Skeleton height={200} />
         </div>
       </div>
       <div className="dash-trio" style={{ marginTop: 16 }}>
@@ -450,82 +448,83 @@ export default function Dashboard() {
 
       {/* ── Next session (dominant) + Today / Streak ─────────────────────── */}
       {dataLoading ? (
-        <div className="dash-top-row" style={{ marginTop: 24 }}>
-          <Skeleton height={220} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Skeleton height={100} /><Skeleton height={100} />
+        <div className="dash-top" style={{ marginTop: 24 }}>
+          <div className="dash-top-row">
+            <Skeleton height={200} /><Skeleton height={200} /><Skeleton height={200} />
           </div>
         </div>
       ) : (
-        <div className="dash-top-row" style={{ marginTop: 24 }}>
-          <div className="card next-session-card">
-            <p className="card-eyebrow">Your next session</p>
-            {nextSession ? (
-              <>
-                <h2 className="next-session-subject">{nextSession.subject || 'Study session'}</h2>
-                <p className="next-session-topic">{nextSession.title || 'Revision session'}</p>
-                <div className="next-session-meta">
-                  {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
-                </div>
-                <Link to={`/timer?sessionId=${encodeURIComponent(nextSession._docId || nextSession.id)}`} className="btn btn-primary next-session-cta">
-                  Start session <ArrowRight size={16} />
-                </Link>
-              </>
-            ) : (
-              <div className="next-session-empty">
-                <p style={{ color: 'var(--text-secondary)', margin: '4px 0 14px', maxWidth: 260 }}>
-                  Nothing scheduled next — plan a session or jump straight in.
-                </p>
-                <Link to="/calendar" className="btn btn-primary next-session-cta">
-                  Plan a session <ArrowRight size={16} />
-                </Link>
-              </div>
-            )}
-            <div className="growth-illustration">
-              <NextSessionIllustration size={150} />
-            </div>
-          </div>
-
-          <div className="dash-side-col">
-            <div className="card">
-              <p className="card-eyebrow">Today</p>
-              <div className="today-stats-row">
-                <div className="stat-pair">
-                  <span className="stat-num">{todaySessions.length}</span>
-                  <span className="stat-cap">sessions</span>
-                </div>
-                <div className="stat-pair">
-                  <span className="stat-num">{avgConfidence != null ? `${avgConfidence}%` : '—'}</span>
-                  <span className="stat-cap">confidence</span>
-                </div>
-                <div className="stat-pair">
-                  <span className="stat-num">{fmtDuration(todayMinutes)}</span>
-                  <span className="stat-cap">study time</span>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="streak-card-head">
-                <p className="card-eyebrow" style={{ margin: 0 }}>Streak</p>
-                {freezeAllowance > 0 && (
-                  <span className="mini-tag" title="Freezes cover a missed day without breaking your streak">
-                    {freezesLeft}/{freezeAllowance} freeze{freezeAllowance === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
-              <div className="streak-row">
-                <span className="stat-num">{streak}</span>
-                <span className="stat-cap">days</span>
-              </div>
-              <div className="week-dots">
-                {last7Days.map((d) => (
-                  <div key={d.key} className="week-dot-col">
-                    <span className="week-dot-label">{d.label}</span>
-                    <span className={`week-dot ${d.done ? 'week-dot--done' : ''} ${d.isToday && !d.done ? 'week-dot--today' : ''}`}>
-                      {d.done && <CheckCircle2 size={11} />}
-                    </span>
+        <div className="dash-top" style={{ marginTop: 24 }}>
+          <div className="dash-top-row">
+            <div className="card next-session-card">
+              <p className="card-eyebrow">Your next session</p>
+              {nextSession ? (
+                <>
+                  <h2 className="next-session-subject">{nextSession.subject || 'Study session'}</h2>
+                  <p className="next-session-topic">{nextSession.title || 'Revision session'}</p>
+                  <div className="next-session-meta">
+                    {nextSession.duration && <span className="mini-tag">{nextSession.duration} min</span>}
                   </div>
-                ))}
+                  <Link to={`/timer?sessionId=${encodeURIComponent(nextSession._docId || nextSession.id)}`} className="btn btn-primary next-session-cta">
+                    Start session <ArrowRight size={16} />
+                  </Link>
+                </>
+              ) : (
+                <div className="next-session-empty">
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 14px', maxWidth: 260 }}>
+                    Nothing scheduled next — plan a session or jump straight in.
+                  </p>
+                  <Link to="/calendar" className="btn btn-primary next-session-cta">
+                    Plan a session <ArrowRight size={16} />
+                  </Link>
+                </div>
+              )}
+              <div className="growth-illustration">
+                <NextSessionIllustration size={150} />
+              </div>
+            </div>
+
+            <div className="dash-side-col">
+              <div className="card">
+                <p className="card-eyebrow">Today</p>
+                <div className="today-stats-row">
+                  <div className="stat-pair">
+                    <span className="stat-num">{todaySessions.length}</span>
+                    <span className="stat-cap">sessions</span>
+                  </div>
+                  <div className="stat-pair">
+                    <span className="stat-num">{avgConfidence != null ? `${avgConfidence}%` : '—'}</span>
+                    <span className="stat-cap">confidence</span>
+                  </div>
+                  <div className="stat-pair">
+                    <span className="stat-num">{fmtDuration(todayMinutes)}</span>
+                    <span className="stat-cap">study time</span>
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="streak-card-head">
+                  <p className="card-eyebrow" style={{ margin: 0 }}>Streak</p>
+                  {freezeAllowance > 0 && (
+                    <span className="mini-tag" title="Freezes cover a missed day without breaking your streak">
+                      {freezesLeft}/{freezeAllowance} freeze{freezeAllowance === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+                <div className="streak-row">
+                  <span className="stat-num">{streak}</span>
+                  <span className="stat-cap">days</span>
+                </div>
+                <div className="week-dots">
+                  {last7Days.map((d) => (
+                    <div key={d.key} className="week-dot-col">
+                      <span className="week-dot-label">{d.label}</span>
+                      <span className={`week-dot ${d.done ? 'week-dot--done' : ''} ${d.isToday && !d.done ? 'week-dot--today' : ''}`}>
+                        {d.done && <CheckCircle2 size={11} />}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
