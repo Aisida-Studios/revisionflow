@@ -2168,6 +2168,7 @@ const GCSE = {
         '1.4 – Glaciated Upland Landscapes: Processes and Land Use',
         'Topic 2 – The Living World: Ecosystems, Tropical Rainforests, Cold Environments',
         'Topic 3 – Tectonic Risks: Earthquakes and Volcanoes (Causes, Effects, Responses)',
+        'Changing Weather and Climate: Weather Hazards, Global Atmospheric Circulation, Evidence and Causes of Climate Change',
       ],
       2: [
         'Topic 4 – The Changing Economy of the UK: De-Industrialisation, Regeneration, North-South Divide',
