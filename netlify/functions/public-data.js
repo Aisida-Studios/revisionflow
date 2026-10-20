@@ -66,7 +66,7 @@ async function checkAppCheck(event) {
 }
 
 // Period keys are computed in each user's own timezone (xpTz), matching the client - see lib/periods.js.
-const { effectivePeriodXP } = require('./lib/periods')
+const { periodFields } = require('./lib/periods')
 
 // The only fields ever sent back for a user who isn't the caller. Deliberately excludes email,
 // stripe*, pushSubscription, examDates, betaUser/isPro and anything else not already shown by
@@ -145,8 +145,7 @@ module.exports.handler = async function(event) {
           const d = snap.data()
           return {
             ...safeFields(uid, d),
-            xpThisWeek:  effectivePeriodXP(d, 'week'),
-            xpThisMonth: effectivePeriodXP(d, 'month'),
+            ...periodFields(d),
             isCurrentUser: uid === decoded.uid,
           }
         } catch { return null }
@@ -158,18 +157,22 @@ module.exports.handler = async function(event) {
       const period     = body.period || 'allTime'
       const maxResults = Math.min(body.maxResults || 100, 100)
 
-      if (period === 'allTime') {
+      // Every row carries xp (all time) AND xpThisWeek / xpThisMonth: the page reads the field that
+      // matches the selected tab. Sending the period value only as `xp` left those two tabs at zero.
+      const row = d => ({ ...safeFields(d.id, d.data()), ...periodFields(d.data()) })
+
+      if (period !== 'week' && period !== 'month') {
         const snap = await db.collection('users').orderBy('xp', 'desc').limit(maxResults).get()
-        return respond(200, snap.docs.map(d => safeFields(d.id, d.data())))
+        return respond(200, snap.docs.map(row))
       }
 
-      // Same "oversample the raw counter, recompute the real period-aware value, drop zeros,
-      // re-sort" approach as the client-side version this replaces — the raw stored counter can
-      // be stale for someone who was active last period and has done nothing since it rolled over.
-      const rawField = period === 'week' ? 'xpThisWeek' : 'xpThisMonth'
-      const snap = await db.collection('users').orderBy(rawField, 'desc').limit(maxResults * 3).get()
-      const withEffective = snap.docs.map(d => ({ ...safeFields(d.id, d.data()), xp: effectivePeriodXP(d.data(), period) }))
-      return respond(200, withEffective.filter(u => u.xp > 0).sort((a, b) => b.xp - a.xp).slice(0, maxResults))
+      // "Oversample the raw counter, recompute the real period-aware value, drop zeros, re-sort":
+      // the raw stored counter can be stale for someone who was active last period and has done
+      // nothing since it rolled over.
+      const periodKey = period === 'week' ? 'xpThisWeek' : 'xpThisMonth'
+      const snap = await db.collection('users').orderBy(periodKey, 'desc').limit(maxResults * 3).get()
+      const rows = snap.docs.map(row).filter(u => u[periodKey] > 0).sort((a, b) => b[periodKey] - a[periodKey]).slice(0, maxResults)
+      return respond(200, rows)
     }
 
     if (action === 'friend-profiles') {
