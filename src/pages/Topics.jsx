@@ -1,7 +1,6 @@
 // src/pages/Topics.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import PriorityList from '../components/PriorityList'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -19,7 +18,7 @@ import { CONF_LABELS, CONF_COLOURS, displayTopicName, groupTopicsByPaper } from 
 import { buildSubjectKey, filterToCurrentSubjectInstance, isCurrentSubjectInstance } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
 import {
-  Plus, X, Brain, Trash2, Grid, BarChart2, Star, ExternalLink, BookOpen,
+  Plus, X, Brain, Trash2, Grid, BarChart2, ExternalLink, BookOpen,
   StickyNote, Layers, Link2, Search, CheckCircle2, Pencil,
 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
@@ -495,17 +494,13 @@ export default function Topics() {
                     </div>
                     <div className="tabs tabs--scroll" style={{padding:3}}>
                       <button className={`tab${view==='list'?' active':''}`} onClick={()=>setView('list')}><BarChart2 size={14}/> List</button>
-                      <button className={`tab${view==='heat'?' active':''}`} onClick={()=>setView('heat')}><Grid size={14}/> Heatmap</button>
-                      <button className={`tab${view==='priority'?' active':''}`} onClick={()=>setView('priority')}><Star size={14}/> Priority</button>
+                      <button className={`tab${view==='overview'?' active':''}`} onClick={()=>setView('overview')}><Grid size={14}/> Overview</button>
                       <button className={`tab${view==='resources'?' active':''}`} onClick={()=>setView('resources')}><ExternalLink size={14}/> Resources</button>
                       <button className={`tab${view==='notes'?' active':''}`} onClick={()=>setView('notes')}><StickyNote size={14}/> Notes</button>
-                      <button className={`tab${view==='mastery'?' active':''}`} onClick={()=>setView('mastery')}><Layers size={14}/> Mastery</button>
                     </div>
                   </div>
 
-                  {view==='priority' ? (
-                    <PriorityList topics={topics} profile={profile} />
-                  ) : view==='resources' ? (
+                  {view==='resources' ? (
                     <div>
                       <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
                         <div>
@@ -554,85 +549,55 @@ export default function Topics() {
                         )}
                       </div>
                     </div>
-                  ) : view==='mastery' ? (
+                  ) : view==='overview' ? (
                     <div>
                       {(() => {
                         const total = filteredTopics.length
-                        const mastered = filteredTopics.filter(t=>t.confidence>=4).length
-                        const pct = total>0?Math.round((mastered/total)*100):0
+                        const strongCount = filteredTopics.filter(t=>t.confidence>=4).length
+                        const pct = total>0 ? Math.round((strongCount/total)*100) : 0
                         return (
-                          <div>
-                            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20,padding:'14px 16px',background:'var(--accent-pale)',borderRadius:12,border:'1px solid var(--border-strong)'}}>
-                              <div style={{textAlign:'center',minWidth:70}}>
-                                <div style={{fontSize:'2rem',fontWeight:800,color:'var(--accent-light)'}}>{pct}%</div>
-                                <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>Mastered</div>
+                          <>
+                            <div className="topics-overview-summary">
+                              <div className="topics-overview-summary-num">
+                                <div className="topics-overview-summary-pct">{pct}%</div>
+                                <div className="topics-overview-summary-cap">rated strong</div>
                               </div>
-                              <div style={{flex:1}}>
-                                <div style={{height:8,background:'var(--bg-hover)',borderRadius:4,overflow:'hidden'}}>
-                                  <div style={{height:'100%',width:`${pct}%`,background:'var(--accent)',borderRadius:4,transition:'width 0.5s ease'}}/>
-                                </div>
-                                <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:'0.72rem',color:'var(--text-muted)'}}>
-                                  <span>{mastered} strong (4-5)</span><span>{total-mastered} to improve</span>
+                              <div className="topics-overview-summary-main">
+                                <div className="topics-overview-bar"><div className="topics-overview-bar-fill" style={{width: pct + '%'}}/></div>
+                                <div className="topics-overview-summary-foot">
+                                  <span>{strongCount} strong (4-5)</span><span>{total-strongCount} to improve</span>
                                 </div>
                               </div>
                             </div>
-                            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:6}}>
-                              {[5,4,3,2,1,0].map(conf=>{
-                                const confTopics = filteredTopics.filter(t=>(t.confidence||0)===conf)
-                                if(!confTopics.length) return null
-                                const confCols={5:'var(--success)',4:'#84cc16',3:'var(--warning)',2:'#f97316',1:'var(--danger)',0:'var(--text-muted)'}
-                                return confTopics.map(t=>(
-                                  <div key={t.id} style={{padding:'8px 10px',borderRadius:8,background:`${confCols[conf]}15`,border:`1px solid ${confCols[conf]}40`,cursor:'pointer'}}
-                                    onClick={()=>updateConf(t.id, conf<5?conf+1:5)} title={conf===0?`${displayTopicName(t.name)} — not rated yet`:`${displayTopicName(t.name)} — click to increase confidence`}>
-                                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:4,marginBottom:3}}>
-                                      <div style={{fontSize:'0.75rem',fontWeight:600,lineHeight:1.3}}>{displayTopicName(t.name)}</div>
-                                      <Link to={`/topics/${t.id}`} onClick={e=>e.stopPropagation()} title="Open topic"
-                                        style={{flexShrink:0,color:'var(--text-muted)',display:'flex',marginTop:1}}>
-                                        <ExternalLink size={11}/>
-                                      </Link>
-                                    </div>
-                                    <div style={{display:'flex',gap:2}}>{conf===0 ? <span style={{fontSize:'0.68rem',color:'var(--text-muted)'}}>Not rated</span> : [1,2,3,4,5].map(n=>(
-                                      <div key={n} style={{width:7,height:7,borderRadius:2,background:conf>=n?confCols[conf]:'var(--bg-hover)'}}/>
-                                    ))}</div>
+                            <p className="topics-overview-note">Based on your own confidence ratings.</p>
+                            {[5,4,3,2,1,0].map(conf => {
+                              const group = filteredTopics.filter(t=>(t.confidence||0)===conf)
+                              if (!group.length) return null
+                              return (
+                                <section key={conf} className="topics-overview-group" style={{'--ov-col': CONF_COLOURS[conf]}}>
+                                  <h4 className="topics-overview-group-title">
+                                    <span className="topics-overview-swatch"/>{CONF_LABELS[conf]}
+                                    <span className="topics-overview-group-count">{group.length}</span>
+                                  </h4>
+                                  <div className="topics-overview-grid">
+                                    {group.map(t => (
+                                      <div key={t.id} className="topics-tile">
+                                        <Link to={'/topics/' + t.id} className="topics-tile-name">{displayTopicName(t.name)}</Link>
+                                        <div className="conf-dots" role="radiogroup" aria-label={'Confidence for ' + displayTopicName(t.name)}>
+                                          {[1,2,3,4,5].map(n => (
+                                            <button key={n} type="button" className={'conf-dot' + (conf>=n ? ' active-' + n : '')}
+                                              onClick={()=>updateConf(t.id,n)} aria-label={CONF_LABELS[n]} aria-pressed={conf>=n}/>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))
-                              })}
-                            </div>
-                          </div>
+                                </section>
+                              )
+                            })}
+                          </>
                         )
                       })()}
-                    </div>
-                  ) : view==='heat' ? (
-                    <div>
-                      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:6}}>
-                        {sortedFiltered.map(t=>{
-                          const conf = t.confidence||0
-                          const bg = conf===0?'var(--bg-hover)':conf===1?'rgba(239,68,68,0.25)':conf===2?'rgba(249,115,22,0.2)':conf===3?'rgba(245,158,11,0.15)':conf===4?'rgba(132,204,22,0.15)':'rgba(34,197,94,0.2)'
-                          const border = conf===0?'var(--border)':conf===1?'rgba(239,68,68,0.5)':conf===2?'rgba(249,115,22,0.4)':conf===3?'rgba(245,158,11,0.3)':conf===4?'rgba(132,204,22,0.3)':'rgba(34,197,94,0.4)'
-                          return (
-                            <div key={t.id} style={{padding:'8px 10px',borderRadius:'var(--radius-md)',background:bg,border:`1px solid ${border}`,cursor:'pointer',position:'relative'}}
-                              title={`${displayTopicName(t.name)} — ${CONF_LABELS[conf]}`}>
-                              <Link to={`/topics/${t.id}`} style={{fontSize:'0.78rem',fontWeight:600,lineHeight:1.3,marginBottom:4,display:'block',color:'inherit',textDecoration:'none'}}>
-                                {displayTopicName(t.name)}
-                              </Link>
-                              <div className="conf-dots" style={{gap:3}} role="radiogroup" aria-label="Confidence rating">
-                                {[1,2,3,4,5].map(n=>(
-                                  <button key={n} type="button" className={`conf-dot${conf>=n?` active-${n}`:''}`} style={{width:8,height:8}}
-                                    onClick={()=>updateConf(t.id,n)} aria-label={CONF_LABELS[n]} aria-pressed={conf>=n}/>
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      <div style={{display:'flex',gap:16,marginTop:16,flexWrap:'wrap',fontSize:'0.78rem',color:'var(--text-muted)'}}>
-                        {[[0,'Not rated','var(--text-muted)'],[1,'Struggling','var(--danger)'],[2,'Needs work','#f97316'],[3,'Getting there','var(--warning)'],[4,'Good','#84cc16'],[5,'Strong','var(--success)']].map(([n,l,c])=>(
-                          <div key={n} style={{display:'flex',alignItems:'center',gap:4}}>
-                            <div style={{width:10,height:10,borderRadius:2,background:c,opacity:0.7}}/>
-                            {l}
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   ) : (
                     // ── List view ──
