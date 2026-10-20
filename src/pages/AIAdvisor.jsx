@@ -23,6 +23,7 @@ import { daysUntilExam } from '../utils/examUtils'
 import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap, AlertTriangle, Star } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import Illustration from '../components/illustrations/Illustration'
+import { targetGradeForPrompt } from '../utils/gradeTargets'
 import './AccountPages.css'
 import { toLocalDateStr } from '../utils/localDate'
 
@@ -154,7 +155,7 @@ export default function AIAdvisor() {
       const ctx = [
         `Student: ${profile.displayName}`,
         `Level: ${profile.level||1} | XP: ${profile.xp||0} | Streak: ${profile.streak||0} days`,
-        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, ${getSubjectQualification(s, profile)}, target: ${s.targetGrade||9})`).join(', ')}`,
+        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, ${getSubjectQualification(s, profile)}, target: ${targetGradeForPrompt(s, profile)})`).join(', ')}`,
         `Upcoming exams: ${(profile.examDates||[]).map(e=>({...e,daysLeft:daysUntilExam(e.examDate)})).filter(e=>e.daysLeft!=null&&e.daysLeft>=0).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
         weakTopics.length   ? `Weak topics: ${weakTopics.join(', ')}`          : '',
         recentPapers.length ? `Recent papers: ${recentPapers.join(', ')}`      : '',
@@ -213,6 +214,7 @@ export default function AIAdvisor() {
       : 12
     const res = await generateStudyPlan({
       subjects:       profile?.subjects||[],
+      qualification:  profile?.qualification,
       examDates:      profile?.examDates||[],
       weakTopics:     [],
       availableHours: planPrefs.hoursPerWeek,
