@@ -5,10 +5,11 @@ import Skeleton from '../components/Skeleton'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { getPaperAttempts, getXpEvents } from '../utils/firestore'
+import { getPaperAttempts, getXpEvents, updateUserProfile } from '../utils/firestore'
+import toast from 'react-hot-toast'
 import { sessionMinutes } from '../utils/sessionTime'
 import { toLocalDateStr, parseLocalDate } from '../utils/localDate'
-import { inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../utils/analyticsWindow'
+import { ALL_TIME, resolveAnalyticsStart, earliestRecordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../utils/analyticsWindow'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
@@ -67,14 +68,15 @@ function attemptTime(a) {
 }
 
 export default function Analytics() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const [sessions,  setSessions]  = useState([])
   const [attempts,  setAttempts]  = useState([])
   const [topics,    setTopics]    = useState([])
   const [xpEvents,  setXpEvents]  = useState([])
   const [loading,   setLoading]   = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [dateRange, setDateRange] = useState(0) // 0 = since 1 Sep 2026; otherwise the last N days (never before that date)
+  const [dateRange, setDateRange] = useState(0) // 0 = the whole period; otherwise the last N days (never before the start day)
+  const [savingStart, setSavingStart] = useState(false)
   const [gradeSub,  setGradeSub]  = useState('')
   const [activeTab, setActiveTab] = useState('overview')
 
@@ -83,8 +85,10 @@ export default function Analytics() {
   // archived flag alone did. The two lifetime stats (top bar "Papers logged", and "Papers
   // attempted"/"Topics rated" under Personal Records) deliberately keep using the raw, unfiltered
   // `attempts`/`topics` instead — those are meant to count everything, forever.
-  // Every analytics figure counts activity from 1 September 2026 (see utils/analyticsWindow.js).
-  const windowAttempts  = useMemo(() => attempts.filter(inAnalyticsWindow), [attempts])
+  // Every analytics figure counts activity from the day the student chose (default: the start of the
+  // academic year; '' means all time). See utils/analyticsWindow.js.
+  const analyticsStart  = useMemo(() => resolveAnalyticsStart(profile), [profile?.analyticsStart])
+  const windowAttempts  = useMemo(() => attempts.filter(r => inAnalyticsWindow(r, analyticsStart)), [attempts, analyticsStart])
   const currentAttempts = useMemo(() => currentOrUnstamped(windowAttempts, profile), [windowAttempts, profile])
 
   useEffect(() => {
@@ -111,14 +115,17 @@ export default function Analytics() {
   useEffect(() => { if (subjectList.length && !gradeSub) setGradeSub(subjectList[0]) }, [subjectList.length])
 
   // ── Core data ──────────────────────────────────────────────────────────────
-  // Study analytics use real study sessions (not to-do tasks) from 1 September 2026. Sessions for
+  // Study analytics use real study sessions (not to-do tasks) from the chosen start day. Sessions for
   // a different course than the student is on now are left out; sessions that were never stamped
   // with a course are kept, because there is no way to tell them apart.
-  const studySessions     = useMemo(() => sessions.filter(s => !s.isTask && inAnalyticsWindow(s)), [sessions])
+  const studySessions     = useMemo(() => sessions.filter(s => !s.isTask && inAnalyticsWindow(s, analyticsStart)), [sessions, analyticsStart])
   const currentSessions   = useMemo(() => currentOrUnstamped(studySessions, profile), [studySessions, profile])
   const completedSessions = useMemo(() => currentSessions.filter(s => s.completed), [currentSessions])
   const totalMinutes      = useMemo(() => completedSessions.reduce((sum, s) => sum + sessionMinutes(s), 0), [completedSessions])
-  const rangeStart        = useMemo(() => analyticsRangeStart(dateRange), [dateRange])
+  const earliestDay       = useMemo(() => earliestRecordDay([...studySessions, ...windowAttempts]), [studySessions, windowAttempts])
+  const rangeStart        = useMemo(() => analyticsRangeStart(dateRange, { start: analyticsStart, earliestDay }), [dateRange, analyticsStart, earliestDay])
+  // Day-by-day charts show at most the last 365 days, however far back the totals go.
+  const chartStart        = useMemo(() => { const limit = subDays(new Date(), 365); return rangeStart > limit ? rangeStart : limit }, [rangeStart])
   const rangeDays         = useMemo(() => analyticsRangeDays(rangeStart), [rangeStart]) // days in the range, both ends counted
 
   const recentSessions = useMemo(() => completedSessions.filter(s => {
@@ -133,7 +140,7 @@ export default function Analytics() {
 
   // ── Daily study chart ─────────────────────────────────────────────────────
   const dailyData = useMemo(() => {
-    const days = eachDayOfInterval({ start: rangeStart, end: new Date() })
+    const days = eachDayOfInterval({ start: chartStart, end: new Date() })
     return days.map(day => {
       const dayStr     = format(day, 'yyyy-MM-dd')
       const daySess    = recentSessions.filter(s =>
@@ -148,7 +155,7 @@ export default function Analytics() {
       })
       return { date: format(day, rangeDays <= 14 ? 'EEE d' : 'd MMM'), total: Math.round(total * 10) / 10, sessions: daySess.length, ...bySubject }
     })
-  }, [recentSessions, rangeStart, rangeDays])
+  }, [recentSessions, chartStart, rangeDays])
 
   // ── Weekly pattern ────────────────────────────────────────────────────────
   const weeklyPattern = useMemo(() => {
@@ -271,11 +278,11 @@ export default function Analytics() {
   const xpHistory = useMemo(() => {
     const byDay = {}
     for (const e of xpEvents) byDay[e.day] = (byDay[e.day] || 0) + (e.amount || 0)
-    return eachDayOfInterval({ start: rangeStart, end: new Date() }).map(day => ({
+    return eachDayOfInterval({ start: chartStart, end: new Date() }).map(day => ({
       date: format(day, rangeDays <= 14 ? 'EEE d' : 'd MMM'),
       xp: byDay[format(day, 'yyyy-MM-dd')] || 0,
     }))
-  }, [xpEvents, rangeStart, rangeDays])
+  }, [xpEvents, chartStart, rangeDays])
   const xpTrackedSince = xpEvents.length ? xpEvents[0].day : null
 
   // ── Personal records ──────────────────────────────────────────────────────
@@ -331,6 +338,23 @@ export default function Analytics() {
     </div>
   )
 
+  // The student's own start day. '' resets to the default (the start of the academic year); 'all' counts everything.
+  async function saveAnalyticsStart(value) {
+    if (value && value !== ALL_TIME && value > toLocalDateStr(new Date())) { toast.error('Pick a day that is not in the future'); return }
+    setSavingStart(true)
+    try {
+      await updateUserProfile(user.uid, { analyticsStart: value })
+      await refreshProfile?.()
+    } catch {
+      toast.error('Could not save that. Try again.')
+    }
+    setSavingStart(false)
+  }
+  const chosenStart = profile?.analyticsStart
+  const startSummary = chosenStart === ALL_TIME ? 'everything you have recorded'
+    : chosenStart && analyticsStart === chosenStart ? 'from ' + format(parseLocalDate(chosenStart), 'd MMM yyyy')
+    : 'this academic year'
+
   return (
     <div className="fade-in">
       {/* ── Header ── */}
@@ -340,15 +364,22 @@ export default function Analytics() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 2 }}>Your complete revision analytics</p>
         </div>
         <select className="select" style={{ width: 'auto' }} value={dateRange} onChange={e => setDateRange(parseInt(e.target.value))}>
-          <option value={0}>Since 1 Sep 2026</option>
+          <option value={0}>Whole period</option>
           {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>Last {d} days</option>)}
         </select>
       </div>
 
       {loadError && <p style={{ color: 'var(--danger)', marginBottom: 12 }}>{loadError}</p>}
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '-8px 0 14px' }}>
-        Counting your activity from 1 September 2026.
-      </p>
+      <div className="analytics-start">
+        <label htmlFor="analytics-start" className="analytics-start-label">Count data from</label>
+        <input id="analytics-start" type="date" className="input analytics-start-input"
+          value={chosenStart && chosenStart !== ALL_TIME ? chosenStart : ''}
+          max={toLocalDateStr(new Date())} disabled={savingStart}
+          onChange={e => saveAnalyticsStart(e.target.value)} />
+        <button className="btn btn-ghost btn-sm" onClick={() => saveAnalyticsStart(ALL_TIME)} disabled={savingStart || chosenStart === ALL_TIME}>All time</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => saveAnalyticsStart('')} disabled={savingStart || !chosenStart}>This academic year</button>
+        <span className="analytics-start-note">Showing {startSummary}</span>
+      </div>
 
       {/* ── Summary stats row ── */}
       <div className="analytics-stat-row">
