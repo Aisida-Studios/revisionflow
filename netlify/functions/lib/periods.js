@@ -64,4 +64,12 @@ function effectivePeriodXP(d, period, now = new Date()) {
   return d.xp || 0
 }
 
-module.exports = { ymdIn, currentWeekStart, currentMonthStart, xpPeriodPatch, effectivePeriodXP }
+// The two period values a leaderboard row needs, recomputed against the user's CURRENT period.
+// The leaderboard page reads entry.xpThisWeek / entry.xpThisMonth for the selected tab, so every
+// row a server function returns must carry both (the global board used to send only `xp`, which
+// is why its This week / This month tabs showed zero for everyone).
+function periodFields(d, now = new Date()) {
+  return { xpThisWeek: effectivePeriodXP(d, 'week', now), xpThisMonth: effectivePeriodXP(d, 'month', now) }
+}
+
+module.exports = { ymdIn, currentWeekStart, currentMonthStart, xpPeriodPatch, effectivePeriodXP, periodFields }
