@@ -827,23 +827,32 @@ tr:hover td { background:var(--bg-hover); }
 }
 
 /* ── Top row: next session (dominant) + Today / Streak ──────────────────── */
-/* The top of the dashboard: Next session, Today, Streak.
-   Default (and anywhere narrower than the thresholds below): Next session spans the full width and
-   Today and Streak sit side by side beneath it, so no box is squeezed. The sidebar takes 252px, so the
-   thresholds are about the CONTENT width, not the screen width.
-   The side column's wrapper is display: contents so its two cards act as direct grid items.
-   To change when the single row appears, change the two min-width values below
-   (1440px = sidebar open, 1280px = sidebar collapsed). */
-.dash-top-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+/* The top of the dashboard: Next session, Today, Streak - all in ONE row.
+   .dash-top is a size container, so the layout follows the width of the row itself (which already
+   accounts for the sidebar, open or collapsed) instead of guessing from the screen width:
+     640px and up : one row of three (Next session a little wider)
+     440px - 639px: Next session full width, Today and Streak side by side beneath it
+     under 440px  : one column
+   Between 640px and 999px the cards switch to a compact layout so nothing is squeezed.
+   The side column's wrapper is display: contents so its two cards act as direct grid items. */
+.dash-top { container-type: inline-size; container-name: dashtop; }
+.dash-top-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: stretch; }
 .dash-side-col { display: contents; }
-.next-session-card { grid-column: 1 / -1; }
-@media (min-width: 1440px) {
-  .dash-top-row { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
+@container dashtop (min-width: 440px) {
+  .dash-top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .next-session-card { grid-column: 1 / -1; }
+}
+@container dashtop (min-width: 640px) {
+  .dash-top-row { grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr)); }
   .next-session-card { grid-column: auto; }
 }
-@media (min-width: 1280px) {
-  .sidebar--collapsed ~ .main-content .dash-top-row { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
-  .sidebar--collapsed ~ .main-content .next-session-card { grid-column: auto; }
+@container dashtop (min-width: 640px) and (max-width: 999px) {
+  .growth-illustration { display: none; }
+  .next-session-subject, .next-session-topic, .next-session-empty { max-width: 100%; }
+  .next-session-subject { font-size: 1.35rem; }
+  .today-stats-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .today-stats-row .stat-pair { flex-direction: row; align-items: baseline; gap: 8px; }
+  .today-stats-row .stat-num { font-size: 1.25rem; }
 }
 
 .next-session-card { position: relative; overflow: hidden; min-height: 200px; }
@@ -874,7 +883,7 @@ tr:hover td { background:var(--bg-hover); }
 .week-dot-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .week-dot-label { font-size: 0.66rem; color: var(--text-muted); font-weight: 700; }
 .week-dot {
-  width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+  width: 100%; max-width: 22px; height: auto; aspect-ratio: 1 / 1; border-radius: 50%; border: 1.5px solid var(--border-strong);
   display: flex; align-items: center; justify-content: center; color: transparent;
 }
 .week-dot--done { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -895,7 +904,6 @@ tr:hover td { background:var(--bg-hover); }
 .quick-action:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
 
 @media (max-width: 900px) {
-  .dash-top-row { grid-template-columns: minmax(0,1fr); }
   .dash-trio, .dash-row-3 { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 480px) {
