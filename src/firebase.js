@@ -49,6 +49,9 @@ export let appCheck = null
 //   }
 // }
 
+// Named export as well as the default: several admin components dynamically import the named `app`,
+// which used to be undefined because only the default existed.
+export { app }
 export default app
 
 // Used by every fetch() call to a Netlify function to attach the App Check token, when App
