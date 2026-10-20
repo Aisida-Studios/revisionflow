@@ -57,12 +57,12 @@ export default function PublicProfile() {
       <div className="ap-page ap-page--narrow">
 
         {/* Nav — works for signed-out users too */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:32 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', rowGap:12, marginBottom:32 }}>
           <Link to="/" className="pp-logo" style={{ textDecoration:'none' }}>
             <div className="pp-logo-mark"><Zap size={19} color="#fff" /></div>
             <span className="pp-logo-word">Revision<span>Flow</span></span>
           </Link>
-          <div style={{ display:'flex', gap:8 }}>
+          <div style={{ display:'flex', gap:8, marginLeft:'auto' }}>
             <Link to="/login"  className="btn btn-ghost btn-sm">Log in</Link>
             <Link to="/signup" className="btn btn-primary btn-sm">Join free</Link>
           </div>
