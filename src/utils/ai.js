@@ -5,6 +5,7 @@
 import { recordActivityStreak } from './firestore'
 import { auth, getAppCheckHeader } from '../firebase'
 import { daysUntilExam } from './examUtils'
+import { targetGradeForPrompt } from './gradeTargets'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -239,7 +240,7 @@ export async function generateStudyPlan(userData, uid, isPro) {
   const prompt = `Generate a personalised GCSE/A-Level revision study plan for a student.
 
 STUDENT DETAILS:
-Subjects: ${subjects?.map(s => `${s.name} (${s.board}, current: ${s.currentGrade || '?'}, target: ${s.targetGrade || 9})`).join(', ')}
+Subjects: ${subjects?.map(s => `${s.name} (${s.board}, current: ${s.currentGrade || '?'}, target: ${targetGradeForPrompt(s, { qualification: userData.qualification })})`).join(', ')}
 Exam period: ${windowDesc}
 Upcoming exams: ${(examDates || []).map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) })).filter(e => e.daysLeft != null && e.daysLeft >= 0).sort((a,b) => a.daysLeft - b.daysLeft).slice(0,12).map(e => `${e.subject} P${e.paper} on ${e.examDate}`).join(', ') || 'Not specified'}
 Available hours per week: ${availableHours || 10}
@@ -319,7 +320,7 @@ Only include genuinely free resources, and only ones that actually cover ${quali
 
 export async function generateCalendarPlan(userData, uid) {
   const prompt = `Generate a revision calendar plan for a student:
-Subjects: ${userData.subjects?.map(s => `${s.name} (${s.board}, target: ${s.targetGrade || 9})`).join(', ')}
+Subjects: ${userData.subjects?.map(s => `${s.name} (${s.board}, target: ${targetGradeForPrompt(s, { qualification: userData.qualification })})`).join(', ')}
 Available days: ${userData.availableDays?.join(', ')}
 Session times: ${JSON.stringify(userData.startTimes)}
 End time: ${userData.endTime}
