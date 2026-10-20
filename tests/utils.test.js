@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { toLocalDateStr, parseLocalDate, localWeekStartStr, localMonthStartStr, addLocalDays, diffLocalDays } from '../src/utils/localDate.js'
-import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPatch as srvPatch, effectivePeriodXP as srvEffective } from '../netlify/functions/lib/periods.js'
+import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPatch as srvPatch, effectivePeriodXP as srvEffective, periodFields as srvPeriodFields } from '../netlify/functions/lib/periods.js'
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../src/utils/provenance.js'
 import { getBoundaries, scaleBoundariesToPaper, calculateGradeFromBoundaries } from '../src/data/paperDatabase.js'
 import { miniTimerState, formatClock } from '../src/utils/miniTimerState.js'
-import { ANALYTICS_START_DATE, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
+import { ALL_TIME, academicYearStart, resolveAnalyticsStart, earliestRecordDay, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
 import { buildSubjectKey } from '../src/utils/subjectKey.js'
+import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
 import { groupsFromQuestions } from '../src/utils/paperQuestions.js'
@@ -259,6 +260,14 @@ ok('a genuinely new week resets the weekly counter but keeps the monthly one', (
   assert.equal(srvEffective(doc, 'month', at('2026-10-14T12:00:00Z')), 90)
   assert.equal(srvEffective({ xp: 500 }, 'allTime'), 500)
 })
+ok('REGRESSION: every leaderboard row carries both period values, so the global This week and This month tabs are not all zero', () => {
+  const now = at('2026-10-14T12:00:00Z')
+  const active = { xp: 900, xpTz: 'Europe/London', xpWeekStart: '2026-10-12', xpMonthStart: '2026-10-01', xpThisWeek: 120, xpThisMonth: 340 }
+  assert.deepEqual(srvPeriodFields(active, now), { xpThisWeek: 120, xpThisMonth: 340 })
+  const lapsed = { xp: 900, xpTz: 'Europe/London', xpWeekStart: '2026-10-05', xpMonthStart: '2026-09-01', xpThisWeek: 120, xpThisMonth: 340 }
+  assert.deepEqual(srvPeriodFields(lapsed, now), { xpThisWeek: 0, xpThisMonth: 0 })   // stale periods read as zero
+  assert.deepEqual(srvPeriodFields({ xp: 5 }, now), { xpThisWeek: 0, xpThisMonth: 0 })
+})
 ok('a legacy doc with no xpTz is read as UTC, exactly as the old code wrote it', () => {
   const doc = { xpWeekStart: '2026-10-12', xpMonthStart: '2026-10-01', xpThisWeek: 10, xpThisMonth: 10 }
   assert.deepEqual(srvPatch(fakeAdmin, doc, 5, at('2026-10-14T12:00:00Z')).xpThisWeek, { inc: 5 })
@@ -443,21 +452,37 @@ ok('stored custom boundaries can be rebuilt for a later edit', () => {
   assert.equal(customBoundarySetFor({ score: 5 }), null); assert.equal(customBoundarySetFor(null), null)
 })
 
-// ───────────────── analytics window: counted from 1 September 2026 ─────────────────
-ok('analytics start on 1 Sep 2026 for every record type, using the local calendar day', () => {
-  assert.equal(ANALYTICS_START_DATE, '2026-09-01')
-  assert.equal(inAnalyticsWindow({ date: '2026-08-31' }), false)
-  assert.equal(inAnalyticsWindow({ date: '2026-09-01' }), true)
-  assert.equal(inAnalyticsWindow({ attemptDate: '2026-09-02' }), true)
-  assert.equal(inAnalyticsWindow({ attemptDate: '2026-08-15' }), false)
+// ───────────────── analytics window: counted from the day the student chooses ─────────────────
+ok('the start day is the student\'s choice; the default is the start of the academic year; "all" means no limit', () => {
+  const oct = new Date(2026, 9, 15, 14, 0)                                                            // 15 Oct 2026
+  const spring = new Date(2027, 2, 10, 9, 0)                                                          // 10 Mar 2027: still the 2026-27 year
+  assert.equal(academicYearStart(oct), '2026-09-01')
+  assert.equal(academicYearStart(spring), '2026-09-01')
+  assert.equal(academicYearStart(new Date(2027, 8, 1)), '2027-09-01')                                  // rolls over on 1 September
+  assert.equal(resolveAnalyticsStart({}, oct), '2026-09-01')                                           // nothing chosen yet
+  assert.equal(resolveAnalyticsStart(null, oct), '2026-09-01')
+  assert.equal(resolveAnalyticsStart({ analyticsStart: '2026-10-01' }, oct), '2026-10-01')             // their own day
+  assert.equal(resolveAnalyticsStart({ analyticsStart: '2025-01-05' }, oct), '2025-01-05')             // may go back as far as they like
+  assert.equal(resolveAnalyticsStart({ analyticsStart: ALL_TIME }, oct), '')                           // everything recorded
+  assert.equal(resolveAnalyticsStart({ analyticsStart: 'banana' }, oct), '2026-09-01')                 // unreadable: default
+  assert.equal(resolveAnalyticsStart({ analyticsStart: '2026-13-45' }, oct), '2026-09-01')             // not a real day: default
+  assert.equal(resolveAnalyticsStart({ analyticsStart: '' }, oct), '2026-09-01')                       // cleared: default
+})
+ok('records count from the start day for every record type, using the local calendar day', () => {
+  assert.equal(inAnalyticsWindow({ date: '2026-08-31' }, '2026-09-01'), false)
+  assert.equal(inAnalyticsWindow({ date: '2026-09-01' }, '2026-09-01'), true)
+  assert.equal(inAnalyticsWindow({ attemptDate: '2026-09-02' }, '2026-09-01'), true)
+  assert.equal(inAnalyticsWindow({ attemptDate: '2026-08-15' }, '2026-09-01'), false)
+  assert.equal(inAnalyticsWindow({ attemptDate: '2026-08-15' }, ''), true)                             // all time: nothing is cut off
   assert.equal(recordDay({ date: '2026-09-05', attemptDate: '2026-01-01' }), '2026-09-05')            // the record's own date wins
-  assert.equal(inAnalyticsWindow({}), false); assert.equal(inAnalyticsWindow(null), false)             // no usable date: not counted
+  assert.equal(inAnalyticsWindow({}, ''), false); assert.equal(inAnalyticsWindow(null, ''), false)    // no usable date: not counted
+  assert.deepEqual(['2026-08-30', '2026-09-02'].map(d => inAnalyticsWindow({ date: d }, '2026-09-01')), [false, true])
 })
 okLondon('timestamps are converted to the LOCAL day (00:30 BST on 1 Sep is still 1 Sep)', () => {
   const justAfterMidnightBST = Date.UTC(2026, 7, 31, 23, 30) / 1000                                    // 2026-08-31T23:30Z = 00:30 on 1 Sep in London
   assert.equal(recordDay({ createdAt: { seconds: justAfterMidnightBST } }), '2026-09-01')
-  assert.equal(inAnalyticsWindow({ createdAt: { seconds: justAfterMidnightBST } }), true)
-  assert.equal(inAnalyticsWindow({ startTime: '2026-08-31T22:59:00Z' }), false)                       // 23:59 BST on 31 Aug
+  assert.equal(inAnalyticsWindow({ createdAt: { seconds: justAfterMidnightBST } }, '2026-09-01'), true)
+  assert.equal(inAnalyticsWindow({ startTime: '2026-08-31T22:59:00Z' }, '2026-09-01'), false)         // 23:59 BST on 31 Aug
 })
 ok('timestamps, Dates and ISO strings all resolve to a day', () => {
   const noon = new Date(2026, 8, 10, 12, 0)
@@ -466,16 +491,23 @@ ok('timestamps, Dates and ISO strings all resolve to a day', () => {
   assert.equal(recordDay({ completedAt: noon.toISOString() }), '2026-09-10')
   assert.equal(recordDay({ createdAt: 'not a date' }), null)
 })
-ok('ranges never reach back before 1 Sep 2026; 0 means since that day', () => {
+ok('ranges never reach back before the start day; 0 means the whole period; all time begins at the earliest record', () => {
   const now = new Date(2026, 9, 15, 14, 0)                                                            // 15 Oct 2026
-  assert.equal(toLocalDateStr(analyticsRangeStart(0, now)), '2026-09-01')
-  assert.equal(toLocalDateStr(analyticsRangeStart(7, now)), '2026-10-08')
-  assert.equal(toLocalDateStr(analyticsRangeStart(30, now)), '2026-09-15')
-  assert.equal(toLocalDateStr(analyticsRangeStart(90, now)), '2026-09-01')                            // clamped: 90 days back would be July
-  assert.equal(analyticsRangeStart(0, now).getHours(), 0)                                            // local midnight
-  assert.equal(analyticsRangeDays(analyticsRangeStart(0, now), now), 45)                             // 1 Sep .. 15 Oct inclusive
-  assert.equal(analyticsRangeDays(analyticsRangeStart(7, now), now), 8)
+  const opt = { start: '2026-09-01', now }
+  assert.equal(toLocalDateStr(analyticsRangeStart(0, opt)), '2026-09-01')
+  assert.equal(toLocalDateStr(analyticsRangeStart(7, opt)), '2026-10-08')
+  assert.equal(toLocalDateStr(analyticsRangeStart(30, opt)), '2026-09-15')
+  assert.equal(toLocalDateStr(analyticsRangeStart(90, opt)), '2026-09-01')                            // clamped: 90 days back would be July
+  assert.equal(analyticsRangeStart(0, opt).getHours(), 0)                                            // local midnight
+  assert.equal(analyticsRangeDays(analyticsRangeStart(0, opt), now), 45)                             // 1 Sep .. 15 Oct inclusive
+  assert.equal(analyticsRangeDays(analyticsRangeStart(7, opt), now), 8)
   assert.equal(analyticsRangeDays(new Date(2030, 0, 1), now), 1)                                     // never below 1
+  const earliest = earliestRecordDay([{ date: '2026-03-02' }, { attemptDate: '2025-11-20' }, {}, null])
+  assert.equal(earliest, '2025-11-20')
+  assert.equal(toLocalDateStr(analyticsRangeStart(0, { start: '', earliestDay: earliest, now })), '2025-11-20')   // all time
+  assert.equal(toLocalDateStr(analyticsRangeStart(30, { start: '', earliestDay: earliest, now })), '2026-09-15')  // last 30 days still works
+  assert.equal(toLocalDateStr(analyticsRangeStart(0, { start: '', earliestDay: null, now })), '2026-10-15')       // nothing recorded: today
+  assert.equal(earliestRecordDay([]), null)
 })
 ok('current-course filter keeps unstamped records, drops other courses and hidden ones', () => {
   const profile = { qualification: 'GCSE', subjects: [{ name: 'Physics', board: 'AQA', qualification: 'GCSE', tier: 'Higher' }] }
@@ -514,6 +546,20 @@ ok('a linked session reads as a session timer; finished and alarm states are sho
   assert.deepEqual(miniTimerState({ ...base, cdRunning: false, cdFinished: true, cdRemaining: 0 }), { kind: 'finished', running: false, seconds: 0, label: "Time's up" })
   assert.equal(miniTimerState({ ...base, alarmFired: true }).kind, 'alarm')              // an alarm outranks a running countdown
   assert.equal(miniTimerState({ ...base, cdRunning: true, swRunning: true, swElapsed: 5 }).kind, 'countdown')   // countdown wins over stopwatch
+})
+
+ok('REGRESSION: AS-Level subjects never show an impossible target of 9; an invalid stored target reads as Not set', () => {
+  const as = { qualification: 'AS-Level' }
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level', targetGrade: '9' }, as), null)
+  assert.equal(targetGradeLabel({ name: 'Mathematics', qualification: 'AS-Level', targetGrade: '9' }, as), 'Not set')
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level', targetGrade: 'B' }, as), 'B')
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level', targetGrade: 'A*' }, as), null)   // no A* at AS-Level
+  assert.equal(resolveTargetGrade({ name: 'Physics', qualification: 'A-Level', targetGrade: 'A*' }, as), 'A*')
+  assert.equal(resolveTargetGrade({ name: 'Physics', qualification: 'A-Level', targetGrade: '9' }, as), null)
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'GCSE', tier: 'Higher', targetGrade: '9' }, { qualification: 'GCSE' }), '9')
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'GCSE', tier: 'Foundation', targetGrade: '9' }, { qualification: 'GCSE' }), null)   // Foundation tops out at 5
+  assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level' }, { ...as, targetGrades: { Mathematics: 'C' } }), 'C')   // per-subject map still honoured when valid
+  assert.equal(targetGradeForPrompt({ name: 'Biology', qualification: 'AS-Level' }, null), 'not set')                  // never an invented number
 })
 
 console.log(`\n${n} checks passed`)
