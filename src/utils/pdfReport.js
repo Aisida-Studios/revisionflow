@@ -4,6 +4,7 @@ import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { filterToCurrentSubjectInstance } from './subjectKey'
 import { daysUntilExam, parseLocalDate } from './examUtils'
+import { resolveTargetGrade } from './gradeTargets'
 
 const ACCENT  = [20, 83, 45]
 const DARK    = [20, 28, 24]
@@ -120,7 +121,7 @@ export async function generateProgressReport(profile, paperAttempts, topics, mis
     doc.autoTable({
       startY:y,
       head:[['Subject','Level','Board','Tier','Starting','Current','Target']],
-      body:profile.subjects.map(s=>[s.name,s.qualification||profile.qualification||'GCSE',s.board,s.tier&&s.tier!=='N/A'?s.tier:'–',profile.startingGrades?.[s.name]||'–',s.currentGrade||'–',s.targetGrade||'9']),
+      body:profile.subjects.map(s=>[s.name,s.qualification||profile.qualification||'GCSE',s.board,s.tier&&s.tier!=='N/A'?s.tier:'–',profile.startingGrades?.[s.name]||'–',s.currentGrade||'–',resolveTargetGrade(s, profile)||'–']),
       margin:{left:M,right:M},
       styles:{fontSize:8.5,cellPadding:3,textColor:[32,36,33]},
       headStyles:{fillColor:DARK,textColor:WHITE,fontStyle:'bold',fontSize:8},
