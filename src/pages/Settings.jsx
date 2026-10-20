@@ -9,6 +9,7 @@ import { scheduleDailyReminder, clearDailyReminder } from '../utils/notification
 import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isTiered } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import { getSupportedSubjects } from '../data/curriculumSupport'
+import { isValidTargetGrade } from '../utils/gradeTargets'
 import BoardOptions from '../components/BoardOptions'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
@@ -74,7 +75,7 @@ export default function Settings() {
     friendsCanSeeGrades:   profile?.settings?.friendsCanSeeGrades   ?? true,
   })
   const [subjects,     setSubjects]     = useState(profile?.subjects || [])
-  const [newSubj,      setNewSubj]      = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9' })
+  const [newSubj,      setNewSubj]      = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '' })
   const [newSubjLevel, setNewSubjLevel] = useState(null)
   const [newQualFlow,  setNewQualFlow]  = useState(null)
   const [qual,         setQual]         = useState(profile?.qualification || 'GCSE')
@@ -159,7 +160,7 @@ export default function Settings() {
     const gradeOpts = getGradeOptions(newSubj.name, addSubjQual, newSubj.tier)
     const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : gradeOpts[0]
     setSubjects(s => [...s, { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }])
-    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: gradeOpts[0] || '9' })
+    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '' })
   }
 
   async function handleDeleteAccount() {
@@ -253,8 +254,9 @@ export default function Settings() {
                     </select>
                     <span style={{ color: 'var(--text-muted)' }}>→</span>
                     <select className="select" style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
-                      value={s.targetGrade}
+                      value={isValidTargetGrade(s, profile, s.targetGrade) ? s.targetGrade : ''}
                       onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
+                      {!isValidTargetGrade(s, profile, s.targetGrade) && <option value="">Not set</option>}
                       {getGradeOptions(s.name, subjQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                     <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))} aria-label={`Remove ${s.name}`}>
@@ -523,14 +525,20 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
   // A-Level independently — e.g. A-Level Maths alongside AS-Level Further Maths is a normal
   // combination. For a GCSE target there's no sibling to choose between.
   const isSixthForm = newQual === 'AS-Level' || newQual === 'A-Level'
-  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9', qualification: newQual })
+  const [newSubj,  setNewSubj]  = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '', qualification: newQual })
   // Only subjects this board + qualification actually has curriculum content for.
   const subjectList = getSupportedSubjects(newSubj.board, newSubj.qualification || newQual)
 
   function addSubj() {
     if (!newSubj.name) return
-    setSubjects(s => [...s, { ...newSubj, qualification: newSubj.qualification || newQual, id: Date.now().toString() }])
-    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '9', qualification: newQual })
+    const qual = newSubj.qualification || newQual
+    // The target must be a real grade on this qualification's scale (A to E at AS-Level, A* to E at
+    // A-Level, 9 to 1 at GCSE). This modal has no target picker, so new subjects used to be saved
+    // with a hard-coded 9, which does not exist at AS-Level.
+    const opts = getGradeOptions(newSubj.name, qual, newSubj.tier)
+    const targetGrade = opts.includes(newSubj.targetGrade) ? newSubj.targetGrade : opts[0]
+    setSubjects(s => [...s, { ...newSubj, qualification: qual, targetGrade, id: Date.now().toString() }])
+    setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '', qualification: newQual })
   }
 
   return (
