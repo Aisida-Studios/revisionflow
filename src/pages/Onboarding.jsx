@@ -85,15 +85,14 @@ export default function Onboarding() {
   const [qual,    setQual]    = useState('GCSE')
   const [subjects, setSubjects] = useState([])
   const [newSubj, setNewSubj] = useState({ name:'', board:'AQA', tier:'N/A', currentGrade:'', targetGrade:'' })
-  const [globalTarget, setGlobalTarget] = useState(() => getGradeOptions('','GCSE','N/A')[0] || '9')
+  const [globalTarget, setGlobalTarget] = useState('')
   const [availability, setAvailability] = useState(
     Object.fromEntries(DAYS.map(d => [d, { enabled: d !== 'Sunday', startTime: DEFAULT_TIMES[d], endTime:'21:00' }]))
   )
   const [username, setUsername] = useState('')
 
   useEffect(() => {
-    const opts = getGradeOptions('', qual, 'N/A')
-    setGlobalTarget(opts[0] || '9')
+    setGlobalTarget('')
     setNewSubj(s => getSupportedSubjects(s.board, qual).includes(s.name) ? s : { ...s, name:'', tier:'N/A' })
   }, [qual])
 
@@ -128,7 +127,7 @@ export default function Onboarding() {
   function addSubject() {
     if (!newSubj.name || subjects.find(s => s.name === newSubj.name)) return
     const opts   = getGradeOptions(newSubj.name, qual, newSubj.tier)
-    const target = newSubj.targetGrade || (opts.includes(globalTarget) ? globalTarget : opts[0])
+    const target = newSubj.targetGrade || (opts.includes(globalTarget) ? globalTarget : '')
     setSubjects(s => [...s, { ...newSubj, qualification: qual, targetGrade: target, id: Date.now().toString() }])
     setNewSubj({ name:'', board:'AQA', tier:'N/A', currentGrade:'', targetGrade:'' })
   }
@@ -145,7 +144,7 @@ export default function Onboarding() {
   async function generatePlan() {
     setAiLoading(true)
     const res = await generateCalendarPlan({
-      subjects: subjects.map(s => ({ name:s.name, board:s.board, qualification:s.qualification||qual, currentGrade:s.currentGrade, targetGrade:s.targetGrade })),
+      subjects: subjects.map(s => ({ name:s.name, board:s.board, qualification:s.qualification||qual, currentGrade:s.currentGrade, targetGrade:s.targetGrade || 'not set' })),
       availableDays: Object.entries(availability).filter(([,v]) => v.enabled).map(([k]) => k),
       startTimes: Object.fromEntries(Object.entries(availability).map(([k,v]) => [k, v.startTime])),
       endTime:'21:00', ratio:'2:1', weeksUntilExams:12,
@@ -177,7 +176,7 @@ export default function Onboarding() {
       await updateDoc(doc(db,'users',user.uid), {
         qualification:qual, subjects,
         startingGrades: Object.fromEntries(subjects.map(s => [s.name, s.currentGrade])),
-        targetGrades:   Object.fromEntries(subjects.map(s => [s.name, s.targetGrade||globalTarget])),
+        targetGrades:   Object.fromEntries(subjects.filter(s => s.targetGrade).map(s => [s.name, s.targetGrade])),
         availability,
         username: username || user.uid.slice(0,8),
         onboardingComplete: true,
@@ -418,15 +417,18 @@ export default function Onboarding() {
                 RevisionFlow uses these to prioritise what you revise and predict your progress.
               </p>
               <div style={{ padding:12, background:'rgba(34,197,94,0.07)', borderRadius:10, border:'1px solid rgba(34,197,94,0.2)', marginBottom:14 }}>
-                <label className="label">Apply one target to all subjects</label>
+                <label className="label">Apply one target to all {qual} subjects</label>
                 <select className="select" value={globalTarget} onChange={e => {
                   const val = e.target.value
                   setGlobalTarget(val)
+                  if (!val) return
                   setSubjects(s => s.map(x => {
+                    if ((x.qualification || qual) !== qual) return x
                     const opts = getGradeOptions(x.name, qual, x.tier)
-                    return { ...x, targetGrade: opts.includes(val) ? val : opts[0] || val }
+                    return { ...x, targetGrade: opts.includes(val) ? val : opts[0] || '' }
                   }))
                 }}>
+                  <option value="">Choose a grade</option>
                   {globalGradeOptions.map(g => <option key={g} value={g}>Grade {g}</option>)}
                 </select>
               </div>
@@ -446,9 +448,10 @@ export default function Onboarding() {
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <span style={{ fontSize:'0.78rem', color:'var(--text-muted)' }}>Target →</span>
                       <select className="select" style={{ width:'auto', fontWeight:700 }}
-                        value={s.targetGrade || globalTarget}
+                        value={s.targetGrade || ''}
                         onChange={e => updateSubj(s.id, 'targetGrade', e.target.value)}>
-                        {getGradeOptions(s.name, qual, s.tier).map(g => (
+                        <option value="">Not set</option>
+                        {getGradeOptions(s.name, s.qualification || qual, s.tier).map(g => (
                           <option key={g} value={g}>{g}</option>
                         ))}
                       </select>
@@ -583,7 +586,7 @@ export default function Onboarding() {
                 {[
                   { label:`${subjects.length} subject${subjects.length!==1?'s':''} added`, icon: BookOpen },
                   { label:'All spec topics pre-loaded', icon: CheckCircle2 },
-                  { label:'Grade targets set', icon: Target },
+                  ...(subjects.some(s => s.targetGrade) ? [{ label:'Grade targets set', icon: Target }] : []),
                   { label:'AI advisor ready to use', icon: Compass },
                   { label:'Streak tracking starts today', icon: Flame },
                   { label:`Revision schedule ${planDone ? 'generated' : 'ready to generate in Calendar'}`, icon: CalendarDays },
