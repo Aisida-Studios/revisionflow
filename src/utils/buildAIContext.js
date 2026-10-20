@@ -4,6 +4,7 @@
 
 import { filterToCurrentSubjectInstance } from './subjectKey'
 import { daysUntilExam } from './examUtils'
+import { resolveTargetGrade } from './gradeTargets'
 
 /**
  * Builds a comprehensive context string from all available student data.
@@ -40,7 +41,8 @@ export function buildAIContext(profile, opts = {}) {
       if (s.tier && s.tier !== 'N/A') parts[0] += ` ${s.tier}`
       parts[0] += ')'
       if (s.currentGrade) parts.push(`current: ${s.currentGrade}`)
-      if (s.targetGrade) parts.push(`target: ${s.targetGrade}`)
+      const target = resolveTargetGrade(s, profile)          // only a real grade on this subject's scale
+      if (target) parts.push(`target: ${target}`)
       lines.push('• ' + parts.join(' | '))
     })
   }
