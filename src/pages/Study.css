@@ -162,3 +162,8 @@
 .rf-set-row-title, .rf-set-row-meta { overflow-wrap: anywhere; }
 .rf-flip-q, .rf-flip-a { overflow-wrap: anywhere; max-width: 100%; }
 .rf-flip-face { min-width: 0; }
+
+/* Topic chips in the flashcard generator: .btn is a single line, so a long topic name used to run out
+   of its card. Let the label wrap (left-aligned) and let the chip shrink inside the card. */
+.rf-weak-chips { display: flex; gap: 7px; flex-wrap: wrap; min-width: 0; }
+.btn.rf-weak-chip { white-space: normal; text-align: left; height: auto; min-height: 36px; max-width: 100%; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
