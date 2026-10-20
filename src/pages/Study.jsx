@@ -1,6 +1,6 @@
 // src/pages/Study.jsx
 import ProvenanceBadge, { AiContentNotice } from '../components/ProvenanceBadge'
-import { flashcardSetSource } from '../utils/provenance'
+import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../utils/provenance'
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsPro, ProBadge } from '../components/ProGate'
@@ -863,6 +863,11 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       </button>
       <span className="rf-session-title">{title}</span>
       <div className="rf-session-topbar-actions">
+        {onSave && !setId && (
+          <button className="btn btn-secondary btn-sm" onClick={onSave} title="Save this set to My sets" aria-label="Save set">
+            <Save size={14}/> Save
+          </button>
+        )}
         {mode==='flash'&&<button className="btn btn-ghost btn-sm" onClick={shuffle}><Shuffle size={14}/></button>}
         <button className="btn btn-ghost btn-sm" onClick={quizletCopy}>{copied?<Check size={14}/>:<Copy size={14}/>}</button>
         <button className="btn btn-ghost btn-sm" onClick={downloadCSV}><Download size={14}/></button>
@@ -2611,6 +2616,9 @@ export default function Study() {
   const [searchQ,   setSearchQ]   = useState('')
   const [pubBoardFilter, setPubBoardFilter] = useState('')
   const [pubLevelFilter, setPubLevelFilter] = useState('')
+  const [pubSubject, setPubSubject] = useState('')      // '' = every subject, not just the student's own
+  const [pubSource,  setPubSource]  = useState('all')   // all | official | community
+  const [pubLimit,   setPubLimit]   = useState(50)
   const [mySearch,  setMySearch]   = useState('')
   const [myFcSubjectFilter, setMyFcSubjectFilter] = useState('')
   const [myFcBoardFilter,   setMyFcBoardFilter]   = useState('')
@@ -2658,7 +2666,7 @@ export default function Study() {
       setWeakTopics((rows || []).filter(t => t.confidence > 0 && t.confidence <= 2).sort((a,b) => a.confidence-b.confidence).slice(0,8))
     }).catch(() => setWeakTopics([]))
   }, [user, profile?.subjects])
-  useEffect(() => { if (flashTab === 'public') loadPublicSets() }, [flashTab])
+  useEffect(() => { if (flashTab === 'public') loadPublicSets(pubSubject || null) }, [flashTab])
 
   async function loadMySets() {
     setSetsLoad(true)
@@ -2666,9 +2674,10 @@ export default function Study() {
     setSetsLoad(false)
   }
 
-  async function loadPublicSets(subject) {
+  async function loadPublicSets(subject, limitN) {
     setSetsLoad(true)
-    try { setPubSets(await getPublicFlashcardSets(subject || null)) } catch {}
+    try { setPubSets(await getPublicFlashcardSets(subject || null, limitN || pubLimit)) }
+    catch { toast.error('Could not load public sets. Try again.') }
     setSetsLoad(false)
   }
 
@@ -2709,9 +2718,10 @@ export default function Study() {
 
   async function handleSaveSet({ title, isPublic }) {
     try {
-      await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic, ...myQualificationFor(studySubj, profile) })
+      const savedId = await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic, ...myQualificationFor(studySubj, profile) })
       toast.success('Set saved!' + (isPublic ? ' It\'s now public.' : ''))
       setShowSave(false)
+      if (savedId) setStudySetId(savedId)      // the session now belongs to the saved set, so Save cannot create a duplicate
       loadMySets()
     } catch (e) { toast.error('Save failed: ' + e.message) }
   }
@@ -2832,6 +2842,7 @@ export default function Study() {
     })
   const filteredPub = pubSets
     .filter(s => !searchQ || s.title?.toLowerCase().includes(searchQ.toLowerCase()) || s.subject?.toLowerCase().includes(searchQ.toLowerCase()))
+    .filter(s => pubSource === 'all' ? true : pubSource === 'official' ? isOfficialSet(s) : isCommunitySet(s, user?.uid))
     .filter(s => {
       if (!pubBoardFilter && !pubLevelFilter) return true
       const { board, level } = deriveSetBoardLevel(s, profile)
@@ -2899,11 +2910,11 @@ export default function Study() {
               <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} color="var(--accent-light)" /> Flashcard Generator</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {weakTopics.length > 0 && (
-                  <div style={{padding:'10px 12px',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',background:'var(--bg-surface-2)'}}>
+                  <div style={{padding:'10px 12px',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',background:'var(--bg-surface-2)',minWidth:0}}>
                     <div style={{fontSize:'0.75rem',fontWeight:700,marginBottom:6}}>Low-confidence topic</div>
-                    <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                    <div className="rf-weak-chips">
                       {weakTopics.slice(0,4).map(t => (
-                        <button key={t.id || t.subjectId+t.name} className="btn btn-secondary btn-sm" onClick={()=>{setFcSubject(t.subjectId);setFcTopic(t.name)}}>
+                        <button key={t.id || t.subjectId+t.name} className="btn btn-secondary btn-sm rf-weak-chip" onClick={()=>{setFcSubject(t.subjectId);setFcTopic(t.name)}}>
                           {t.subjectId} · {t.name}
                         </button>
                       ))}
@@ -3006,17 +3017,27 @@ export default function Study() {
             <div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                 <input className="input" placeholder="Search public sets…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ flex: 1, minWidth: 200 }} />
-                <select className="select" style={{ width: 'auto' }} onChange={e => loadPublicSets(e.target.value || null)}>
-                  <option value="">All subjects</option>
-                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
               </div>
               <div className="rf-config-grid" style={{ marginBottom: 16 }}>
-                <select className="select" value={canonicalBoard(pubBoardFilter)} onChange={e => setPubBoardFilter(e.target.value)}>
+                <select className="select" aria-label="Subject" value={pubSubject}
+                  onChange={e => { setPubSubject(e.target.value); setPubLimit(50); loadPublicSets(e.target.value || null, 50) }}>
+                  <option value="">All subjects</option>
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  <optgroup label="Other subjects">
+                    {[...new Set(['GCSE', 'AS-Level', 'A-Level'].flatMap(l => getSubjectList(l)))]
+                      .filter(n => !subjects.includes(n)).sort().map(n => <option key={n} value={n}>{n}</option>)}
+                  </optgroup>
+                </select>
+                <select className="select" aria-label="Source" value={pubSource} onChange={e => setPubSource(e.target.value)}>
+                  <option value="all">Official and community</option>
+                  <option value="official">Official only (reviewed)</option>
+                  <option value="community">Community only</option>
+                </select>
+                <select className="select" aria-label="Board" value={canonicalBoard(pubBoardFilter)} onChange={e => setPubBoardFilter(e.target.value)}>
                   <option value="">All boards</option>
                   <BoardOptions current={pubBoardFilter} />
                 </select>
-                <select className="select" value={pubLevelFilter} onChange={e => setPubLevelFilter(e.target.value)}>
+                <select className="select" aria-label="Level" value={pubLevelFilter} onChange={e => setPubLevelFilter(e.target.value)}>
                   <option value="">All levels</option>
                   {['GCSE','AS-Level','A-Level'].map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
@@ -3027,48 +3048,55 @@ export default function Study() {
                     art="emptyFlashcards"
                     size="sm"
                     as="p"
-                    title={pubSets.length === 0 ? 'No public sets yet — be the first to share one!' : 'No sets match those filters'}
+                    title={pubSets.length === 0 ? (pubSubject ? 'No public sets for this subject yet' : 'No public sets yet — be the first to share one!') : 'No sets match those filters'}
                     action={pubSets.length === 0 ? undefined : (
-                      <button className="btn btn-secondary btn-sm" onClick={() => { setPubBoardFilter(''); setPubLevelFilter('') }}>Clear board/level filters</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => { setPubBoardFilter(''); setPubLevelFilter(''); setPubSource('all'); setSearchQ('') }}>Clear filters</button>
                     )}
                   />
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
-                    {filteredPub.map(set => (
-                      <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                            {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
-                            {set.author && <span style={{ marginLeft: 4, fontWeight: 600, color: set.author === 'RevisionFlow' ? 'var(--accent-light)' : 'var(--text-muted)' }}>
-                              {set.author === 'RevisionFlow' ? '✦ RevisionFlow' : '· ' + set.author}
-                            </span>}
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,280px),1fr))', gap: 12 }}>
+                      {filteredPub.map(set => (
+                        <div key={set.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>
+                              {set.title} <ProvenanceBadge source={flashcardSetSource(set, user?.uid)} />
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
+                              {set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards
+                              {set.author && <span style={{ marginLeft: 4, fontWeight: 600 }}>{'· ' + set.author}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => studySet(set)}>Study →</button>
+                            <button className="btn btn-secondary btn-sm" title="Save to My Sets"
+                              onClick={async () => {
+                                try {
+                                  const { saveFlashcardSet } = await import('../utils/firestore')
+                                  await saveFlashcardSet(user.uid, {
+                                    title: set.title + ' (copy)',
+                                    subject: set.subject,
+                                    topic: set.topic || '',
+                                    cards: set.cards || [],
+                                    isPublic: false,
+                                    ...(set.board && set.level ? { board: set.board, level: set.level } : myQualificationFor(set.subject, profile)),
+                                  })
+                                  toast.success('Saved to My Sets!')
+                                  loadMySets()
+                                } catch(e) { toast.error(e.message) }
+                              }}>
+                              + Save
+                            </button>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => studySet(set)}>Study →</button>
-                          <button className="btn btn-secondary btn-sm" title="Save to My Sets"
-                            onClick={async () => {
-                              try {
-                                const { saveFlashcardSet } = await import('../utils/firestore')
-                                await saveFlashcardSet(user.uid, {
-                                  title: set.title + ' (copy)',
-                                  subject: set.subject,
-                                  topic: set.topic || '',
-                                  cards: set.cards || [],
-                                  isPublic: false,
-                                  ...(set.board && set.level ? { board: set.board, level: set.level } : myQualificationFor(set.subject, profile)),
-                                })
-                                toast.success('Saved to My Sets!')
-                                loadMySets()
-                              } catch(e) { toast.error(e.message) }
-                            }}>
-                            + Save
-                          </button>
-                        </div>
+                      ))}
+                    </div>
+                    {pubSets.length >= pubLimit && (
+                      <div style={{ textAlign: 'center', marginTop: 14 }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => { const n = pubLimit + 50; setPubLimit(n); loadPublicSets(pubSubject || null, n) }}>Load more</button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
             </div>
           )}
