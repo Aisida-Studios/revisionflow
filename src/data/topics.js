@@ -1323,6 +1323,10 @@ const GCSE = {
         'Grammar – Conjunctions and Complex Sentences',
         'Grammar – Question Formation (Inversion, Est-ce que, Intonation)',
         'Vocabulary – All AQA Theme Vocabulary Lists',
+        'Grammar – Nouns and Articles: Gender, Singular and Plural, Definite, Indefinite and Partitive Articles',
+        'Grammar – Adverbs and Quantifiers: Formation, Time and Place, Adverbial Phrases, très, assez, beaucoup, peu, trop',
+        'Grammar – Prepositions: Common and Compound Prepositions (à, de, chez, dans, depuis, pendant, à côté de)',
+        'Grammar – Number, Quantity, Dates and Time: Including depuis with the Present and Imperfect Tenses',
       ],
       4: [
         'Writing – Translation from English into French',
@@ -1370,6 +1374,9 @@ const GCSE = {
         'Grammar – Prepositions (Accusative, Dative, Two-Way)',
         'Grammar – Passive Voice (Higher)',
         'Vocabulary – All AQA Theme Vocabulary Lists',
+        'Grammar – Nouns: Gender, Singular and Plural Forms, Weak Nouns, Adjectives Used as Nouns',
+        'Grammar – Adverbs and Quantifiers: Time and Place, Comparative and Superlative, Interrogative Adverbs, sehr, zu, viel',
+        'Grammar – Number, Quantity, Dates and Time: Including seit with the Present and Imperfect Tenses',
       ],
       4: [
         'Writing – Translation from English into German',
@@ -1413,6 +1420,10 @@ const GCSE = {
         'Grammar – Negatives, Pronouns and Adjective Agreement',
         'Grammar – Por vs Para',
         'Vocabulary – All AQA Theme Vocabulary Lists',
+        'Grammar – Nouns and Articles: Gender, Singular and Plural, Definite and Indefinite Articles, lo plus Adjective',
+        'Grammar – Adverbs and Quantifiers: Formation, Time and Place, Adverbial Phrases, muy, bastante, demasiado, poco, mucho',
+        'Grammar – Conjunctions: Common Conjunctions Including y, pero, o, porque, como, cuando',
+        'Grammar – Number, Quantity, Dates and Time: Including desde hace with the Present and Imperfect Tenses',
       ],
       4: [
         'Writing – Translation from English into Spanish',
@@ -1640,6 +1651,7 @@ const GCSE = {
         '3.3 – Physical Training: Methods of Training (Interval, Circuit, Continuous, Weight, Plyometric, Flexibility)',
         '3.3 – Physical Training: Fitness Testing and Evaluation',
         '3.3 – Physical Training: Warm-Up and Cool-Down',
+        'Use of Data: Using and Interpreting Data in Physical Activity and Sport',
       ],
       2: [
         '3.4 – Sports Psychology: Skill Classification (Open/Closed, Gross/Fine, Discrete/Continuous)',
