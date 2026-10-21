@@ -302,6 +302,8 @@ const GCSE = {
         'Data Presentation – Bar Charts (Dual, Composite, Percentage); Frequency Polygons',
         'Data Presentation – Cumulative Frequency Graphs; Box Plots and Outliers',
         'Data Presentation – Choropleth Maps and Population Pyramids',
+        'Data Presentation – Histograms: Equal Class Widths, and Frequency Density for Unequal Class Widths (Higher)',
+        'Data Presentation – Choosing Representations and Misleading Graphs: Incorrect Scales, Truncated Axes, Distorted Sizing',
       ],
       2: [
         // Section D – Data Processing/Measures
@@ -321,6 +323,9 @@ const GCSE = {
         'Probability – Basic Probability, Sample Space Diagrams, Relative Frequency',
         'Probability – Venn Diagrams, Two-Way Tables and Set Notation',
         'Probability – Tree Diagrams: Independent and Dependent (Conditional) Events (Higher)',
+        'Data Interpretation – Spearman\'s Rank Correlation: Calculation (Higher) and Interpretation; Pearson\'s Coefficient (Higher)',
+        'Probability – The Binomial Distribution: Characteristics and Interpretation (Higher)',
+        'Data Interpretation – Estimating Population Characteristics: Sample Mean and Proportion, Sample Size, Capture-Recapture (Higher)',
       ],
     }},
 
@@ -1118,6 +1123,7 @@ const GCSE = {
         'Social Context and Behaviour – Piliavin et al. (1969): Bystander Behaviour on the Subway',
         'Social Context and Behaviour – Social Learning Theory (Bandura): Observation and Imitation',
         'Social Context and Behaviour – Situational and Dispositional Explanations of Behaviour',
+        'Perception – Sensation and Perception: Gibson and Gregory\'s Theories, Depth Cues, Illusions, Constancies, Perceptual Set',
       ],
       2: [
         'Brain and Neuropsychology – The Nervous System: CNS and PNS',
@@ -1136,6 +1142,8 @@ const GCSE = {
         'Research Methods – Data Analysis: Quantitative vs Qualitative, Mean, Median, Mode, Range',
         'Research Methods – Data Analysis: Presentation of Data (Tables, Graphs, Charts)',
         'Research Methods – Ethical Considerations: Consent, Deception, Debriefing, Confidentiality',
+        'Language, Thought and Communication – Piaget\'s Theory, Language and Worldview, Animal and Non-Verbal Communication',
+        'Social Influence – Crowd Behaviour: Individuals in Crowds, Collective Behaviour, Pro-Social and Anti-Social Behaviour',
       ],
     }},
 
@@ -1161,6 +1169,7 @@ const GCSE = {
         'Research Methods: Secondary Methods (Documents, Official Statistics)',
         'Research Methods: Sampling Techniques (Random, Stratified, Snowball)',
         'Research Methods: Ethical Considerations',
+        'The Sociological Approach: Conflict versus Consensus, Functionalism, Marxism, Interactionism, Feminism, Key Concepts',
       ],
       2: [
         'The Sociology of Crime and Deviance: Defining and Measuring Crime and Deviance',
@@ -1177,6 +1186,7 @@ const GCSE = {
         'Social Stratification: Poverty (Absolute and Relative) and Social Exclusion',
         'Social Stratification: Explanations of Social Inequality (Functionalist, Marxist, Feminist, Weberian)',
         'Research Methods in Context: Applying Methods to the Study of Crime and Stratification',
+        'Social Stratification: Power and Authority — Traditional, Charismatic and Rational-Legal Authority, Factors Affecting Power',
       ],
     }},
 
@@ -1251,6 +1261,9 @@ const GCSE = {
         'Theme 1 – Government Intervention: Taxes, Subsidies, Price Controls, Regulations',
         'Theme 1 – Business Economics: Types of Business Organisation and Objectives',
         'Theme 1 – Business Economics: Competition and Market Structures',
+        'The Role of Markets: Primary, Secondary and Tertiary Sectors, Factor and Product Markets',
+        'Firms in Competitive Markets: Productivity, Cost, Revenue, Profit and Economies of Scale',
+        'The Labour Market: How It Operates and How Wages Are Determined Through Supply and Demand',
       ],
       2: [
         'Theme 2 – The Economy: Measuring GDP and Living Standards',
@@ -1265,6 +1278,10 @@ const GCSE = {
         'Theme 2 – International Trade: Trade Blocs, Tariffs and Trade Barriers',
         'Theme 2 – Government Economic Objectives: Balancing Growth, Inflation, Employment and Trade',
         'Application of Economic Data: Interpreting and Evaluating Economic Stimulus Material',
+        'The Role of Money and Financial Markets: The Financial Sector, Interest Rates, Saving, Borrowing and Investment',
+        'Distribution of Income and Wealth: Reasons for and Effects of Differences, Redistribution, Progressive Taxes',
+        'Government Policy: Supply-Side Policies and Their Effects on the Economy',
+        'International Trade: Balance of Payments on the Current Account, Causes of Surpluses and Deficits',
       ],
     }},
 
