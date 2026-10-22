@@ -3117,6 +3117,7 @@ const ASLEVEL = {
         'Pure – Integration: Indefinite Integration of Polynomials (Reverse of Differentiation)',
         'Pure – Integration: Finding the Area Under a Curve (Definite Integrals)',
         'Pure – Vectors: 2D Vectors, Magnitude, Position Vectors (AS-Level Subset)',
+        'Pure – Exponentials and Logarithms: Logarithmic Graphs, Estimating Parameters in y = ax^n and y = kb^x',
       ],
       2: [ // Paper 2 — Statistics and Mechanics
         'Statistics – Statistical Sampling: Populations, Sampling Techniques',
@@ -3145,6 +3146,7 @@ const ASLEVEL = {
         'Core Pure – Calculus: Further Methods of Differentiation and Integration (AS Subset)',
         'Core Pure – Vectors: The Vector and Cartesian Equation of a Line',
         'Core Pure – Proof by Induction (Introductory)',
+        'Core Pure – Complex Numbers: Loci in the Argand Diagram',
       ],
       2: [ // Paper 2 — Two Applied Options (subset of Mechanics/Statistics/Discrete)
         'Mechanics Option – Momentum and Impulse',
@@ -3843,6 +3845,7 @@ const ASLEVEL = {
         'Pure – Differentiation: First Principles, Rules, Tangents and Normals',
         'Pure – Integration: Indefinite Integrals, Area Under a Curve',
         'Pure – Exponentials and Logarithms',
+        'Pure – Proof: Proof by Deduction, Proof by Exhaustion, Disproof by Counter-Example',
       ],
       2: [ // Paper 2 — Statistics and Mechanics
         'Statistics – Data Collection, Sampling',
@@ -3851,6 +3854,7 @@ const ASLEVEL = {
         'Statistics – Statistical Hypothesis Testing (AS-Level Subset)',
         'Mechanics – Kinematics (Constant Acceleration)',
         'Mechanics – Forces and Newton\'s Laws (AS-Level Subset)',
+        'Mechanics – Quantities and Units: S.I. Units, Derived Quantities (Velocity, Acceleration, Force, Weight)',
       ],
     }},
 
@@ -3861,6 +3865,8 @@ const ASLEVEL = {
         'Core Pure – Matrices: 2×2, Transformations',
         'Core Pure – Algebra and Series: Roots of Polynomials, Method of Differences',
         'Core Pure – Vectors: Vector and Cartesian Forms of a Line',
+        'Core Pure – Complex Numbers: Solving Quadratic and Cubic Equations, Conjugates, Loci in the Argand Diagram',
+        'Core Pure – Matrices: Determinants, Singular and Non-Singular Matrices, Inverse Matrices',
       ],
       2: [
         'Further Mechanics Option (AS-Level Subset): Momentum, Work and Energy',
@@ -4090,12 +4096,14 @@ const ASLEVEL = {
         'Pure – Differentiation and Integration (AS-Level Subset)',
         'Pure – Binomial Expansion, Sequences and Series (AS-Level Subset)',
         'Pure – Vectors (AS-Level Subset)',
+        'Pure – Proof: Proof by Deduction, Proof by Exhaustion, Disproof by Counter-Example',
       ],
       2: [ // Statistics and Mechanics
         'Statistics – Data Collection and Presentation',
         'Statistics – Probability and the Binomial Distribution',
         'Statistics – Hypothesis Testing (AS-Level Subset)',
         'Mechanics – Kinematics and Newton\'s Laws (AS-Level Subset)',
+        'Mechanics – Quantities and Units: S.I. Units, Derived Quantities (Velocity, Acceleration, Force, Weight)',
       ],
     }},
 
@@ -4106,6 +4114,8 @@ const ASLEVEL = {
         'Pure Core – Matrices: 2×2 and 3×3, Determinants, Transformations',
         'Pure Core – Series: Sums of Natural Numbers, Squares and Cubes (AS-Level Subset)',
         'Pure Core – Vectors and Further Algebra: Roots of Polynomials, the Vector Product',
+        'Pure Core – Complex Numbers: Solving Quadratic and Cubic Equations, Conjugates, Loci in the Argand Diagram',
+        'Pure Core – Matrices: Singular and Non-Singular Matrices, Inverses',
       ],
       2: [
         'Minor Option A (choice, AS-Level Subset): Mechanics — Momentum, Impulse, Work and Energy',
@@ -4258,12 +4268,20 @@ const ASLEVEL = {
         'Pure Mathematics A: Coordinate Geometry — Straight Lines and Circles (AS-Level Subset)',
         'Pure Mathematics A: Trigonometry — Sine and Cosine Rules, Identities (AS-Level Subset)',
         'Pure Mathematics A: Differentiation, Integration, Exponentials and Logarithms',
+        'Pure Mathematics A: Proof — Deduction, Exhaustion, Disproof by Counter-Example',
+        'Pure Mathematics A: Inequalities — Linear and Quadratic, Graphical Regions, Set Notation',
+        'Pure Mathematics A: Polynomials, the Factor Theorem, Algebraic Division',
+        'Pure Mathematics A: Graphs — Curve Sketching, Transformations of Graphs',
+        'Pure Mathematics A: The Binomial Expansion (Positive Integer Powers)',
+        'Pure Mathematics A: Vectors in Two Dimensions',
       ],
       2: [
         'Applied Mathematics A – Statistics: Data Presentation, Probability, Binomial Distribution',
         'Applied Mathematics A – Statistics: Statistical Hypothesis Testing (AS-Level Subset)',
         'Applied Mathematics A – Mechanics: Kinematics (Constant Acceleration)',
         'Applied Mathematics A – Mechanics: Forces and Newton\'s Laws (AS-Level Subset)',
+        'Applied Mathematics A – Statistics: Statistical Sampling, Population and Sample, Sampling Techniques',
+        'Applied Mathematics A – Mechanics: Quantities and Units, S.I. Units and Derived Quantities',
       ],
     }},
 
@@ -4501,6 +4519,9 @@ const ALEVEL = {
         'Integration: Differential Equations — Formation and Solution by Separation of Variables',
         'Numerical Methods: Locating Roots, Iteration (Newton-Raphson, Fixed-Point)',
         'Vectors: 3D Vectors, Magnitude, Position Vectors, Vector Geometry',
+        'Exponentials and Logarithms: Logarithmic Graphs, Estimating Parameters in y = ax^n and y = kb^x',
+        'Differentiation: Tangents and Normals, Stationary Points, Second Derivative, Points of Inflection, Increasing/Decreasing Functions',
+        'Integration: Area Between Two Curves, Integration as the Limit of a Sum',
       ],
       2: [ // Pure Mathematics 2 (same content pool as Paper 1, reinforced)
         'Further Trigonometry: sec, cosec, cot; Inverse Trigonometric Functions',
@@ -4543,6 +4564,8 @@ const ALEVEL = {
         'Series: Sums of Natural Numbers, Squares and Cubes (Σr, Σr², Σr³)',
         'Proof by Induction: Series, Divisibility, Matrix Powers',
         'Vectors: Vector and Cartesian Equation of a Line and Plane',
+        'Complex Numbers: Solving Quadratic, Cubic and Quartic Equations with Real Coefficients, Conjugates and Conjugate Pairs',
+        'Series: Method of Differences (Including Partial Fractions)',
       ],
       2: [ // Core Pure 2
         'Further Vectors: Intersection of Lines/Planes, Distance Between Lines',
@@ -4557,6 +4580,10 @@ const ALEVEL = {
         'Further Coordinate Systems: Parabola, Ellipse, Hyperbola (Cartesian and Parametric)',
         'Groups: Definition, Cayley Tables, Cyclic Groups, Isomorphisms',
         'Further Complex Numbers: nth Roots, Geometric Interpretation',
+        'Further Vectors: Scalar Product, Angles Between Lines and Planes, Perpendicular Vectors',
+        'Further Calculus: Volumes of Revolution',
+        'Further Calculus: Inverse Trigonometric Functions in Differentiation and Integration, Partial Fractions with Quadratic Factors',
+        'Differential Equations: Damped Oscillations, Coupled First-Order Systems (Predator-Prey Models)',
       ],
       3: [ // Optional (most common combination: Mechanics + Statistics)
         'Further Statistics – Discrete Distributions: Discrete Uniform, Geometric, Negative Binomial',
@@ -5543,6 +5570,7 @@ const ALEVEL = {
         'Pure 2 – Integration: By Substitution, By Parts, Using Partial Fractions',
         'Pure 2 – Integration: Differential Equations, Area Between Curves',
         'Pure 2 – Vectors: 3D Vectors, Vector Geometry',
+        'Pure 2 – Integration: Integration as the Limit of a Sum, Numerical Integration with the Trapezium Rule',
       ],
       3: [ // Statistics and Mechanics
         'Statistics – Statistical Sampling: Techniques and Terminology',
@@ -5554,6 +5582,7 @@ const ALEVEL = {
         'Mechanics – Forces and Newton\'s Laws: F = ma, Connected Particles, Friction',
         'Mechanics – Moments: Rigid Bodies in Equilibrium',
         'Mechanics – Projectiles: Horizontal and Vertical Motion Combined',
+        'Mechanics – Quantities and Units: S.I. Units, Derived Quantities (Velocity, Acceleration, Force, Weight, Moment)',
       ],
     }},
 
@@ -5568,6 +5597,9 @@ const ALEVEL = {
         'Core Pure 1 – Further Vectors: Vector and Cartesian Equation of a Line',
         'Core Pure 1 – Proof by Induction: Series, Divisibility, Matrix Powers',
         'Core Pure 1 – Series: Sums of Natural Numbers, Squares, Cubes',
+        'Core Pure 1 – Complex Numbers: Loci in the Argand Diagram',
+        'Core Pure 1 – Matrices: Solving Three Simultaneous Equations Using the Inverse, Geometric Interpretation of Solutions',
+        'Core Pure 1 – Further Vectors: Scalar Product, Angles Between Lines and Planes, Perpendicular Vectors',
       ],
       2: [ // Core Pure 2
         'Core Pure 2 – Complex Numbers: De Moivre\'s Theorem, nth Roots',
@@ -5577,6 +5609,8 @@ const ALEVEL = {
         'Core Pure 2 – Hyperbolic Functions: sinh, cosh, tanh, Inverse Hyperbolics',
         'Core Pure 2 – Differential Equations: First- and Second-Order',
         'Further Pure 1 – Vectors: Planes, Intersections, Distances',
+        'Core Pure 2 – Further Calculus: Mean Value, Inverse Trig Functions, Quadratic Partial Fractions, Trig Substitutions',
+        'Core Pure 2 – Differential Equations: Simple Harmonic Motion, Damped Oscillations, Coupled Systems (Predator-Prey)',
       ],
       3: [ // Two Applied Options
         'Further Statistics 1 – Discrete and Continuous Distributions',
@@ -5913,6 +5947,11 @@ const ALEVEL = {
         'Pure – Numerical Methods: Iteration, Newton-Raphson',
         'Pure – Vectors: 2D and 3D Vectors, Vector Geometry',
         'Pure – Parametric Equations and Differentiation (Extension)',
+        'Pure – Algebra: Partial Fractions (Denominators Up to Squared Linear Terms, Constant or Linear Numerators)',
+        'Pure – Trigonometry: sec, cosec, cot; Inverse Functions arcsin, arccos, arctan',
+        'Pure – Integration: By Substitution, By Parts, Using Partial Fractions',
+        'Pure – Integration: Differential Equations — Forming, Separating Variables, Particular Solutions, Interpreting in Context',
+        'Pure – Integration: Integration as the Limit of a Sum, Numerical Integration with the Trapezium Rule',
       ],
       2: [ // Statistics
         'Statistics – Data Presentation and Interpretation: Location, Spread, the Large Data Set',
@@ -5920,12 +5959,14 @@ const ALEVEL = {
         'Statistics – Statistical Distributions: Binomial and Normal Distribution',
         'Statistics – Statistical Hypothesis Testing: Binomial and Correlation Context',
         'Statistics – Correlation and Regression: PMCC, Regression Lines',
+        'Statistics – Statistical Sampling: Population and Sample, Sampling Techniques, Critiquing Samples',
       ],
       3: [ // Mechanics
         'Mechanics – Kinematics: SUVAT, Motion Graphs, Variable Acceleration',
         'Mechanics – Forces and Newton\'s Laws: F = ma, Connected Particles, Friction',
         'Mechanics – Moments: Rigid Bodies in Equilibrium',
         'Mechanics – Projectiles: Horizontal and Vertical Motion Combined',
+        'Mechanics – Quantities and Units: S.I. Units, Derived Quantities (Velocity, Acceleration, Force, Weight, Moment)',
       ],
     }},
 
@@ -5938,9 +5979,15 @@ const ALEVEL = {
         'Pure Core – Series: Method of Differences, Maclaurin Series',
         'Pure Core – Hyperbolic Functions and Differential Equations',
         'Pure Core – Further Vectors: Lines and Planes',
+        'Pure Core – Complex Numbers: Solving Polynomial Equations with Complex Roots, Conjugates, Loci, nth Roots, Roots of Unity',
+        'Pure Core – Series: Sums of Integers, Squares and Cubes',
+        'Pure Core – Further Vectors: Scalar Product, Angles, Intersection of a Line and a Plane, Perpendicular Distances',
+        'Pure Core – Hyperbolic Functions: Graphs, Differentiation and Integration, Inverse Hyperbolic Functions, Logarithmic Forms',
+        'Pure Core – Differential Equations: Integrating Factor, Second-Order Equations, SHM, Damped Oscillations, Coupled Systems',
       ],
       2: [
         'Pure Core Continued – Polar Coordinates, Further Calculus, Roots of Polynomials',
+        'Pure Core – Further Calculus: Improper Integrals, Volumes of Revolution, Mean Value, Inverse Trig, Quadratic Partial Fractions',
       ],
       3: [ // Optional
         'Minor Option A (choice): Further Statistics — Chi-Squared, Poisson Distribution',
@@ -6151,6 +6198,10 @@ const ALEVEL = {
         'Pure – Numerical Methods: Iteration, Newton-Raphson',
         'Pure – Vectors: 2D and 3D, Vector Geometry',
         'Pure – Functions and Graphs: Transformations, Modulus Function, Composite/Inverse Functions',
+        'Pure – Algebra: Inequalities, Linear and Quadratic, Graphical Regions, Set Notation',
+        'Pure – Algebra: Partial Fractions, Decomposition and Integration',
+        'Pure – Trigonometry: sec, cosec, cot; Inverse Functions arcsin, arccos, arctan',
+        'Pure – Integration: Integration as the Limit of a Sum, Numerical Integration with the Trapezium Rule',
       ],
       2: [ // Applied Mathematics A — Statistics
         'Statistics – Data Collection and Sampling Techniques',
@@ -6165,6 +6216,7 @@ const ALEVEL = {
         'Mechanics – Forces and Newton\'s Laws: F = ma, Connected Particles, Friction',
         'Mechanics – Moments: Rigid Bodies in Equilibrium',
         'Mechanics – Projectiles: Horizontal and Vertical Motion Combined',
+        'Mechanics – Quantities and Units: S.I. Units, Derived Quantities (Velocity, Acceleration, Force, Weight, Moment)',
       ],
     }},
 
