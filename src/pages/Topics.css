@@ -202,3 +202,20 @@
 .topics-tile .conf-dots { gap: 8px; }
 .topics-tile .conf-dot { position: relative; width: 14px; height: 14px; }
 .topics-tile .conf-dot::after { content: ''; position: absolute; inset: -9px -4px; }
+
+/* ── Topic Detail: Revise tab ─────────────────────────────────────────────── */
+.topic-card-title { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 10px; }
+.topic-card-note { margin: 10px 0 0; font-size: 0.76rem; line-height: 1.5; color: var(--text-muted); }
+.topic-spec-list { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 0.85rem; }
+.topic-spec-list dt { color: var(--text-muted); font-weight: 600; }
+.topic-spec-list dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.topic-mini-list { display: flex; flex-direction: column; gap: 6px; }
+.topic-mini-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 10px; border-radius: 10px; background: var(--bg-surface); font-size: 0.82rem;
+}
+.topic-mini-row-main { min-width: 0; flex: 1; }
+.topic-mini-row-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.topic-mini-row-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+.topic-mini-row-meta { flex-shrink: 0; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+.topic-perf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
