@@ -145,6 +145,15 @@ const SUBJECT_RESOURCES = {
   ],
 }
 
+// Notes are saved with serverTimestamp(), so Firestore returns createdAt as a Timestamp (older notes may hold an
+// ISO string). new Date(timestamp) is an Invalid Date and format() throws on it, so convert it first.
+function formatDate(value, pattern) {
+  const d = value && typeof value.toDate === 'function' ? value.toDate()
+    : value && typeof value.seconds === 'number' ? new Date(value.seconds * 1000)
+    : value ? new Date(value) : null
+  return d && !isNaN(d.getTime()) ? format(d, pattern) : ''
+}
+
 export default function Topics() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
@@ -536,7 +545,7 @@ export default function Topics() {
                                   <div style={{flex:1}}>
                                     <div style={{fontWeight:700,fontSize:'0.88rem',marginBottom:4}}>{n.title}</div>
                                     <div style={{fontSize:'0.82rem',color:'var(--text-secondary)',whiteSpace:'pre-wrap',lineHeight:1.6}}>{n.content}</div>
-                                    {n.createdAt&&<div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:6}}>{format(new Date(n.createdAt),'d MMM yyyy')}</div>}
+                                    {formatDate(n.createdAt,'d MMM yyyy')&&<div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:6}}>{formatDate(n.createdAt,'d MMM yyyy')}</div>}
                                   </div>
                                   <div style={{display:'flex',gap:5,flexShrink:0}}>
                                     <button className="btn btn-ghost btn-icon btn-sm" onClick={()=>{setEditingNote(n);setNoteForm({title:n.title,content:n.content})}}><Pencil size={12}/></button>
