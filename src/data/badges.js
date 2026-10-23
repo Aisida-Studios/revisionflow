@@ -123,7 +123,7 @@ function simpleHash(str) {
 }
 
 export const WEEKLY_CHALLENGES = [
-  { id: 'week_streak',    desc: 'Revise every day this week',           xp: 300, lucideIcon: 'Flame' },
+  { id: 'week_streak',    desc: 'Revise every day this week',           xp: 300, lucideIcon: 'Sprout' },
   { id: 'week_papers_3',  desc: 'Log 3 past papers this week',          xp: 200, lucideIcon: 'ClipboardList' },
   { id: 'week_topics_15', desc: 'Rate 15 topic confidences this week',  xp: 150, lucideIcon: 'Star' },
   { id: 'week_ai_5',      desc: 'Use the AI Advisor 5 times this week', xp: 100, lucideIcon: 'Compass' },
