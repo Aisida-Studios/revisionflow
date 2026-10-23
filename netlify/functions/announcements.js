@@ -111,14 +111,18 @@ module.exports.handler = async function (event) {
       const isBeta = !!u.betaUser
 
       const nowIso = new Date().toISOString()
+      // Equality filter only. Adding .orderBy('createdAt') here needs a COMPOSITE Firestore index (an equality
+      // filter plus an ordering on a different field); without that index Firestore throws FAILED_PRECONDITION,
+      // which made this endpoint return 500 for every signed-in user and kept the banner from ever showing.
+      // The collection is small and admin-authored, so newest-first is sorted in memory instead.
       const snap = await db.collection('announcements')
         .where('active', '==', true)
-        .orderBy('createdAt', 'desc')
-        .limit(20) // small admin-authored collection — filter the rest in memory, no composite index needed
+        .limit(50)
         .get()
 
       const items = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))   // createdAt is an ISO string
         .filter(a => !a.expiresAt || a.expiresAt > nowIso)
         .filter(a => audienceMatches(a.audience || 'all', isPro, isBeta))
         .slice(0, 3)
