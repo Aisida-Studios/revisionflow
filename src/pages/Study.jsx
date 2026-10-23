@@ -1,6 +1,9 @@
 // src/pages/Study.jsx
 import ProvenanceBadge, { AiContentNotice } from '../components/ProvenanceBadge'
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../utils/provenance'
+import { setBoardLevel } from '../utils/flashcardMeta'
+import { persistSetOutcomes } from '../utils/studyProgress'
+import { SaveProgressButton, ExitPrompt, useUnloadWarning } from '../components/SessionExit'
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsPro, ProBadge } from '../components/ProGate'
@@ -51,16 +54,23 @@ function SubjectIllustration({ subject, size = 64 }) {
 // (saveOfficialFlashcardSet stamps both) — a regular user's own saveFlashcardSet call
 // never captures them (see firestore.js), so for "my sets" the only honest source is the
 // board/qualification already on that subject's entry in the student's own profile. This
-// mirrors exactly how TopicNotesTab already resolves board/level per subject.
+// mirrors how the board and level are resolved per subject elsewhere on this page.
 function deriveSetBoardLevel(set, profile) {
-  if (set.board && set.level) return { board: set.board, level: set.level }
-  // profile is only meaningful when deriving for the CURRENT user's own sets (see callers) — for
-  // someone else's public set with no stamped board/level, there's no honest source to derive
-  // from, so this deliberately falls through to {null, null} (shown as "any level") rather than
-  // guessing based on whoever happens to be viewing it.
-  if (!profile) return { board: null, level: null }
+  // 1. The set's own stamped board / level (canonical spelling), or - for an official set that predates
+  //    those fields - the board and level written in its generated title (utils/flashcardMeta.js).
+  const meta = setBoardLevel(set)
+  if (meta.board && meta.level) return { board: meta.board, level: meta.level }
+  // 2. Without a profile (someone else's public set) there is no honest source to guess from, so the
+  //    unknown parts stay null. The viewer's profile is NEVER used for sets that are not theirs: doing
+  //    so made every unstamped set look like it belonged to the viewer's own boards, so a student
+  //    could only ever find AQA or CCEA sets if those were the boards on their own subjects.
+  if (!profile) return { board: meta.board || null, level: meta.level || null }
+  // 3. The viewer's OWN sets: fall back to the board and qualification on that subject in their profile.
   const subjMeta = profile?.subjects?.find(s => s.name === set.subject)
-  return { board: subjMeta?.board || null, level: subjMeta ? getSubjectQualification(subjMeta, profile) : null }
+  return {
+    board: meta.board || (subjMeta?.board ? canonicalBoard(subjMeta.board) : null),
+    level: meta.level || (subjMeta ? getSubjectQualification(subjMeta, profile) : null),
+  }
 }
 
 // Used at SAVE time (not view time) to stamp a new set with the saving user's own board/level for
@@ -114,7 +124,7 @@ function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggli
   )
 }
 
-function LearnMode({ cards, onDone }) {
+function LearnMode({ cards, onDone, onAttempt }) {
   const [queue,setQueue]     = useState(() => cards.map((c,i) => ({...c,_i:i,attempts:0})))
   const [idx,setIdx]         = useState(0)
   const [shown,setShown]     = useState(false)
@@ -122,6 +132,7 @@ function LearnMode({ cards, onDone }) {
   const [mastered,setMastered]= useState(new Set())
   function rate(val) {
     const card = queue[idx]
+    onAttempt?.(card, val)
     const correct = val === 3
     if (correct) {
       const nm = new Set(mastered); nm.add(card._i); setMastered(nm)
@@ -273,7 +284,7 @@ FEEDBACK: One sentence.`
   )
 }
 
-function WriteMode({ cards, onDone, uid }) {
+function WriteMode({ cards, onDone, uid, onAttempt }) {
   const [deck]              = useState(() => [...cards].sort(()=>Math.random()-.5))
   const [idx,setIdx]        = useState(0)
   const [input,setInput]    = useState('')
@@ -285,6 +296,7 @@ function WriteMode({ cards, onDone, uid }) {
 
   function handleAIResult(correct) {
     // Called by AIWriteMarker with the AI verdict — sets final state and records score
+    onAttempt?.(deck[idx], correct ? 3 : 1)
     setScores(s => {
       const ns = [...s]
       ns[idx] = correct ? 1 : 0
@@ -341,6 +353,7 @@ function WriteMode({ cards, onDone, uid }) {
             Submit answer
           </button>
           <button className="btn btn-secondary" onClick={() => {
+            onAttempt?.(deck[idx], 1)
             setChecked('idk')
             setScores(s => { const ns=[...s]; ns[idx]=0; return ns })
           }} title="I don't know — reveal answer">
@@ -364,7 +377,7 @@ function WriteMode({ cards, onDone, uid }) {
   )
 }
 
-function MatchMode({ cards, onDone }) {
+function MatchMode({ cards, onDone, onAttempt }) {
   const n = Math.min(6, cards.length)
   function makeBoard() {
     const picked = [...cards].sort(()=>Math.random()-.5).slice(0,n)
@@ -389,6 +402,7 @@ function MatchMode({ cards, onDone }) {
     setMoves(m=>m+1)
     if(selected.pairId===tile.pairId&&selected.type!==tile.type){
       const nm=new Set(matched);nm.add(selected.id);nm.add(tile.id);setMatched(nm);setSelected(null)
+      { const term = selected.type==='term' ? selected : tile; const matchedCard = cards.find(c=>c.q===term.text); if (matchedCard) onAttempt?.(matchedCard, 3) }
       if(nm.size===tiles.length){setDone(true);onDone(n,n)}
     } else {
       setWrong(new Set([selected.id,tile.id]))
@@ -423,7 +437,7 @@ function MatchMode({ cards, onDone }) {
   )
 }
 
-function SpellMode({ cards, onDone }) {
+function SpellMode({ cards, onDone, onAttempt }) {
   const [deck]              = useState(()=>[...cards].sort(()=>Math.random()-.5))
   const [idx,setIdx]        = useState(0)
   const [input,setInput]    = useState('')
@@ -433,7 +447,7 @@ function SpellMode({ cards, onDone }) {
   useEffect(()=>{setInput('');setChecked(null);inputRef.current?.focus()},[idx])
   const card=deck[idx]
   const hint=card.a[0]+'_'.repeat(Math.max(0,card.a.length-1))
-  function check(){const ok=input.toLowerCase().trim()===card.a.toLowerCase().trim();setChecked(ok?'correct':'wrong');setScores(s=>[...s,ok?1:0])}
+  function check(){const ok=input.toLowerCase().trim()===card.a.toLowerCase().trim();onAttempt?.(card,ok?3:1);setChecked(ok?'correct':'wrong');setScores(s=>[...s,ok?1:0])}
   function next(){if(idx>=deck.length-1){onDone(scores.filter(Boolean).length,deck.length);return}setIdx(i=>i+1)}
   return (
     <div>
@@ -466,7 +480,7 @@ function SpellMode({ cards, onDone }) {
   )
 }
 
-function TestMode({ cards, onDone, uid, timePerQuestion, setId }) {
+function TestMode({ cards, onDone, uid, timePerQuestion, setId, onAttempt }) {
   // Builds the deck using OTHER REAL ANSWERS from the same set as options — used as the
   // fallback if AI generation fails or times out, never shown to the user as the default
   // anymore (see init() below).
@@ -590,6 +604,7 @@ ${questions}`
     if (timeLeft <= 0) {
       const u = [...qs]
       u[idx] = { ...u[idx], checked: 'timeout' }
+      onAttempt?.(u[idx].card, 1)
       setQs(u)
       return
     }
@@ -600,7 +615,9 @@ ${questions}`
   function selectMC(opt) {
     if (qs[idx].checked !== null) return
     const u = [...qs]
-    u[idx] = { ...u[idx], selected: opt, checked: opt.a === u[idx].card.a ? 'correct' : 'wrong' }
+    const isRight = opt.a === u[idx].card.a
+    u[idx] = { ...u[idx], selected: opt, checked: isRight ? 'correct' : 'wrong' }
+    onAttempt?.(u[idx].card, isRight ? 3 : 1)
     setQs(u)
   }
 
@@ -611,6 +628,7 @@ ${questions}`
 
   function handleWriteAI(correct) {
     const u = [...qs]; u[idx] = { ...u[idx], checked: correct ? 'correct' : 'wrong' }; setQs(u)
+    onAttempt?.(u[idx].card, correct ? 3 : 1)
   }
 
   function next() {
@@ -725,7 +743,7 @@ ${questions}`
           </button>
           <button className="btn btn-secondary" onClick={() => {
             const u = [...qs]
-            u[idx] = { ...u[idx], checked: 'idk', answer: u[idx].answer || '(skipped)' }
+            u[idx] = { ...u[idx], checked: 'idk', answer: u[idx].answer || '(skipped)' }; onAttempt?.(u[idx].card, 1)
             setQs(u)
           }} title="I don't know">
             IDK
@@ -772,23 +790,61 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   // (rather than rebuilding from scratch) and iterates filteredCards (what was actually
   // shown/scored) rather than the full cards array, so studying a filtered subset no
   // longer wipes out saved progress on the cards that weren't in that subset.
-  async function saveMastery(newScores) {
-    if (!uid || !setId) return
-    const mastery = { ...cardMastery }
-    const schedule = { ...cardSchedule }
-    filteredCards.forEach((c, i) => {
-      if (!newScores[i]) return
-      mastery[c.q] = newScores[i]
-      schedule[c.q] = nextSchedule(schedule[c.q], newScores[i])
-    })
-    try {
-      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore')
-      const { db } = await import('../firebase')
-      await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: mastery, cardSchedule: schedule, lastStudiedAt: serverTimestamp() })
-      setCardMastery(mastery)
-      setCardSchedule(schedule)
-    } catch(e) {}
+  // ── Save progress ─────────────────────────────────────────────────────────────────────────────
+  // Every mode reports each answer through recordAttempt (1 = missed, 2 = partly, 3 = got it). Those
+  // results are the student's progress: "Save progress" writes them into the set's mastery and
+  // spaced-repetition schedule. A set that is not saved yet is saved first (Save set), and its progress
+  // is stored the moment it has an id. Leaving with anything unsaved asks first.
+  const outcomesRef = useRef({})
+  const [dirty, setDirty] = useState(false)
+  const [savingProgress, setSavingProgress] = useState(false)
+  const [exitPrompt, setExitPrompt] = useState(false)
+  const unsavedSet = !setId && !!onSave
+  useUnloadWarning(dirty || unsavedSet)
+
+  function recordAttempt(card, outcome) {
+    if (!card?.q) return
+    outcomesRef.current[card.q] = outcome
+    setDirty(true)
   }
+
+  async function saveProgressNow() {
+    if (!uid) return false
+    if (!setId) { onSave?.(); return false }       // the save-set dialog opens; progress is stored right after it saves
+    const pending = { ...outcomesRef.current }
+    if (!Object.keys(pending).length) { setDirty(false); return true }
+    setSavingProgress(true)
+    try {
+      const merged = await persistSetOutcomes(uid, setId, pending)
+      for (const q of Object.keys(pending)) if (outcomesRef.current[q] === pending[q]) delete outcomesRef.current[q]
+      setCardMastery(merged.mastery)
+      setCardSchedule(merged.schedule)
+      setDirty(Object.keys(outcomesRef.current).length > 0)
+      toast.success('Progress saved')
+      return true
+    } catch {
+      toast.error('Could not save your progress. Try again.')
+      return false
+    } finally {
+      setSavingProgress(false)
+    }
+  }
+
+  // A set that has just been saved: store the progress made before it had an id.
+  useEffect(() => { if (setId && Object.keys(outcomesRef.current).length) saveProgressNow() }, [setId])
+
+  function requestExit() {
+    if (dirty || unsavedSet) setExitPrompt(true)
+    else onClose()
+  }
+  async function saveAndExit() {
+    if (unsavedSet) { setExitPrompt(false); onSave?.(); return }   // save the set first; leaving is then up to the student
+    if (await saveProgressNow()) { setExitPrompt(false); onClose() }
+  }
+  const exitPromptEl = (
+    <ExitPrompt open={exitPrompt} kind={unsavedSet ? 'set' : 'progress'} saving={savingProgress}
+      onSave={saveAndExit} onLeave={() => { setExitPrompt(false); onClose() }} onStay={() => setExitPrompt(false)} />
+  )
 
   // Derive filtered cards based on mastery filter
   const filteredCards = masteryFilter === 'all' ? cards
@@ -826,6 +882,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   }, [])
 
   function handleFlashRate(val) {
+    recordAttempt(filteredCards[idx], val)
     const s=[...scores]; s[idx]=val; setScores(s)
     if(idx<filteredCards.length-1) {
       setIdx(i=>i+1)
@@ -834,7 +891,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       const newResults = {got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s}
       setResults(newResults)
       setMode('results')
-      saveMastery(s)
+      if (setId) saveProgressNow()
       clearProgress()
     }
   }
@@ -858,16 +915,12 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
 
   const TopBar = () => (
     <div className="rf-session-topbar">
-      <button className="btn btn-ghost btn-sm" onClick={mode==='select'?onClose:()=>setMode('select')}>
+      <button className="btn btn-ghost btn-sm" onClick={mode==='select'?requestExit:()=>setMode('select')}>
         <ChevronLeft size={15}/> {mode==='select'?'Back':'Modes'}
       </button>
       <span className="rf-session-title">{title}</span>
       <div className="rf-session-topbar-actions">
-        {onSave && !setId && (
-          <button className="btn btn-secondary btn-sm" onClick={onSave} title="Save this set to My sets" aria-label="Save set">
-            <Save size={14}/> Save
-          </button>
-        )}
+        <SaveProgressButton saved={!!setId && !dirty} saving={savingProgress} onClick={saveProgressNow} />
         {mode==='flash'&&<button className="btn btn-ghost btn-sm" onClick={shuffle}><Shuffle size={14}/></button>}
         <button className="btn btn-ghost btn-sm" onClick={quizletCopy}>{copied?<Check size={14}/>:<Copy size={14}/>}</button>
         <button className="btn btn-ghost btn-sm" onClick={downloadCSV}><Download size={14}/></button>
@@ -877,7 +930,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
 
   if (mode==='select') return (
     <div className="rf-session-shell">
-      <TopBar />
+      <TopBar />{exitPromptEl}
       <div className="rf-mode-hero">
         <div className="rf-illustration-mount"><SubjectIllustration subject={subject} size={58} /></div>
         <div className="rf-mode-hero-text">
@@ -917,7 +970,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       : {Icon:BookOpen,bg:'var(--accent-pale)',c:'var(--accent)'}
     return (
       <div style={{ maxWidth:520, margin:'0 auto' }}>
-        <TopBar />
+        <TopBar />{exitPromptEl}
         <div className="card" style={{ textAlign:'center', padding:'28px 24px' }}>
           <div className="rf-results-badge" style={{ background:tier.bg, color:tier.c }}><tier.Icon size={30}/></div>
           <h3 style={{ marginBottom:4 }}>Session complete!</h3>
@@ -940,7 +993,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <button className="btn btn-primary" onClick={()=>restart(results.mode)}><RotateCcw size={14}/> Try again</button>
             <button className="btn btn-secondary" onClick={()=>restart('select')}>Change mode</button>
             {onSave&&<button className="btn btn-secondary" onClick={onSave}><Save size={14}/> Save set</button>}
-            <button className="btn btn-ghost" onClick={onClose}><X size={14}/> Exit</button>
+            <button className="btn btn-ghost" onClick={requestExit}><X size={14}/> Exit</button>
           </div>
         </div>
         {results.missed && results.missed.length > 0 && (
@@ -977,7 +1030,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
 
   if (mode==='flash') return (
     <div className="rf-session-shell">
-      <TopBar />
+      <TopBar />{exitPromptEl}
       <div style={{ marginBottom:12 }}>
         <div className="rf-progress-row">
           <span>{idx+1}/{filteredCards.length}</span><span>{Math.round(idx/filteredCards.length*100)}%</span>
@@ -990,18 +1043,18 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
         uid={uid} subject={subject} struggling={(cardMastery[filteredCards[idx]?.q] || 0) === 1} />
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
         <button className="btn btn-ghost btn-sm" onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0}><ChevronLeft size={15}/> Prev</button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<filteredCards.length-1)setIdx(i=>i+1);else{const s=scores;setResults({got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s});setMode('results');saveMastery(s)}}}>
+        <button className="btn btn-ghost btn-sm" onClick={()=>{if(idx<filteredCards.length-1)setIdx(i=>i+1);else{const s=scores;setResults({got:s.filter(v=>v===3).length,total:filteredCards.length,mode:'flash',scores:s});setMode('results');if(setId)saveProgressNow()}}}>
           {idx<cards.length-1?<>Next <ChevronRight size={15}/></>:'Finish'}
         </button>
       </div>
     </div>
   )
 
-  if (mode==='learn') return <div className="rf-session-shell"><TopBar /><LearnMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='write') return <div className="rf-session-shell"><TopBar /><WriteMode cards={cards} onDone={handleSubDone} uid={uid} /></div>
-  if (mode==='spell') return <div className="rf-session-shell"><TopBar /><SpellMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='match') return <div className="rf-session-shell"><TopBar /><MatchMode cards={cards} onDone={handleSubDone} /></div>
-  if (mode==='test')  return <div className="rf-session-shell"><TopBar /><TestMode  cards={cards} onDone={handleSubDone} uid={uid} setId={setId} /></div>
+  if (mode==='learn') return <div className="rf-session-shell"><TopBar />{exitPromptEl}<LearnMode cards={cards} onDone={handleSubDone} onAttempt={recordAttempt} /></div>
+  if (mode==='write') return <div className="rf-session-shell"><TopBar />{exitPromptEl}<WriteMode cards={cards} onDone={handleSubDone} uid={uid} onAttempt={recordAttempt} /></div>
+  if (mode==='spell') return <div className="rf-session-shell"><TopBar />{exitPromptEl}<SpellMode cards={cards} onDone={handleSubDone} onAttempt={recordAttempt} /></div>
+  if (mode==='match') return <div className="rf-session-shell"><TopBar />{exitPromptEl}<MatchMode cards={cards} onDone={handleSubDone} onAttempt={recordAttempt} /></div>
+  if (mode==='test')  return <div className="rf-session-shell"><TopBar />{exitPromptEl}<TestMode  cards={cards} onDone={handleSubDone} uid={uid} setId={setId} onAttempt={recordAttempt} /></div>
   return null
 }
 
@@ -1342,7 +1395,7 @@ function PasteImportModal({ subjects, onImport, onClose }) {
 }
 
 /* ── Quiz tab ───────────────────────────────────────────────────────────────── */
-function QuizTab({ mySets, uid, profile }) {
+function QuizTab({ mySets, uid, profile, onSetsChanged }) {
   const { isPro, isBeta } = useIsPro()
   const [selectedSet, setSelectedSet] = useState(null)
   const [quizMode,    setQuizMode]    = useState('mc')    // 'mc' | 'write' | 'mixed'
@@ -1374,7 +1427,7 @@ function QuizTab({ mySets, uid, profile }) {
   const filteredMine = mySets.filter(set => {
     if (mySubjectFilter && set.subject !== mySubjectFilter) return false
     const { board, level } = deriveSetBoardLevel(set, profile)
-    if (myBoardFilter && board !== myBoardFilter) return false
+    if (myBoardFilter && canonicalBoard(board) !== canonicalBoard(myBoardFilter)) return false
     if (myLevelFilter && level !== myLevelFilter) return false
     return true
   })
@@ -1391,8 +1444,8 @@ function QuizTab({ mySets, uid, profile }) {
   // level" below rather than being mislabeled.
   const filteredPublic = publicSets.filter(set => {
     const { board, level } = deriveSetBoardLevel(set, null)
-    if (publicBoard && board && board !== publicBoard) return false
-    if (publicLevel && level && level !== publicLevel) return false
+    if (publicBoard && canonicalBoard(board || '') !== canonicalBoard(publicBoard)) return false
+    if (publicLevel && level !== publicLevel) return false
     // Official = reviewed by an admin. Community = another student's set. Older "official" sets
     // that were never reviewed are neither, so they only show under All (labelled Unverified).
     const src = flashcardSetSource(set, uid)
@@ -1425,8 +1478,77 @@ function QuizTab({ mySets, uid, profile }) {
   // Persists the result (subject + percentage) before showing the results screen, so the
   // dashboard's predicted-grade widget has real quiz history to blend from. Best-effort —
   // a failed save shouldn't block the student from seeing their score.
+  // ── Save progress (same idea as StudySession) ───────────────────────────────────────────────────
+  // Every answer is reported through recordAttempt (1 missed, 2 partly, 3 got it) and "Save progress"
+  // writes those results into the set's mastery and schedule. A public set is not the student's to write
+  // to, so progress on one is saved to a single private copy in My Sets. Leaving with anything unsaved asks first.
+  const outcomesRef = useRef({})
+  const copyIdRef = useRef(null)
+  const leaveRef = useRef(null)
+  const [dirty, setDirty] = useState(false)
+  const [savingProgress, setSavingProgress] = useState(false)
+  const [exitPrompt, setExitPrompt] = useState(false)
+  const isMine = !!selectedSet && mySets.some(s => s.id === selectedSet.id)
+  useUnloadWarning(started && dirty)
+
+  function recordAttempt(card, outcome) {
+    if (!card?.q) return
+    outcomesRef.current[card.q] = outcome
+    setDirty(true)
+  }
+
+  async function saveQuizProgress({ silent = false } = {}) {
+    if (!uid || !selectedSet) return false
+    const pending = { ...outcomesRef.current }
+    if (!Object.keys(pending).length) { setDirty(false); return true }
+    setSavingProgress(true)
+    try {
+      let targetId = selectedSet.id
+      if (!isMine) {
+        if (!copyIdRef.current) {
+          const { saveFlashcardSet } = await import('../utils/firestore')
+          const meta = deriveSetBoardLevel(selectedSet, null)
+          copyIdRef.current = await saveFlashcardSet(uid, {
+            title: selectedSet.title + ' (copy)', subject: selectedSet.subject, topic: selectedSet.topic || '',
+            cards: selectedSet.cards || [], isPublic: false,
+            ...(meta.board && meta.level ? { board: meta.board, level: meta.level } : {}),
+          })
+          onSetsChanged?.()
+        }
+        targetId = copyIdRef.current
+      }
+      await persistSetOutcomes(uid, targetId, pending)
+      for (const q of Object.keys(pending)) if (outcomesRef.current[q] === pending[q]) delete outcomesRef.current[q]
+      setDirty(Object.keys(outcomesRef.current).length > 0)
+      if (!silent) toast.success(isMine ? 'Progress saved' : 'Progress saved to a copy in My Sets')
+      return true
+    } catch {
+      toast.error('Could not save your progress. Try again.')
+      return false
+    } finally {
+      setSavingProgress(false)
+    }
+  }
+
+  // next = what to do once it is fine to leave (go back, change set, try again)
+  function leaveWith(next) {
+    if (dirty) { leaveRef.current = next; setExitPrompt(true) } else next()
+  }
+  async function exitSave() {
+    if (await saveQuizProgress()) { setExitPrompt(false); const n = leaveRef.current; leaveRef.current = null; n?.() }
+  }
+  function exitLeave() {
+    setExitPrompt(false); outcomesRef.current = {}; setDirty(false)
+    const n = leaveRef.current; leaveRef.current = null; n?.()
+  }
+  const quizExitPromptEl = (
+    <ExitPrompt open={exitPrompt} kind="progress" saving={savingProgress}
+      onSave={exitSave} onLeave={exitLeave} onStay={() => setExitPrompt(false)} />
+  )
+
   async function handleQuizDone(got, total, missed) {
     setResults({ got, total, missed: missed || [] })
+    if (isMine && Object.keys(outcomesRef.current).length) saveQuizProgress({ silent: true })
     if (uid && selectedSet && total > 0) {
       try {
         const { saveQuizResult } = await import('../utils/firestore')
@@ -1475,10 +1597,11 @@ function QuizTab({ mySets, uid, profile }) {
                 from <strong>{selectedSet?.title}</strong>
               </p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" onClick={() => { setResults(null); setStarted(false) }}>
+                {dirty && !isMine && <SaveProgressButton saved={false} saving={savingProgress} onClick={() => saveQuizProgress()} />}
+                <button className="btn btn-primary" onClick={() => leaveWith(() => { setResults(null); setStarted(false) })}>
                   <RotateCcw size={14} /> Try again
                 </button>
-                <button className="btn btn-secondary" onClick={() => { setResults(null); setStarted(false); setSelectedSet(null) }}>
+                <button className="btn btn-secondary" onClick={() => leaveWith(() => { setResults(null); setStarted(false); setSelectedSet(null) })}>
                   Change set
                 </button>
               </div>
@@ -1486,6 +1609,7 @@ function QuizTab({ mySets, uid, profile }) {
           )
         })()}
       </div>
+      {quizExitPromptEl}
       {results.missed && results.missed.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <h4 style={{ marginBottom: 10, fontSize: '0.9rem' }}>Cards to reinforce ({results.missed.length})</h4>
@@ -1508,19 +1632,21 @@ function QuizTab({ mySets, uid, profile }) {
     return (
       <div className="rf-session-shell">
         <div className="rf-session-topbar">
-          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}>
+          <button className="btn btn-ghost btn-sm" onClick={() => leaveWith(() => setStarted(false))}>
             <ChevronLeft size={15} /> Back
           </button>
           <span className="rf-session-title">{selectedSet.title}</span>
           <span className="badge badge-accent">{quizCards.length} questions</span>
+          <SaveProgressButton saved={!dirty} saving={savingProgress} onClick={() => saveQuizProgress()} />
         </div>
+        {quizExitPromptEl}
         {(quizMode === 'mc' || quizMode === 'mixed') && (
           <TestMode cards={quizCards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
-            setId={selectedSet?.id} onDone={handleQuizDone} />
+            setId={selectedSet?.id} onDone={handleQuizDone} onAttempt={recordAttempt} />
         )}
         {quizMode === 'write' && (
           <WriteMode cards={quizCards} uid={uid}
-            onDone={handleQuizDone} />
+            onDone={handleQuizDone} onAttempt={recordAttempt} />
         )}
       </div>
     )
@@ -1642,7 +1768,7 @@ function QuizTab({ mySets, uid, profile }) {
                       <div style={{ minWidth: 0 }}>
                         <div className="rf-set-row-title">{set.title}</div>
                         <div className="rf-set-row-meta">
-                          {set.subject}{deriveSetBoardLevel(set, profile).board ? ` · ${boardLabel(deriveSetBoardLevel(set, profile).board)}` : ''} · {set.cards?.length || 0} cards
+                          {set.subject}{deriveSetBoardLevel(set, null).board ? ` · ${boardLabel(deriveSetBoardLevel(set, null).board)}` : ''} · {set.cards?.length || 0} cards
                         </div>
                       </div>
                     </div>
@@ -1776,6 +1902,11 @@ function PracticeTab({ mySets, uid }) {
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
   const [sessionResults, setSessionResults] = useState([])
+  const unsyncedSets = useRef(new Set())          // sets whose latest answers could not be written yet
+  const [unsynced, setUnsynced] = useState(false)
+  const [savingProgress, setSavingProgress] = useState(false)
+  const [exitPrompt, setExitPrompt] = useState(false)
+  useUnloadWarning(started && unsynced)
   const progressRef = useRef({})
 
   useEffect(() => {
@@ -1802,17 +1933,51 @@ function PracticeTab({ mySets, uid }) {
 
     setSessionResults(r => [...r, { setId: item.setId, setTitle: item.setTitle, subject: item.subject, card: item.card, rating }])
 
+    // Each answer is written straight away. If a write fails (offline, signed out) it used to be swallowed
+    // silently; now the set is remembered as unsaved, the student is told once, and Save progress retries.
     try {
       if (uid) {
-        const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore')
-        const { db } = await import('../firebase')
-        await updateDoc(doc(db, 'users', uid, 'flashcardSets', item.setId), { cardMastery: prog.mastery, cardSchedule: prog.schedule, lastStudiedAt: serverTimestamp() })
+        await writePracticeSet(item.setId)
+        unsyncedSets.current.delete(item.setId)
+        setUnsynced(unsyncedSets.current.size > 0)
       }
-    } catch (e) {}
+    } catch {
+      if (!unsyncedSets.current.size) toast.error('Could not save that answer. Press Save progress to try again.')
+      unsyncedSets.current.add(item.setId)
+      setUnsynced(true)
+    }
 
     if (idx < queue.length - 1) setIdx(i => i + 1)
-    else setFinished(true)
+    else { setFinished(true); if (unsyncedSets.current.size) savePracticeProgress({ silent: true }) }
   }
+
+  // Writes one set's full mastery and schedule (what handleRate keeps up to date in progressRef).
+  async function writePracticeSet(setId) {
+    const prog = getProgress(setId)
+    const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore')
+    const { db } = await import('../firebase')
+    await updateDoc(doc(db, 'users', uid, 'flashcardSets', setId), { cardMastery: prog.mastery, cardSchedule: prog.schedule, lastStudiedAt: serverTimestamp() })
+  }
+
+  async function savePracticeProgress({ silent = false } = {}) {
+    if (!uid) return false
+    setSavingProgress(true)
+    try {
+      for (const id of [...unsyncedSets.current]) { await writePracticeSet(id); unsyncedSets.current.delete(id) }
+      setUnsynced(false)
+      if (!silent) toast.success('Progress saved')
+      return true
+    } catch {
+      toast.error('Could not save your progress. Check your connection and try again.')
+      return false
+    } finally {
+      setSavingProgress(false)
+    }
+  }
+
+  function requestBack() { if (unsynced) setExitPrompt(true); else setStarted(false) }
+  async function exitSave() { if (await savePracticeProgress()) { setExitPrompt(false); setStarted(false) } }
+  function exitLeave() { setExitPrompt(false); setStarted(false) }
 
   function restart() {
     setQueue(buildDueQueue(mySets).slice(0,batchSize)); setIdx(0); setStarted(false); setFinished(false); setSessionResults([])
@@ -1877,9 +2042,12 @@ function PracticeTab({ mySets, uid }) {
     return (
       <div className="rf-session-shell">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setStarted(false)}><ChevronLeft size={15} /> Back</button>
-          <span className="badge badge-grey" style={{ fontSize: '0.72rem' }}>{item.setTitle}</span>
+          <button className="btn btn-ghost btn-sm" onClick={requestBack}><ChevronLeft size={15} /> Back</button>
+          <span className="badge badge-grey" style={{ fontSize: '0.72rem', minWidth: 0, overflowWrap: 'anywhere' }}>{item.setTitle}</span>
+          <SaveProgressButton saved={!unsynced} saving={savingProgress} onClick={() => savePracticeProgress()} />
         </div>
+        <ExitPrompt open={exitPrompt} kind="progress" saving={savingProgress}
+          onSave={exitSave} onLeave={exitLeave} onStay={() => setExitPrompt(false)} />
         <div style={{ marginBottom: 12 }}>
           <div className="rf-progress-row">
             <span>{idx + 1}/{queue.length}</span><span>{Math.round(idx / queue.length * 100)}%</span>
@@ -1962,252 +2130,6 @@ function MarkSchemeReveal({ text }) {
   )
 }
 
-/* ── Topic Notes Tab ────────────────────────────────────────────────────────── */
-function TopicNotesTab({ profile, uid }) {
-  const urlParams    = new URLSearchParams(window.location.search)
-  const [subject,    setSubject]    = useState(urlParams.get('subject') || '')
-  const [board,      setBoard]      = useState(urlParams.get('board')   || '')
-  const [level,      setLevel]      = useState(urlParams.get('level')   || 'GCSE')
-  const [topic,      setTopic]      = useState(urlParams.get('topic')   || '')
-  const [note,       setNote]       = useState(null)   // { text, cached, slug }
-  const [loading,    setLoading]    = useState(false)
-  const [remaining,  setRemaining]  = useState(null)
-  const [topicList,  setTopicList]  = useState([])
-  const [topicSearch,setTopicSearch]= useState('')
-  const [expanded,   setExpanded]   = useState(false)
-
-  const subjects = profile?.subjects || []
-  const selectedSubject = subjects.find(s => s.name === subject)
-
-  // Load topic list when subject changes
-  useEffect(() => {
-    if (!subject) return
-    import('../data/topics').then(({ getTopicsForSubject }) => {
-      const sb = selectedSubject?.board || board || 'AQA'
-      const lv = selectedSubject?.qualification || level || 'GCSE'
-      // getTopicsForSubject returns {1:[...],2:[...]} — flatten to deduped array
-      const papers = getTopicsForSubject(sb, subject, lv) || {}
-      const flat = Object.values(papers).flat().filter(t => typeof t === 'string' && t.trim())
-      const topics = [...new Set(flat)]
-      setTopicList(topics)
-    })
-  }, [subject, board, level])
-
-  // Auto-load if topic pre-selected from URL
-  useEffect(() => {
-    if (topic && subject && board) {
-      loadNote(topic, false)
-    }
-  }, [])
-
-  async function loadNote(topicName, forceGenerate = false) {
-    setLoading(true)
-    setNote(null)
-    const t = topicName || topic
-    const b = selectedSubject?.board || board
-    const lv = selectedSubject?.qualification || level
-
-    try {
-      const { getTopicNoteFromCache, generateTopicNote, saveTopicNoteToCache, incrementTopicNoteViews } = await import('../utils/ai')
-      const { checkTopicNoteLimit, incrementTopicNoteUsage } = await import('../utils/firestore')
-
-      // Check cache first (unless force regenerating)
-      if (!forceGenerate) {
-        const cached = await getTopicNoteFromCache(b, lv, subject, t)
-        if (cached) {
-          setNote({ text: cached.text, cached: true, slug: cached.slug, generatedAt: cached.generatedAt })
-          incrementTopicNoteViews(cached.slug).catch(() => {})
-          setLoading(false)
-          return
-        }
-      }
-
-      // Check rate limit
-      const limit = await checkTopicNoteLimit(uid, profile)
-      setRemaining(limit.remaining)
-      if (!limit.allowed) {
-        toast.error("You've used today's 5 free notes. Upgrade to Pro for higher limits, or come back tomorrow.")
-        setLoading(false)
-        return
-      }
-
-      // Generate
-      const res = await generateTopicNote({ subject, board: b, level: lv, topic: t, uid })
-      if (res.error) { toast.error(res.error); setLoading(false); return }
-
-      // Save to global cache
-      const slug = await saveTopicNoteToCache(b, lv, subject, t, res.text)
-      await incrementTopicNoteUsage(uid)
-      setNote({ text: res.text, cached: false, slug })
-      setRemaining(r => r !== null ? Math.max(0, r - 1) : null)
-    } catch(e) {
-      toast.error('Failed to load note: ' + e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filteredTopics = topicList.filter(t =>
-    !topicSearch || t.toLowerCase().includes(topicSearch.toLowerCase())
-  )
-
-  return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <h3 style={{ marginBottom: 4 }}>Topic Revision Guides</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          AI-generated revision guides cached globally — generated once, available to all students.
-          {remaining !== null && remaining !== Infinity && (
-            <span style={{ marginLeft: 8, color: remaining > 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
-              {remaining > 0 ? `${remaining} generations left today` : 'All used up for today — upgrade to Pro for higher limits'}
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* Subject / board selectors */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
-          <div>
-            <label className="label">Subject</label>
-            <select className="select" value={subject} onChange={e => { setSubject(e.target.value); setTopic(''); setNote(null) }}>
-              <option value="">Select subject</option>
-              {subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-            </select>
-          </div>
-          {subject && (
-            <>
-              <div>
-                <label className="label">Board</label>
-                <select className="select" value={canonicalBoard(selectedSubject?.board || board)}
-                  onChange={e => setBoard(e.target.value)}>
-                  <BoardOptions current={selectedSubject?.board || board} />
-                </select>
-              </div>
-              <div>
-                <label className="label">Level</label>
-                <select className="select" value={selectedSubject?.qualification || level}
-                  onChange={e => setLevel(e.target.value)}>
-                  {['GCSE','A-Level','AS-Level'].map(l => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Topic picker + note viewer */}
-      {subject && (
-        <div style={{ display: 'grid', gridTemplateColumns: expanded ? '1fr' : note ? '280px 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
-
-          {/* Topic list — hidden when expanded */}
-          {!expanded && <div className="card" style={{ padding: 0, overflow: 'hidden', maxHeight: note ? 'calc(100vh - 220px)' : 'none' }}>
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-              <input className="input" placeholder="Search topics..." value={topicSearch}
-                onChange={e => setTopicSearch(e.target.value)} style={{ fontSize: '0.82rem' }} />
-            </div>
-            <div style={{ overflowY: 'auto', maxHeight: note ? 'calc(100vh - 290px)' : 400 }}>
-              {topicList.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  {topicList.length === 0 ? 'Select a subject to see topics' : 'No topics found'}
-                </div>
-              ) : filteredTopics.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No matching topics</div>
-              ) : (
-                filteredTopics.map((t, i) => (
-                  <button key={i} onClick={() => { setTopic(t); loadNote(t) }}
-                    style={{
-                      width: '100%', textAlign: 'left', padding: '10px 14px',
-                      background: topic === t ? 'var(--accent-bg)' : 'transparent',
-                      border: 'none', borderBottom: '1px solid var(--border)',
-                      cursor: 'pointer', fontSize: '0.82rem', lineHeight: 1.4,
-                      color: topic === t ? 'var(--accent-light)' : 'var(--text-primary)',
-                      fontWeight: topic === t ? 600 : 400,
-                      transition: 'background 0.15s',
-                    }}>
-                    {t}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>}
-
-          {/* Note viewer */}
-          {note && (
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{topic}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    {selectedSubject?.board || board} {selectedSubject?.qualification || level} {subject}
-                    {note.cached && <span style={{ marginLeft: 8, color: 'var(--success)' }}>● Cached</span>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(e => !e)}
-                    style={{ fontSize: '0.75rem' }} title={expanded ? 'Collapse panel' : 'Expand to full width'}>
-                    {expanded ? <><Minimize2 size={13}/> Collapse</> : <><Maximize2 size={13}/> Expand</>}
-                  </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => loadNote(topic, true)} disabled={loading}
-                    style={{ fontSize: '0.75rem' }}>
-                    <RotateCcw size={13}/> {loading ? '...' : 'Regenerate'}
-                  </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setNote(null); setExpanded(false) }} style={{ fontSize: '0.75rem' }}>
-                    <X size={13}/> Close
-                  </button>
-                </div>
-              </div>
-              <div style={{ padding: '16px 18px', overflowY: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
-                <AiContentNotice verified={note.verified === true} />
-                <AIOutput text={note.text} />
-              </div>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {loading && !note && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 16 }}>
-              <div style={{ width: 40, height: 40, border: '3px solid var(--bg-hover)', borderTop: '3px solid var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>Generating revision guide...</div>
-                <div>This may take 15-20 seconds for a comprehensive guide.</div>
-              </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!loading && !note && subject && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 12, textAlign: 'center' }}>
-              <BookOpen size={40} style={{ opacity: 0.25 }} />
-              <div style={{ fontWeight: 600 }}>Select a topic to view its revision guide</div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: 280 }}>
-                Guides are cached globally. Once generated for a topic, all students can access it instantly.
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!subject && (
-        <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <BookOpen size={40} style={{ opacity: 0.25, marginBottom: 12 }} />
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Choose a subject to get started</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            Select a subject above to browse topics and generate revision guides.
-            Guides are cached globally — your generations help everyone.
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Main page ─────────────────────────────────────────────────────────────── */
-
-// ── ExamMarkScheme — hides mark scheme until revealed ─────────────────────────
 function ExamMarkScheme({ text }) {
   const [revealed, setRevealed] = React.useState(false)
   const clean = text.replace(/^MARK SCHEME:\s*/i, '').trim()
@@ -2589,7 +2511,8 @@ export default function Study() {
   const { isPro } = useIsPro()
   // Read URL params — Topics page links here with ?tab=notes&topic=...&subject=...
   const urlParams  = new URLSearchParams(window.location.search)
-  const initTab    = urlParams.get('tab') || 'flashcards'
+  const requestedTab = urlParams.get('tab')
+  const initTab    = !requestedTab || requestedTab === 'notes' ? 'flashcards' : requestedTab   // the topic-notes tab no longer exists
   const [tab, setTab] = useState(initTab)
   const [flashTab, setFlashTab] = useState('generate')
   const [studyCards, setStudyCards] = useState(null)
@@ -2836,7 +2759,7 @@ export default function Study() {
     .filter(s => {
       if (!myFcBoardFilter && !myFcLevelFilter) return true
       const { board, level } = deriveSetBoardLevel(s, profile)
-      if (myFcBoardFilter && board !== myFcBoardFilter) return false
+      if (myFcBoardFilter && canonicalBoard(board) !== canonicalBoard(myFcBoardFilter)) return false
       if (myFcLevelFilter && level !== myFcLevelFilter) return false
       return true
     })
@@ -2845,8 +2768,8 @@ export default function Study() {
     .filter(s => pubSource === 'all' ? true : pubSource === 'official' ? isOfficialSet(s) : isCommunitySet(s, user?.uid))
     .filter(s => {
       if (!pubBoardFilter && !pubLevelFilter) return true
-      const { board, level } = deriveSetBoardLevel(s, profile)
-      if (pubBoardFilter && board !== pubBoardFilter) return false
+      const { board, level } = deriveSetBoardLevel(s, null)
+      if (pubBoardFilter && canonicalBoard(board || '') !== canonicalBoard(pubBoardFilter)) return false
       if (pubLevelFilter && level !== pubLevelFilter) return false
       return true
     })
@@ -2880,7 +2803,6 @@ export default function Study() {
       {/* Main tabs */}
       <div className="rf-tabs-scroll">
         <div className="tabs" style={{ marginBottom: 24, padding: 4 }}>
-          <button className={'tab' + (tab === 'notes' ? ' active' : '')} onClick={() => setTab('notes')}><FileText size={15} /> Topic Notes</button>
           <button className={'tab' + (tab === 'flashcards' ? ' active' : '')} onClick={() => setTab('flashcards')}><Layers size={15} /> Flashcards</button>
           <button className={'tab' + (tab === 'practice' ? ' active' : '')} onClick={() => setTab('practice')}>
             <Repeat size={15} /> Practice
@@ -2992,7 +2914,7 @@ export default function Study() {
                             <SubjectTile subject={set.subject} size={32} />
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, profile).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, profile).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, null).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, null).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
@@ -3103,11 +3025,6 @@ export default function Study() {
         </div>
       )}
 
-      {/* ── TOPIC NOTES ── */}
-      {tab === 'notes' && (
-        <TopicNotesTab profile={profile} uid={user?.uid} />
-      )}
-
       {/* ── PRACTICE (spaced repetition) ── */}
       {tab === 'practice' && (
         <PracticeTab mySets={mySets} uid={user?.uid} />
@@ -3115,7 +3032,7 @@ export default function Study() {
 
       {/* ── QUIZ ── */}
       {tab === 'quiz' && (
-        <QuizTab mySets={mySets} uid={user?.uid} profile={profile} />
+        <QuizTab mySets={mySets} uid={user?.uid} profile={profile} onSetsChanged={loadMySets} />
       )}
 
       {/* ── EXAM QUESTIONS ── */}
