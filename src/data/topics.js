@@ -3157,6 +3157,18 @@ const ASLEVEL = {
         'Statistics Option – Hypothesis Testing for the Mean of a Poisson Distribution',
         'Discrete Option – Graphs, Networks and Algorithms (Kruskal, Prim)',
         'Discrete Option – Route Inspection and the Travelling Salesperson Problem (AS Subset)',
+        'Mechanics Option – Dimensional Analysis: Finding Dimensions, Checking Consistency, Predicting Formulae',
+        'Mechanics Option – Circular Motion: Angular Speed, Speed, Radius and Acceleration Relationships',
+        'Statistics Option – Type I Errors: Defining in Context, Probability from Poisson or Binomial Tests',
+        'Statistics Option – Continuous Random Variables: PDF, Probabilities, Median and Quartiles, Expectation and Variance',
+        'Statistics Option – Chi Squared Tests for Association: Contingency Tables, Test Statistic, Sources of Association',
+        'Statistics Option – Confidence Intervals: Normal Mean with Known Variance, Large Samples, Making Inferences',
+        'Discrete Option – Graphs: Language of Graphs, Eulerian and Hamiltonian Graphs, Euler\'s Formula, Bipartite Graphs, Trees',
+        'Discrete Option – Network Flows: Flow Problems, Cuts, Maximum Flow-Minimum Cut Theorem, Supersources and Supersinks',
+        'Discrete Option – Linear Programming: Formulating Constrained Optimisation Problems, Graphical Methods',
+        'Discrete Option – Critical Path Analysis: Activity-on-Node Networks, Earliest and Latest Times, Critical Activities and Float',
+        'Discrete Option – Game Theory for Zero-Sum Games: Pay-Off Matrices, Play-Safe and Dominated Strategies, Mixed Strategies',
+        'Discrete Option – Binary Operations: Modular Arithmetic, Commutativity, Associativity, Cayley Tables, Identities and Inverses',
       ],
     }},
 
@@ -4601,6 +4613,20 @@ const ALEVEL = {
         'Decision – Flows in Networks: Maximum Flow, Minimum Cut',
         'Decision – Linear Programming: Graphical Method and the Simplex Algorithm',
         'Decision – Critical Path Analysis and Game Theory: Pay-Off Matrices',
+        'Further Mechanics – Dimensional Analysis: Finding Dimensions, Checking Consistency, Predicting Formulae',
+        'Further Mechanics – Centres of Mass and Moments: Particles, Composite Bodies, Laminas by Integration, Sliding and Toppling',
+        'Further Statistics – Discrete Random Variables and Expectation: Mean, Variance, Linear Functions, Discrete Uniform',
+        'Further Statistics – Type I and Type II Errors: Defining in Context, Probabilities, Power of a Test',
+        'Further Statistics – Continuous Random Variables: PDF, CDF, Median and Quartiles, Expectation and Variance, Rectangular',
+        'Further Statistics – Exponential Distribution: Conditions, PDF and CDF, Probabilities, Mean and Variance, Poisson Link',
+        'Further Statistics – Inference with the t-Distribution: One-Sample t-Test for the Mean of a Normal Distribution',
+        'Further Statistics – Confidence Intervals: Known Variance, Large Samples, Small Samples (t), Making Inferences',
+        'Decision – Graphs: Language of Graphs, Eulerian and Hamiltonian Graphs, Planarity, Bipartite Graphs, Isomorphism',
+        'Decision – Travelling Salesperson Problem: Upper and Lower Bounds, Evaluating and Refining Network Models',
+        'Decision – Critical Path Analysis: Activity Networks, Earliest and Latest Times, Float, Gantt Charts, Resource Levelling',
+        'Decision – Game Theory: Play-Safe Strategies, Stable Solutions, Dominated and Mixed Strategies, Linear Programming Link',
+        'Decision – Binary Operations: Modular Arithmetic, Commutativity, Associativity, Cayley Tables, Identities and Inverses',
+        'Decision – Groups: Group Axioms, Subgroups, Cyclic and Abelian Groups, Lagrange\'s Theorem, Generators, Isomorphism',
       ],
     }},
 
@@ -6625,5 +6651,523 @@ export function getBoardsForLevel(level) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// TOPIC_OPTIONS — which topics belong to a choosable option.
+// Some courses let each student choose options (Further Maths applications, A-level
+// Physics optional topic, History studies, set texts ...). A topic that appears in an
+// option below should only be shown to students who chose that option. A topic that
+// is in NO option is core and is always shown.
+//   Shape mirrors GCSE / ASLEVEL / ALEVEL:  TOPIC_OPTIONS[level][board][subject].slots
+//   slots[]: { id, label, pick (how many options the student chooses in this slot),
+//              options: [{ id, label, topics: [exact topic names from that dataset] }] }
+// A dataset with no entry here has no options (show everything).
+// Maintained by the topics workstream; the app only reads it.
+// ─────────────────────────────────────────────────────────────────────────────
+export const TOPIC_OPTIONS = {
+  GCSE: {
+    Edexcel: {
+      History: {
+        slots: [
+          {
+            id: 'thematic',
+            label: 'Thematic study and historic environment',
+            pick: 1,
+            options: [
+              {
+                id: 'medicine',
+                label: 'Medicine in Britain',
+                topics: [
+                  'Thematic Study (choice of one): Medicine in Britain c.1250–Present',
+                  'Historic Environment: The British Sector of the Western Front 1914–18: Injuries, Treatment and the Trenches',
+                ],
+              },
+              {
+                id: 'crime',
+                label: 'Crime and punishment in Britain',
+                topics: [
+                  'Thematic Study (choice of one): Crime and Punishment in Britain c.1000–Present',
+                  'Historic Environment: Whitechapel c.1870–c.1900: Crime, Policing and the Inner City',
+                ],
+              },
+              {
+                id: 'warfare',
+                label: 'Warfare and British society',
+                topics: [
+                  'Thematic Study (choice of one): Warfare and British Society c.1250–Present',
+                  'Historic Environment: London and the Second World War 1939–45',
+                ],
+              },
+              {
+                id: 'migrants',
+                label: 'Migrants in Britain',
+                topics: [
+                  'Thematic Study (choice of one): Migrants in Britain c.1000–Present',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'period',
+            label: 'Period study',
+            pick: 1,
+            options: [
+              {
+                id: 'spain',
+                label: 'Spain and the New World',
+                topics: [
+                  'Period Study (choice of one): Spain and the "New World" c.1490–1555',
+                ],
+              },
+              {
+                id: 'british-america',
+                label: 'British America',
+                topics: [
+                  'Period Study (choice of one): British America 1713–83: Empire and Revolution',
+                ],
+              },
+              {
+                id: 'american-west',
+                label: 'The American West',
+                topics: [
+                  'Period Study (choice of one): The American West c.1835–c.1895',
+                ],
+              },
+              {
+                id: 'cold-war',
+                label: 'Superpower relations and the Cold War',
+                topics: [
+                  'Period Study (choice of one): Superpower Relations and the Cold War 1941–91',
+                ],
+              },
+              {
+                id: 'middle-east',
+                label: 'Conflict in the Middle East',
+                topics: [
+                  'Period Study (choice of one): Conflict in the Middle East c.1945–95',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'british',
+            label: 'British depth study',
+            pick: 1,
+            options: [
+              {
+                id: 'anglo-saxon',
+                label: 'Anglo-Saxon and Norman England',
+                topics: [
+                  'British Depth Study (choice of one): Anglo-Saxon and Norman England c.1060–88',
+                ],
+              },
+              {
+                id: 'richard-john',
+                label: 'Richard I and John',
+                topics: [
+                  'Period Study (choice of one): The Reigns of King Richard I and King John 1189–1216',
+                ],
+              },
+              {
+                id: 'henry-viii',
+                label: 'Henry VIII and his ministers',
+                topics: [
+                  'Period Study (choice of one): Henry VIII and His Ministers 1509–40',
+                ],
+              },
+              {
+                id: 'elizabethan',
+                label: 'Early Elizabethan England',
+                topics: [
+                  'British Depth Study (choice of one): Early Elizabethan England 1558–88',
+                ],
+              },
+              {
+                id: 'restoration',
+                label: 'Restoration England',
+                topics: [
+                  'British Depth Study (choice of one): Restoration England 1660–85',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'modern',
+            label: 'Modern depth study',
+            pick: 1,
+            options: [
+              {
+                id: 'weimar-and-nazi-germany',
+                label: 'Weimar and Nazi Germany',
+                topics: [
+                  'Modern Depth Study (choice of one): Weimar and Nazi Germany 1918–39',
+                ],
+              },
+              {
+                id: 'mao-s-china',
+                label: 'Mao\'s China',
+                topics: [
+                  'Modern Depth Study (choice of one): Mao\'s China 1945–76',
+                ],
+              },
+              {
+                id: 'the-usa',
+                label: 'The USA',
+                topics: [
+                  'Modern Depth Study (choice of one): The USA 1954–75: Conflict at Home and Abroad',
+                ],
+              },
+              {
+                id: 'russia-and-the-soviet-union',
+                label: 'Russia and the Soviet Union',
+                topics: [
+                  'Modern Depth Study (choice of one): Russia and the Soviet Union 1917–41',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    OCR: {
+      History: {
+        slots: [
+          {
+            id: 'thematic',
+            label: 'Thematic study',
+            pick: 1,
+            options: [
+              {
+                id: 'the-people-s-health',
+                label: 'The People\'s Health',
+                topics: [
+                  'Thematic Study (choice of one): The People\'s Health c.1250–Present',
+                ],
+              },
+              {
+                id: 'migrants-to-britain',
+                label: 'Migrants to Britain',
+                topics: [
+                  'Thematic Study (choice of one): Migrants to Britain c.1250–Present',
+                ],
+              },
+              {
+                id: 'crime-and-punishment-in-britain',
+                label: 'Crime and Punishment in Britain',
+                topics: [
+                  'Thematic Study (choice of one): Crime and Punishment in Britain c.1250–Present',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'british',
+            label: 'British depth study',
+            pick: 1,
+            options: [
+              {
+                id: 'the-norman-conquest',
+                label: 'The Norman Conquest',
+                topics: [
+                  'British Depth Study (choice of one): The Norman Conquest 1065–1087',
+                ],
+              },
+              {
+                id: 'the-reign-of-edward-i',
+                label: 'The Reign of Edward I',
+                topics: [
+                  'British Depth Study (choice of one): The Reign of Edward I 1272–1307',
+                ],
+              },
+              {
+                id: 'the-elizabethan-age',
+                label: 'The Elizabethan Age',
+                topics: [
+                  'British Depth Study (choice of one): The Elizabethan Age 1547–1603',
+                ],
+              },
+              {
+                id: 'the-english-reformation',
+                label: 'The English Reformation',
+                topics: [
+                  'British Depth Study (choice of one): The English Reformation 1520–c.1550',
+                ],
+              },
+              {
+                id: 'the-first-world-war-and-british-society',
+                label: 'The First World War and British Society',
+                topics: [
+                  'British Depth Study (choice of one): The First World War and British Society 1914–18',
+                ],
+              },
+              {
+                id: 'britain-in-the-second-world-war',
+                label: 'Britain in the Second World War',
+                topics: [
+                  'British Depth Study (choice of one): Britain in the Second World War 1939–45',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'period',
+            label: 'Period study',
+            pick: 1,
+            options: [
+              {
+                id: 'the-making-of-america',
+                label: 'The Making of America',
+                topics: [
+                  'Period Study (choice of one): The Making of America 1789–1900',
+                ],
+              },
+              {
+                id: 'the-cold-war-in-europe',
+                label: 'The Cold War in Europe',
+                topics: [
+                  'Period Study (choice of one): The Cold War in Europe 1941–91',
+                ],
+              },
+              {
+                id: 'the-usa',
+                label: 'The USA',
+                topics: [
+                  'Period Study (choice of one): The USA 1945–74',
+                ],
+              },
+              {
+                id: 'viking-expansion',
+                label: 'Viking Expansion',
+                topics: [
+                  'Period Study (choice of one): Viking Expansion c.750–c.1050',
+                ],
+              },
+              {
+                id: 'the-mughal-empire',
+                label: 'The Mughal Empire',
+                topics: [
+                  'Period Study (choice of one): The Mughal Empire 1526–1707',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'world',
+            label: 'World depth study',
+            pick: 1,
+            options: [
+              {
+                id: 'the-origins-and-outbreak-of-the-first-world-war',
+                label: 'The Origins and Outbreak of the First World War',
+                topics: [
+                  'World Depth Study (choice of one): The Origins and Outbreak of the First World War 1905–14',
+                ],
+              },
+              {
+                id: 'germany',
+                label: 'Germany',
+                topics: [
+                  'World Depth Study (choice of one): Germany 1925–55',
+                ],
+              },
+              {
+                id: 'south-africa',
+                label: 'South Africa',
+                topics: [
+                  'World Depth Study (choice of one): South Africa 1940–94',
+                ],
+              },
+              {
+                id: 'vietnam',
+                label: 'Vietnam',
+                topics: [
+                  'World Depth Study (choice of one): Vietnam 1954–75',
+                ],
+              },
+              {
+                id: 'the-first-crusade',
+                label: 'The First Crusade',
+                topics: [
+                  'World Depth Study (choice of one): The First Crusade c.1070–1100',
+                ],
+              },
+              {
+                id: 'aztecs-and-the-spanish-conquest',
+                label: 'Aztecs and the Spanish Conquest',
+                topics: [
+                  'World Depth Study (choice of one): Aztecs and the Spanish Conquest 1519–1535',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  ASLEVEL: {
+    AQA: {
+      'Further Mathematics': {
+        slots: [
+          {
+            id: 'applications',
+            label: 'Optional applications',
+            pick: 2,
+            options: [
+              {
+                id: 'mechanics',
+                label: 'Mechanics',
+                topics: [
+                  'Mechanics Option – Momentum and Impulse',
+                  'Mechanics Option – Work, Energy and Power',
+                  'Mechanics Option – Projectiles',
+                  'Mechanics Option – Dimensional Analysis: Finding Dimensions, Checking Consistency, Predicting Formulae',
+                  'Mechanics Option – Circular Motion: Angular Speed, Speed, Radius and Acceleration Relationships',
+                ],
+              },
+              {
+                id: 'statistics',
+                label: 'Statistics',
+                topics: [
+                  'Statistics Option – Discrete Random Variables and Expectation',
+                  'Statistics Option – The Poisson Distribution',
+                  'Statistics Option – Hypothesis Testing for the Mean of a Poisson Distribution',
+                  'Statistics Option – Type I Errors: Defining in Context, Probability from Poisson or Binomial Tests',
+                  'Statistics Option – Continuous Random Variables: PDF, Probabilities, Median and Quartiles, Expectation and Variance',
+                  'Statistics Option – Chi Squared Tests for Association: Contingency Tables, Test Statistic, Sources of Association',
+                  'Statistics Option – Confidence Intervals: Normal Mean with Known Variance, Large Samples, Making Inferences',
+                ],
+              },
+              {
+                id: 'discrete',
+                label: 'Discrete mathematics',
+                topics: [
+                  'Discrete Option – Graphs, Networks and Algorithms (Kruskal, Prim)',
+                  'Discrete Option – Route Inspection and the Travelling Salesperson Problem (AS Subset)',
+                  'Discrete Option – Graphs: Language of Graphs, Eulerian and Hamiltonian Graphs, Euler\'s Formula, Bipartite Graphs, Trees',
+                  'Discrete Option – Network Flows: Flow Problems, Cuts, Maximum Flow-Minimum Cut Theorem, Supersources and Supersinks',
+                  'Discrete Option – Linear Programming: Formulating Constrained Optimisation Problems, Graphical Methods',
+                  'Discrete Option – Critical Path Analysis: Activity-on-Node Networks, Earliest and Latest Times, Critical Activities and Float',
+                  'Discrete Option – Game Theory for Zero-Sum Games: Pay-Off Matrices, Play-Safe and Dominated Strategies, Mixed Strategies',
+                  'Discrete Option – Binary Operations: Modular Arithmetic, Commutativity, Associativity, Cayley Tables, Identities and Inverses',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  ALEVEL: {
+    AQA: {
+      'Further Mathematics': {
+        slots: [
+          {
+            id: 'applications',
+            label: 'Optional applications',
+            pick: 2,
+            options: [
+              {
+                id: 'mechanics',
+                label: 'Mechanics',
+                topics: [
+                  'Further Mechanics – Momentum and Impulse: Coefficient of Restitution, Collisions',
+                  'Further Mechanics – Work, Energy, Power: Elastic Potential Energy, Hooke\'s Law',
+                  'Further Mechanics – Circular Motion: Angular Velocity, Centripetal Force/Acceleration',
+                  'Further Mechanics – Simple Harmonic Motion: SHM Equations, Springs, Pendulums',
+                  'Further Mechanics – Dimensional Analysis: Finding Dimensions, Checking Consistency, Predicting Formulae',
+                  'Further Mechanics – Centres of Mass and Moments: Particles, Composite Bodies, Laminas by Integration, Sliding and Toppling',
+                ],
+              },
+              {
+                id: 'statistics',
+                label: 'Statistics',
+                topics: [
+                  'Further Statistics – Discrete Distributions: Discrete Uniform, Geometric, Negative Binomial',
+                  'Further Statistics – Continuous Distributions: Uniform, Exponential, Normal Recap',
+                  'Further Statistics – Hypothesis Testing: Chi-Squared Test for Contingency Tables',
+                  'Further Statistics – Poisson Distribution: Properties, Approximation to Binomial',
+                  'Further Statistics – Correlation and the PMCC (Extended)',
+                  'Further Statistics – Discrete Random Variables and Expectation: Mean, Variance, Linear Functions, Discrete Uniform',
+                  'Further Statistics – Type I and Type II Errors: Defining in Context, Probabilities, Power of a Test',
+                  'Further Statistics – Continuous Random Variables: PDF, CDF, Median and Quartiles, Expectation and Variance, Rectangular',
+                  'Further Statistics – Exponential Distribution: Conditions, PDF and CDF, Probabilities, Mean and Variance, Poisson Link',
+                  'Further Statistics – Inference with the t-Distribution: One-Sample t-Test for the Mean of a Normal Distribution',
+                  'Further Statistics – Confidence Intervals: Known Variance, Large Samples, Small Samples (t), Making Inferences',
+                ],
+              },
+              {
+                id: 'discrete',
+                label: 'Discrete mathematics',
+                topics: [
+                  'Decision – Algorithms: Bubble Sort, Quick Sort, Bin Packing, Binary Search',
+                  'Decision – Graph Theory: Spanning Trees (Kruskal\'s, Prim\'s), Route Inspection',
+                  'Decision – Shortest Path: Dijkstra\'s Algorithm, Floyd\'s Algorithm',
+                  'Decision – Flows in Networks: Maximum Flow, Minimum Cut',
+                  'Decision – Linear Programming: Graphical Method and the Simplex Algorithm',
+                  'Decision – Critical Path Analysis and Game Theory: Pay-Off Matrices',
+                  'Decision – Graphs: Language of Graphs, Eulerian and Hamiltonian Graphs, Planarity, Bipartite Graphs, Isomorphism',
+                  'Decision – Travelling Salesperson Problem: Upper and Lower Bounds, Evaluating and Refining Network Models',
+                  'Decision – Critical Path Analysis: Activity Networks, Earliest and Latest Times, Float, Gantt Charts, Resource Levelling',
+                  'Decision – Game Theory: Play-Safe Strategies, Stable Solutions, Dominated and Mixed Strategies, Linear Programming Link',
+                  'Decision – Binary Operations: Modular Arithmetic, Commutativity, Associativity, Cayley Tables, Identities and Inverses',
+                  'Decision – Groups: Group Axioms, Subgroups, Cyclic and Abelian Groups, Lagrange\'s Theorem, Generators, Isomorphism',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      Physics: {
+        slots: [
+          {
+            id: 'option',
+            label: 'Optional topic',
+            pick: 1,
+            options: [
+              {
+                id: 'astrophysics',
+                label: 'Astrophysics',
+                topics: [
+                  'Option A – Astrophysics: Telescopes (Refracting, Reflecting), Resolving Power',
+                  'Option A – Astrophysics: Stars — Classification, Hertzsprung-Russell Diagram, Stellar Evolution',
+                  'Option A – Astrophysics: Cosmology — Doppler Shift, Hubble\'s Law, Dark Matter, the Big Bang',
+                ],
+              },
+              {
+                id: 'medical',
+                label: 'Medical physics',
+                topics: [
+                  'Option B – Medical Physics: X-Rays, Ultrasound, MRI, Nuclear Medicine (PET Scanning)',
+                ],
+              },
+              {
+                id: 'engineering',
+                label: 'Engineering physics',
+                topics: [
+                  'Option C – Engineering Physics: Rotational Dynamics, Thermodynamics, Angular Momentum',
+                ],
+              },
+              {
+                id: 'turning',
+                label: 'Turning points in physics',
+                topics: [
+                  'Option D – Turning Points in Physics: Discovery of the Electron, Special Relativity',
+                  'Option D – Turning Points in Physics: Wave-Particle Duality, the Photoelectric Effect (Extension)',
+                ],
+              },
+              {
+                id: 'electronics',
+                label: 'Electronics',
+                topics: [
+                  'Option E – Electronics: Operational Amplifiers, Sensors, Analogue-to-Digital Conversion',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+}
+
 export { GCSE, ASLEVEL, ALEVEL }
 export default { GCSE, ASLEVEL, ALEVEL }
