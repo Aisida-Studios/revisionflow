@@ -7,31 +7,20 @@ import { db, auth, getAppCheckHeader } from '../firebase'
 import { getPaperAttempts, getMistakes } from '../utils/firestore'
 import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
-import { LEVELS, SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
+import { LEVELS, getSubjectQualification } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import { gradeColour } from '../utils/calendar'
 import { resolveTargetGrade } from '../utils/gradeTargets'
 import ReferralCard from '../components/ReferralCard'
+import SubjectTile from '../components/illustrations/SubjectTile'
+import BadgeArt from '../components/illustrations/BadgeArt'
 import { Zap, Copy, Check, Download, Loader, Share2, X, Crown, Settings, Lock } from 'lucide-react'
-import {
-  Rocket, FileText, Bot, UserCheck, Flame, Dumbbell, Gem, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-} from 'lucide-react'
-
-// Every badge carries a lucideIcon name (src/data/badges.js) — this looks it up to a real
-// component. Kept as an explicit map rather than a dynamic import because ES imports need
-// static names; Dashboard.jsx still uses the emoji `icon` field directly and is unaffected.
-const BADGE_ICONS = {
-  Rocket, FileText, Bot, UserCheck, Flame, Zap, Dumbbell, Gem, Crown, Medal, Award, Trophy,
-  TrendingUp, Star, ArrowUpCircle, Library, Cog, Sunrise, Moon, CalendarDays,
-  Footprints, Swords, UserPlus, Users, Megaphone, Siren, Brain, Layers, CalendarCheck,
-}
 import { useIsPro, ProBadge } from '../components/ProGate'
 import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
 import './AccountPages.css'
+import './Profile.css'
 
 // Opens a Stripe Customer Portal session for subscription management
 function ManageSubButton({ uid }) {
@@ -118,7 +107,6 @@ export default function Profile() {
     setShowCard(true)
     try {
       const { generateStreakCard } = await import('../utils/streakCard')
-      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14532d'
       const url = await generateStreakCard({
         displayName: profile?.displayName || user?.displayName || 'Student',
         streak:      profile?.streak      || 0,
@@ -127,9 +115,6 @@ export default function Profile() {
         levelTitle:  lvl?.title           || 'Studier',
         badges:      (profile?.badges     || []).length,
         bestStreak:  profile?.bestStreak  || profile?.streak || 0,
-        subjects:    (profile?.subjects   || []).map(s => typeof s === 'string' ? s : s.name).filter(Boolean),
-        profileIcon: iconEmoji,
-        accentColor,
       })
       setCardUrl(url)
     } catch(e) {
@@ -158,15 +143,17 @@ export default function Profile() {
           await navigator.share({
             files: [file],
             title: 'My RevisionFlow streak',
-            text:  `${profile?.streak || 0} day streak on RevisionFlow! Join me at revisionflow.netlify.app`,
+            text:  (profile?.streak || 0) + ' day streak on RevisionFlow.',
+            url:   'https://www.revisionflow.co.uk',
           })
           return
         }
-      } catch(e) {}
+      } catch(e) {
+        if (e && e.name === 'AbortError') return
+      }
     }
-    // Fallback: copy link
     downloadCard()
-    toast.success('Card downloaded — share it on Instagram or TikTok!')
+    toast.success('Card saved to your device')
   }
 
   async function handleExportPDF() {
@@ -210,26 +197,29 @@ export default function Profile() {
       {showMilestone && (
         <div className="modal-overlay" onClick={() => setShowMilestone(false)}>
           <div className="modal" style={{ maxWidth: 440, textAlign: 'center', padding: '2rem' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>
-              {milestoneStreak >= 100 ? '👑' : milestoneStreak >= 30 ? '💎' : milestoneStreak >= 14 ? '💪' : '⚡'}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <BadgeArt
+                id={milestoneStreak >= 100 ? 'streak_100' : milestoneStreak >= 30 ? 'streak_30' : milestoneStreak >= 14 ? 'streak_14' : 'streak_7'}
+                size={104}
+              />
             </div>
-            <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak!</h3>
+            <h3 style={{ marginBottom: 8 }}>{milestoneStreak}-day streak</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>
               {milestoneStreak >= 100
-                ? 'You are absolutely legendary. 100 days of consistent revision.'
-                : milestoneStreak >= 30
-                ? 'A whole month of daily revision. That discipline will pay off in your exams.'
-                : milestoneStreak >= 14
-                ? 'Two weeks straight. You are building real momentum.'
-                : 'A full week of revision. Keep it going!'}
-              {' '}Share your streak and inspire others!
+                  ? '100 days of revising in a row.'
+                  : milestoneStreak >= 30
+                  ? 'A month of revising every day.'
+                  : milestoneStreak >= 14
+                  ? 'Two weeks of revising every day.'
+                  : 'A full week of revising every day.'}
+                {' '}You can save a card with your streak to share.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => { setShowMilestone(false); generateCard() }}>
-                <Share2 size={14} /> Share my streak card
+                <Share2 size={14} /> Make a streak card
               </button>
               <button className="btn btn-ghost" onClick={() => setShowMilestone(false)}>
-                Maybe later
+                Not now
               </button>
             </div>
           </div>
@@ -241,13 +231,13 @@ export default function Profile() {
         <div className="modal-overlay" onClick={() => setShowCard(false)}>
           <div className="modal" style={{ maxWidth: 520, padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1.05rem' }}><Share2 size={16} /> Streak Card</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1.05rem' }}><Share2 size={16} /> Streak card</span>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowCard(false)}><X size={18} /></button>
             </div>
             {cardLoading ? (
               <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
                 <Loader size={28} style={{ animation: 'spin 1s linear infinite' }} />
-                <div style={{ marginTop: 10, fontSize: '0.875rem' }}>Generating your card...</div>
+                <div style={{ marginTop: 10, fontSize: '0.875rem' }}>Making your card…</div>
               </div>
             ) : cardUrl ? (
               <>
@@ -261,7 +251,7 @@ export default function Profile() {
                   </button>
                 </div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 10 }}>
-                  Post to Instagram Stories, TikTok, or Twitter with #RevisionFlow
+                  The card shows your name, level, streak, XP and badge count.
                 </p>
               </>
             ) : null}
@@ -281,29 +271,22 @@ export default function Profile() {
           {profile?.displayName}
           {isPro && <ProBadge style={{ fontSize:'0.7rem', padding:'3px 10px' }} />}
         </h2>
-        {profile?.username && <p style={{ fontSize: '0.875rem', marginBottom: 14 }}>@{profile.username}</p>}
+        {profile?.username && <p style={{ fontSize: '0.875rem', marginBottom: 4 }}>@{profile.username}</p>}
+        <p className="pf-level">Level {profile?.level || 1} · {lvl?.title}</p>
 
         {/* Stats row */}
-        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 18 }}>
-          {[
-            { label: 'XP',      val: (profile?.xp || 0).toLocaleString(),                                col: 'var(--accent-light)' },
-            { label: 'Streak',  val: <><span className="streak-fire">🔥</span>{profile?.streak || 0}</>, col: 'var(--warning)' },
-            { label: 'Level',   val: `Lv.${profile?.level || 1}`,                                        col: 'var(--info)' },
-            { label: 'Badges',  val: unlockedBadges.length,                                               col: 'var(--success)' },
-          ].map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.col, display: 'flex', alignItems: 'center', gap: 4 }}>{s.val}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.label}</div>
-            </div>
-          ))}
+        <div className="pf-stats">
+          <div><div className="pf-stat-num">{(profile?.xp || 0).toLocaleString()}</div><div className="pf-stat-cap">XP</div></div>
+          <div><div className="pf-stat-num">{profile?.streak || 0}</div><div className="pf-stat-cap">Day streak</div></div>
+          <div><div className="pf-stat-num">{unlockedBadges.length}</div><div className="pf-stat-cap">Badges</div></div>
         </div>
 
         {/* XP progress bar */}
         <div className="progress-bar" style={{ maxWidth: 360, margin: '0 auto 6px' }}>
-          <div className="progress-fill xp-bar-fill" style={{ width: `${xpPct}%` }} />
+          <div className="progress-fill xp-bar-fill" style={{ width: xpPct + '%' }} />
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-          {profile?.xp || 0} / {nextLvl?.xpRequired} XP to Level {(profile?.level || 1) + 1} — {lvl?.title}
+          {profile?.xp || 0} / {nextLvl?.xpRequired} XP to Level {(profile?.level || 1) + 1}
         </div>
 
         {/* Action buttons */}
@@ -384,32 +367,32 @@ export default function Profile() {
         {(profile?.subjects || []).length === 0 ? (
           <p className="card-sub-line" style={{ margin: '8px 0 0' }}>No subjects added. Go to Settings to add subjects.</p>
         ) : (
-          <div className="ap-person-list" style={{ marginTop: 8 }}>
-            {(profile?.subjects || []).map(s => (
-              <div key={s.name} className="ap-person-row">
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: SUBJECT_COLOURS[s.name] || 'var(--accent)', flexShrink: 0 }} />
-                <div className="ap-person-main" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span className="ap-person-name" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{s.name}</span>
-                  <span className="badge badge-grey">{s.board}</span>
-                  {getSubjectQualification(s, profile) !== (profile?.qualification || 'GCSE') && <span className="badge badge-grey">{getSubjectQualification(s, profile)}</span>}
-                  {s.tier && s.tier !== 'N/A' && <span className="badge badge-accent">{s.tier}</span>}
+          <div className="pf-subjects">
+            {(profile?.subjects || []).map(s => {
+              const subjQual = getSubjectQualification(s, profile)
+              const target = resolveTargetGrade(s, profile)
+              const start = profile?.startingGrades?.[s.name]
+              const meta = [s.board, subjQual, s.tier && s.tier !== 'N/A' ? s.tier : null].filter(Boolean).join(' · ')
+              return (
+                <div key={s.name} className="pf-subject">
+                  <SubjectTile subject={s.name} size={36} />
+                  <div className="pf-subject-main">
+                    <div className="pf-subject-name">{s.name}</div>
+                    <div className="pf-subject-meta">{meta}{start ? ' · Started on ' + start : ''}</div>
+                  </div>
+                  <div className="pf-subject-grades">
+                    <div className="pf-grade">
+                      <span className="pf-grade-label">Now</span>
+                      <span className="pf-grade-val" style={{ color: s.currentGrade ? gradeColour(s.currentGrade) : 'var(--text-muted)' }}>{s.currentGrade || '–'}</span>
+                    </div>
+                    <div className="pf-grade">
+                      <span className="pf-grade-label">Target</span>
+                      {target ? <span className="pf-grade-val">{target}</span> : <span className="pf-muted">Not set</span>}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-                  {profile?.startingGrades?.[s.name] && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Start: <strong>{profile.startingGrades[s.name]}</strong>
-                    </span>
-                  )}
-                  {s.currentGrade && (
-                    <span style={{ fontWeight: 800, color: gradeColour(s.currentGrade), fontSize: '1rem' }}>{s.currentGrade}</span>
-                  )}
-                  <span style={{ color: 'var(--text-muted)' }}>→</span>
-                  {resolveTargetGrade(s, profile)
-                    ? <span style={{ fontWeight: 800, color: 'var(--success)', fontSize: '1rem' }}>{resolveTargetGrade(s, profile)}</span>
-                    : <span style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.8rem' }}>Not set</span>}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -426,11 +409,10 @@ export default function Profile() {
         <div className="ap-badge-tile-grid">
           {BADGE_LIST.map(b => {
             const unlocked = earnedIds.includes(b.id)
-            const Icon = BADGE_ICONS[b.lucideIcon]
             return (
               <div key={b.id} title={b.desc} className={`ap-badge-tile${unlocked ? ' ap-badge-tile--earned' : ''}`}>
-                <div className={`ap-badge-tile-icon${unlocked ? '' : ' ap-badge-tile-icon--locked'}`}>
-                  {Icon ? <Icon size={22} /> : b.icon}
+                <div className="ap-badge-tile-icon">
+                  <BadgeArt id={b.id} size={56} earned={unlocked} />
                 </div>
                 <div className={`ap-badge-tile-name${unlocked ? '' : ' ap-badge-tile-name--locked'}`}>{b.name}</div>
                 <div className="ap-badge-tile-desc">{b.desc}</div>
