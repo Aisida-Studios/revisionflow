@@ -8,7 +8,7 @@ import {
 } from '../utils/firestore'
 import { resolveProfileIcon } from '../data/themes'
 import toast from 'react-hot-toast'
-import { Trophy, Users, Globe, Lock, Crown, Flame } from 'lucide-react'
+import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 
@@ -48,7 +48,7 @@ function BoardRow({ entry, rank, isMe, xp }) {
         <div className="ap-person-name" style={{ fontWeight: isMe ? 800 : 700 }}>
           {name} {isMe && <span style={{ fontSize: '0.7rem', color: 'var(--accent-light)', fontWeight: 700 }}>(you)</span>}
         </div>
-        <div className="ap-person-meta"><Flame size={12} style={{ verticalAlign: '-1px' }} /> {entry.streak || 0} day streak</div>
+        <div className="ap-person-meta">{entry.streak || 0} day streak</div>
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-light)' }}>
@@ -144,7 +144,7 @@ export default function Leaderboard() {
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700 }}>Your rank on the {tab === 'friends' ? 'friends' : 'global'} board</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {(myEntry[xpField] || 0).toLocaleString()} XP {periodLabel !== 'all time' ? `(${periodLabel})` : ''} · <Flame size={13} style={{ verticalAlign: '-2px' }} /> {myEntry.streak || 0} day streak
+              {(myEntry[xpField] || 0).toLocaleString()} XP {periodLabel !== 'all time' ? `(${periodLabel})` : ''} · {myEntry.streak || 0} day streak
             </div>
           </div>
           {myRank === 0 && <Crown size={22} color="var(--gold)" />}
