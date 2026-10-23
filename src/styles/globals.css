@@ -641,11 +641,11 @@ code {
   transition: all 0.15s var(--ease-out);
 }
 .conf-dot:hover { transform: scale(1.35); }
-.conf-dot.active-1 { background:#dc2626; border-color:#dc2626; box-shadow:0 0 8px rgba(220,38,38,0.5); }
-.conf-dot.active-2 { background:#f97316; border-color:#f97316; box-shadow:0 0 8px rgba(249,115,22,0.5); }
-.conf-dot.active-3 { background:#eab308; border-color:#eab308; box-shadow:0 0 8px rgba(234,179,8,0.5); }
-.conf-dot.active-4 { background:#84cc16; border-color:#84cc16; box-shadow:0 0 8px rgba(132,204,22,0.5); }
-.conf-dot.active-5 { background:#16a34a; border-color:#16a34a; box-shadow:0 0 8px rgba(22,163,74,0.5); }
+.conf-dot.active-1 { background:#dc2626; border-color:#dc2626; }
+.conf-dot.active-2 { background:#f97316; border-color:#f97316; }
+.conf-dot.active-3 { background:#eab308; border-color:#eab308; }
+.conf-dot.active-4 { background:#84cc16; border-color:#84cc16; }
+.conf-dot.active-5 { background:#16a34a; border-color:#16a34a; }
 
 /* ── Skeleton ────────────────────────────────────────────────────────────── */
 @keyframes skel { 0%,100% { opacity:0.45; } 50% { opacity:0.8; } }
@@ -766,7 +766,9 @@ tr:hover td { background:var(--bg-hover); }
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Dashboard page wrapper + plain greeting ────────────────────────────── */
-.dash { max-width: 1180px; margin: 0 auto; }
+/* Same width as the other pages (Analytics, Mistakes...), which fill the content area; the cap only stops
+   absurdly wide cards on very large monitors. */
+.dash { max-width: 1680px; margin: 0 auto; }
 .dash-header { margin-bottom: 4px; }
 .dash-greeting { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
 .dash-date { margin: 4px 0 0; color: var(--text-muted); font-size: 0.95rem; }
