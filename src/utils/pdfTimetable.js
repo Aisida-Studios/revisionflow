@@ -3,6 +3,13 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format, startOfWeek, addDays } from 'date-fns'
 import { daysUntilExam, parseLocalDate } from './examUtils'
+import { resolveTargetGrade } from './gradeTargets'
+
+// An exam record's target, shown only when it is a real grade on that exam's own scale (never '9' on an AS-Level paper).
+const examTargetLabel = (e, profile) => {
+  const t = resolveTargetGrade({ name: e.subject, qualification: e.qualification, tier: e.tier, targetGrade: e.targetGrade }, profile)
+  return t ? `Target: ${t}` : '–'
+}
 
 const ACCENT = [20,83,45]
 const DARK   = [20,28,24]
@@ -27,14 +34,14 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
   doc.setTextColor(...WHITE)
   doc.setFontSize(15)
   doc.setFont('helvetica','bold')
-  doc.text('RevisionFlow â€” Revision Timetable', M, 14)
+  doc.text('RevisionFlow — Revision Timetable', M, 14)
   doc.setFontSize(9)
   doc.setFont('helvetica','normal')
-  doc.text(`${profile?.displayName||'Student'}  Â·  ${format(new Date(),'d MMMM yyyy')}`, W-M, 14, {align:'right'})
+  doc.text(`${profile?.displayName||'Student'}  ·  ${format(new Date(),'d MMMM yyyy')}`, W-M, 14, {align:'right'})
 
   let y = 28
 
-  // â”€â”€ Exam Dates section â€” full table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Exam Dates section — full table ────────────────────────────────────────
   const upcoming = (examDates||[])
     .map(e => ({ ...e, daysLeft: daysUntilExam(e.examDate) }))
     .filter(e => e.daysLeft != null && e.daysLeft >= 0)
@@ -79,12 +86,12 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
       doc.rect(M, y, 2, 7, 'F')
 
       const rowData = [
-        e.subject || 'â€“',
-        e.board || 'â€“',
+        e.subject || '–',
+        e.board || '–',
         `Paper ${e.paper}${e.paperName ? ` (${e.paperName})` : ''}`,
         format(parseLocalDate(e.examDate), 'd MMM yyyy'),
         daysLabel,
-        e.targetGrade ? `Target: ${e.targetGrade}` : 'â€“',
+        examTargetLabel(e, profile),
       ]
       let rx = M
       doc.setFont('helvetica', idx===0?'bold':'normal')
@@ -97,7 +104,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
           doc.setTextColor(...DARK)
           doc.setFont('helvetica','normal')
         }
-        const truncated = val.length > 22 ? val.slice(0,20)+'â€¦' : val
+        const truncated = val.length > 22 ? val.slice(0,20)+'…' : val
         doc.text(truncated, rx+3, y+4.5)
         rx += cols[i]
       })
@@ -120,7 +127,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
 
     doc.setFillColor(...ACCENT);doc.rect(M,y,W-M*2,5.5,'F')
     doc.setTextColor(...WHITE);doc.setFontSize(6.5);doc.setFont('helvetica','bold')
-    doc.text(`Week of ${format(wStart,'d MMM')} â€“ ${format(wEnd,'d MMM yyyy')}`, M+3, y+3.8)
+    doc.text(`Week of ${format(wStart,'d MMM')} – ${format(wEnd,'d MMM yyyy')}`, M+3, y+3.8)
     y+=5.5
 
     DAYS.forEach((day,i)=>{
@@ -158,7 +165,7 @@ export async function generateTimetablePDF(profile, sessions, examDates) {
     doc.setPage(p)
     doc.setFillColor(...ACCENT);doc.rect(0,H-7,W,7,'F')
     doc.setTextColor(...WHITE);doc.setFontSize(6);doc.setFont('helvetica','normal')
-    doc.text('RevisionFlow â€” www.revisionflow.co.uk', M, H-2.5)
+    doc.text('RevisionFlow — www.revisionflow.co.uk', M, H-2.5)
     doc.text(`Page ${p} of ${pages}`, W-M, H-2.5, {align:'right'})
   }
 
@@ -179,14 +186,14 @@ export async function generateSchoolTimetablePDF(profile, timetable, rotation, h
 
   doc.setFillColor(...ACCENT); doc.rect(0,0,W,22,'F')
   doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(15)
-  doc.text(`RevisionFlow â€” ${blank ? 'Blank School Timetable' : 'School Timetable'}`, M, 14)
+  doc.text(`RevisionFlow — ${blank ? 'Blank School Timetable' : 'School Timetable'}`, M, 14)
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5)
   doc.text(profile?.displayName || 'Student', W-M, 14, { align:'right' })
 
   let y = 29
   if (rotation?.enabled) {
     doc.setTextColor(...DARK); doc.setFontSize(7)
-    doc.text(`Two-week rotation enabled Â· even ISO weeks = Week ${rotation.evenWeekLabel}`, M, y)
+    doc.text(`Two-week rotation enabled · even ISO weeks = Week ${rotation.evenWeekLabel}`, M, y)
     y += 5
   }
 
@@ -241,12 +248,12 @@ export async function generateSchoolTimetablePDF(profile, timetable, rotation, h
     doc.setTextColor(...DARK); doc.setFont('helvetica','bold'); doc.setFontSize(7)
     doc.text('Holiday dates', M, startY)
     doc.setFont('helvetica','normal'); doc.setFontSize(6)
-    activeHolidays.slice(0,8).forEach((h,i)=>doc.text(`${h.label||'School holiday'} Â· ${h.start} â€“ ${h.end}`, M, startY+5+i*3.5))
+    activeHolidays.slice(0,8).forEach((h,i)=>doc.text(`${h.label||'School holiday'} · ${h.start} – ${h.end}`, M, startY+5+i*3.5))
   }
 
   doc.setFillColor(...ACCENT); doc.rect(0,H-7,W,7,'F')
   doc.setTextColor(...WHITE); doc.setFontSize(6)
-  doc.text('RevisionFlow â€” www.revisionflow.co.uk', M, H-2.5)
+  doc.text('RevisionFlow — www.revisionflow.co.uk', M, H-2.5)
   doc.text(`Generated ${format(new Date(),'d MMM yyyy')}`, W-M, H-2.5, {align:'right'})
   doc.save(`${blank ? 'blank-' : ''}school-timetable-${format(new Date(),'yyyy-MM-dd')}.pdf`)
 }
