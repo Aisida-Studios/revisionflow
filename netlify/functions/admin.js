@@ -10,6 +10,8 @@
 //
 // CommonJS — netlify/functions/package.json sets "type":"commonjs"
 
+const { officialSetMeta, canonicalBoardName, normaliseLevelName } = require('./lib/setMeta')
+
 const ADMIN_EMAIL = 'femiaisida1@gmail.com'
 
 // ── Firebase Admin singleton ──────────────────────────────────────────────────
@@ -411,6 +413,80 @@ module.exports.handler = async function(event) {
 
       logAdminAction(db, 'archiveSupersededQualificationData', { targetUid: onlyUid || 'all users', totalArchived: toArchive.length })
       return respond(200, { ok: true, summary: { ...summary, totalArchived: toArchive.length } })
+    }
+
+    // ── Official flashcard sets: repair old data, and record an admin review ──────────────────────
+    // Sets made by the old bulk generator keep their board and level only inside the title, and were
+    // never reviewed. These two actions fix that on the server (the Firestore rules forbid clients from
+    // writing official sets). migrateOfficialSets stamps board and level as real fields so the board
+    // filter can find the sets. verifyOfficialSets records that an admin has reviewed sets: it is a
+    // dry run (counts only) unless confirm === true, and every change is written to the audit log.
+    if (action === 'migrateOfficialSets' || action === 'verifyOfficialSets') {
+      const [byUid, byType] = await Promise.all([
+        db.collection('publicFlashcards').where('uid', '==', 'official').get(),
+        db.collection('publicFlashcards').where('authorType', '==', 'official').get(),
+      ])
+      const officialDocs = new Map()
+      for (const d of [...byUid.docs, ...byType.docs]) officialDocs.set(d.id, d)
+
+      const commitInChunks = async (updates) => {          // updates: [{ ref, patch }]
+        for (let i = 0; i < updates.length; i += 400) {
+          const batch = db.batch()
+          for (const u of updates.slice(i, i + 400)) batch.update(u.ref, u.patch)
+          await batch.commit()
+        }
+      }
+
+      if (action === 'migrateOfficialSets') {
+        const summary = { scanned: officialDocs.size, stamped: 0, alreadyFine: 0, unreadable: 0 }
+        const updates = []
+        for (const d of officialDocs.values()) {
+          const data = d.data()
+          const meta = officialSetMeta(data)
+          const patch = {}
+          if (meta.board && data.board !== meta.board) patch.board = meta.board
+          if (meta.level && data.level !== meta.level) patch.level = meta.level
+          if (!meta.board || !meta.level) summary.unreadable++
+          if (Object.keys(patch).length) { updates.push({ ref: d.ref, patch }); summary.stamped++ }
+          else if (meta.board && meta.level) summary.alreadyFine++
+        }
+        await commitInChunks(updates)
+        logAdminAction(db, 'migrateOfficialSets', summary)
+        return respond(200, { ok: true, summary })
+      }
+
+      const { filter = {}, confirm } = body
+      const wantBoard   = filter.board   ? canonicalBoardName(filter.board)   : ''
+      const wantLevel   = filter.level   ? normaliseLevelName(filter.level)   : ''
+      const wantSubject = filter.subject ? String(filter.subject).trim()      : ''
+      const matched = []
+      let alreadyVerified = 0
+      for (const d of officialDocs.values()) {
+        const data = d.data()
+        if (data.verified === true) { alreadyVerified++; continue }
+        const meta = officialSetMeta(data)
+        if (wantBoard && meta.board !== wantBoard) continue
+        if (wantLevel && meta.level !== wantLevel) continue
+        if (wantSubject && data.subject !== wantSubject) continue
+        matched.push({ doc: d, meta })
+      }
+      if (confirm !== true) {
+        return respond(200, { ok: true, dryRun: true, wouldVerify: matched.length, alreadyVerified, total: officialDocs.size })
+      }
+      const now = new Date().toISOString()
+      const updates = matched.map(({ doc, meta }) => {
+        const data = doc.data()
+        const patch = {
+          verified: true, verifiedAt: now, verifiedBy: ADMIN_EMAIL, version: (Number(data.version) || 0) + 1,
+          provenance: { status: 'verified', approvedBy: ADMIN_EMAIL, approvedAt: now, via: 'admin review of an existing set' },
+        }
+        if (meta.board && data.board !== meta.board) patch.board = meta.board
+        if (meta.level && data.level !== meta.level) patch.level = meta.level
+        return { ref: doc.ref, patch }
+      })
+      await commitInChunks(updates)
+      logAdminAction(db, 'verifyOfficialSets', { verified: updates.length, filter: { board: wantBoard, level: wantLevel, subject: wantSubject } })
+      return respond(200, { ok: true, verified: updates.length, alreadyVerified })
     }
 
     // ── Content pipeline: draft → review → approval ───────────────
