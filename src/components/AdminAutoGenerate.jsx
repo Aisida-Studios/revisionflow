@@ -1,7 +1,7 @@
 // src/components/AdminAutoGenerate.jsx
 // One-button content generation across every subject/board/level, instead of the old flow of
 // manually picking one subject at a time and clicking generate. Cache-aware (skips anything
-// already done, using the same topicNotes/flashcardCache/publicFlashcards caches everything
+// already done, using the same flashcardCache/publicFlashcards caches everything
 // else reads from) and retries failed/invalid generations automatically before giving up on an
 // item — so a transient API error on one topic doesn't derail the whole run.
 //
@@ -26,15 +26,6 @@ const MAX_ATTEMPTS = 3
 const BATCH_SIZE = 5
 const DELAY_MS = 1600 // rate-limit pacing — applied once per batch, and only when that batch actually hit the API (all-cached batches don't pace)
 
-function validateNote(text) {
-  if (!text || text.trim().length < 150) return 'Note too short (likely a failed/empty generation)'
-  const lower = text.toLowerCase()
-  if (lower.includes("i can't help") || lower.includes('as an ai') || lower.includes('i cannot assist')) {
-    return 'Response looks like a refusal, not a revision note'
-  }
-  return null // valid
-}
-
 function validateFlashcards(cards) {
   if (!Array.isArray(cards) || cards.length < 5) return 'Fewer than 5 cards parsed (likely a malformed response)'
   return null
@@ -43,7 +34,7 @@ function validateFlashcards(cards) {
 export default function AdminAutoGenerate() {
   const [levels,  setLevels]  = useState([...LEVELS])
   const [boards,  setBoards]  = useState([...BOARDS])
-  const [types,   setTypes]   = useState(['notes', 'flashcards'])
+  const [types,   setTypes]   = useState(['flashcards'])
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(null) // { done, total, cached, generated, failed, current }
   const [log, setLog] = useState([])
@@ -92,7 +83,6 @@ export default function AdminAutoGenerate() {
           try { papers = getTopicsForSubject(board, subject, level) || {} } catch (e) { continue }
           const topicList = [...new Set(Object.values(papers).flat().filter(t => typeof t === 'string' && t.trim()))]
           for (const topic of topicList) {
-            if (types.includes('notes'))      queue.push({ kind: 'note', board, level, subject, topic })
             if (types.includes('flashcards')) queue.push({ kind: 'flashcard', board, level, subject, topic })
           }
         }
@@ -110,35 +100,6 @@ export default function AdminAutoGenerate() {
   }
 
   async function processItem(item, ai, fs) {
-    if (item.kind === 'note') {
-      const cached = await ai.getTopicNoteFromCache(item.board, item.level, item.subject, item.topic)
-      if (cached) return { status: 'cached' }
-
-      let lastReason = 'Unknown error'
-      let maxTokens = 4096 // per-call budget now that generateTopicNote splits internally — see ai.js
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const res = await ai.generateTopicNote({ subject: item.subject, board: item.board, level: item.level, topic: item.topic, uid: null, maxTokens })
-        if (res.error) {
-          lastReason = res.error
-          addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} failed (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${res.error}`, 'error')
-          if (looksLikeTimeout(res.error)) {
-            maxTokens = Math.max(2200, maxTokens - 900)
-            addLog(`  → retrying with a smaller token budget (${maxTokens})`, 'info')
-          }
-          continue
-        }
-        const problem = validateNote(res.text)
-        if (problem) {
-          lastReason = problem
-          addLog(`Attempt ${attempt}/${MAX_ATTEMPTS} invalid (${item.board} ${item.level} ${item.subject} — ${item.topic}): ${problem}`, 'error')
-          continue
-        }
-        await ai.saveTopicNoteToCache(item.board, item.level, item.subject, item.topic, res.text)
-        return { status: 'generated' }
-      }
-      return { status: 'failed', reason: lastReason }
-    }
-
     if (item.kind === 'flashcard') {
       const existingOfficial = await fs.getOfficialFlashcardSet(item.board, item.level, item.subject, item.topic)
       if (existingOfficial) return { status: 'cached' }
@@ -236,7 +197,7 @@ export default function AdminAutoGenerate() {
       if (stopRef.current) { addLog('Stopped — click Start again any time to resume (already-done items are skipped for free)', 'error'); break }
 
       const batch = queue.slice(i, i + BATCH_SIZE)
-      const labels = batch.map(item => `${item.kind === 'note' ? 'Notes' : 'Flashcards'}: ${item.board} ${item.level} ${item.subject} — ${item.topic}`)
+      const labels = batch.map(item => `Flashcards: ${item.board} ${item.level} ${item.subject} — ${item.topic}`)
       setProgress(p => ({ ...p, current: labels.join('  ·  ') }))
 
       // Batch runs concurrently — up to BATCH_SIZE items in flight at once, instead of one
@@ -333,7 +294,7 @@ export default function AdminAutoGenerate() {
         <div>
           <label className="label">Content</label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[['notes', 'Topic notes'], ['flashcards', 'Flashcards']].map(([v, label]) => (
+            {[['flashcards', 'Flashcards']].map(([v, label]) => (
               <button key={v} disabled={running} onClick={() => toggle(types, setTypes, v)}
                 style={{ padding: '4px 10px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, cursor: running ? 'default' : 'pointer',
                   border: `1px solid ${types.includes(v) ? 'var(--accent)' : 'var(--border)'}`,
