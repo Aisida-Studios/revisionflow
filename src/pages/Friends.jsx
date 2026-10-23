@@ -9,7 +9,7 @@ import {
 import { LEVELS } from '../data/subjects'
 import ReferralCard from '../components/ReferralCard'
 import toast from 'react-hot-toast'
-import { UserPlus, UserCheck, UserX, Users, Search, Flame } from 'lucide-react'
+import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 
@@ -214,7 +214,7 @@ export default function Friends() {
                     <div className="ap-person-main">
                       <div className="ap-person-name">{f.displayName}</div>
                       <div className="ap-person-meta">
-                        Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · <Flame size={12} style={{ verticalAlign: '-1px' }} /> {f.streak || 0} · {(f.xp || 0).toLocaleString()} XP
+                        Level {f.level || 1}{lvl ? ` · ${lvl.title}` : ''} · {f.streak || 0} day streak · {(f.xp || 0).toLocaleString()} XP
                       </div>
                     </div>
                     <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleRemove(f.uid)} aria-label={`Remove ${f.displayName}`}>
