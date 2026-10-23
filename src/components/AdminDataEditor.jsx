@@ -1,5 +1,5 @@
 // src/components/AdminDataEditor.jsx
-// Lets admin add/edit/remove topics, exam dates, paper specs & grade boundaries, topic notes,
+// Lets admin add/edit/remove topics, exam dates, paper specs & grade boundaries,
 // and flashcard sets — the "edit all public data" request. Topics/exam dates/paper data are
 // static JS files at build time (see src/data/overrides.js for why and how the override layer
 // works); notes and flashcards were already Firestore-backed, so those are direct edits.
@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { Plus, ClipboardList, EyeOff, FileText, BarChart2 } from 'lucide-react'
-import { collection, getDocs, query, orderBy, limit as fsLimit } from 'firebase/firestore'
+import { collection, getDocs, query, where, limit as fsLimit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { Section } from './Section'
 import { getSupportedSubjects } from '../data/curriculumSupport'
@@ -28,7 +28,6 @@ const TABS = [
   { id: 'topics',   label: 'Topics' },
   { id: 'examdates', label: 'Exam Dates' },
   { id: 'papers',   label: 'Papers & Boundaries' },
-  { id: 'notes',    label: 'Topic Notes' },
   { id: 'flashcards', label: 'Flashcards' },
   { id: 'review',   label: 'Review queue' },
 ]
@@ -48,7 +47,6 @@ export default function AdminDataEditor() {
       {tab === 'topics' && <TopicsEditor />}
       {tab === 'examdates' && <ExamDatesEditor />}
       {tab === 'papers' && <PapersEditor />}
-      {tab === 'notes' && <NotesEditor />}
       {tab === 'flashcards' && <FlashcardsEditor />}
       {tab === 'review' && <ReviewQueue />}
     </div>
@@ -377,79 +375,6 @@ function PapersEditor() {
   )
 }
 
-/* ── Topic notes ────────────────────────────────────────────────────────── */
-function NotesEditor() {
-  const [notes, setNotes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(null) // slug of note being edited
-  const [draft, setDraft] = useState('')
-
-  useEffect(() => { load() }, [])
-
-  async function load() {
-    setLoading(true)
-    try {
-      const snap = await getDocs(query(collection(db, 'topicNotes'), orderBy('generatedAt', 'desc'), fsLimit(100)))
-      setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    } catch (e) { toast.error('Load failed: ' + e.message) }
-    setLoading(false)
-  }
-
-  function startEdit(note) { setEditing(note.id); setDraft(note.text || '') }
-
-  async function saveEdit(id) {
-    try {
-      await submitContentForReview('topicNote', id, { text: draft })
-      toast.success('Edit submitted for review')
-      setEditing(null)
-      load()
-    } catch (e) { toast.error('Save failed: ' + e.message) }
-  }
-
-  async function removeNote(id) {
-    if (!window.confirm('Delete this note? Students will get a freshly-generated one next time it\'s requested.')) return
-    try { await submitContentForReview('topicNote', id, null, 'delete'); toast.success('Deletion submitted for review'); load() } catch (e) { toast.error('Delete failed: ' + e.message) }
-  }
-
-  return (
-    <div>
-      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 14 }}>
-        Most recent 100 topic notes. Deleting one just clears the cache for that topic — it'll
-        regenerate next time a student (or the auto-generate tool) requests it.
-      </p>
-      {loading ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {notes.map(n => (
-            <div key={n.id} className="card" style={{ padding: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{n.board} {n.level} {n.subject} — {n.topic}</span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {editing === n.id ? (
-                    <>
-                      <button className="btn btn-primary btn-sm" onClick={() => saveEdit(n.id)}>Save</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(null)}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn btn-secondary btn-sm" onClick={() => startEdit(n)}>Edit</button>
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => removeNote(n.id)}>Delete</button>
-                    </>
-                  )}
-                </div>
-              </div>
-              {editing === n.id ? (
-                <textarea className="input" value={draft} onChange={e => setDraft(e.target.value)} style={{ width: '100%', minHeight: 200, fontFamily: 'monospace', fontSize: '0.8rem' }} />
-              ) : (
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxHeight: 60, overflow: 'hidden' }}>{(n.text || '').slice(0, 200)}…</p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 /* ── Flashcards ─────────────────────────────────────────────────────────── */
 function FlashcardsEditor() {
   const [sets, setSets] = useState([])
@@ -462,8 +387,10 @@ function FlashcardsEditor() {
   async function load() {
     setLoading(true)
     try {
-      const snap = await getDocs(query(collection(db, 'publicFlashcards'), orderBy('createdAt', 'desc'), fsLimit(100)))
-      setSets(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.authorType === 'official'))
+      // Query the official sets directly. Ordering by createdAt and filtering afterwards hid every set
+      // outside the 100 newest and every older set stored without a createdAt.
+      const snap = await getDocs(query(collection(db, 'publicFlashcards'), where('authorType', '==', 'official'), fsLimit(300)))
+      setSets(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     } catch (e) { toast.error('Load failed: ' + e.message) }
     setLoading(false)
   }
