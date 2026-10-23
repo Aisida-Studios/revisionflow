@@ -31,3 +31,7 @@ export async function submitContentForReview(kind, id, data, op = 'set') {
 export const listContentDrafts = (status) => adminFetch('contentListDrafts', { status })
 export const approveContentDraft = (draftId) => adminFetch('contentApprove', { draftId })
 export const rejectContentDraft  = (draftId, reason) => adminFetch('contentReject', { draftId, reason })
+
+// Existing RevisionFlow flashcard sets (see AdminOfficialSets.jsx). verifyOfficialSets counts only unless confirm is true.
+export const migrateOfficialSets = () => adminFetch('migrateOfficialSets')
+export const verifyOfficialSets  = (filter = {}, confirm = false) => adminFetch('verifyOfficialSets', { filter, confirm })
