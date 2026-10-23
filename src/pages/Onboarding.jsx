@@ -15,7 +15,7 @@ import { getMergedTopicsFlat } from '../data/overrides'
 import { buildTopicId } from '../utils/topicId'
 import { buildSubjectKey } from '../utils/subjectKey'
 import toast from 'react-hot-toast'
-import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles, BookOpen, CalendarDays, ListChecks, Trophy, Flame, Link2, BarChart2, CheckCircle2, Target, Compass } from 'lucide-react'
+import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles, BookOpen, CalendarDays, ListChecks, Trophy, Sprout, Link2, BarChart2, CheckCircle2, Target, Compass } from 'lucide-react'
 import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
 
@@ -552,7 +552,7 @@ export default function Onboarding() {
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20, textAlign:'left' }}>
                 {[
                   [Trophy,'XP leaderboard with your friends'],
-                  [Flame,"See each other's streaks"],
+                  [Sprout,"See each other's streaks"],
                   [Link2,'Share your profile link'],
                   [BarChart2,'Compare grade progress'],
                 ].map(([Icon, t]) => (
@@ -588,7 +588,7 @@ export default function Onboarding() {
                   { label:'All spec topics pre-loaded', icon: CheckCircle2 },
                   ...(subjects.some(s => s.targetGrade) ? [{ label:'Grade targets set', icon: Target }] : []),
                   { label:'AI advisor ready to use', icon: Compass },
-                  { label:'Streak tracking starts today', icon: Flame },
+                  { label:'Streak tracking starts today', icon: Sprout },
                   { label:`Revision schedule ${planDone ? 'generated' : 'ready to generate in Calendar'}`, icon: CalendarDays },
                 ].map(({ label, icon: Icon }) => (
                   <div key={label} style={{
