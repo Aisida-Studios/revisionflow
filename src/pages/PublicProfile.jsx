@@ -1,14 +1,15 @@
 // src/pages/PublicProfile.jsx
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { LEVELS } from '../data/subjects'
+import { LEVELS, levelFromXP } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
 import { resolveProfileIcon } from '../data/themes'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import BadgeArt from '../components/illustrations/BadgeArt'
-import { Zap, Star, Flame } from 'lucide-react'
+import { Zap, Star } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
 import './AccountPages.css'
+import './Profile.css'
 
 export default function PublicProfile() {
   const { username } = useParams()
@@ -33,6 +34,22 @@ export default function PublicProfile() {
     })
   }, [username])
 
+  // Student pages should not be indexed by search engines.
+  useEffect(() => {
+    const meta = document.createElement('meta')
+    meta.name = 'robots'
+    meta.content = 'noindex'
+    document.head.appendChild(meta)
+    return () => { meta.remove() }
+  }, [])
+
+  useEffect(() => {
+    if (!profileData) return
+    const previous = document.title
+    document.title = (profileData.displayName || 'Student') + ' on RevisionFlow'
+    return () => { document.title = previous }
+  }, [profileData])
+
   if (loading) return <LoadingScreen />
 
   if (notFound) return (
@@ -48,7 +65,8 @@ export default function PublicProfile() {
   )
 
   const p = profileData
-  const lvl = LEVELS[Math.min((p.level||1)-1, LEVELS.length-1)]
+  const level = levelFromXP(p.xp)
+  const lvl = LEVELS[Math.min(level - 1, LEVELS.length - 1)]
   const unlockedBadges = (p.badges||[]).map(id => BADGE_LIST.find(b => b.id===id)).filter(Boolean)
   const iconEmoji = resolveProfileIcon(p.profileIcon).emoji
 
@@ -69,39 +87,24 @@ export default function PublicProfile() {
         </div>
 
         {/* Hero card */}
-        <div className="card accent-card" style={{ padding:32, textAlign:'center', marginBottom:20 }}>
+        <div className="card accent-card" style={{ padding:'28px 20px', textAlign:'center', marginBottom:20 }}>
           <div className="ap-avatar ap-avatar--xl" style={{ margin:'0 auto 16px', fontSize: iconEmoji ? '2.4rem' : undefined }}>
             {iconEmoji || (p.displayName||'U')[0].toUpperCase()}
           </div>
           <h2 style={{ marginBottom:4 }}>{p.displayName || 'Anonymous'}</h2>
           {p.username && (
-            <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginBottom:16 }}>
-              @{p.username}
-            </p>
+            <p style={{ color:'var(--text-muted)', fontSize:'0.85rem', marginBottom:4 }}>@{p.username}</p>
           )}
-          {lvl && (
-            <div className="badge badge-accent" style={{ marginBottom:16 }}>
-              <Star size={12} /> Level {p.level||1} — {lvl.title}
-            </div>
-          )}
-          <div style={{ display:'flex', gap:28, justifyContent:'center', flexWrap:'wrap' }}>
-            <div>
-              <div className="stat-num" style={{ color:'var(--accent-light)' }}>{(p.xp||0).toLocaleString()}</div>
-              <div className="stat-cap">XP earned</div>
-            </div>
-            <div>
-              <div className="stat-num" style={{ color:'var(--warning)' }}><span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Flame size={22} />{p.streak||0}</span></div>
-              <div className="stat-cap">Day streak</div>
-            </div>
-            <div>
-              <div className="stat-num" style={{ color:'var(--accent-light)' }}>{unlockedBadges.length}</div>
-              <div className="stat-cap">Badges</div>
-            </div>
+          {lvl && <p className="pf-level">Level {level} · {lvl.title}</p>}
+          <div className="pf-stats" style={{ marginBottom:0 }}>
+            <div><div className="pf-stat-num">{(p.xp||0).toLocaleString()}</div><div className="pf-stat-cap">XP</div></div>
+            <div><div className="pf-stat-num">{p.streak||0}</div><div className="pf-stat-cap">Day streak</div></div>
+            <div><div className="pf-stat-num">{unlockedBadges.length}</div><div className="pf-stat-cap">Badges</div></div>
           </div>
         </div>
 
-        {/* Subjects (only if settings allow) */}
-        {p.settings?.friendsCanSeeGrades !== false && (p.subjects||[]).length > 0 && (
+        {/* Subjects: the server sends names only, and nothing if the student hides them */}
+        {(p.subjects||[]).length > 0 && (
           <div className="card" style={{ marginBottom:20 }}>
             <h4 className="card-eyebrow" style={{ marginBottom:12, fontSize:'0.9rem' }}>Subjects</h4>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
@@ -139,9 +142,9 @@ export default function PublicProfile() {
           <div className="ap-icon-circle" style={{ margin:'0 auto 12px' }}><Zap size={18} /></div>
           <h4 style={{ marginBottom:6 }}>Track your own revision</h4>
           <p style={{ color:'var(--text-muted)', fontSize:'0.875rem', marginBottom:16, maxWidth:300, marginLeft:'auto', marginRight:'auto' }}>
-            Join {p.displayName?.split(' ')[0] || 'them'} on RevisionFlow — free revision platform for UK GCSE, AS-Level &amp; A-Level.
+            RevisionFlow helps UK GCSE, AS-Level and A-Level students plan and track their revision.
           </p>
-          <Link to="/signup" className="btn btn-primary">Start revising free →</Link>
+          <Link to="/signup" className="btn btn-primary">Create your account</Link>
         </div>
 
       </div>
