@@ -17,10 +17,10 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getDailyQuests } from '../data/badges'
-import { CheckCircle, Circle, BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Flame } from 'lucide-react'
+import { CheckCircle, Circle, BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Sprout } from 'lucide-react'
 
 // Each quest in data/badges.js names its icon (lucideIcon); this turns the name into a component.
-const QUEST_ICONS = { BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Flame }
+const QUEST_ICONS = { BookOpen, Star, ClipboardList, Compass, Timer, AlertCircle, StickyNote, UserPlus, Sprout }
 
 export default function DailyQuests() {
   const { user } = useAuth()
