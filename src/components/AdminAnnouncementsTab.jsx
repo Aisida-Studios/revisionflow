@@ -83,12 +83,12 @@ export default function AdminAnnouncementsTab() {
     <div>
       <div className="card" style={{ padding: 16, marginBottom: 16 }}>
         <p style={{ fontWeight: 600, fontSize: '0.85rem', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Megaphone size={15} /> Not mounted yet
+          <Megaphone size={15} /> How announcements work
         </p>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-          The display component (AnnouncementBanner.jsx) exists and is ready, but isn't wired into the app layout yet —
-          that's one line in Layout.jsx/App.jsx, outside this chat's file ownership. Announcements created here won't
-          be visible to students until that's done.
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.55 }}>
+          A new announcement appears as a banner at the top of the app for everyone in the audience you choose, until you
+          deactivate or delete it, it expires, or the student dismisses it. Up to three are shown at once, newest first.
+          Students see a new one the next time they open or refresh the app.
         </p>
       </div>
 
