@@ -1383,12 +1383,19 @@ function parseOfficialTitle(title) {
   return null
 }
 
-// Retired. This used to re-key old official flashcard sets from the browser, which meant the
-// browser could write official content. Official sets can only be written through /api/admin now
-// (draft -> review -> approval), and Firestore rules reject client writes to them, so there is
-// nothing for the client to migrate. Kept as a no-op so the admin screens that still call it
-// keep working; they will simply report zero migrated.
-export const migrateLegacyOfficialFlashcardSets = async () => ({ migrated: 0, skipped: 0, unparseable: 0, retired: true })
+// Old official flashcard sets keep their board and level only in the title. The browser can never write
+// official content (the Firestore rules reject it), so this asks the admin function to stamp the
+// fields on the server. Idempotent; reports how many sets were fixed. Admin screens call it before a
+// bulk run; if the call fails (not an admin, offline) it reports zero and the run carries on.
+export const migrateLegacyOfficialFlashcardSets = async () => {
+  try {
+    const { migrateOfficialSets } = await import('./adminApi')
+    const { summary } = await migrateOfficialSets()
+    return { migrated: summary.stamped, skipped: summary.alreadyFine, unparseable: summary.unreadable }
+  } catch {
+    return { migrated: 0, skipped: 0, unparseable: 0 }
+  }
+}
 
 export const updateFlashcardSet = async (uid, setId, { title, subject, topic, cards, isPublic }) => {
   const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
