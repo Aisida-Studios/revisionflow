@@ -7,6 +7,9 @@ import { miniTimerState, formatClock } from '../src/utils/miniTimerState.js'
 import { ALL_TIME, academicYearStart, resolveAnalyticsStart, earliestRecordDay, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
 import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
+import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
+import { mergeOutcomes, hasOutcomes } from '../src/utils/progressMerge.js'
+import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
 import { groupsFromQuestions } from '../src/utils/paperQuestions.js'
@@ -548,6 +551,43 @@ ok('a linked session reads as a session timer; finished and alarm states are sho
   assert.equal(miniTimerState({ ...base, cdRunning: true, swRunning: true, swElapsed: 5 }).kind, 'countdown')   // countdown wins over stopwatch
 })
 
+ok('REGRESSION: old official flashcard sets carry board and level only in their title; the filter reads them from there, never from the viewer', () => {
+  const titles = [
+    ['Edexcel GCSE Physics \u2014 Waves', { board: 'Edexcel', level: 'GCSE', subject: 'Physics', topic: 'Waves' }],
+    ['WJEC A-Level Biology \u2014 Enzymes', { board: 'WJEC', level: 'A-Level', subject: 'Biology', topic: 'Enzymes' }],
+    ['Eduqas GCSE English Literature', { board: 'WJEC', level: 'GCSE', subject: 'English Literature', topic: '' }],
+    ['OCR AS-Level Chemistry \u2014 Rates', { board: 'OCR', level: 'AS-Level', subject: 'Chemistry', topic: 'Rates' }],
+    ['Pearson Edexcel A Level Mathematics \u2014 Calculus', { board: 'Edexcel', level: 'A-Level', subject: 'Mathematics', topic: 'Calculus' }],
+    ['CCEA GCSE Biology \u2014 Cells', { board: 'CCEA', level: 'GCSE', subject: 'Biology', topic: 'Cells' }],
+    ['AQA GCSE History', { board: 'AQA', level: 'GCSE', subject: 'History', topic: '' }],
+  ]
+  for (const [title, want] of titles) {
+    assert.deepEqual(parseSetTitle(title), want, title)
+    assert.deepEqual(srvParseSetTitle(title), want, 'server twin: ' + title)      // browser and server agree
+  }
+  assert.equal(parseSetTitle('My OCR revision notes'), null)                       // not the generated format
+  assert.equal(parseSetTitle('OCR Physics \u2014 Waves'), null)                     // no level: not guessed
+  // Official set with no stamped fields: read from the title. Stamped aliases are canonicalised.
+  assert.deepEqual(setBoardLevel({ uid: 'official', title: 'Edexcel GCSE Physics \u2014 Waves' }), { board: 'Edexcel', level: 'GCSE' })
+  assert.deepEqual(setBoardLevel({ uid: 'official', board: 'Eduqas', level: 'GCSE', title: 'x' }), { board: 'WJEC', level: 'GCSE' })
+  assert.deepEqual(setBoardLevel({ authorType: 'official', board: 'Pearson Edexcel', level: 'A Level' }), { board: 'Edexcel', level: 'A-Level' })
+  // A community set is never guessed from its title, and nothing is guessed from the viewer's profile.
+  assert.deepEqual(setBoardLevel({ uid: 'someStudent', title: 'Edexcel GCSE Physics \u2014 Waves' }), { board: '', level: '' })
+  assert.deepEqual(setBoardLevel({ uid: 'someStudent', board: 'OCR', level: 'GCSE' }), { board: 'OCR', level: 'GCSE' })
+  assert.deepEqual(srvOfficialSetMeta({ uid: 'official', title: 'WJEC A-Level Biology \u2014 Enzymes' }), { board: 'WJEC', level: 'A-Level' })
+})
+ok('saving progress folds per-card outcomes into mastery and the spaced-repetition schedule without touching other cards', () => {
+  const before = { mastery: { A: 3, B: 1 }, schedule: { A: { box: 2, dueDate: '2026-10-20' }, B: { box: 1, dueDate: '2026-10-15' } } }
+  const out = mergeOutcomes(before.mastery, before.schedule, { A: 3, C: 2, B: 1, D: 9 })
+  assert.equal(out.mastery.A, 3); assert.equal(out.mastery.B, 1); assert.equal(out.mastery.C, 2)
+  assert.equal(out.mastery.D, undefined)                               // an invalid outcome is ignored
+  assert.equal(out.schedule.A.box, 3)                                   // got it: promoted a box
+  assert.equal(out.schedule.B.box, 1)                                   // missed: back to box 1
+  assert.equal(out.schedule.C.box, 1)                                   // partly, never scheduled: holds the first box
+  assert.equal(before.schedule.A.box, 2)                                // the inputs are not mutated
+  assert.deepEqual(mergeOutcomes(undefined, undefined, undefined), { mastery: {}, schedule: {} })
+  assert.equal(hasOutcomes({}), false); assert.equal(hasOutcomes({ A: 3 }), true); assert.equal(hasOutcomes(null), false)
+})
 ok('REGRESSION: AS-Level subjects never show an impossible target of 9; an invalid stored target reads as Not set', () => {
   const as = { qualification: 'AS-Level' }
   assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level', targetGrade: '9' }, as), null)
