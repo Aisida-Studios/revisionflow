@@ -11,7 +11,7 @@ export function generateFlashcardsPDF(set) {
   doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(15)
   doc.text((set?.title || 'Flashcard Set').slice(0,70), M, 15)
   doc.setFont('helvetica','normal'); doc.setFontSize(7)
-  doc.text(`${set?.subject || ''}${set?.topic ? ' Â· '+set.topic : ''} Â· ${cards.length} cards`, W-M, 15, {align:'right'})
+  doc.text(`${set?.subject || ''}${set?.topic ? ' · '+set.topic : ''} · ${cards.length} cards`, W-M, 15, {align:'right'})
 
   let y=32
   const gap=7, cardH=42
@@ -32,8 +32,8 @@ export function generateFlashcardsPDF(set) {
   for(let p=1;p<=pages;p++){
     doc.setPage(p); doc.setFillColor(...ACCENT); doc.rect(0,H-7,W,7,'F')
     doc.setTextColor(...WHITE); doc.setFontSize(6)
-    doc.text('RevisionFlow â€” Flashcards',M,H-2.5)
-    doc.text(`Page ${p} of ${pages} Â· ${format(new Date(),'d MMM yyyy')}`,W-M,H-2.5,{align:'right'})
+    doc.text('RevisionFlow — Flashcards',M,H-2.5)
+    doc.text(`Page ${p} of ${pages} · ${format(new Date(),'d MMM yyyy')}`,W-M,H-2.5,{align:'right'})
   }
   doc.save(`flashcards-${(set?.title||'set').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'set'}.pdf`)
 }
