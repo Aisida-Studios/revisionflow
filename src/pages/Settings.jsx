@@ -158,7 +158,7 @@ export default function Settings() {
   function addSubj() {
     if (!newSubj.name) return
     const gradeOpts = getGradeOptions(newSubj.name, addSubjQual, newSubj.tier)
-    const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : gradeOpts[0]
+    const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : ''   // left unset stays unset
     setSubjects(s => [...s, { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }])
     setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '' })
   }
@@ -316,7 +316,8 @@ export default function Settings() {
                 {getGradeOptions(newSubj.name, addSubjQual, newSubj.tier).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
               <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Target:</label>
-              <select className="select" style={{ flex: 1, minWidth: 90 }} value={newSubj.targetGrade} onChange={e => setNewSubj(s => ({ ...s, targetGrade: e.target.value }))}>
+              <select className="select" style={{ flex: 1, minWidth: 90 }} value={newSubj.targetGrade} onChange={e => setNewSubj(s => ({ ...s, targetGrade: e.target.value }))} aria-label="Target grade">
+                <option value="">Target: not set</option>
                 {getGradeOptions(newSubj.name, addSubjQual, newSubj.tier).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
@@ -536,7 +537,7 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
     // A-Level, 9 to 1 at GCSE). This modal has no target picker, so new subjects used to be saved
     // with a hard-coded 9, which does not exist at AS-Level.
     const opts = getGradeOptions(newSubj.name, qual, newSubj.tier)
-    const targetGrade = opts.includes(newSubj.targetGrade) ? newSubj.targetGrade : opts[0]
+    const targetGrade = opts.includes(newSubj.targetGrade) ? newSubj.targetGrade : ''   // left unset stays unset
     setSubjects(s => [...s, { ...newSubj, qualification: qual, targetGrade, id: Date.now().toString() }])
     setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '', qualification: newQual })
   }
@@ -580,8 +581,9 @@ function QualChangeModal({ user, profile, newQual, onClose, onComplete }) {
                     </div>
                     <div className="ap-subject-row-grades">
                       <select className="select" style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
-                        value={s.targetGrade}
+                        value={s.targetGrade || ''} aria-label={`Target grade for ${s.name}`}
                         onChange={e => setSubjects(ss => ss.map((x, j) => j === i ? { ...x, targetGrade: e.target.value } : x))}>
+                        <option value="">Not set</option>
                         {getGradeOptions(s.name, s.qualification || newQual, s.tier).map(g => <option key={g} value={g}>{g}</option>)}
                       </select>
                       <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setSubjects(ss => ss.filter((_, j) => j !== i))}>
