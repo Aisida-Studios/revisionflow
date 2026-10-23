@@ -4,7 +4,7 @@
 
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, initializeFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 
@@ -22,7 +22,13 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 // Explicitly set local persistence so users stay signed in on mobile/PWA
 setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Auth persistence:', e))
-export const db = getFirestore(app)
+// Firestore's realtime channel can be rejected or reset (a 400 on .../Listen/channel) behind some proxies, VPNs,
+// school networks and ad blockers. Auto-detecting long polling lets the SDK fall back to a transport those
+// networks allow, instead of retrying a stream that keeps failing. Falls back to the default instance if
+// Firestore was already initialised (hot reload in development).
+let firestore
+try { firestore = initializeFirestore(app, { experimentalAutoDetectLongPolling: true }) } catch { firestore = getFirestore(app) }
+export const db = firestore
 export const storage = getStorage(app)
 export const googleProvider = new GoogleAuthProvider()
 
