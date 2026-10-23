@@ -1,247 +1,183 @@
 // src/utils/streakCard.js
-// Generates a shareable streak card image using Canvas API
-// Returns a data URL PNG suitable for download or Web Share API
-//
-// Design note: the previous version leaned on near-black backgrounds with lots of
-// 4-25%-opacity white "frosted glass" overlays. Every pixel was technically opaque, but
-// against a dark phone background or a dark-mode Instagram/TikTok feed it read as washed-out
-// and hard to see — easy to mistake for a transparent PNG. Rebuilt Duolingo-style instead:
-// one fully-saturated solid background colour, a solid (not translucent) white content card,
-// and high-contrast text everywhere. Nothing on this card should ever look "see-through".
+// Share card as a 1080 x 1080 PNG: the streak, a row of growing plants, the student's name and level, and three
+// stats. Deliberately plain: Manrope, deep green on white, no emoji, no flame, nothing animated. Drawn on a canvas
+// so it never depends on an emoji font or on the page's theme.
+
+const W = 1080
+const H = 1080
+const FONT = "Manrope, -apple-system, 'Segoe UI', system-ui, sans-serif"
+const C = {
+  bg: '#F4F7F3', panel: '#FFFFFF', panelLine: '#D9E3D9', rule: '#E3EAE3',
+  ink: '#0F172A', green: '#14532D', body: '#3F5A47', muted: '#5B6B61', faint: '#7A8A80',
+  stem: '#2F6B3F', leafA: '#4F8A5B', leafB: '#7DB38A', soil: '#C8D5C8', brand: '#16A34A',
+}
 
 export async function generateStreakCard({
-  displayName,
-  streak,
-  xp,
-  level,
-  levelTitle,
-  badges,
-  subjects,
-  bestStreak,
-  profileIcon,
-  accentColor = '#14532d',
-}) {
-  const W = 1080, H = 1080  // Square for Instagram/TikTok
+  displayName = 'Student', streak = 0, xp = 0, level = 1, levelTitle = '', badges = 0, bestStreak = 0,
+} = {}) {
+  await loadFonts()
 
-  const canvas  = document.createElement('canvas')
-  canvas.width  = W
+  const canvas = document.createElement('canvas')
+  canvas.width = W
   canvas.height = H
-  const ctx     = canvas.getContext('2d')
-
-  const dark = darken(accentColor, 40)
-
-  // ── Solid, fully-saturated background (no gradients-to-black, no translucency) ────
-  ctx.fillStyle = accentColor
-  ctx.fillRect(0, 0, W, H)
-
-  // Chunky decorative shapes (solid, low-key darker/lighter tone of the same colour —
-  // Duolingo-style playful background detail, not a moody glow)
-  circleSolid(ctx, W * 0.88, H * 0.08, 130, lighten(accentColor, 25))
-  circleSolid(ctx, W * 0.06, H * 0.92, 160, dark)
-  circleSolid(ctx, W * 0.92, H * 0.90, 90, dark)
-
-  // ── Branding strip ──────────────────────────────────────────────────
-  ctx.font = 'bold 30px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = '#ffffff'
-  ctx.textAlign = 'left'
-  ctx.fillText('RevisionFlow', 72, 96)
-  ctx.font = '24px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'
-  ctx.fillText('revisionflow.netlify.app', 72, 128)
-
-  // ── Solid white content card ────────────────────────────────────────
-  const cardX = 56, cardY = 168, cardW = W - 112, cardH = H - 168 - 56
-  roundRect(ctx, cardX, cardY, cardW, cardH, 36)
-  ctx.fillStyle = '#ffffff'
-  ctx.fill()
-
-  // ── Avatar — solid colour circle, bold ring, no translucency ───────
-  const avatarX = W / 2, avatarY = cardY + 100, avatarR = 66
-  ctx.beginPath()
-  ctx.arc(avatarX, avatarY, avatarR + 8, 0, Math.PI * 2)
-  ctx.fillStyle = accentColor
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2)
-  ctx.fillStyle = lighten(accentColor, 15)
-  ctx.fill()
-  ctx.font = `${avatarR * 0.85}px serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = '#ffffff'
-  ctx.fillText(profileIcon || displayName?.[0]?.toUpperCase() || 'R', avatarX, avatarY + 4)
-
-  // ── Display name + level ────────────────────────────────────────────
+  const ctx = canvas.getContext('2d')
   ctx.textBaseline = 'alphabetic'
-  ctx.font = 'bold 48px -apple-system, system-ui, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.fillStyle = '#1a1a1f'
-  ctx.fillText(truncate(displayName || 'Student', 18), W / 2, avatarY + 108)
 
-  const lvlText = `Level ${level} · ${levelTitle}`
-  ctx.font = 'bold 26px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = accentColor
-  ctx.fillText(lvlText, W / 2, avatarY + 144)
-
-  // ── Main streak number — bold solid orange badge, no glow-on-black tricks ──
-  const streakBadgeY = avatarY + 200
-  roundRect(ctx, W / 2 - 220, streakBadgeY, 440, 230, 32)
-  ctx.fillStyle = '#fff4e8'
+  // Page and panel
+  ctx.fillStyle = C.bg
+  ctx.fillRect(0, 0, W, H)
+  roundRect(ctx, 40, 40, 1000, 1000, 40)
+  ctx.fillStyle = C.panel
   ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = C.panelLine
+  ctx.stroke()
 
+  // Header: mark, wordmark, address
+  roundRect(ctx, 96, 96, 64, 64, 18)
+  ctx.fillStyle = C.green
+  ctx.fill()
+  drawBolt(ctx, 128, 128, 34)
+  ctx.textAlign = 'left'
+  ctx.font = '800 44px ' + FONT
+  ctx.fillStyle = C.ink
+  ctx.fillText('Revision', 180, 141)
+  const revW = ctx.measureText('Revision').width
+  ctx.fillStyle = C.brand
+  ctx.fillText('Flow', 180 + revW, 141)
+  ctx.textAlign = 'right'
+  ctx.font = '600 30px ' + FONT
+  ctx.fillStyle = C.faint
+  ctx.fillText('revisionflow.co.uk', 984, 140)
+
+  // The streak
   ctx.textAlign = 'center'
-  drawIcon(ctx, 'flame', W / 2, streakBadgeY + 56, 84, { fill: '#f97316', stroke: '#f97316', lineWidth: 1.5 })
+  ctx.fillStyle = C.green
+  const count = String(Math.max(0, Math.round(streak)))
+  ctx.font = '800 ' + (count.length >= 4 ? 220 : count.length === 3 ? 270 : 320) + 'px ' + FONT
+  ctx.fillText(count, W / 2, 452)
+  ctx.font = '700 52px ' + FONT
+  ctx.fillStyle = C.body
+  ctx.fillText('day streak', W / 2, 530)
 
-  ctx.font = 'bold 110px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = '#f97316'
-  ctx.fillText(String(streak), W / 2, streakBadgeY + 195)
-
-  ctx.font = 'bold 28px -apple-system, system-ui, sans-serif'
-  ctx.fillStyle = '#c2410c'
-  ctx.fillText('DAY STREAK', W / 2, streakBadgeY + 228)
-
-  // ── Stats row — solid coloured badges, high-contrast white text ────
-  const statsY = streakBadgeY + 260
-  const stats = [
-    { label: 'XP',          val: formatXP(xp),              icon: 'zap',    bg: accentColor },
-    { label: 'Best streak', val: `${bestStreak || streak}d`, icon: 'trophy', bg: dark },
-    { label: 'Badges',      val: String(badges),             icon: 'award',  bg: accentColor },
-  ]
-  const gap = 20
-  const statW = (cardW - 64 - gap * 2) / 3
-  stats.forEach((s, i) => {
-    const x  = cardX + 32 + i * (statW + gap)
-    const cx = x + statW / 2
-
-    roundRect(ctx, x, statsY, statW, 118, 20)
-    ctx.fillStyle = s.bg
-    ctx.fill()
-
-    ctx.textAlign = 'center'
-    drawIcon(ctx, s.icon, cx, statsY + 30, 32, { stroke: '#ffffff', lineWidth: 2 })
-
-    ctx.font = 'bold 34px -apple-system, system-ui, sans-serif'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(s.val, cx, statsY + 78)
-
-    ctx.font = 'bold 20px -apple-system, system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'
-    ctx.fillText(s.label, cx, statsY + 102)
-  })
-
-  // ── Subjects row — solid pill badges ────────────────────────────────
-  if (subjects?.length) {
-    const subY    = statsY + 148
-    const subList = subjects.slice(0, 4)
-    const subW    = Math.min(180, (cardW - 64) / subList.length)
-    const totalW  = subList.length * (subW + 10) - 10
-    const startX  = (W - totalW) / 2
-    subList.forEach((s, i) => {
-      const x = startX + i * (subW + 10)
-      roundRect(ctx, x, subY, subW, 44, 22)
-      ctx.fillStyle = '#f2f2f0'
-      ctx.fill()
-      ctx.font = 'bold 19px -apple-system, system-ui, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillStyle = accentColor
-      ctx.fillText(truncate(s, 11), x + subW / 2, subY + 28)
-    })
+  // Growing plants, one per day up to nine, each a little taller than the last
+  const plants = Math.min(9, Math.max(1, Math.round(streak)))
+  const span = Math.min(480, 64 * (plants - 1))
+  const left = W / 2 - span / 2
+  const soilY = 690
+  ctx.strokeStyle = C.soil
+  ctx.lineWidth = 4
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(280, soilY)
+  ctx.lineTo(800, soilY)
+  ctx.stroke()
+  for (let i = 0; i < plants; i++) {
+    const t = plants === 1 ? 0.5 : i / (plants - 1)
+    drawPlant(ctx, plants === 1 ? W / 2 : left + span * t, soilY, 52 + 76 * t, (i % 2 ? 1 : -1) * 6)
   }
 
-  // ── Bottom CTA ────────────────────────────────────────────────────
-  ctx.font = 'bold 24px -apple-system, system-ui, sans-serif'
+  // Name and level
   ctx.textAlign = 'center'
-  ctx.fillStyle = '#8c8c8c'
-  ctx.fillText('Join the revision revolution', W / 2, cardY + cardH - 32)
+  ctx.font = '800 54px ' + FONT
+  ctx.fillStyle = C.ink
+  ctx.fillText(fit(ctx, displayName, 820), W / 2, 790)
+  ctx.font = '600 34px ' + FONT
+  ctx.fillStyle = C.muted
+  ctx.fillText('Level ' + level + (levelTitle ? ' \u00b7 ' + levelTitle : ''), W / 2, 840)
+
+  // Stats
+  ctx.fillStyle = C.rule
+  ctx.fillRect(96, 884, 888, 2)
+  const stats = [
+    [formatCount(xp), 'XP'],
+    [String(Math.max(bestStreak || 0, streak || 0)), 'Best streak'],
+    [String(badges), 'Badges'],
+  ]
+  stats.forEach(([value, label], i) => {
+    const cx = 96 + 888 * (i * 2 + 1) / 6
+    ctx.font = '800 58px ' + FONT
+    ctx.fillStyle = C.green
+    ctx.fillText(value, cx, 956)
+    ctx.font = '600 30px ' + FONT
+    ctx.fillStyle = C.muted
+    ctx.fillText(label, cx, 998)
+  })
 
   return canvas.toDataURL('image/png')
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────
-// Small icons for the card, drawn as vector paths so the image never depends on an emoji font.
-// Geometry is lucide's (the same shapes the app's UI icons use), in a 24 x 24 box.
-const ICON_PATHS = {
-  flame: ['M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'],
-  zap: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
-  trophy: [
-    'M6 9H4.5a2.5 2.5 0 0 1 0-5H6', 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18', 'M4 22h16',
-    'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22',
-    'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22',
-    'M18 2H6v7a6 6 0 0 0 12 0V2Z',
-  ],
-  award: [
-    'm15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526',
-    'M18 8a6 6 0 1 1-12 0 6 6 0 0 1 12 0z',
-  ],
-}
-
-function drawIcon(ctx, name, cx, cy, size, { stroke, fill, lineWidth = 2 } = {}) {
-  const paths = ICON_PATHS[name]
-  if (!paths || typeof Path2D === 'undefined') return
-  ctx.save()
-  ctx.translate(cx - size / 2, cy - size / 2)
-  ctx.scale(size / 24, size / 24)
-  ctx.lineWidth = lineWidth
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  paths.forEach(d => {
-    const p = new Path2D(d)
-    if (fill)   { ctx.fillStyle = fill;     ctx.fill(p) }
-    if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(p) }
-  })
-  ctx.restore()
+// ── Helpers ───────────────────────────────────────────────────────────────
+async function loadFonts() {
+  try {
+    await Promise.all(['600', '700', '800'].map(w => document.fonts.load(w + ' 48px Manrope')))
+    await document.fonts.ready
+  } catch (e) { /* the system font is used instead */ }
 }
 
 function roundRect(ctx, x, y, w, h, r) {
-  if (typeof r === 'number') r = [r, r, r, r]
   ctx.beginPath()
-  ctx.moveTo(x + r[0], y)
-  ctx.lineTo(x + w - r[1], y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r[1])
-  ctx.lineTo(x + w, y + h - r[2])
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h)
-  ctx.lineTo(x + r[3], y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r[3])
-  ctx.lineTo(x, y + r[0])
-  ctx.quadraticCurveTo(x, y, x + r[0], y)
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
 }
 
-function circleSolid(ctx, x, y, r, colour) {
+// The lightning mark from the app's logo (lucide's Zap shape, 24 x 24), filled white.
+const BOLT = 'M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'
+function drawBolt(ctx, cx, cy, size) {
+  if (typeof Path2D === 'undefined') return
+  ctx.save()
+  ctx.translate(cx - size / 2, cy - size / 2)
+  ctx.scale(size / 24, size / 24)
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fill(new Path2D(BOLT))
+  ctx.restore()
+}
+
+// One pointed leaf rising from (x, y), turned by `angle` radians from vertical.
+function leaf(ctx, x, y, len, angle, colour) {
+  const w = len * 0.42
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(angle)
   ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.moveTo(0, 0)
+  ctx.quadraticCurveTo(w, -len * 0.5, 0, -len)
+  ctx.quadraticCurveTo(-w, -len * 0.5, 0, 0)
   ctx.fillStyle = colour
   ctx.fill()
+  ctx.restore()
 }
 
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r},${g},${b},${alpha})`
+function drawPlant(ctx, x, baseY, h, lean) {
+  ctx.strokeStyle = C.stem
+  ctx.lineWidth = Math.max(4, h * 0.055)
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x, baseY)
+  ctx.quadraticCurveTo(x + lean, baseY - h * 0.55, x, baseY - h * 0.92)
+  ctx.stroke()
+  const pairs = h > 100 ? 3 : h > 72 ? 2 : 1
+  for (let i = 0; i < pairs; i++) {
+    const y = baseY - h * (0.3 + i * 0.22)
+    const len = h * (0.34 - i * 0.04)
+    leaf(ctx, x, y, len, -0.95, C.leafA)
+    leaf(ctx, x, y - len * 0.12, len, 0.95, C.leafB)
+  }
+  leaf(ctx, x, baseY - h * 0.92, h * 0.26, 0, C.leafA)
 }
 
-function lighten(hex, amount) {
-  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount)
-  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount)
-  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount)
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+function fit(ctx, text, maxWidth) {
+  let t = String(text || '').trim() || 'Student'
+  if (ctx.measureText(t).width <= maxWidth) return t
+  while (t.length > 1 && ctx.measureText(t + '\u2026').width > maxWidth) t = t.slice(0, -1)
+  return t.trimEnd() + '\u2026'
 }
 
-function darken(hex, amount) {
-  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount)
-  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount)
-  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount)
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
-
-function formatXP(xp) {
-  if (!xp) return '0'
-  if (xp >= 1000) return `${(xp / 1000).toFixed(1)}k`
-  return String(xp)
-}
-
-function truncate(str, max) {
-  if (!str) return ''
-  return str.length > max ? str.slice(0, max - 1) + '…' : str
+function formatCount(n) {
+  const v = Math.max(0, Math.round(n || 0))
+  return v >= 10000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : v.toLocaleString('en-GB')
 }
