@@ -14,7 +14,7 @@ export default function ProvenanceBadge({ source }) {
   const colour = COLOURS[source] || 'var(--text-muted)'
   return (
     <span className="badge" style={{ color: colour, border: `1px solid ${colour}`, background: 'transparent', fontSize: '0.66rem', marginLeft: 6 }}>
-      {PROVENANCE_LABELS[source] || 'Unverified'}
+      {PROVENANCE_LABELS[source] || 'Not yet reviewed'}
     </span>
   )
 }
