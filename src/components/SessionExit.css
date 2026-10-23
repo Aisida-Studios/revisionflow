@@ -1,0 +1,7 @@
+/* "Save progress" button label and the "Save before you leave?" prompt. */
+.rf-save-label { margin-left: 4px; }
+@media (max-width: 380px) { .rf-save-label { display: none; } }   /* icon only on the narrowest phones */
+.rf-exit-modal { max-width: 440px; width: 100%; }
+.rf-exit-text { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); overflow-wrap: anywhere; }
+.rf-exit-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.rf-exit-actions .btn { width: 100%; min-height: 44px; justify-content: center; }
