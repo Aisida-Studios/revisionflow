@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { getSupportedSubjects } from '../data/curriculumSupport'
 import AdminAutoGenerate from '../components/AdminAutoGenerate'
 import AdminDataEditor from '../components/AdminDataEditor'
+import AdminOfficialSets from '../components/AdminOfficialSets'
 import AdminMetricsTab from '../components/AdminMetricsTab'
 import AdminAnnouncementsTab from '../components/AdminAnnouncementsTab'
 import AdminUserDetail from '../components/AdminUserDetail'
@@ -55,10 +56,6 @@ function ContentTab({ email }) {
   const [board,     setBoard]     = useState('AQA')
   const [level,     setLevel]     = useState('GCSE')
   const [topics,    setTopics]    = useState([])
-  const [progress,  setProgress]  = useState(null)  // { done, total, current, errors }
-  const [running,   setRunning]   = useState(false)
-  const [log,       setLog]       = useState([])
-  const stopRef = useRef(false)  // ref-based stop flag — not subject to stale closure
 
   const subjectList = getSupportedSubjects(board, level) // valid board + qualification combinations only
   useEffect(() => { if (subject && !subjectList.includes(subject)) setSubject('') }, [board, level])
@@ -76,65 +73,6 @@ function ContentTab({ email }) {
 
   useEffect(() => { loadTopics() }, [subject, board, level])
 
-  function addLog(msg, type = 'info') {
-    setLog(l => [...l, { msg, type, ts: new Date().toLocaleTimeString() }])
-  }
-
-  async function runBulkGenerate() {
-    if (!topics.length || !subject) { toast.error('Select a subject with topics first'); return }
-    stopRef.current = false
-    setRunning(true)
-    setLog([])
-    setProgress({ done: 0, total: topics.length, current: '', errors: 0 })
-    addLog('Starting bulk generation: ' + topics.length + ' topics for ' + board + ' ' + level + ' ' + subject)
-
-    try {
-      const { generateTopicNote, getTopicNoteFromCache, saveTopicNoteToCache } = await import('../utils/ai')
-      let done = 0, errors = 0
-
-      for (const topic of topics) {
-        if (stopRef.current) { addLog('Stopped by user', 'error'); break }
-        setProgress(p => ({ ...p, current: topic }))
-        addLog('Checking cache: ' + topic)
-
-        try {
-          const cached = await getTopicNoteFromCache(board, level, subject, topic)
-          if (cached) {
-            addLog('CACHED (skipping): ' + topic, 'cached')
-            done++
-            setProgress(p => ({ ...p, done }))
-            continue
-          }
-
-          addLog('Generating: ' + topic)
-          const res = await generateTopicNote({ subject, board, level, topic, uid: null })
-          if (res.error) {
-            addLog('ERROR: ' + topic + ' — ' + res.error, 'error')
-            errors++
-          } else {
-            await saveTopicNoteToCache(board, level, subject, topic, res.text)
-            addLog('DONE: ' + topic, 'success')
-            done++
-          }
-        } catch(e) {
-          addLog('ERROR: ' + topic + ' — ' + e.message, 'error')
-          errors++
-        }
-
-        setProgress(p => ({ ...p, done, errors }))
-        await new Promise(r => setTimeout(r, 1500))
-      }
-
-      addLog('Complete: ' + done + ' generated, ' + errors + ' errors', done > 0 ? 'success' : 'error')
-    } catch(e) {
-      addLog('Fatal error: ' + e.message, 'error')
-    } finally {
-      setRunning(false)
-      setProgress(p => p ? ({ ...p, current: '' }) : null)
-    }
-  }
-
-  // ── Bulk flashcards state ─────────────────────────────────────────────────
   const [fcRunning,  setFcRunning]  = useState(false)
   const [fcProgress, setFcProgress] = useState(null)
   const [fcLog,      setFcLog]      = useState([])
@@ -218,10 +156,9 @@ function ContentTab({ email }) {
       <AdminAutoGenerate />
 
       <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-        <div style={{ fontWeight: 700, marginBottom: 4 }}>Manual single-subject generator</div>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Single-subject flashcard generator</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          For spot-checking or regenerating one subject at a time. For everything else, use auto-generate above.
-          Already-cached topics are skipped. Costs API tokens but saves them for every future student request.
+          Choose the level, board and subject used by the flashcard generator below. For everything else, use auto-generate above.
         </div>
       </div>
 
@@ -257,45 +194,7 @@ function ContentTab({ email }) {
             {topics.length} topics found for {board} {level} {subject}
           </div>
         )}
-
-        {progress && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 6 }}>
-              <span>{progress.done}/{progress.total} topics</span>
-              <span>{progress.errors > 0 && <span style={{ color: 'var(--danger)' }}>{progress.errors} errors</span>}</span>
-            </div>
-            <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: Math.round(progress.done/progress.total*100)+'%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.3s' }} />
-            </div>
-            {progress.current && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 5 }}>Processing: {progress.current}</div>}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-primary" onClick={runBulkGenerate} disabled={running || !subject || !topics.length}>
-            {running ? 'Generating...' : `Generate all ${topics.length} topics`}
-          </button>
-          {running && (
-            <button className="btn btn-secondary" onClick={() => { stopRef.current = true; setRunning(false) }}>Stop</button>
-          )}
-        </div>
       </div>
-
-      {log.length > 0 && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
-            Generation log
-            <button className="btn btn-ghost btn-sm" onClick={() => setLog([])}>Clear</button>
-          </div>
-          <div style={{ maxHeight: 320, overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {log.map((l, i) => (
-              <div key={i} style={{ color: logColour[l.type] || 'var(--text-muted)' }}>
-                <span style={{ opacity: 0.5, marginRight: 8 }}>{l.ts}</span>{l.msg}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── BULK FLASHCARD GENERATOR ── */}
       <div style={{ marginBottom: 20, marginTop: 28, padding: '12px 16px', borderRadius: 10,
@@ -408,7 +307,7 @@ export default function Admin() {
       {tab === 'beta'  && <BetaTab  email={user.email} />}
       {tab === 'stats'   && <StatsTab   email={user.email} />}
       {tab === 'content' && <ContentTab email={user.email} />}
-      {tab === 'data' && <AdminDataEditor />}
+      {tab === 'data' && (<><AdminDataEditor /><AdminOfficialSets /></>)}
       {tab === 'resources' && <ResourcesTab email={user.email} />}
     </div>
   )
