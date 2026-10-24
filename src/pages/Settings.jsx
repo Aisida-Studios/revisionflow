@@ -10,6 +10,7 @@ import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isT
 import { canonicalBoard, boardLabel } from '../data/boards'
 import { getSupportedSubjects } from '../data/curriculumSupport'
 import { isValidTargetGrade } from '../utils/gradeTargets'
+import { dropOptionsWhenCourseChanges } from '../utils/subjectEdits'
 import BoardOptions from '../components/BoardOptions'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
@@ -148,7 +149,9 @@ export default function Settings() {
     // update mid-function once the write below lands. Reading it now, not after, is what makes
     // this a reliable "before" snapshot to diff against.
     const oldSubjects = profile?.subjects || []
-    await updateUserProfile(user.uid, { subjects })
+    // Course options belong to one board and qualification: if a subject's board or qualification changed, its options are cleared.
+    const cleanedSubjects = dropOptionsWhenCourseChanges(subjects, oldSubjects)
+    await updateUserProfile(user.uid, { subjects: cleanedSubjects })
     await refreshProfile()
     await detectAndOfferSwitchChoice(oldSubjects, subjects, profile?.examDates)
     toast.success('Subjects updated')
