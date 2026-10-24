@@ -497,7 +497,7 @@ function ReviewQueue() {
       {!loading && rows.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Nothing waiting for review.</p>}
       {rows.map(r => (
         <div key={r.id} className="card" style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{r.kind} · {r.op === 'delete' ? 'DELETE' : 'set'} · {r.id}</div>
+          <div style={{ fontWeight: 700, fontSize: '0.88rem', overflowWrap: 'anywhere' }}>{r.kind} · {r.op === 'delete' ? 'DELETE' : 'set'} · {r.data?.title || r.contentId || r.id}</div>
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 8px' }}>Status: {r.status}</div>
           {r.op !== 'delete' && (
             <pre style={{ fontSize: '0.72rem', maxHeight: 160, overflow: 'auto', background: 'var(--bg-surface)', padding: 8, borderRadius: 8 }}>
