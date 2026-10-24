@@ -9,6 +9,7 @@ import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
 import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
 import { mergeOutcomes, hasOutcomes } from '../src/utils/progressMerge.js'
+import { dropOptionsWhenCourseChanges } from '../src/utils/subjectEdits.js'
 import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
@@ -575,6 +576,18 @@ ok('REGRESSION: old official flashcard sets carry board and level only in their 
   assert.deepEqual(setBoardLevel({ uid: 'someStudent', title: 'Edexcel GCSE Physics \u2014 Waves' }), { board: '', level: '' })
   assert.deepEqual(setBoardLevel({ uid: 'someStudent', board: 'OCR', level: 'GCSE' }), { board: 'OCR', level: 'GCSE' })
   assert.deepEqual(srvOfficialSetMeta({ uid: 'official', title: 'WJEC A-Level Biology \u2014 Enzymes' }), { board: 'WJEC', level: 'A-Level' })
+})
+ok('course options are cleared when a subject\'s board or qualification changes, and kept otherwise', () => {
+  const prev = [{ id: 'a', name: 'History', board: 'AQA', qualification: 'GCSE', options: { slot1: ['x'] } }, { id: 'b', name: 'Geography', board: 'OCR', qualification: 'GCSE', options: ['y'] }]
+  const same = dropOptionsWhenCourseChanges(prev.map(s => ({ ...s })), prev)
+  assert.deepEqual(same[0].options, { slot1: ['x'] }); assert.deepEqual(same[1].options, ['y'])           // nothing changed: kept
+  const changed = dropOptionsWhenCourseChanges([{ ...prev[0], board: 'Edexcel' }, { ...prev[1], qualification: 'A-Level' }], prev)
+  assert.equal('options' in changed[0], false); assert.equal('options' in changed[1], false)            // board / qualification changed: cleared
+  assert.equal(changed[0].name, 'History')                                                              // everything else is kept
+  assert.equal('options' in dropOptionsWhenCourseChanges([{ ...prev[0], board: 'aqa' }], prev)[0], true)                  // same board in another spelling: kept
+  const added = dropOptionsWhenCourseChanges([{ id: 'new', name: 'Art', board: 'AQA', options: ['z'] }], prev)
+  assert.deepEqual(added[0].options, ['z'])                                                             // a brand-new subject has nothing to compare against
+  assert.deepEqual(dropOptionsWhenCourseChanges(null, null), [])
 })
 ok('saving progress folds per-card outcomes into mastery and the spaced-repetition schedule without touching other cards', () => {
   const before = { mastery: { A: 3, B: 1 }, schedule: { A: { box: 2, dueDate: '2026-10-20' }, B: { box: 1, dueDate: '2026-10-15' } } }
