@@ -510,7 +510,9 @@ module.exports.handler = async function(event) {
         const status = body.status
         let q = drafts.orderBy('createdAt', 'desc').limit(100)
         const snap = await q.get()
-        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !status || r.status === status)
+        // `id` must stay the DRAFT document's id (what approve / reject look up). The draft's own data also has an
+        // `id` field (the id of the content being changed), which used to overwrite it; that one is `contentId`.
+        const rows = snap.docs.map(d => ({ ...d.data(), contentId: d.data().id, id: d.id, draftId: d.id })).filter(r => !status || r.status === status)
         return respond(200, { drafts: rows })
       }
 
