@@ -1435,24 +1435,52 @@ export const deleteFlashcardSet = async (uid, setId, isPublic = false) => {
 // Public sets (official and community) for browsing. `subject` narrows the query; `limitN` is how
 // many to fetch (the browser asks for more with "Load more"). Always newest first, whichever query
 // ran. Whether a set is official, community or unverified is decided by utils/provenance.js.
-export const getPublicFlashcardSets = async (subject = null, limitN = 50) => {
+// Old bulk-generated official sets have no board or level field (only a title that starts with them, for
+// example "Edexcel GCSE Physics \u2014 Waves"), so a board filter that only looked at stored fields could not
+// find them. Every spelling of a board that those titles start with:
+const BOARD_TITLE_PREFIXES = {
+  AQA: ['AQA'], Edexcel: ['Edexcel', 'Pearson Edexcel'], OCR: ['OCR'], CCEA: ['CCEA'],
+  WJEC: ['WJEC', 'Eduqas', 'Eduqas / WJEC', 'WJEC / Eduqas', 'WJEC Eduqas', 'Eduqas WJEC'],
+}
+
+/**
+ * Public flashcard sets. board / level / source are applied IN THE QUERY, not after loading the first 50:
+ * filtering afterwards meant a student picking Edexcel only ever saw whichever Edexcel sets happened to be in
+ * those 50 (usually none). `board` is the canonical board ('AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA').
+ */
+export const getPublicFlashcardSets = async (subject = null, limitN = 50, { board = '', level = '', source = 'all' } = {}) => {
   const col = collection(db, 'publicFlashcards')
   const ts = (d) => d.createdAt?.seconds || d.updatedAt?.seconds || 0
   const rows = new Map()
-  const add = (snap) => snap.docs.forEach(d => rows.set(d.id, { ...d.data(), id: d.id }))
-  if (subject) {
-    // No orderBy here: ordering by createdAt would silently drop any set stored without that field.
-    add(await getDocs(query(col, where('subject', '==', subject), limit(limitN))))
+  const add = (snap) => snap && snap.docs.forEach(d => rows.set(d.id, { ...d.data(), id: d.id }))
+  const jobs = []
+
+  // Sets that carry the fields. Equality filters only, so Firestore needs no composite index.
+  const eq = []
+  if (subject) eq.push(where('subject', '==', subject))   // no orderBy: it would drop sets stored without that field
+  if (board)   eq.push(where('board', '==', board))
+  if (level)   eq.push(where('level', '==', level))
+  if (source === 'official') eq.push(where('authorType', '==', 'official'))
+  if (eq.length) {
+    jobs.push(getDocs(query(col, ...eq, limit(limitN))))
   } else {
-    // "All subjects": the newest sets, plus the admin-reviewed official sets queried on their own,
-    // because orderBy('createdAt') excludes any set that has no createdAt (admin-generated sets).
-    const [recent, official] = await Promise.all([
-      getDocs(query(col, orderBy('createdAt', 'desc'), limit(limitN))),
-      getDocs(query(col, where('authorType', '==', 'official'), limit(limitN))).catch(() => null),
-    ])
-    add(recent)
-    if (official) add(official)
+    // Everything: the newest sets, plus the official sets on their own (orderBy('createdAt') excludes sets without one).
+    jobs.push(getDocs(query(col, orderBy('createdAt', 'desc'), limit(limitN))))
+    jobs.push(getDocs(query(col, where('authorType', '==', 'official'), limit(limitN))).catch(() => null))
   }
+
+  // Older official sets that only have the board in their title: a title-prefix range (single field, so no
+  // composite index). The prefix gets as specific as the filters allow: board, then level, then subject.
+  if (board && source !== 'community') {
+    const parts = [level, level && subject ? subject : ''].filter(Boolean)
+    for (const alias of BOARD_TITLE_PREFIXES[board] || [board]) {
+      const prefix = [alias, ...parts].join(' ') + ' '
+      const end = prefix.slice(0, -1) + '!'          // '!' sorts straight after ' ', so this covers every title starting with the prefix
+      jobs.push(getDocs(query(col, where('title', '>=', prefix), where('title', '<', end), limit(Math.max(limitN, 300)))).catch(() => null))
+    }
+  }
+
+  for (const snap of await Promise.all(jobs)) add(snap)
   return [...rows.values()].sort((a, b) => ts(b) - ts(a))
 }
 
@@ -1466,42 +1494,4 @@ export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
   } else {
     try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
   }
-}
-
-/* ── Topic note rate limiting ────────────────────────────────────────────── */
-// Free users: 5 topic note generations per day
-// Pro/beta users: unlimited
-// Usage tracked in users/{uid}/usage/topicNotes doc
-
-export async function checkTopicNoteLimit(uid, profile) {
-  if (profile?.isPro || profile?.betaUser) return { allowed: true, remaining: Infinity }
-
-  const today = todayLocalStr()  // local YYYY-MM-DD
-  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
-  try {
-    const snap = await getDoc(ref)
-    if (!snap.exists() || snap.data().date !== today) {
-      // New day — reset counter
-      await setDoc(ref, { date: today, count: 0 })
-      return { allowed: true, remaining: 5 }
-    }
-    const count = snap.data().count || 0
-    const remaining = Math.max(0, 5 - count)
-    return { allowed: remaining > 0, remaining, count }
-  } catch(e) {
-    return { allowed: true, remaining: 5 }  // fail open
-  }
-}
-
-export async function incrementTopicNoteUsage(uid) {
-  const today = todayLocalStr()
-  const ref   = doc(db, 'users', uid, 'usage', 'topicNotes')
-  try {
-    const snap = await getDoc(ref)
-    if (!snap.exists() || snap.data().date !== today) {
-      await setDoc(ref, { date: today, count: 1 })
-    } else {
-      await updateDoc(ref, { count: increment(snap.data().count + 1) })
-    }
-  } catch(e) {}
 }
