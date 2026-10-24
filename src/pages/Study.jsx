@@ -1458,11 +1458,12 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
     if (setSource !== 'public') return
     setPublicLoading(true)
     import('../utils/firestore').then(({ getPublicFlashcardSets }) => {
-      getPublicFlashcardSets(publicSubject || null, publicLimit)
+      getPublicFlashcardSets(publicSubject || null, publicLimit, { board: canonicalBoard(publicBoard || ''), level: publicLevel, source: publicSource })
         .then(setPublicSets)
+        .catch(() => toast.error('Could not load public sets. Try again.'))
         .finally(() => setPublicLoading(false))
     })
-  }, [setSource, publicSubject, publicLimit])
+  }, [setSource, publicSubject, publicLimit, publicBoard, publicLevel, publicSource])
 
   function openHistory() {
     setShowHistory(true)
@@ -2589,7 +2590,7 @@ export default function Study() {
       setWeakTopics((rows || []).filter(t => t.confidence > 0 && t.confidence <= 2).sort((a,b) => a.confidence-b.confidence).slice(0,8))
     }).catch(() => setWeakTopics([]))
   }, [user, profile?.subjects])
-  useEffect(() => { if (flashTab === 'public') loadPublicSets(pubSubject || null) }, [flashTab])
+  useEffect(() => { if (flashTab === 'public') { setPubLimit(50); loadPublicSets(pubSubject || null, 50) } }, [flashTab, pubBoardFilter, pubLevelFilter, pubSource])
 
   async function loadMySets() {
     setSetsLoad(true)
@@ -2599,7 +2600,7 @@ export default function Study() {
 
   async function loadPublicSets(subject, limitN) {
     setSetsLoad(true)
-    try { setPubSets(await getPublicFlashcardSets(subject || null, limitN || pubLimit)) }
+    try { setPubSets(await getPublicFlashcardSets(subject || null, limitN || pubLimit, { board: canonicalBoard(pubBoardFilter || ''), level: pubLevelFilter, source: pubSource })) }
     catch { toast.error('Could not load public sets. Try again.') }
     setSetsLoad(false)
   }
