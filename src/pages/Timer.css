@@ -1,0 +1,399 @@
+/* src/pages/Timer.css
+   Page-scoped styles for the Timer redesign. Everything here builds on tokens already defined
+   in globals.css (--accent, --border, --text-muted, --r-lg, --shadow-sm, …) so light and dark
+   mode are inherited for free — nothing below hardcodes a light-only colour.
+
+   The animated "scenes" (forest, rain, cosmos…) are the one exception: they are deliberately
+   dark, painterly backgrounds painted inside the timer card's stage area, so while a scene is
+   active the stage swaps in its own light-on-dark text tokens (--timer-text / --timer-muted)
+   instead of the page's theme colours. */
+
+.timer-page { display: flex; flex-direction: column; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.timer-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.timer-title { display: flex; align-items: center; gap: 10px; margin: 0; }
+.timer-subtitle { color: var(--text-muted); font-size: 0.875rem; margin-top: 2px; max-width: 62ch; }
+.timer-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── Scheduled-session banner (/timer?sessionId=…) ───────────────────────── */
+.timer-session-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.timer-session-info { min-width: 0; }
+.timer-session-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.timer-eyebrow {
+  margin: 0 0 2px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.timer-session-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.timer-session-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+.timer-session-note.is-error { color: var(--danger); }
+.timer-session-note.is-ok { color: var(--success); }
+
+/* ── Slide-down option panels (scene / sound / music) ────────────────────── */
+.timer-panel { margin-bottom: 16px; }
+.timer-panel + .timer-panel { margin-top: -8px; }
+.timer-panel-label {
+  margin: 0 0 10px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.timer-panel-label + .timer-panel-label { margin-top: 16px; }
+.timer-chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.timer-chip {
+  padding: 5px 13px; border-radius: var(--r-full); cursor: pointer;
+  border: 1.5px solid var(--border); background: var(--bg-surface);
+  color: var(--text-secondary); font-family: var(--font);
+  font-size: 0.8rem; font-weight: 600; line-height: 1.5;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+.timer-chip:hover { border-color: var(--border-strong); background: var(--bg-hover); color: var(--text-primary); }
+.timer-chip.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.timer-volume { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.timer-volume input { flex: 1; max-width: 180px; accent-color: var(--accent); }
+.timer-volume-label { font-size: 0.75rem; color: var(--text-muted); min-width: 34px; }
+
+.timer-music-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.timer-music-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 9px 13px; text-align: left; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: var(--r-md);
+  background: var(--bg-surface); color: var(--text-primary); font-family: var(--font);
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.timer-music-card:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+.timer-music-card.is-active { border-color: var(--accent); background: var(--accent-pale); }
+.timer-music-name { font-size: 0.82rem; font-weight: 700; }
+.timer-music-sub { font-size: 0.7rem; color: var(--text-muted); }
+.timer-music-card.is-active .timer-music-sub { color: var(--accent); }
+.timer-music-frame { margin-top: 12px; border: 1.5px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.timer-music-frame iframe { display: block; border: none; }
+
+.timer-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.82rem; color: var(--text-secondary); }
+.timer-check input { accent-color: var(--accent); }
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.timer-tabs { margin-bottom: 16px; }
+
+/* ── Layout: stage + side column ─────────────────────────────────────────── */
+.timer-layout {
+  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px; align-items: start;
+}
+@media (max-width: 1000px) { .timer-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── Stage (the big clock card, also the fullscreen "focus" view) ────────── */
+.timer-stage {
+  --timer-text: var(--text-primary);
+  --timer-muted: var(--text-muted);
+  --timer-line: var(--border);
+  position: relative; overflow: hidden;
+  min-height: 470px; padding: 26px 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.timer-stage.is-scene {
+  --timer-text: rgba(255,255,255,0.94);
+  --timer-muted: rgba(255,255,255,0.62);
+  --timer-line: rgba(255,255,255,0.16);
+  border-color: rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-lg);
+}
+.timer-stage:fullscreen {
+  border: none; border-radius: 0; box-shadow: none;
+  min-height: 100dvh; padding: 2rem; justify-content: center;
+}
+.timer-stage:fullscreen .timer-stage-content { max-width: 620px; }
+
+.timer-fs-exit {
+  position: absolute; top: 16px; right: 16px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--r-full); cursor: pointer;
+  border: 1.5px solid var(--timer-line); background: rgba(0,0,0,0.18);
+  color: var(--timer-text); font-family: var(--font); font-size: 0.8rem; font-weight: 600;
+  backdrop-filter: blur(8px); transition: background var(--dur-fast) var(--ease);
+}
+.timer-fs-exit:hover { background: rgba(0,0,0,0.34); }
+.timer-stage:not(.is-scene) .timer-fs-exit { background: var(--bg-muted); color: var(--text-primary); }
+.timer-stage:not(.is-scene) .timer-fs-exit:hover { background: var(--bg-hover); }
+
+.timer-scene-layer { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.timer-scene-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.timer-stage-content {
+  position: relative; z-index: 2; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+}
+
+/* ── Clock display ───────────────────────────────────────────────────────── */
+.timer-ring { position: relative; width: 240px; max-width: 100%; aspect-ratio: 1 / 1; }
+.timer-ring-svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+.timer-ring-track { stroke: var(--bg-hover); }
+.timer-ring-progress { stroke: var(--accent); transition: stroke-dashoffset 1s linear, stroke var(--dur) var(--ease); }
+.timer-ring-tick { stroke: var(--border-strong); opacity: 0.45; }
+.timer-stage.is-scene .timer-ring-track { stroke: rgba(255,255,255,0.12); }
+.timer-stage.is-scene .timer-ring-progress { stroke: var(--accent-light); filter: drop-shadow(0 0 14px rgba(74,222,128,0.55)); }
+.timer-stage.is-scene .timer-ring-tick { stroke: rgba(255,255,255,0.3); }
+.timer-stage.is-finished .timer-ring-progress { stroke: var(--danger); filter: none; }
+
+.timer-ring-inner {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px; text-align: center; padding: 0 20px;
+}
+.timer-display {
+  font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; white-space: nowrap;
+  font-variant-numeric: tabular-nums; color: var(--timer-text);
+}
+.timer-display--finished { font-size: 1.35rem; color: var(--danger); margin-bottom: 8px; }
+.timer-stage.is-scene .timer-display--finished { color: #fca5a5; }
+.timer-display-sub { font-size: 0.74rem; color: var(--timer-muted); font-weight: 600; }
+.timer-display-sub svg { vertical-align: -2px; margin-right: 4px; }
+
+/* Big stopwatch readout */
+.timer-big-time {
+  font-size: clamp(3rem, 11vw, 4.4rem); font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--timer-text);
+  text-align: center;
+}
+
+/* ── Controls ────────────────────────────────────────────────────────────── */
+.timer-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.timer-stage.is-scene .timer-controls .btn-secondary {
+  background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.28); color: #fff;
+  backdrop-filter: blur(8px);
+}
+.timer-stage.is-scene .timer-controls .btn-secondary:hover {
+  background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); color: #fff;
+}
+
+/* ± adjust + preset pills */
+.timer-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.timer-chips--presets { max-width: 460px; }
+.timer-pill {
+  padding: 6px 14px; border-radius: var(--r-full); cursor: pointer;
+  border: 1.5px solid var(--timer-line); background: transparent;
+  color: var(--timer-text); font-family: var(--font);
+  font-size: 0.8rem; font-weight: 600; line-height: 1.4;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+.timer-pill:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.timer-pill.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.timer-stage.is-scene .timer-pill { background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); }
+.timer-stage.is-scene .timer-pill:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.42); }
+.timer-stage.is-scene .timer-pill.is-active {
+  background: var(--accent-light); border-color: var(--accent-light); color: #052e16;
+}
+
+/* "Set exact" row */
+.timer-exact {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+  padding: 8px 14px; border-radius: var(--r-full);
+  border: 1.5px solid var(--timer-line); background: var(--bg-muted);
+}
+.timer-stage.is-scene .timer-exact { background: rgba(0,0,0,0.32); backdrop-filter: blur(10px); }
+.timer-exact-field { display: inline-flex; align-items: center; gap: 4px; }
+.timer-exact-set { margin-left: 4px; }
+.timer-exact-label { font-size: 0.75rem; font-weight: 600; color: var(--timer-muted); }
+.timer-exact-sep { font-size: 0.9rem; color: var(--timer-muted); }
+.timer-exact input {
+  width: 40px; padding: 4px 4px; border-radius: var(--r-sm); text-align: center;
+  border: 1.5px solid var(--timer-line); background: var(--bg-input); color: var(--timer-text);
+  font-family: var(--font); font-size: 0.85rem; outline: none;
+}
+.timer-stage.is-scene .timer-exact input { background: rgba(0,0,0,0.35); color: #fff; }
+.timer-exact input:focus { border-color: var(--accent); }
+
+/* ── Stopwatch laps ──────────────────────────────────────────────────────── */
+.timer-laps { width: 100%; max-width: 420px; max-height: 210px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.timer-lap {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 14px; border-radius: var(--r-md);
+  border: 1px solid var(--timer-line); background: var(--bg-surface);
+  font-size: 0.8rem; font-variant-numeric: tabular-nums;
+}
+.timer-stage.is-scene .timer-lap { background: rgba(0,0,0,0.34); backdrop-filter: blur(8px); }
+.timer-lap-label { color: var(--timer-muted); }
+.timer-lap-split { font-weight: 700; color: var(--timer-text); }
+.timer-lap-split.is-best { color: var(--success); }
+.timer-stage.is-scene .timer-lap-split.is-best { color: var(--accent-light); }
+.timer-lap-total { color: var(--timer-muted); }
+.timer-lap-empty { font-size: 0.82rem; color: var(--timer-muted); }
+
+/* ── Alarm tab ───────────────────────────────────────────────────────────── */
+.timer-alarm-ring {
+  width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--danger-pale); color: var(--danger); border: 1.5px solid var(--danger-border);
+}
+.timer-alarm-active {
+  display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 9px 16px; border-radius: var(--r-full);
+  border: 1.5px solid var(--accent); background: var(--accent-pale); color: var(--text-primary);
+  font-size: 0.85rem; font-weight: 700;
+}
+.timer-alarm-active svg { color: var(--accent); }
+.timer-alarm-hero {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%; max-width: 360px; padding: 20px;
+  border-radius: var(--r-lg); border: 1.5px solid var(--danger-border); background: var(--danger-pale);
+}
+.timer-alarm-hero-title { margin: 0; font-size: 1rem; font-weight: 800; color: var(--danger); }
+.timer-stage.is-scene .timer-alarm-hero { background: rgba(127,29,29,0.35); backdrop-filter: blur(10px); }
+.timer-stage.is-scene .timer-alarm-hero-title { color: #fca5a5; }
+.timer-alarm-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; width: 100%; max-width: 360px; }
+.timer-alarm-card {
+  padding: 16px; border-radius: var(--r-lg);
+  border: 1.5px solid var(--timer-line); background: var(--bg-surface);
+}
+.timer-stage.is-scene .timer-alarm-card { background: rgba(0,0,0,0.34); backdrop-filter: blur(10px); }
+.timer-alarm-card-title {
+  display: flex; align-items: center; gap: 7px; margin: 0 0 10px;
+  font-size: 0.86rem; font-weight: 700; color: var(--timer-text);
+}
+.timer-alarm-row { display: flex; gap: 8px; align-items: center; }
+.timer-alarm-row .input { flex: 1; min-width: 0; }
+.timer-stage.is-scene .timer-alarm-row .input {
+  background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.18); color: #fff;
+}
+
+/* ── Side column ─────────────────────────────────────────────────────────── */
+.timer-side { display: flex; flex-direction: column; gap: 16px; }
+.timer-side-title {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 12px;
+  font-size: 0.95rem; font-weight: 700; color: var(--text-primary);
+}
+.timer-side-title svg { color: var(--accent); }
+.timer-setup { display: flex; flex-direction: column; gap: 2px; }
+.timer-setup-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px;
+  border: none; border-radius: var(--r-md); background: none;
+  font-family: var(--font); text-align: left; cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.timer-setup-row:hover { background: var(--bg-hover); }
+.timer-setup-icon {
+  width: 32px; height: 32px; border-radius: var(--r-md); flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--accent-pale); color: var(--accent-light);
+}
+.timer-setup-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.timer-setup-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.timer-setup-value { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timer-setup-chevron { color: var(--text-muted); flex-shrink: 0; }
+.timer-side-divider { height: 1.5px; background: var(--border); border-radius: 99px; margin: 12px 0; }
+.timer-tip { margin: 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+.timer-tip + .timer-tip { margin-top: 8px; }
+
+/* ── Live status list in the side card ───────────────────────────────────── */
+.timer-status { display: flex; flex-direction: column; gap: 10px; }
+.timer-status-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.timer-status-label { font-size: 0.78rem; color: var(--text-muted); }
+.timer-status-value { font-size: 0.85rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.timer-status-value.is-live { color: var(--success); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .timer-stage { min-height: 420px; padding: 22px 16px; }
+  .timer-ring { width: 210px; height: 210px; }
+  .timer-display { font-size: 2.5rem; }
+  .timer-header-actions .btn { padding: 8px 14px; font-size: 0.8rem; }
+}
+@media (max-width: 420px) {
+  .timer-ring { width: 190px; height: 190px; }
+  .timer-display { font-size: 2.2rem; }
+  .timer-chips--presets { max-width: 100%; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ANIMATED SCENES
+   Painted inside .timer-scene-layer (not the page) — every rule here is
+   scoped under a .bg-* class that only exists while a scene is selected, so
+   nothing leaks into the rest of the app. Kept dark on purpose: they are
+   ambient backdrops for a focus session, not themed surfaces.
+   ══════════════════════════════════════════════════════════════════════════ */
+.scn { position:absolute; inset:0; z-index:0; }
+/* Forest */
+.bg-forest { background: radial-gradient(ellipse at 40% 20%, #0a2010 0%, #051008 50%, #020804 100%); }
+.bg-forest .moon { position:absolute; top:8%; right:12%; width:55px; height:55px; border-radius:50%; background: radial-gradient(circle, #fffbe8 60%, #f0d060 100%); box-shadow:0 0 30px 10px rgba(255,240,100,0.25); animation:moonGlow 5s ease-in-out infinite; }
+.bg-forest .treeline { position:absolute; bottom:0; left:0; right:0; height:40%; background: linear-gradient(180deg, transparent 0%, #030d05 40%, #020a03 100%); clip-path: polygon(0%100%,4%70%,8%80%,12%55%,16%72%,20%50%,25%65%,30%48%,35%62%,40%45%,44%60%,48%42%,52%58%,56%44%,60%60%,64%46%,68%62%,72%48%,77%65%,82%50%,87%68%,92%54%,96%72%,100%60%,100%100%); }
+.leaf { position:absolute; border-radius:50% 0 50% 0; animation:leafFall linear infinite; }
+@keyframes leafFall { 0%{opacity:0;transform:translate(0,-20px) rotate(0deg)} 10%{opacity:.7} 90%{opacity:.3} 100%{opacity:0;transform:translate(60px,110vh) rotate(720deg)} }
+@keyframes moonGlow { 0%,100%{box-shadow:0 0 30px 10px rgba(255,240,100,0.25)} 50%{box-shadow:0 0 45px 16px rgba(255,240,100,0.4)} }
+
+/* Rain */
+.bg-rain { background: linear-gradient(165deg, #0c1624 0%, #08101e 50%, #040c18 100%); }
+.bg-rain::before { content:''; position:absolute; top:0; left:0; right:0; height:35%; background: radial-gradient(ellipse at 50% 0%, rgba(20,40,80,0.6) 0%, transparent 80%); animation:cloudPulse 7s ease-in-out infinite; }
+.rain-drop { position:absolute; width:1px; background:linear-gradient(180deg,transparent,rgba(140,190,255,0.65)); animation:dropFall linear infinite; }
+.bg-rain .puddle { position:absolute; bottom:0; left:0; right:0; height:6px; background: linear-gradient(180deg, rgba(30,60,120,0.5), rgba(10,30,80,0.8)); }
+@keyframes dropFall { 0%{opacity:0;transform:translateY(-40px)} 15%{opacity:1} 85%{opacity:.7} 100%{opacity:0;transform:translateY(110vh)} }
+@keyframes cloudPulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
+
+/* Ocean */
+.bg-ocean { background: linear-gradient(195deg, #071525 0%, #0b2545 35%, #071530 70%, #040e1e 100%); }
+.wave { position:absolute; left:-5%; right:-5%; height:60px; border-radius:50%; opacity:.15; animation:waveSweep ease-in-out infinite; }
+.bg-ocean .stars-ocean { position:absolute; inset:0; }
+@keyframes waveSweep { 0%,100%{transform:translateX(0) translateY(0) scaleX(1)} 50%{transform:translateX(2%) translateY(-8px) scaleX(.98)} }
+
+/* Sunset */
+.bg-sunset { background: linear-gradient(180deg, #1a0a08 0%, #4a0d25 15%, #8b1a0e 30%, #d4420a 48%, #f06a1a 58%, #f8b84e 68%, #fde68a 74%, #e8d06a 78%, #1a0520 85%, #0a0218 100%); }
+.bg-sunset::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 50% 68%, rgba(255,160,30,0.45) 0%, rgba(220,70,10,0.2) 25%, transparent 55%); animation:sunPulse 6s ease-in-out infinite; }
+.bg-sunset .horizon { position:absolute; bottom:26%; left:0; right:0; height:1px; background: linear-gradient(90deg,transparent,rgba(255,200,100,0.6),transparent); }
+@keyframes sunPulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} }
+
+/* Snow */
+.bg-snow { background: linear-gradient(180deg, #0c1830 0%, #152040 40%, #0a1525 100%); }
+.snowflake { position:absolute; color:rgba(230,240,255,0.85); font-style:normal; animation:snowFall linear infinite; }
+@keyframes snowFall { 0%{transform:translateY(-30px) translateX(0) rotate(0deg);opacity:0} 10%{opacity:.9} 90%{opacity:.6} 100%{transform:translateY(108vh) translateX(50px) rotate(360deg);opacity:0} }
+
+/* Aurora */
+.bg-aurora { background: radial-gradient(ellipse at 50% 80%, #020a12 0%, #010608 100%); }
+.aurora-band { position:absolute; left:-20%; right:-20%; height:55%; border-radius:0 0 60% 60%; animation:auroraShift ease-in-out infinite; }
+.aurora-1 { top:-5%; background:linear-gradient(180deg,transparent 0%,rgba(0,220,120,0.12) 30%,rgba(0,180,200,0.18) 60%,transparent 100%); animation-duration:11s; }
+.aurora-2 { top:-2%; background:linear-gradient(180deg,transparent 0%,rgba(0,140,180,0.08) 40%,rgba(0,200,160,0.14) 70%,transparent 100%); animation-duration:16s; animation-direction:reverse; }
+.star { position:absolute; border-radius:50%; background:#fff; animation:twinkle ease-in-out infinite; }
+@keyframes auroraShift { 0%,100%{transform:translateX(0) scaleX(1) skewX(0deg);opacity:.6} 33%{transform:translateX(4%) scaleX(.96) skewX(2deg);opacity:1} 66%{transform:translateX(-4%) scaleX(1.04) skewX(-2deg);opacity:.8} }
+@keyframes twinkle { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.6)} }
+
+/* Campfire */
+.bg-campfire { background: radial-gradient(ellipse at 50% 100%, #1e0800 0%, #0e0400 50%, #050200 100%); }
+.fire-core { position:absolute; bottom:22%; left:50%; transform:translateX(-50%); animation:fireCore .25s ease-in-out infinite alternate; }
+.fire-mid  { position:absolute; bottom:24%; left:50%; transform:translateX(-50%); animation:fireMid  .4s ease-in-out infinite alternate; }
+.fire-glow { position:absolute; bottom:18%; left:50%; transform:translateX(-50%); width:120px; height:80px; border-radius:50%; background:radial-gradient(ellipse,rgba(255,100,0,0.35) 0%,transparent 70%); animation:fireGlow 1.5s ease-in-out infinite alternate; filter:blur(6px); }
+@keyframes fireCore { 0%{transform:translateX(-50%) scaleX(1) scaleY(1);filter:brightness(1)}  100%{transform:translateX(-50%) scaleX(.88) scaleY(1.12) skewX(3deg);filter:brightness(1.2)} }
+@keyframes fireMid  { 0%{transform:translateX(-50%) scaleX(1) scaleY(1) skewX(0deg);opacity:.8} 100%{transform:translateX(-50%) scaleX(.92) scaleY(1.1) skewX(-4deg);opacity:1} }
+@keyframes fireGlow { 0%{transform:translateX(-50%) scale(1);opacity:.6} 100%{transform:translateX(-50%) scale(1.2);opacity:1} }
+.ember { position:absolute; width:2px; height:2px; border-radius:50%; background:#ff6000; animation:emberRise linear infinite; }
+@keyframes emberRise { 0%{transform:translate(0,0);opacity:1} 100%{transform:translate(var(--ex,15px),-120px);opacity:0} }
+.log { position:absolute; bottom:20%; left:50%; height:10px; border-radius:4px; background:linear-gradient(90deg,#2a0d00,#3d1500,#2a0d00); }
+
+/* Meadow */
+.bg-meadow { background: linear-gradient(180deg, #0e1f38 0%, #0a1a2e 30%, #0c2018 60%, #071408 100%); }
+.firefly { position:absolute; width:3px; height:3px; border-radius:50%; background:#aaff44; filter:blur(1px); animation:fireflyDrift ease-in-out infinite; }
+@keyframes fireflyDrift { 0%,100%{transform:translate(0,0);opacity:0} 20%,80%{opacity:.9} 50%{transform:translate(var(--fx,25px),var(--fy,-18px));opacity:1} }
+.bg-meadow .grass { position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(180deg,transparent,#071008 60%); clip-path:polygon(0%100%,2%82%,4%90%,6%78%,8%88%,10%75%,12%85%,14%72%,16%82%,18%70%,20%80%,22%74%,24%85%,26%72%,28%80%,30%76%,32%86%,34%74%,36%82%,38%70%,40%78%,42%72%,44%84%,46%76%,48%82%,50%74%,52%86%,54%76%,56%80%,58%72%,60%82%,62%74%,64%86%,66%78%,68%82%,70%74%,72%84%,74%76%,76%80%,78%72%,80%82%,82%70%,84%80%,86%74%,88%84%,90%76%,92%82%,94%72%,96%80%,98%76%,100%82%,100%100%); }
+
+/* Cosmos */
+.bg-cosmos { background: radial-gradient(ellipse at 30% 40%, #021218 0%, #010a0e 50%, #010608 100%); }
+.bg-cosmos::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 25% 35%, rgba(0,120,160,0.14) 0%, transparent 40%), radial-gradient(ellipse at 70% 65%, rgba(0,40,180,0.1) 0%, transparent 35%); animation:nebula 14s ease-in-out infinite; }
+.shooting-star { position:absolute; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent); animation:shoot linear infinite; }
+@keyframes nebula { 0%,100%{opacity:.5} 50%{opacity:1} }
+@keyframes shoot { 0%{transform:translateX(-200px) translateY(0);opacity:0;width:0} 10%{opacity:1} 30%{opacity:0;width:120px} 100%{transform:translateX(120vw) translateY(60px);opacity:0;width:0} }
+
+/* Storm */
+.bg-storm { background: linear-gradient(180deg, #080e18 0%, #0c1420 40%, #080e18 100%); }
+.bg-storm::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 20%, rgba(15,30,60,0.7) 0%, transparent 60%); animation:stormCloud 4s ease-in-out infinite; }
+.lightning { position:absolute; top:10%; left:30%; width:2px; height:0; background:rgba(200,220,255,0.9); animation:lightningStrike ease-in-out infinite; transform-origin:top; filter:blur(.5px); }
+@keyframes lightningStrike { 0%,85%,100%{height:0;opacity:0} 88%{height:30vh;opacity:.9} 92%{height:35vh;opacity:.6} 95%{height:0;opacity:0} }
+@keyframes stormCloud { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+/* Library */
+.bg-library { background: linear-gradient(180deg, #0e0802 0%, #1a100400%, #110c06 50%, #0a0803 100%); }
+.bg-library { background: linear-gradient(180deg, #12090300%, #0e0802 0%, #1a1004 30%, #110c06 70%, #0a0803 100%); }
+.bg-library::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 30% 50%, rgba(80,40,0,0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 30%, rgba(60,30,0,0.2) 0%, transparent 45%); animation:lampGlow 5s ease-in-out infinite; }
+.book-shelf { position:absolute; left:0; right:0; height:18px; background:repeating-linear-gradient(90deg,#1a0d04 0px,#1a0d04 12px,#2a1506 12px,#2a1506 20px,#120a02 20px,#120a02 30px,#1e1006 30px,#1e1006 40px); opacity:.5; }
+@keyframes lampGlow { 0%,100%{opacity:.7} 50%{opacity:1} }
+

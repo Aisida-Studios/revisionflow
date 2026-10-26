@@ -4,6 +4,7 @@ import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPat
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../src/utils/provenance.js'
 import { getBoundaries, scaleBoundariesToPaper, calculateGradeFromBoundaries } from '../src/data/paperDatabase.js'
 import { miniTimerState, formatClock } from '../src/utils/miniTimerState.js'
+import { buildTimerTabTitle } from '../src/utils/timerTabTitle.js'
 import { ALL_TIME, academicYearStart, resolveAnalyticsStart, earliestRecordDay, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
 import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
@@ -613,6 +614,35 @@ ok('REGRESSION: AS-Level subjects never show an impossible target of 9; an inval
   assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'GCSE', tier: 'Foundation', targetGrade: '9' }, { qualification: 'GCSE' }), null)   // Foundation tops out at 5
   assert.equal(resolveTargetGrade({ name: 'Mathematics', qualification: 'AS-Level' }, { ...as, targetGrades: { Mathematics: 'C' } }), 'C')   // per-subject map still honoured when valid
   assert.equal(targetGradeForPrompt({ name: 'Biology', qualification: 'AS-Level' }, null), 'not set')                  // never an invented number
+})
+
+// ── Browser tab title (Google-timer style countdown in the tab strip) ───────
+ok('tab title shows a running countdown as mm:ss', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1499, cdRunning: true }), '24:59 · Countdown — RevisionFlow')
+})
+ok('tab title shows an hours-long countdown as h:mm:ss', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 5400, cdRemaining: 4865, cdRunning: true }), '1:21:05 · Countdown — RevisionFlow')
+})
+ok('tab title marks a paused countdown and keeps the time', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 600, cdRunning: false, cdPaused: true }), '⏸ 10:00 · Paused — RevisionFlow')
+})
+ok('tab title still shows a countdown paused before the first whole second ticked away', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500, cdRunning: false, cdPaused: true }), '⏸ 25:00 · Paused — RevisionFlow')
+})
+ok('tab title is untouched for a countdown still sitting at full length', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500, cdRunning: false }), null)
+})
+ok('tab title shows the stopwatch while it runs and when paused', () => {
+  assert.equal(buildTimerTabTitle({ swElapsed: 754, swRunning: true }), '12:34 · Stopwatch — RevisionFlow')
+  assert.equal(buildTimerTabTitle({ swElapsed: 754, swRunning: false }), '12:34 · Stopwatch paused — RevisionFlow')
+})
+ok('tab title prioritises finished / alarm states over the clocks', () => {
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 0, cdFinished: true, swElapsed: 30, swRunning: true }), "⏰ Time's up — RevisionFlow")
+  assert.equal(buildTimerTabTitle({ alarmFired: true }), '⏰ Alarm — RevisionFlow')
+})
+ok('tab title is empty when nothing is running', () => {
+  assert.equal(buildTimerTabTitle(), null)
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500 }), null)
 })
 
 console.log(`\n${n} checks passed`)
