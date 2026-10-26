@@ -1,13 +1,20 @@
-// src/pages/Timer.jsx — Professional Focus Timer
-import { Bell, Maximize2, Minimize2 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+// src/pages/Timer.jsx — Focus timer: countdown, stopwatch and alarm.
+// Styled with the shared design system (globals.css tokens + Timer.css) so it matches the rest of
+// the app; the animated backgrounds are painted inside the timer card's stage rather than across
+// the whole page. The live clock is mirrored into the browser tab by TimerContext.
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import {
+  Bell, ChevronRight, Clock, Image as ImageIcon, Lightbulb, Maximize2, Minimize2,
+  Music, Pause, Play, RotateCcw, SlidersHorizontal, Timer as TimerIcon, Volume2, Flag,
+} from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useTimer } from '../context/TimerContext'
 import { startSound, stopSound, setVolume as setSoundVolume } from '../utils/timerSounds'
 import { awardTimerXP, recordActivityStreak } from '../utils/firestore'
 import { useAuth } from '../context/AuthContext'
+import './Timer.css'
 
 /* ─── Formatting ─────────────────────────────────────────────── */
 function fmt(s) {
@@ -70,93 +77,8 @@ const ALERTS = [
   { id: 'gentle',   label: 'Soft Pulse'  },
 ]
 
-/* ─── CSS scenes (injected once) ─────────────────────────────── */
-const SCENE_CSS = `
-.scn { position:absolute; inset:0; z-index:0; }
-/* Forest */
-.bg-forest { background: radial-gradient(ellipse at 40% 20%, #0a2010 0%, #051008 50%, #020804 100%); }
-.bg-forest .moon { position:absolute; top:8%; right:12%; width:55px; height:55px; border-radius:50%; background: radial-gradient(circle, #fffbe8 60%, #f0d060 100%); box-shadow:0 0 30px 10px rgba(255,240,100,0.25); animation:moonGlow 5s ease-in-out infinite; }
-.bg-forest .treeline { position:absolute; bottom:0; left:0; right:0; height:40%; background: linear-gradient(180deg, transparent 0%, #030d05 40%, #020a03 100%); clip-path: polygon(0%100%,4%70%,8%80%,12%55%,16%72%,20%50%,25%65%,30%48%,35%62%,40%45%,44%60%,48%42%,52%58%,56%44%,60%60%,64%46%,68%62%,72%48%,77%65%,82%50%,87%68%,92%54%,96%72%,100%60%,100%100%); }
-.leaf { position:absolute; border-radius:50% 0 50% 0; animation:leafFall linear infinite; }
-@keyframes leafFall { 0%{opacity:0;transform:translate(0,-20px) rotate(0deg)} 10%{opacity:.7} 90%{opacity:.3} 100%{opacity:0;transform:translate(60px,110vh) rotate(720deg)} }
-@keyframes moonGlow { 0%,100%{box-shadow:0 0 30px 10px rgba(255,240,100,0.25)} 50%{box-shadow:0 0 45px 16px rgba(255,240,100,0.4)} }
-
-/* Rain */
-.bg-rain { background: linear-gradient(165deg, #0c1624 0%, #08101e 50%, #040c18 100%); }
-.bg-rain::before { content:''; position:absolute; top:0; left:0; right:0; height:35%; background: radial-gradient(ellipse at 50% 0%, rgba(20,40,80,0.6) 0%, transparent 80%); animation:cloudPulse 7s ease-in-out infinite; }
-.rain-drop { position:absolute; width:1px; background:linear-gradient(180deg,transparent,rgba(140,190,255,0.65)); animation:dropFall linear infinite; }
-.bg-rain .puddle { position:absolute; bottom:0; left:0; right:0; height:6px; background: linear-gradient(180deg, rgba(30,60,120,0.5), rgba(10,30,80,0.8)); }
-@keyframes dropFall { 0%{opacity:0;transform:translateY(-40px)} 15%{opacity:1} 85%{opacity:.7} 100%{opacity:0;transform:translateY(110vh)} }
-@keyframes cloudPulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
-
-/* Ocean */
-.bg-ocean { background: linear-gradient(195deg, #071525 0%, #0b2545 35%, #071530 70%, #040e1e 100%); }
-.wave { position:absolute; left:-5%; right:-5%; height:60px; border-radius:50%; opacity:.15; animation:waveSweep ease-in-out infinite; }
-.bg-ocean .stars-ocean { position:absolute; inset:0; }
-@keyframes waveSweep { 0%,100%{transform:translateX(0) translateY(0) scaleX(1)} 50%{transform:translateX(2%) translateY(-8px) scaleX(.98)} }
-
-/* Sunset */
-.bg-sunset { background: linear-gradient(180deg, #1a0a08 0%, #4a0d25 15%, #8b1a0e 30%, #d4420a 48%, #f06a1a 58%, #f8b84e 68%, #fde68a 74%, #e8d06a 78%, #1a0520 85%, #0a0218 100%); }
-.bg-sunset::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 50% 68%, rgba(255,160,30,0.45) 0%, rgba(220,70,10,0.2) 25%, transparent 55%); animation:sunPulse 6s ease-in-out infinite; }
-.bg-sunset .horizon { position:absolute; bottom:26%; left:0; right:0; height:1px; background: linear-gradient(90deg,transparent,rgba(255,200,100,0.6),transparent); }
-@keyframes sunPulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} }
-
-/* Snow */
-.bg-snow { background: linear-gradient(180deg, #0c1830 0%, #152040 40%, #0a1525 100%); }
-.snowflake { position:absolute; color:rgba(230,240,255,0.85); font-style:normal; animation:snowFall linear infinite; }
-@keyframes snowFall { 0%{transform:translateY(-30px) translateX(0) rotate(0deg);opacity:0} 10%{opacity:.9} 90%{opacity:.6} 100%{transform:translateY(108vh) translateX(50px) rotate(360deg);opacity:0} }
-
-/* Aurora */
-.bg-aurora { background: radial-gradient(ellipse at 50% 80%, #020a12 0%, #010608 100%); }
-.aurora-band { position:absolute; left:-20%; right:-20%; height:55%; border-radius:0 0 60% 60%; animation:auroraShift ease-in-out infinite; }
-.aurora-1 { top:-5%; background:linear-gradient(180deg,transparent 0%,rgba(0,220,120,0.12) 30%,rgba(0,180,200,0.18) 60%,transparent 100%); animation-duration:11s; }
-.aurora-2 { top:-2%; background:linear-gradient(180deg,transparent 0%,rgba(0,140,180,0.08) 40%,rgba(0,200,160,0.14) 70%,transparent 100%); animation-duration:16s; animation-direction:reverse; }
-.star { position:absolute; border-radius:50%; background:#fff; animation:twinkle ease-in-out infinite; }
-@keyframes auroraShift { 0%,100%{transform:translateX(0) scaleX(1) skewX(0deg);opacity:.6} 33%{transform:translateX(4%) scaleX(.96) skewX(2deg);opacity:1} 66%{transform:translateX(-4%) scaleX(1.04) skewX(-2deg);opacity:.8} }
-@keyframes twinkle { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:1;transform:scale(1.6)} }
-
-/* Campfire */
-.bg-campfire { background: radial-gradient(ellipse at 50% 100%, #1e0800 0%, #0e0400 50%, #050200 100%); }
-.fire-core { position:absolute; bottom:22%; left:50%; transform:translateX(-50%); animation:fireCore .25s ease-in-out infinite alternate; }
-.fire-mid  { position:absolute; bottom:24%; left:50%; transform:translateX(-50%); animation:fireMid  .4s ease-in-out infinite alternate; }
-.fire-glow { position:absolute; bottom:18%; left:50%; transform:translateX(-50%); width:120px; height:80px; border-radius:50%; background:radial-gradient(ellipse,rgba(255,100,0,0.35) 0%,transparent 70%); animation:fireGlow 1.5s ease-in-out infinite alternate; filter:blur(6px); }
-@keyframes fireCore { 0%{transform:translateX(-50%) scaleX(1) scaleY(1);filter:brightness(1)}  100%{transform:translateX(-50%) scaleX(.88) scaleY(1.12) skewX(3deg);filter:brightness(1.2)} }
-@keyframes fireMid  { 0%{transform:translateX(-50%) scaleX(1) scaleY(1) skewX(0deg);opacity:.8} 100%{transform:translateX(-50%) scaleX(.92) scaleY(1.1) skewX(-4deg);opacity:1} }
-@keyframes fireGlow { 0%{transform:translateX(-50%) scale(1);opacity:.6} 100%{transform:translateX(-50%) scale(1.2);opacity:1} }
-.ember { position:absolute; width:2px; height:2px; border-radius:50%; background:#ff6000; animation:emberRise linear infinite; }
-@keyframes emberRise { 0%{transform:translate(0,0);opacity:1} 100%{transform:translate(var(--ex,15px),-120px);opacity:0} }
-.log { position:absolute; bottom:20%; left:50%; height:10px; border-radius:4px; background:linear-gradient(90deg,#2a0d00,#3d1500,#2a0d00); }
-
-/* Meadow */
-.bg-meadow { background: linear-gradient(180deg, #0e1f38 0%, #0a1a2e 30%, #0c2018 60%, #071408 100%); }
-.firefly { position:absolute; width:3px; height:3px; border-radius:50%; background:#aaff44; filter:blur(1px); animation:fireflyDrift ease-in-out infinite; }
-@keyframes fireflyDrift { 0%,100%{transform:translate(0,0);opacity:0} 20%,80%{opacity:.9} 50%{transform:translate(var(--fx,25px),var(--fy,-18px));opacity:1} }
-.bg-meadow .grass { position:absolute; bottom:0; left:0; right:0; height:25%; background:linear-gradient(180deg,transparent,#071008 60%); clip-path:polygon(0%100%,2%82%,4%90%,6%78%,8%88%,10%75%,12%85%,14%72%,16%82%,18%70%,20%80%,22%74%,24%85%,26%72%,28%80%,30%76%,32%86%,34%74%,36%82%,38%70%,40%78%,42%72%,44%84%,46%76%,48%82%,50%74%,52%86%,54%76%,56%80%,58%72%,60%82%,62%74%,64%86%,66%78%,68%82%,70%74%,72%84%,74%76%,76%80%,78%72%,80%82%,82%70%,84%80%,86%74%,88%84%,90%76%,92%82%,94%72%,96%80%,98%76%,100%82%,100%100%); }
-
-/* Cosmos */
-.bg-cosmos { background: radial-gradient(ellipse at 30% 40%, #021218 0%, #010a0e 50%, #010608 100%); }
-.bg-cosmos::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 25% 35%, rgba(0,120,160,0.14) 0%, transparent 40%), radial-gradient(ellipse at 70% 65%, rgba(0,40,180,0.1) 0%, transparent 35%); animation:nebula 14s ease-in-out infinite; }
-.shooting-star { position:absolute; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent); animation:shoot linear infinite; }
-@keyframes nebula { 0%,100%{opacity:.5} 50%{opacity:1} }
-@keyframes shoot { 0%{transform:translateX(-200px) translateY(0);opacity:0;width:0} 10%{opacity:1} 30%{opacity:0;width:120px} 100%{transform:translateX(120vw) translateY(60px);opacity:0;width:0} }
-
-/* Storm */
-.bg-storm { background: linear-gradient(180deg, #080e18 0%, #0c1420 40%, #080e18 100%); }
-.bg-storm::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 20%, rgba(15,30,60,0.7) 0%, transparent 60%); animation:stormCloud 4s ease-in-out infinite; }
-.lightning { position:absolute; top:10%; left:30%; width:2px; height:0; background:rgba(200,220,255,0.9); animation:lightningStrike ease-in-out infinite; transform-origin:top; filter:blur(.5px); }
-@keyframes lightningStrike { 0%,85%,100%{height:0;opacity:0} 88%{height:30vh;opacity:.9} 92%{height:35vh;opacity:.6} 95%{height:0;opacity:0} }
-@keyframes stormCloud { 0%,100%{opacity:.6} 50%{opacity:1} }
-
-/* Library */
-.bg-library { background: linear-gradient(180deg, #0e0802 0%, #1a100400%, #110c06 50%, #0a0803 100%); }
-.bg-library { background: linear-gradient(180deg, #12090300%, #0e0802 0%, #1a1004 30%, #110c06 70%, #0a0803 100%); }
-.bg-library::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 30% 50%, rgba(80,40,0,0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 30%, rgba(60,30,0,0.2) 0%, transparent 45%); animation:lampGlow 5s ease-in-out infinite; }
-.book-shelf { position:absolute; left:0; right:0; height:18px; background:repeating-linear-gradient(90deg,#1a0d04 0px,#1a0d04 12px,#2a1506 12px,#2a1506 20px,#120a02 20px,#120a02 30px,#1e1006 30px,#1e1006 40px); opacity:.5; }
-@keyframes lampGlow { 0%,100%{opacity:.7} 50%{opacity:1} }
-
-/* Shared ring for circular progress on dark scenes */
-.scene-ring { filter: drop-shadow(0 0 18px rgba(34,197,94,0.6)); }
-`
+/* Scene CSS (forest / rain / cosmos / …) lives in Timer.css — it is page-scoped there,
+   so it is no longer injected as a <style> tag on every visit to this page. */
 
 /* ─── Particle generator ──────────────────────────────────────── */
 function Particles({ scene }) {
@@ -441,10 +363,18 @@ export default function Timer() {
 
   useEffect(() => () => clearInterval(alertLoopRef.current), [])
 
-  // ── Fullscreen ─────────────────────────────────────────────────
-  function toggleFs() {
-    if (!document.fullscreenElement) { containerRef.current?.requestFullscreen(); setFullscreen(true) }
-    else { document.exitFullscreen(); setFullscreen(false) }
+  // ── Fullscreen (the timer card becomes the whole screen) ───────
+  // State is driven by the fullscreenchange listener rather than set optimistically, so a browser
+  // that refuses requestFullscreen (iOS Safari on a <div>) never leaves the page thinking it is
+  // fullscreen. The stage also renders its own Exit button while fullscreen — the header is off
+  // screen at that point.
+  async function toggleFs() {
+    try {
+      if (!document.fullscreenElement) await containerRef.current?.requestFullscreen?.()
+      else await document.exitFullscreen()
+    } catch {
+      setFullscreen(false)
+    }
   }
   useEffect(() => {
     const h = () => setFullscreen(!!document.fullscreenElement)
@@ -476,253 +406,312 @@ export default function Timer() {
   const w      = 240  // ring SVG size
   const cx     = w / 2
 
-  const col  = (light) => light ? 'rgba(255,255,255,0.9)' : 'var(--text-primary)'
-  const muted= (light) => light ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)'
-  const textC = onScene ? col(true) : col(false)
-  const mutedC= onScene ? muted(true) : muted(false)
+  const openPanel = (id) => setPanel(p => (p === id ? null : id))
 
-  const glass = (opacity=0.5) => ({
-    background: onScene ? `rgba(0,0,0,${opacity})` : 'var(--bg-surface)',
-    backdropFilter: onScene ? 'blur(18px) saturate(180%)' : 'none',
-    border: onScene ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border)',
-  })
-
-  const chip = (active) => ({
-    padding: '5px 13px', borderRadius: 20, border: 'none', cursor: 'pointer',
-    fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.18s',
-    background: active
-      ? 'var(--accent)'
-      : onScene ? 'rgba(255,255,255,0.1)' : 'var(--bg-card)',
-    color: active ? 'white' : textC,
-    backdropFilter: onScene ? 'blur(8px)' : 'none',
-  })
+  // Side-column summaries — plain-language status for each of the three clocks.
+  const ambientLabel = AMBIENTS.find(a => a.id === ambient)?.label || 'Off'
+  const alertLabel   = ALERTS.find(a => a.id === alertType)?.label || 'Off'
+  const musicLabel   = playlist?.label || 'Off'
+  const countdownStatus = timer.cdFinished
+    ? 'Finished'
+    : timer.cdRunning
+      ? `${fmt(timer.cdRemaining)} running`
+      : timer.cdRemaining < timer.cdTotal ? `${fmt(timer.cdRemaining)} paused` : 'Ready'
+  const stopwatchStatus = timer.swRunning
+    ? `${fmt(timer.swElapsed)} running`
+    : timer.swElapsed > 0 ? `${fmt(timer.swElapsed)} paused` : 'Ready'
+  const alarmStatus = timer.alarmFired
+    ? 'Ringing'
+    : timer.alarmTarget ? timer.alarmTarget.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Off'
 
   return (
-    <>
-      <style>{SCENE_CSS}</style>
-      <div ref={containerRef}
-        className={onScene ? `scn bg-${sc.bg}` : ''}
-        style={{
-          minHeight: '100dvh', position: 'relative', overflow: 'hidden',
-          background: onScene ? undefined : 'var(--bg-base)',
-          borderRadius: fullscreen ? 0 : 'var(--radius-lg)',
-        }}
-      >
-        {/* Particles */}
-        {onScene && (
-          <div style={{ position:'absolute',inset:0,zIndex:1,pointerEvents:'none',overflow:'hidden' }}>
-            <Particles scene={scene} />
+    <div className="timer-page fade-in">
+      {/* ── Header ── */}
+      <header className="timer-header">
+        <div>
+          <h2 className="timer-title"><TimerIcon size={22} /> Timer</h2>
+          <p className="timer-subtitle">
+            Countdown, stopwatch or alarm. It keeps running while you move around RevisionFlow,
+            and the live time now shows in your browser tab as well.
+          </p>
+        </div>
+        <div className="timer-header-actions">
+          <button
+            type="button"
+            className={`btn btn-sm ${panel === 'scene' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => openPanel('scene')}
+            aria-expanded={panel === 'scene'}
+          >
+            <ImageIcon size={15} /> Scene
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${panel === 'sound' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => openPanel('sound')}
+            aria-expanded={panel === 'sound'}
+          >
+            <Volume2 size={15} /> Sound
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${panel === 'music' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => openPanel('music')}
+            aria-expanded={panel === 'music'}
+          >
+            <Music size={15} /> Music
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={toggleFs}
+            aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            {fullscreen ? 'Exit' : 'Fullscreen'}
+          </button>
+        </div>
+      </header>
+
+      {/* ── Scheduled session this run belongs to (/timer?sessionId=ABC) ── */}
+      {(linkedSession || sessionLoadError || timer.sessionResult) && (
+        <div className="card timer-session-card">
+          <div className="timer-session-info">
+            <p className="timer-eyebrow">Scheduled session</p>
+            {sessionLoadError && <div className="timer-session-note is-error">{sessionLoadError}</div>}
+            {!sessionLoadError && linkedSession && (
+              <div className="timer-session-title">
+                {linkedSession.title || linkedSession.subject}
+                {linkedSession.duration
+                  ? <span className="timer-session-note" style={{ fontWeight: 500 }}> · {linkedSession.duration} min planned</span>
+                  : null}
+              </div>
+            )}
+            {timer.sessionResult && timer.sessionResult.sessionId === activeSessionId && (
+              <div className={`timer-session-note ${timer.sessionResult.error ? 'is-error' : 'is-ok'}`}>
+                {timer.sessionResult.error
+                  ? timer.sessionResult.error
+                  : timer.sessionResult.alreadyCompleted
+                    ? 'Already completed — nothing was added twice.'
+                    : `Session completed — ${timer.sessionResult.minutes} min logged.`}
+              </div>
+            )}
+            {!timer.sessionResult && linkedSession?.completed && (
+              <div className="timer-session-note">This session is already completed.</div>
+            )}
           </div>
-        )}
-        {/* Overlay */}
-        {onScene && <div style={{ position:'absolute',inset:0,zIndex:2,background:sc.overlay,backdropFilter:'blur(0.5px)' }} />}
-
-        {/* ── Content ── */}
-        <div style={{ position:'relative',zIndex:3,display:'flex',flexDirection:'column',minHeight:'100dvh' }}>
-
-          {/* Top bar */}
-          <div style={{ ...glass(0.55), padding:'0.7rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontWeight:800, fontSize:'1rem', color:textC, letterSpacing:'-0.01em' }}>Timer</span>
-              {onScene && <span style={{ fontSize:'0.72rem', color:mutedC, padding:'2px 8px', borderRadius:12, background:'rgba(255,255,255,0.1)' }}>{sc.label}</span>}
-            </div>
-            <div style={{ display:'flex', gap:5, flexWrap:'wrap', alignItems:'center' }}>
-              {[
-                { id:'scene',  label:'Scene'  },
-                { id:'sounds', label:'Sound'  },
-                { id:'music',  label:'Music'  },
-              ].map(p => (
-                <button key={p.id} onClick={() => setPanel(panel === p.id ? null : p.id)} style={chip(panel === p.id)}>
-                  {p.label}
-                </button>
-              ))}
-              <button onClick={toggleFs} style={{ ...chip(false), padding:'5px 8px' }}>
-                {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          <div className="timer-session-actions">
+            {timer.linkedSessionId && timer.linkedSessionId === activeSessionId && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={completeLinkedSession}
+                disabled={completing}
+              >
+                {completing ? 'Completing…' : 'Complete session'}
               </button>
-            </div>
+            )}
+            {timer.sessionResult && (
+              <Link to="/calendar" className="btn btn-secondary btn-sm">Back to calendar</Link>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* Linked session banner (/timer?sessionId=ABC) */}
-          {(linkedSession || sessionLoadError || timer.sessionResult) && (
-            <div style={{ ...glass(0.55), padding:'0.7rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap', borderTop:'none' }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:'0.7rem', fontWeight:700, color:mutedC, letterSpacing:'0.1em', textTransform:'uppercase' }}>Scheduled session</div>
-                {sessionLoadError && <div style={{ fontSize:'0.85rem', color:'var(--danger)' }}>{sessionLoadError}</div>}
-                {!sessionLoadError && linkedSession && (
-                  <div style={{ fontSize:'0.9rem', fontWeight:700, color:textC }}>
-                    {linkedSession.title || linkedSession.subject}
-                    {linkedSession.duration ? <span style={{ fontWeight:500, color:mutedC }}> · {linkedSession.duration} min planned</span> : null}
-                  </div>
-                )}
-                {timer.sessionResult && timer.sessionResult.sessionId === activeSessionId && (
-                  <div style={{ fontSize:'0.8rem', color: timer.sessionResult.error ? 'var(--danger)' : 'var(--success)', marginTop:2 }}>
-                    {timer.sessionResult.error
-                      ? timer.sessionResult.error
-                      : timer.sessionResult.alreadyCompleted
-                        ? 'Already completed — nothing was added twice.'
-                        : `Session completed — ${timer.sessionResult.minutes} min logged.`}
-                  </div>
-                )}
-                {!timer.sessionResult && linkedSession?.completed && (
-                  <div style={{ fontSize:'0.8rem', color:mutedC, marginTop:2 }}>This session is already completed.</div>
-                )}
-              </div>
-              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                {timer.linkedSessionId && timer.linkedSessionId === activeSessionId && (
-                  <button onClick={completeLinkedSession} disabled={completing} style={{ ...chip(true), opacity: completing ? 0.6 : 1 }}>
-                    {completing ? 'Completing…' : 'Complete session'}
-                  </button>
-                )}
-                {timer.sessionResult && (
-                  <Link to="/calendar" style={{ ...chip(false), textDecoration:'none' }}>Back to calendar</Link>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Panels */}
-          {panel === 'scene' && (
-            <div style={{ ...glass(0.62), padding:'1rem 1.1rem', borderTop:'none' }}>
-              <div style={{ fontSize:'0.7rem', fontWeight:700, color:mutedC, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Animated background</div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {SCENES.map(s => (
-                  <button key={s.id} onClick={() => setScene(s.id)} style={chip(scene === s.id)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {panel === 'sounds' && (
-            <div style={{ ...glass(0.62), padding:'1rem 1.1rem', borderTop:'none' }}>
-              <div style={{ marginBottom:14 }}>
-                <div style={{ fontSize:'0.7rem', fontWeight:700, color:mutedC, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Ambient (plays while timer runs)</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
-                  {AMBIENTS.map(a => (
-                    <button key={a.id} onClick={() => setAmbient(a.id)} style={chip(ambient === a.id)}>
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-                {ambient !== 'none' && (
-                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <span style={{ fontSize:'0.75rem', color:mutedC }}>Volume</span>
-                    <input type="range" min="0" max="1" step="0.05" value={volume}
-                      onChange={e => setVolume(parseFloat(e.target.value))}
-                      style={{ flex:1, maxWidth:160, accentColor:'var(--accent)' }} />
-                    <span style={{ fontSize:'0.75rem', color:mutedC, minWidth:30 }}>{Math.round(volume*100)}%</span>
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize:'0.7rem', fontWeight:700, color:mutedC, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Alert tone (plays when timer ends)</div>
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
-                  {ALERTS.map(a => (
-                    <button key={a.id} onClick={() => setAlertType(a.id)} style={chip(alertType === a.id)}>
-                      {a.label}
-                    </button>
-                  ))}
-                  <button onClick={() => playAlert(alertType)} style={{ ...chip(false), fontSize:'0.75rem' }}>
-                    ▶ Test
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {panel === 'music' && (
-            <div style={{ ...glass(0.62), padding:'1rem 1.1rem', borderTop:'none' }}>
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:mutedC, fontSize:'0.82rem', marginBottom:12, cursor:'pointer' }}>
-                <input type="checkbox" checked={timer.musicAutoStop||false} onChange={e => timer.setMusicAutoStop(e.target.checked)} style={{ accentColor:'var(--accent)' }} />
-                Stop music when timer ends
-              </label>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:6, marginBottom:12 }}>
-                {PLAYLISTS.map(p => (
-                  <button key={p.id} onClick={() => setPlaylist(playlist?.id === p.id ? null : p)}
-                    style={{ ...chip(playlist?.id === p.id), textAlign:'left', padding:'8px 12px', borderRadius:10, display:'flex', gap:8, alignItems:'center' }}>
-                    <div>
-                      <div style={{ fontSize:'0.8rem', fontWeight:700, lineHeight:1.2 }}>{p.label}</div>
-                      <div style={{ fontSize:'0.68rem', opacity:0.7, lineHeight:1.2 }}>{p.sub}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              {playlist && (
-                <div style={{ borderRadius:10, overflow:'hidden', border:`1px solid ${onScene?'rgba(255,255,255,0.1)':'var(--border)'}` }}>
-                  <iframe key={playlist.id} width="100%" height="90"
-                    src={`https://www.youtube.com/embed/${playlist.vid}?autoplay=1&controls=1`}
-                    allow="autoplay; encrypted-media" style={{ border:'none', display:'block' }} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Tab bar ── */}
-          <div style={{ ...glass(0.45), padding:'0.5rem 1rem', borderTop:'none', display:'flex', gap:4 }}>
-            {['countdown','stopwatch','alarm'].map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                padding:'6px 16px', border:'none', cursor:'pointer', borderRadius:8,
-                fontWeight:600, fontSize:'0.85rem', textTransform:'capitalize', transition:'all 0.18s',
-                background: tab===t ? 'var(--accent)' : 'transparent',
-                color: tab===t ? 'white' : mutedC,
-              }}>{t}</button>
+      {/* ── Option panels ── */}
+      {panel === 'scene' && (
+        <div className="card timer-panel">
+          <p className="timer-panel-label">Animated background</p>
+          <div className="timer-chip-row">
+            {SCENES.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                className={`timer-chip${scene === s.id ? ' is-active' : ''}`}
+                onClick={() => setScene(s.id)}
+                aria-pressed={scene === s.id}
+              >
+                {s.label}
+              </button>
             ))}
           </div>
+        </div>
+      )}
 
-          {/* ── Main content ── */}
-          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'1.5rem 1rem', gap:'1.5rem' }}>
+      {panel === 'sound' && (
+        <div className="card timer-panel">
+          <p className="timer-panel-label">Ambient sound (plays while the countdown runs)</p>
+          <div className="timer-chip-row">
+            {AMBIENTS.map(a => (
+              <button
+                key={a.id}
+                type="button"
+                className={`timer-chip${ambient === a.id ? ' is-active' : ''}`}
+                onClick={() => setAmbient(a.id)}
+                aria-pressed={ambient === a.id}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+          {ambient !== 'none' && (
+            <div className="timer-volume">
+              <span className="timer-volume-label">Volume</span>
+              <input
+                type="range" min="0" max="1" step="0.05" value={volume}
+                onChange={e => setVolume(parseFloat(e.target.value))}
+                aria-label="Ambient sound volume"
+              />
+              <span className="timer-volume-label">{Math.round(volume * 100)}%</span>
+            </div>
+          )}
+
+          <p className="timer-panel-label" style={{ marginTop: 18 }}>Alert tone (plays when the timer ends)</p>
+          <div className="timer-chip-row">
+            {ALERTS.map(a => (
+              <button
+                key={a.id}
+                type="button"
+                className={`timer-chip${alertType === a.id ? ' is-active' : ''}`}
+                onClick={() => setAlertType(a.id)}
+                aria-pressed={alertType === a.id}
+              >
+                {a.label}
+              </button>
+            ))}
+            <button type="button" className="timer-chip" onClick={() => playAlert(alertType)}>
+              <Play size={11} style={{ verticalAlign: -1, marginRight: 4 }} /> Test
+            </button>
+          </div>
+        </div>
+      )}
+
+      {panel === 'music' && (
+        <div className="card timer-panel">
+          <label className="timer-check" style={{ marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={timer.musicAutoStop || false}
+              onChange={e => timer.setMusicAutoStop(e.target.checked)}
+            />
+            Stop music when the timer ends
+          </label>
+          <div className="timer-music-grid">
+            {PLAYLISTS.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                className={`timer-music-card${playlist?.id === p.id ? ' is-active' : ''}`}
+                onClick={() => setPlaylist(playlist?.id === p.id ? null : p)}
+                aria-pressed={playlist?.id === p.id}
+              >
+                <span className="timer-music-name">{p.label}</span>
+                <span className="timer-music-sub">{p.sub}</span>
+              </button>
+            ))}
+          </div>
+          {playlist && (
+            <div className="timer-music-frame">
+              <iframe
+                key={playlist.id}
+                width="100%"
+                height="90"
+                title={`${playlist.label} — study music`}
+                src={`https://www.youtube.com/embed/${playlist.vid}?autoplay=1&controls=1`}
+                allow="autoplay; encrypted-media"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Mode tabs ── */}
+      <div className="tabs timer-tabs" role="tablist" aria-label="Timer mode">
+        {[
+          { id: 'countdown', label: 'Countdown', icon: TimerIcon },
+          { id: 'stopwatch', label: 'Stopwatch', icon: Clock },
+          { id: 'alarm',     label: 'Alarm',     icon: Bell },
+        ].map(t => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`tab${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            <t.icon size={15} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="timer-layout">
+        {/* ════ Stage: the clock itself, also the fullscreen focus view ════ */}
+        <section
+          ref={containerRef}
+          className={`card timer-stage${onScene ? ' is-scene' : ''}${tab === 'countdown' && timer.cdFinished ? ' is-finished' : ''}`}
+        >
+          {onScene && (
+            <>
+              <div className={`timer-scene-layer scn bg-${sc.bg}`} aria-hidden="true">
+                <Particles scene={scene} />
+              </div>
+              <div className="timer-scene-overlay" style={{ background: sc.overlay }} aria-hidden="true" />
+            </>
+          )}
+
+          {fullscreen && (
+            <button type="button" className="timer-fs-exit" onClick={toggleFs}>
+              <Minimize2 size={15} /> Exit fullscreen
+            </button>
+          )}
+
+          <div className="timer-stage-content">
 
             {/* ════ COUNTDOWN ════ */}
             {tab === 'countdown' && (<>
-
-              {/* Ring */}
-              <div style={{ position:'relative' }}>
-                <svg width={w} height={w} className={onScene ? 'scene-ring' : ''} style={{ transform:'rotate(-90deg)' }}>
-                  <circle cx={cx} cy={cx} r={100} fill="none"
-                    stroke={onScene ? 'rgba(255,255,255,0.07)' : 'var(--bg-hover)'} strokeWidth={12} />
-                  <circle cx={cx} cy={cx} r={100} fill="none"
-                    stroke={timer.cdFinished ? 'var(--danger)' : 'var(--accent)'}
+              <div className="timer-ring">
+                <svg width={w} height={w} viewBox={`0 0 ${w} ${w}`} className="timer-ring-svg" aria-hidden="true">
+                  <circle className="timer-ring-track" cx={cx} cy={cx} r={100} fill="none" strokeWidth={12} />
+                  {Array.from({ length: 60 }, (_, i) => {
+                    const angle = (i / 60) * 2 * Math.PI - Math.PI / 2
+                    const r1 = i % 5 === 0 ? 88 : 92, r2 = 98
+                    return (
+                      <line
+                        key={i}
+                        className="timer-ring-tick"
+                        x1={cx + r1 * Math.cos(angle)} y1={cx + r1 * Math.sin(angle)}
+                        x2={cx + r2 * Math.cos(angle)} y2={cx + r2 * Math.sin(angle)}
+                        strokeWidth={i % 5 === 0 ? 2 : 1}
+                      />
+                    )
+                  })}
+                  <circle
+                    className="timer-ring-progress"
+                    cx={cx} cy={cx} r={100} fill="none"
                     strokeWidth={12} strokeLinecap="round"
                     strokeDasharray={circum}
                     strokeDashoffset={circum * (1 - pct)}
-                    style={{ transition:'stroke-dashoffset 1s linear, stroke 0.4s' }}
                   />
-                  {/* Tick marks */}
-                  {Array.from({length:60},(_,i) => {
-                    const angle = (i/60)*2*Math.PI - Math.PI/2
-                    const r1 = i%5===0 ? 88 : 92, r2 = 98
-                    return <line key={i}
-                      x1={cx+r1*Math.cos(angle)} y1={cx+r1*Math.sin(angle)}
-                      x2={cx+r2*Math.cos(angle)} y2={cx+r2*Math.sin(angle)}
-                      stroke={onScene?'rgba(255,255,255,0.18)':'rgba(34,197,94,0.2)'}
-                      strokeWidth={i%5===0?2:1}
-                    />
-                  })}
                 </svg>
-                <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
+                <div className="timer-ring-inner">
                   {timer.cdFinished ? (
-                    <div style={{ textAlign:'center' }}>
-                      <div style={{ fontSize:'1.5rem', fontWeight:800, color:'var(--danger)', marginBottom:8 }}>Done!</div>
-                      <button onClick={dismissAlert}
-                        style={{ padding:'8px 20px', borderRadius:20, border:'none', cursor:'pointer',
-                          background:'var(--danger)', color:'white', fontWeight:700, fontSize:'0.85rem' }}>
-                        Dismiss
-                      </button>
-                    </div>
+                    <>
+                      <div className="timer-display timer-display--finished">Time&rsquo;s up</div>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={dismissAlert}>Dismiss</button>
+                    </>
                   ) : (
                     <>
-                      <span style={{ fontSize:'2.8rem', fontWeight:800, color:textC, fontVariantNumeric:'tabular-nums', letterSpacing:'-0.03em', lineHeight:1 }}>
-                        {fmt(timer.cdRemaining)}
+                      <span className="timer-display" role="timer">{fmt(timer.cdRemaining)}</span>
+                      <span className="timer-display-sub">
+                        {timer.cdRunning
+                          ? 'remaining'
+                          : timer.cdRemaining === timer.cdTotal
+                            ? `of ${fmt(timer.cdTotal)}`
+                            : 'paused'}
                       </span>
-                      {timer.cdTotal > 0 && (
-                        <span style={{ fontSize:'0.72rem', color:mutedC }}>
-                          of {fmt(timer.cdTotal)}
-                        </span>
-                      )}
                       {ambient !== 'none' && timer.cdRunning && (
-                        <span style={{ fontSize:'0.68rem', color:mutedC, marginTop:2 }}>
-                          {AMBIENTS.find(a=>a.id===ambient)?.label} playing
+                        <span className="timer-display-sub">
+                          <Volume2 size={12} />{ambientLabel} playing
                         </span>
                       )}
                     </>
@@ -730,163 +719,264 @@ export default function Timer() {
                 </div>
               </div>
 
-              {/* ±30s / ±5m adjust buttons */}
-              <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap', justifyContent:'center' }}>
-                {[[-300,'-5m'],[-30,'-30s'],[30,'+30s'],[300,'+5m']].map(([d,l]) => (
-                  <button key={l} onClick={() => adjust(d)} style={{
-                    padding:'6px 13px', borderRadius:20, border:`1px solid ${onScene?'rgba(255,255,255,0.15)':'var(--border)'}`,
-                    background:'transparent', color:textC, fontSize:'0.8rem', fontWeight:600, cursor:'pointer',
-                    transition:'all 0.15s',
-                  }}>{l}</button>
+              <div className="timer-controls">
+                {!timer.cdRunning ? (
+                  <button type="button" className="btn btn-primary btn-lg" onClick={timer.cdStart}>
+                    <Play size={18} /> {timer.cdRemaining === timer.cdTotal ? 'Start' : 'Resume'}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary btn-lg" onClick={timer.cdPause}>
+                    <Pause size={18} /> Pause
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => { timer.cdReset(); stopSound(); clearInterval(alertLoopRef.current) }}
+                >
+                  <RotateCcw size={16} /> Reset
+                </button>
+              </div>
+
+              <div className="timer-chips">
+                {[[-300, '−5m'], [-30, '−30s'], [30, '+30s'], [300, '+5m']].map(([d, l]) => (
+                  <button key={l} type="button" className="timer-pill" onClick={() => adjust(d)}>{l}</button>
                 ))}
               </div>
 
-              {/* Preset chips */}
-              <div style={{ display:'flex', flexWrap:'wrap', gap:5, justifyContent:'center', maxWidth:420 }}>
-                {[[5,'5m'],[10,'10m'],[15,'15m'],[20,'20m'],[25,'25m'],[30,'30m'],[45,'45m'],[60,'60m'],[90,'90m']].map(([mins,label]) => (
-                  <button key={mins} onClick={() => timer.cdSetPreset(mins*60)} style={chip(timer.cdTotal===mins*60 && !timer.cdRunning)}>
+              <div className="timer-chips timer-chips--presets">
+                {[[5, '5m'], [10, '10m'], [15, '15m'], [20, '20m'], [25, '25m'], [30, '30m'], [45, '45m'], [60, '60m'], [90, '90m']].map(([mins, label]) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    className={`timer-pill${timer.cdTotal === mins * 60 && !timer.cdRunning ? ' is-active' : ''}`}
+                    onClick={() => timer.cdSetPreset(mins * 60)}
+                  >
                     {label}
                   </button>
                 ))}
               </div>
 
-              {/* Exact time input */}
-              <div style={{ display:'flex', alignItems:'center', gap:6, ...glass(0.4), padding:'8px 14px', borderRadius:12 }}>
-                <span style={{ fontSize:'0.75rem', color:mutedC, marginRight:4 }}>Set exact:</span>
-                {[['h',inputH,setInputH,2,'hh'],['m',inputM,setInputM,2,'mm'],['s',inputS,setInputS,2,'ss']].map(([unit,val,setter,w,ph],i) => (
-                  <div key={unit} style={{ display:'flex', alignItems:'center', gap:i>0?4:0 }}>
-                    {i>0 && <span style={{ color:mutedC, fontSize:'0.9rem' }}>:</span>}
-                    <input value={val} onChange={e=>setter(e.target.value)} placeholder={ph}
-                      style={{ width:38, padding:'4px 6px', borderRadius:6, border:`1px solid ${onScene?'rgba(255,255,255,0.15)':'var(--border)'}`,
-                        background: onScene?'rgba(0,0,0,0.3)':'var(--bg-input)', color:textC, fontSize:'0.85rem',
-                        textAlign:'center', outline:'none' }}
-                      maxLength={2} />
-                  </div>
+              <div className="timer-exact">
+                <span className="timer-exact-label">Set exact</span>
+                {[
+                  ['h', inputH, setInputH, 'hh'],
+                  ['m', inputM, setInputM, 'mm'],
+                  ['s', inputS, setInputS, 'ss'],
+                ].map(([unit, val, setter, ph], i) => (
+                  <span key={unit} className="timer-exact-field">
+                    {i > 0 && <span className="timer-exact-sep">:</span>}
+                    <input
+                      value={val}
+                      onChange={e => setter(e.target.value)}
+                      placeholder={ph}
+                      maxLength={2}
+                      inputMode="numeric"
+                      aria-label={unit === 'h' ? 'Hours' : unit === 'm' ? 'Minutes' : 'Seconds'}
+                    />
+                  </span>
                 ))}
-                <button onClick={applyExactTime} style={{ ...chip(false), padding:'5px 10px', marginLeft:4 }}>Set</button>
-              </div>
-
-              {/* Controls */}
-              <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-                {!timer.cdRunning ? (
-                  <button onClick={timer.cdStart} style={playBtn(onScene)}>▶ Start</button>
-                ) : (
-                  <button onClick={timer.cdPause} style={playBtn(onScene, '#e67e22')}>Pause</button>
-                )}
-                <button onClick={() => { timer.cdReset(); stopSound(); clearInterval(alertLoopRef.current) }}
-                  style={{ ...chip(false), padding:'10px 20px', fontSize:'0.9rem' }}>↺ Reset</button>
+                <button type="button" className="timer-pill timer-exact-set" onClick={applyExactTime}>Set</button>
               </div>
             </>)}
 
             {/* ════ STOPWATCH ════ */}
             {tab === 'stopwatch' && (<>
-              <div style={{ fontSize:'4rem', fontWeight:800, color:textC, fontVariantNumeric:'tabular-nums',
-                letterSpacing:'-0.04em', textShadow: onScene?'0 2px 24px rgba(0,0,0,0.5)':'none', lineHeight:1 }}>
-                {fmt(timer.swElapsed)}
-              </div>
+              <div className="timer-big-time" role="timer">{fmt(timer.swElapsed)}</div>
               {timer.swLaps?.length > 0 && (
-                <div style={{ fontSize:'1.1rem', fontWeight:600, color:mutedC }}>
-                  Lap {timer.swLaps.length+1} · {fmt(timer.swElapsed - (timer.swLaps[timer.swLaps.length-1]||0))}
+                <div className="timer-display-sub" style={{ fontSize: '1rem', fontWeight: 600 }}>
+                  Lap {timer.swLaps.length + 1} · {fmt(timer.swElapsed - (timer.swLaps[timer.swLaps.length - 1] || 0))}
                 </div>
               )}
-              <div style={{ display:'flex', gap:10 }}>
+
+              <div className="timer-controls">
                 {!timer.swRunning ? (
-                  <button onClick={timer.swStart} style={playBtn(onScene)}>▶ Start</button>
+                  <button type="button" className="btn btn-primary btn-lg" onClick={timer.swStart}>
+                    <Play size={18} /> {timer.swElapsed === 0 ? 'Start' : 'Resume'}
+                  </button>
                 ) : (<>
-                  <button onClick={timer.swPause} style={playBtn(onScene,'#e67e22')}>Pause</button>
-                  <button onClick={timer.swLap} style={playBtn(onScene,'#1a5276')}>Lap</button>
+                  <button type="button" className="btn btn-primary btn-lg" onClick={timer.swPause}>
+                    <Pause size={18} /> Pause
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={timer.swLap}>
+                    <Flag size={16} /> Lap
+                  </button>
                 </>)}
-                <button onClick={timer.swReset} style={{ ...chip(false), padding:'10px 18px', fontSize:'0.9rem' }}>↺</button>
+                <button type="button" className="btn btn-secondary" onClick={timer.swReset}>
+                  <RotateCcw size={16} /> Reset
+                </button>
               </div>
-              {timer.swLaps?.length > 0 && (
-                <div style={{ width:'100%', maxWidth:320, maxHeight:200, overflowY:'auto' }}>
-                  <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                    {[...timer.swLaps].reverse().map((lap,i) => {
-                      const lapNum = timer.swLaps.length - i
-                      const lapTime = lap - (timer.swLaps[lapNum-2]||0)
-                      const best = Math.min(...timer.swLaps.map((l,j)=>l-(timer.swLaps[j-1]||0)))
-                      return (
-                        <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
-                          padding:'7px 14px', borderRadius:8, ...glass(0.35) }}>
-                          <span style={{ fontSize:'0.8rem', color:mutedC }}>Lap {lapNum}</span>
-                          <span style={{ fontSize:'0.8rem', fontWeight:700, color: lapTime===best?'var(--success)':textC, fontVariantNumeric:'tabular-nums' }}>
-                            {fmt(lapTime)}
-                          </span>
-                          <span style={{ fontSize:'0.75rem', color:mutedC, fontVariantNumeric:'tabular-nums' }}>{fmt(lap)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
+
+              {timer.swLaps?.length > 0 ? (
+                <div className="timer-laps">
+                  {[...timer.swLaps].reverse().map((lap, i) => {
+                    const lapNum = timer.swLaps.length - i
+                    const lapTime = lap - (timer.swLaps[lapNum - 2] || 0)
+                    const best = Math.min(...timer.swLaps.map((l, j) => l - (timer.swLaps[j - 1] || 0)))
+                    return (
+                      <div key={lapNum} className="timer-lap">
+                        <span className="timer-lap-label">Lap {lapNum}</span>
+                        <span className={`timer-lap-split${lapTime === best ? ' is-best' : ''}`}>{fmt(lapTime)}</span>
+                        <span className="timer-lap-total">{fmt(lap)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
+              ) : (
+                <p className="timer-lap-empty">No laps yet — hit Lap while the stopwatch runs.</p>
               )}
             </>)}
 
             {/* ════ ALARM ════ */}
             {tab === 'alarm' && (<>
               {timer.alarmFired && (
-                <div style={{ padding:'1.25rem 2rem', background:'rgba(239,68,68,0.18)', border:'1px solid var(--danger)',
-                  borderRadius:14, textAlign:'center' }}>
-                  <div style={{ marginBottom:8 }}><Bell size={30} /></div>
-                  <div style={{ fontWeight:800, fontSize:'1.2rem', color:'var(--danger)', marginBottom:12 }}>Alarm!</div>
-                  <button onClick={timer.clearAlarm}
-                    style={{ padding:'8px 24px', borderRadius:20, border:'none', cursor:'pointer',
-                      background:'var(--danger)', color:'white', fontWeight:700 }}>
-                    Dismiss
-                  </button>
+                <div className="timer-alarm-hero">
+                  <div className="timer-alarm-ring"><Bell size={30} /></div>
+                  <p className="timer-alarm-hero-title">Alarm ringing</p>
+                  <button type="button" className="btn btn-danger" onClick={timer.clearAlarm}>Dismiss</button>
                 </div>
               )}
+
               {timer.alarmTarget && !timer.alarmFired && (
-                <div style={{ ...glass(0.4), padding:'10px 18px', borderRadius:12, display:'flex', alignItems:'center', gap:12, color:textC }}>
+                <div className="timer-alarm-active">
                   <Bell size={16} />
-                  <span style={{ fontWeight:600 }}>{timer.alarmTarget.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-                  <button onClick={timer.clearAlarm} style={{ ...chip(false), padding:'4px 10px', fontSize:'0.75rem' }}>Clear</button>
+                  Set for {timer.alarmTarget.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={timer.clearAlarm}>Clear</button>
                 </div>
               )}
-              <div style={{ display:'flex', flexDirection:'column', gap:12, width:'100%', maxWidth:340 }}>
-                <div style={{ ...glass(0.42), borderRadius:14, padding:'1.1rem' }}>
-                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>Set clock time</div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <input type="time" value={alarmTime} onChange={e=>setAlarmTime(e.target.value)}
-                      style={{ flex:1, padding:'9px 12px', borderRadius:8,
-                        border:`1px solid ${onScene?'rgba(255,255,255,0.15)':'var(--border)'}`,
-                        background:onScene?'rgba(0,0,0,0.3)':'var(--bg-input)',
-                        color:textC, fontSize:'1rem', outline:'none' }} />
-                    <button onClick={() => {
-                      if (!alarmTime) return
-                      const [h,m]=alarmTime.split(':').map(Number)
-                      const t=new Date(); t.setHours(h,m,0,0)
-                      if (t<new Date()) t.setDate(t.getDate()+1)
-                      timer.setAlarm(t)
-                    }} style={playBtn(onScene)}>Set</button>
+
+              <div className="timer-alarm-grid">
+                <div className="timer-alarm-card">
+                  <p className="timer-alarm-card-title"><Clock size={15} /> Set a clock time</p>
+                  <div className="timer-alarm-row">
+                    <input
+                      type="time"
+                      className="input"
+                      aria-label="Alarm time"
+                      value={alarmTime}
+                      onChange={e => setAlarmTime(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (!alarmTime) return
+                        const [h, m] = alarmTime.split(':').map(Number)
+                        const t = new Date(); t.setHours(h, m, 0, 0)
+                        if (t < new Date()) t.setDate(t.getDate() + 1)
+                        timer.setAlarm(t)
+                      }}
+                    >
+                      Set
+                    </button>
                   </div>
                 </div>
-                <div style={{ ...glass(0.42), borderRadius:14, padding:'1.1rem' }}>
-                  <div style={{ fontWeight:700, color:textC, marginBottom:10, fontSize:'0.9rem' }}>Countdown alarm</div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <input type="number" placeholder="Minutes" value={alarmMins} onChange={e=>setAlarmMins(e.target.value)} min="1"
-                      style={{ flex:1, padding:'9px 12px', borderRadius:8,
-                        border:`1px solid ${onScene?'rgba(255,255,255,0.15)':'var(--border)'}`,
-                        background:onScene?'rgba(0,0,0,0.3)':'var(--bg-input)',
-                        color:textC, fontSize:'1rem', outline:'none' }} />
-                    <button onClick={() => { const m=parseInt(alarmMins); if(m>0) timer.setAlarm(new Date(Date.now()+m*60000)) }}
-                      style={playBtn(onScene)}>Set</button>
+
+                <div className="timer-alarm-card">
+                  <p className="timer-alarm-card-title"><TimerIcon size={15} /> Countdown alarm</p>
+                  <div className="timer-alarm-row">
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Minutes from now"
+                      aria-label="Minutes from now"
+                      min="1"
+                      value={alarmMins}
+                      onChange={e => setAlarmMins(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => { const m = parseInt(alarmMins); if (m > 0) timer.setAlarm(new Date(Date.now() + m * 60000)) }}
+                    >
+                      Set
+                    </button>
                   </div>
                 </div>
               </div>
             </>)}
 
-          </div>{/* end main content */}
-        </div>{/* end content wrapper */}
-      </div>
-    </>
-  )
-}
+          </div>
+        </section>
 
-function playBtn(onScene, bg='var(--accent)') {
-  return {
-    padding:'11px 28px', borderRadius:24, border:'none', cursor:'pointer',
-    fontWeight:700, fontSize:'0.95rem', color:'white',
-    background:bg, boxShadow:`0 4px 18px ${bg==='var(--accent)'?'rgba(34,197,94,0.45)':'rgba(0,0,0,0.3)'}`,
-    transition:'all 0.18s',
-  }
+        {/* ════ Side column ════ */}
+        <aside className="timer-side">
+          <section className="card">
+            <h3 className="timer-side-title"><SlidersHorizontal size={17} /> Focus setup</h3>
+            <div className="timer-setup">
+              <button type="button" className="timer-setup-row" onClick={() => openPanel('scene')}>
+                <span className="timer-setup-icon"><ImageIcon size={15} /></span>
+                <span className="timer-setup-main">
+                  <span className="timer-setup-label">Background</span>
+                  <span className="timer-setup-value">{sc.label}</span>
+                </span>
+                <ChevronRight size={15} className="timer-setup-chevron" />
+              </button>
+              <button type="button" className="timer-setup-row" onClick={() => openPanel('sound')}>
+                <span className="timer-setup-icon"><Volume2 size={15} /></span>
+                <span className="timer-setup-main">
+                  <span className="timer-setup-label">Ambient sound</span>
+                  <span className="timer-setup-value">{ambientLabel}</span>
+                </span>
+                <ChevronRight size={15} className="timer-setup-chevron" />
+              </button>
+              <button type="button" className="timer-setup-row" onClick={() => openPanel('sound')}>
+                <span className="timer-setup-icon"><Bell size={15} /></span>
+                <span className="timer-setup-main">
+                  <span className="timer-setup-label">Alert tone</span>
+                  <span className="timer-setup-value">{alertLabel}</span>
+                </span>
+                <ChevronRight size={15} className="timer-setup-chevron" />
+              </button>
+              <button type="button" className="timer-setup-row" onClick={() => openPanel('music')}>
+                <span className="timer-setup-icon"><Music size={15} /></span>
+                <span className="timer-setup-main">
+                  <span className="timer-setup-label">Study music</span>
+                  <span className="timer-setup-value">{musicLabel}</span>
+                </span>
+                <ChevronRight size={15} className="timer-setup-chevron" />
+              </button>
+            </div>
+            <div className="timer-side-divider" />
+            <label className="timer-check">
+              <input
+                type="checkbox"
+                checked={timer.musicAutoStop || false}
+                onChange={e => timer.setMusicAutoStop(e.target.checked)}
+              />
+              Stop music when the timer ends
+            </label>
+          </section>
+
+          <section className="card">
+            <h3 className="timer-side-title"><Clock size={17} /> Right now</h3>
+            <div className="timer-status">
+              <div className="timer-status-row">
+                <span className="timer-status-label">Countdown</span>
+                <span className={`timer-status-value${timer.cdRunning ? ' is-live' : ''}`}>{countdownStatus}</span>
+              </div>
+              <div className="timer-status-row">
+                <span className="timer-status-label">Stopwatch</span>
+                <span className={`timer-status-value${timer.swRunning ? ' is-live' : ''}`}>{stopwatchStatus}</span>
+              </div>
+              <div className="timer-status-row">
+                <span className="timer-status-label">Alarm</span>
+                <span className={`timer-status-value${timer.alarmTarget ? ' is-live' : ''}`}>{alarmStatus}</span>
+              </div>
+            </div>
+            <div className="timer-side-divider" />
+            <p className="timer-tip">
+              <Lightbulb size={13} style={{ verticalAlign: -2, marginRight: 5, color: 'var(--gold)' }} />
+              Leave this page and the timer keeps running — a mini timer appears in the sidebar
+              (top bar on mobile) so you can pause or jump straight back.
+            </p>
+            <p className="timer-tip">
+              The live time also sits in your browser tab, so it stays visible while you work in
+              another tab.
+            </p>
+          </section>
+        </aside>
+      </div>
+    </div>
+  )
 }

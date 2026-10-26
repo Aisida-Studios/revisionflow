@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { completeSession } from '../utils/firestore';
+import { buildTimerTabTitle, BASE_TITLE } from '../utils/timerTabTitle';
 
 const TimerContext = createContext(null);
 
@@ -146,6 +147,28 @@ export function TimerProvider({ children }) {
       window.removeEventListener('focus', refresh);
     };
   }, [cdRunning, swRunning, alarmTarget]);
+
+  // ── Browser tab title ────────────────────────────────────────────────────
+  // Mirrors the live clock into document.title, so a running countdown stays visible in the tab
+  // strip while the student is reading a PDF or working in another app — same idea as a Google
+  // timer. Lives in the provider (not the Timer page) because a timer started on /timer keeps
+  // running after navigating away. The previous title is restored once nothing is running, and
+  // untouched while idle so pages that set their own title (e.g. PublicProfile) are left alone.
+  const baseTitleRef  = useRef(typeof document !== 'undefined' ? (document.title || BASE_TITLE) : BASE_TITLE);
+  const titleShownRef = useRef(false);
+  useEffect(() => {
+    const title = buildTimerTabTitle({
+      cdRemaining, cdTotal, cdRunning, cdFinished, swElapsed, swRunning, alarmFired,
+      cdPaused: !cdRunning && cdClock.pausedAt != null,
+    });
+    if (title) {
+      if (document.title !== title) document.title = title;
+      titleShownRef.current = true;
+    } else if (titleShownRef.current) {
+      document.title = baseTitleRef.current || BASE_TITLE;
+      titleShownRef.current = false;
+    }
+  }, [cdRemaining, cdTotal, cdRunning, cdFinished, swElapsed, swRunning, alarmFired, cdClock.pausedAt]);
 
   // --- Countdown completion (fires exactly once per run, even after a long background gap) ---
   useEffect(() => {
