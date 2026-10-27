@@ -6224,14 +6224,27 @@ export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...CCEA_ASLEVEL_2
 // Listening/Reading, German Writing) and missing rows were added (GCSE French; AS Biology and Economics;
 // A-level Further Mathematics Papers 3 and 4).
 //
-// OCR, EDUQAS/WJEC AND CCEA (GCSE, AS and A-level): their source is NOT recorded here and has NOT been
-// verified — see src/data/curriculum/provenance.json (examDates.blocks) for the status of each block. OCR has
-// no AS/A-level 2027 rows at all. Candidate official sources, not yet transcribed or verified:
-//   - OCR GCSE 2027 (final): ocr.org.uk/Images/758618-june-2027-final-exam-timetable-gcse-and-cambridge-nationals.pdf
-//   - OCR AS/A-level 2027 (final): ocr.org.uk/Images/758622-june-2027-final-exam-timetable-as-a-level-core-maths-and-fsmq.pdf
-//   - WJEC/Eduqas GCSE 2027 (final): wjec.co.uk/media/1awnxucv/summer-2027-wales-and-eduqas-gcse-final-version-080726.pdf
-//   - WJEC/Eduqas AS and A level 2027 (final): wjec.co.uk/media/nwjexxw0/summer-2027-wales-and-eduqas-asplusa-level-final-version.pdf
-//   - CCEA GCSE 2027: ccea.org.uk (last updated 20/05/2026 per an earlier check)
+// OCR, EDUQAS/WJEC AND CCEA (GCSE, AS and A-level) rows were transcribed from each board's FINAL summer 2027
+// timetable and compared paper by paper; every written paper in those documents has a row below.
+//   - OCR: "June 2027 final exam timetable - GCSE and Cambridge Nationals" (OCR document 758618, edition June 2026) and
+//     "June 2027 final exam timetable - AS and A Level, Core Maths and FSMQ" (document 758622, edition June 2026).
+//     OCR marks some papers * = final assessment opportunity. Contingency day Wed 23 June 2027; 31 May - 4 June (the
+//     Spring bank holiday week) has no OCR exams. Cambridge Nationals and the FSMQ are stored as 'Level 2', Core Maths as
+//     'Level 3'. Where a subject has A/B variants with identical dates (OCR Biology A and B, Eduqas Geography A and B), an
+//     extra plain-name row (e.g. 'Biology', 'Geography') repeats those dates for students who chose the subject without the
+//     A/B suffix.
+//   - WJEC/Eduqas: "Summer 2027 Wales and Eduqas GCSE" final version (wjec.co.uk) and the Wales and Eduqas AS and A level
+//     final version (eduqas.co.uk). Contingency day Wed 23 June 2027. WJEC (Wales) papers are stored under 'Eduqas' like
+//     every other WJEC/Eduqas entry (see EXAM_DATA_BOARD_KEYS below), under the plain subject name; where a Wales subject
+//     shares its name with an Eduqas (England) subject it carries "(WJEC Wales)". Subjects the document marks "resit only"
+//     say so in their name.
+//   - CCEA: "GCSE Summer 2027" Version 2 (ccea.org.uk, updated 01/09/2026) and "GCE Summer 2027" (updated 20/05/2026);
+//     summer series only (CCEA's March and November series are not included). Contingency day Wed 23 June 2027.
+// The WJEC and CCEA documents are Morning | Date | Afternoon tables, so every paper's date was taken from that layout and
+// cross-checked: tiers/options of one paper share a date, parallel Wales and Eduqas papers line up, the bank holidays
+// (Mon 3 and Mon 31 May) are empty, and no CCEA GCSE day has more than one morning or one afternoon session.
+// Not included: non-examined assessment deadlines (except the existing Art and Design "Submit by" rows), speaking tests,
+// and anything a board has not published.
 const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:1, paperName:'Paper 1: Non-Calculator (F/H)', date:'2027-05-14' },
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:2, paperName:'Paper 2: Calculator (F/H)', date:'2027-05-27' },
@@ -7982,6 +7995,231 @@ const GCSE_2027 = [
     "paperName": "Religion, Philosophy and Ethics in the Modern World (Options 1-5)",
     "date": "2027-05-21"
   },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Greece and Persia",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Rome and its neighbours",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Myth and religion or Women in the ancient world (options)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The Homeric world, Roman city life or War and warfare (options)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Prose literature (A or B)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Verse literature (A or B)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Literature and culture",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Prose literature (A or B)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Verse literature (A or B)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Literature and culture",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Religious Studies (Short Course)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Religion, philosophy and ethics in the modern world",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (F/H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (A: Living in the UK today; B: Our natural world)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (A: The world around us; B: People and society)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (A: Geographical skills; B: Geographical exploration)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (A: Period study with non-British depth study; B: History around us)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (A: Thematic study; B: British thematic study and depth study)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "GCSE",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Paper 3 (A: British depth study; B: World period study and depth study)",
+    "date": "2027-06-09"
+  },
 
   {
     "board": "Eduqas",
@@ -8080,7 +8318,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Component 1",
-    "date": "2027-05-10"
+    "date": "2027-05-11"
   },
   {
     "board": "Eduqas",
@@ -8097,7 +8335,7 @@ const GCSE_2027 = [
     "subject": "Food Preparation & Nutrition",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Component 1 (Written)",
+    "paperName": "Component 1 (Written or on screen)",
     "date": "2027-05-24"
   },
   {
@@ -8149,6 +8387,33 @@ const GCSE_2027 = [
     "board": "Eduqas",
     "level": "GCSE",
     "subject": "Geography B",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography",
     "tier": "N/A",
     "paper": 3,
     "paperName": "Component 3",
@@ -8250,7 +8515,7 @@ const GCSE_2027 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 1,
-    "paperName": "Route A Component 1",
+    "paperName": "Component 1 (Route A and Route B)",
     "date": "2027-05-13"
   },
   {
@@ -8259,7 +8524,7 @@ const GCSE_2027 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 2,
-    "paperName": "Route A Component 2",
+    "paperName": "Component 2 (Route A and Route B)",
     "date": "2027-05-21"
   },
   {
@@ -8268,7 +8533,7 @@ const GCSE_2027 = [
     "subject": "Religious Studies",
     "tier": "N/A",
     "paper": 3,
-    "paperName": "Route A Component 3 (Options 1-5)",
+    "paperName": "Component 3 (Route A Options 1-5; Route B Option 4)",
     "date": "2027-06-07"
   },
   {
@@ -8278,7 +8543,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Component 1",
-    "date": "2027-05-10"
+    "date": "2027-05-11"
   },
   {
     "board": "Eduqas",
@@ -8287,7 +8552,790 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Electronics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Electronics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1 (On screen)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3 - Option A/Option B",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physical Education (Short Course)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies (Short Course)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies (Short Course)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies (Short Course)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3 (Options 1 to 5)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Applied Science (Double Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Applied Science (Double Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Applied Science (Double Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Applied Science (Single Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Applied Science (Single Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Built Environment",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (On screen)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (On screen)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Core Cymraeg",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Core Cymraeg",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Cymraeg Language and Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Cymraeg Language and Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4 (4a/4b)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Cymraeg Language and Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 6",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Design and Technology (Engineering Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Design and Technology (Fashion and Textiles)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Design and Technology (Product Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (On screen)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Drama (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3 (On screen)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language and Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language and Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4 (4a/4b)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "English Language and Literature",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 6",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Food and Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (On screen)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Health and Social Care, and Child Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (on screen or written)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Health and Social Care, and Child Care",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3 (on screen or written)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Health and Social Care, and Childcare (new specification)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (Studies A to D)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (Studies A to D)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (Studies A to D)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History (WJEC Wales, new specification)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "History (WJEC Wales, new specification)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Integrated Science (Single Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/I/H)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/I/H)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics - Numeracy (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/I/H)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics - Numeracy (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/I/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics and Numeracy (Double Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics and Numeracy (Double Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Mathematics and Numeracy (Double Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (F/H)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Media Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
     "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Music (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3 (On screen)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physical Education (Short Course) (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physical Education (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (F/H)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Unit 5 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Unit 6 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Social Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Social Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "The Sciences (Double Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "The Sciences (Double Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "The Sciences (Double Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (F/H)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Welsh Language (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "GCSE",
+    "subject": "Welsh Language (WJEC Wales, resit only)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-14"
   },
 
   {
@@ -8297,7 +9345,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Unit 1 (F/H)",
-    "date": "2027-05-10"
+    "date": "2027-05-11"
   },
   {
     "board": "CCEA",
@@ -8306,7 +9354,16 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2 (F/H)",
-    "date": "2027-06-01"
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 Practical Theory (F/H)",
+    "date": "2027-06-16"
   },
   {
     "board": "CCEA",
@@ -8342,7 +9399,16 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2 (F/H)",
-    "date": "2027-06-09"
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 Practical Theory (F/H)",
+    "date": "2027-06-18"
   },
   {
     "board": "CCEA",
@@ -8360,7 +9426,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2 & Unit 4",
-    "date": "2027-05-31"
+    "date": "2027-06-01"
   },
   {
     "board": "CCEA",
@@ -8369,7 +9435,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Unit 1",
-    "date": "2027-05-05"
+    "date": "2027-05-06"
   },
   {
     "board": "CCEA",
@@ -8378,7 +9444,25 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 4,
     "paperName": "Unit 4",
-    "date": "2027-05-18"
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Unit 1 (Interim Spec)",
+    "date": "2027-05-06"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Unit 3 (Interim Spec)",
+    "date": "2027-05-19"
   },
   {
     "board": "CCEA",
@@ -8387,7 +9471,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Unit 1",
-    "date": "2027-05-11"
+    "date": "2027-05-12"
   },
   {
     "board": "CCEA",
@@ -8450,7 +9534,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Unit 1 (F)",
-    "date": "2027-05-13"
+    "date": "2027-05-14"
   },
   {
     "board": "CCEA",
@@ -8459,7 +9543,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2 (F)",
-    "date": "2027-05-13"
+    "date": "2027-05-14"
   },
   {
     "board": "CCEA",
@@ -8468,7 +9552,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Unit 3 (H)",
-    "date": "2027-05-13"
+    "date": "2027-05-14"
   },
   {
     "board": "CCEA",
@@ -8477,7 +9561,7 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 4,
     "paperName": "Unit 4 (H)",
-    "date": "2027-05-13"
+    "date": "2027-05-14"
   },
   {
     "board": "CCEA",
@@ -8518,6 +9602,15 @@ const GCSE_2027 = [
   {
     "board": "CCEA",
     "level": "GCSE",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 Practical Theory (F/H)",
+    "date": "2027-06-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
     "subject": "Technology and Design",
     "tier": "N/A",
     "paper": 1,
@@ -8531,7 +9624,637 @@ const GCSE_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Unit 2 (option A/B/C)",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Agriculture and Land Use",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Agriculture and Land Use",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Business and Communication Systems",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Child Development",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Child Development",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
     "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Construction and the Built Environment",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Construction and the Built Environment",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Drama",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-05-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Engineering and Manufacturing",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Engineering and Manufacturing",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 3",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Food and Nutrition",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening Unit 1 (F/H)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Reading Unit 3 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Writing Unit 4 (F/H)",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Gaeilge",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Reading",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Gaeilge",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Writing",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening Unit 1 (F/H)",
+    "date": "2027-05-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Reading Unit 3 (F/H)",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Writing Unit 4 (F/H)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Hospitality",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Hospitality",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening Unit 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Reading Unit 3 (F/H)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Writing Unit 4 (F/H)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Learning for Life and Work",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (Local and Global Citizenship)",
+    "date": "2027-05-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Learning for Life and Work",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (Personal Development)",
+    "date": "2027-05-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Learning for Life and Work",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3 (Employability)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Leisure, Travel and Tourism",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Leisure, Travel and Tourism",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Motor Vehicle and Road User Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Moving Image Arts",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Paper 1 (Health & Performance)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Paper 2 (Performance)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (Option A/B)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Unit 5",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Unit 6",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "Unit 7",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "Unit 8",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 9,
+    "paperName": "Unit 9",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biology Unit 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Chemistry Unit 1 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Physics Unit 1 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Biology Unit 2 (F/H)",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Chemistry Unit 2 (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Physics Unit 2 (F/H)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "Biology Practical Theory (F/H)",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "Chemistry Practical Theory (F/H)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Double Award)",
+    "tier": "N/A",
+    "paper": 9,
+    "paperName": "Physics Practical Theory (F/H)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Single Award)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biology Unit 1 (F/H)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Single Award)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Chemistry Unit 2 (F/H)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Single Award)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Physics Unit 3 (F/H)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Science (Single Award)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 4 Practical Theory (F/H)",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening Unit 1 (F/H)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Reading Unit 3 (F/H)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Writing Unit 4 (F/H)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (F/H)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "GCSE",
+    "subject": "Statistics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (F/H)",
+    "date": "2027-06-17"
   },
 ]
 
@@ -8553,6 +10276,15 @@ const CCEA_ASLEVEL_2027 = [
     "paper": 2,
     "paperName": "AS Unit 2",
     "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3 Theory",
+    "date": "2027-05-26"
   },
   {
     "board": "CCEA",
@@ -8579,7 +10311,7 @@ const CCEA_ASLEVEL_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "AS Unit 1",
-    "date": "2027-05-10"
+    "date": "2027-05-11"
   },
   {
     "board": "CCEA",
@@ -8589,6 +10321,24 @@ const CCEA_ASLEVEL_2027 = [
     "paper": 2,
     "paperName": "AS Unit 2",
     "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3 Practical",
+    "date": "2027-04-30"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "AS Unit 3 Theory",
+    "date": "2027-05-27"
   },
   {
     "board": "CCEA",
@@ -8674,11 +10424,452 @@ const CCEA_ASLEVEL_2027 = [
   {
     "board": "CCEA",
     "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3 Practical",
+    "date": "2027-05-05"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "AS Unit 3 Theory",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
     "subject": "Technology and Design",
     "tier": "N/A",
     "paper": 1,
     "paperName": "Systems and Control AS 1 Core",
     "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Technology and Design",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Systems and Control AS 1 Options",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Environmental Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2 Section A",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2 Sections B & C",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2 Section A",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2 Sections B & C",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 5",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 7",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2 Section A",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2 Sections B & C",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 3",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 5",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Moving Image Arts",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 3 Paper 1",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 3 Paper 2",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Nutrition and Food Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Nutrition and Food Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Professional Business Services",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Professional Business Services",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 3",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "AS Unit 4",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "AS Unit 5",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "AS Unit 6",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "AS Unit 7",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "AS Unit 8",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Software Systems Development",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 1",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2 Section A",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "AS Unit 2 Sections B & C",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "AS Unit 3",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "AS-Level",
+    "subject": "Sports Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "AS Unit 2",
+    "date": "2027-05-18"
   },
 ]
 
@@ -9350,6 +11541,701 @@ const ASLEVEL_2027 = [
     "paperName": "Paper 4: Study of Religion",
     "date": "2027-05-28"
   },
+
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Relations between Greek states and between Greek and non-Greek states 492-404 BC (H007/01)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The Julio-Claudian emperors, 31 BC - AD 68 (H007/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in biology (H020/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in biology (H020/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Foundations of biology (H022/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Biology in depth (H022/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The local business environment (H031/01)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The wider business environment (H031/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in chemistry (H032/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in chemistry (H032/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Foundations of chemistry (H033/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Chemistry in depth (H033/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The world of the hero (H008/11)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Greek theatre or Imperial image (options) (H008/21-22)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language (H044/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Literature (H044/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Computing principles (H046/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Algorithms and problem solving (H046/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Design and Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of design engineering, fashion and textiles or product design (H004/01, H005/01, H006/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring performance (H059/05)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Microeconomics (H060/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Macroeconomics (H060/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring language (H070/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring contexts (H070/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Language and Literature (EMC)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Non-fiction written and spoken texts (H074/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Language and Literature (EMC)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The language of literary texts (H074/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Shakespeare and poetry pre-1900 (H072/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Drama and prose post-1900 (H072/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Elements of film (H010/01)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure core (Y531)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Statistics (Y532)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Mechanics (Y533)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Discrete mathematics (Y534)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Additional pure mathematics (Y535)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Core pure (Y410)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Mechanics A (Y411)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Statistics A (Y412)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Modelling with algorithms (Y413)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Numerical methods (Y414)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Landscape and place (H081/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Geographical debates (H081/02)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Geology (H014/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "British period study and enquiry - unit group 1 (Y136-Y138, Y143)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Non-British period study - unit group 2 (Y243, Y249, Y251-Y253)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The legal system and criminal law (H018/01)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Law making and the law of tort (H018/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Language (H043/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Literature (H043/02)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics and statistics (H230/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and mechanics (H230/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics and mechanics (H630/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and statistics (H630/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Media today (H009/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening and appraising (H143/03)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physiological factors affecting performance (H155/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological and socio-cultural themes in physical education (H155/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in physics (H156/01)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in physics (H156/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Foundations of physics (H157/01)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Physics in depth (H157/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Research methods (H167/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological themes through core studies (H167/02)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Philosophy of religion (H173/01)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Religion and ethics (H173/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Developments in religious thought (options: Christian, Islamic, Jewish, Buddhist, Hindu) (H173/03-07)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Socialisation, culture and identity (H180/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Researching and understanding social inequalities (H180/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in biology (H020/01) / Foundations of biology (H022/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in biology (H020/02) / Biology in depth (H022/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in chemistry (H032/01) / Foundations of chemistry (H033/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in chemistry (H032/02) / Chemistry in depth (H033/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Breadth in physics (H156/01) / Foundations of physics (H157/01)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Depth in physics (H156/02) / Physics in depth (H157/02)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics and statistics (H230/01) / Pure mathematics and mechanics (H630/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and mechanics (H230/02) / Pure mathematics and statistics (H630/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "British period study and enquiry - unit group 1 (Y136-Y138, Y143)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Non-British period study - unit group 2 (Y243, Y249, Y251-Y253)",
+    "date": "2027-05-17"
+  },
+
   {
     "board": "Eduqas",
     "level": "AS-Level",
@@ -9546,7 +12432,7 @@ const ASLEVEL_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Component 2",
-    "date": "2027-05-18"
+    "date": "2027-05-21"
   },
   {
     "board": "Eduqas",
@@ -9627,7 +12513,7 @@ const ASLEVEL_2027 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Component 3",
-    "date": "2027-05-24"
+    "date": "2027-05-25"
   },
   {
     "board": "Eduqas",
@@ -9646,7 +12532,602 @@ const ASLEVEL_2027 = [
     "paper": 2,
     "paperName": "Component 2",
     "date": "2027-05-19"
-  },]
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Design & Technology (Fashion and Textiles)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Design & Technology (Product Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Electronics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 2",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 3",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Biology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Biology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Built Environment",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Chemistry (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Chemistry (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (on-screen)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Design and Technology (Engineering Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Design and Technology (Fashion and Textiles) (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Design and Technology (Product Design) (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Drama and Theatre (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Economics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Economics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language and Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Language and Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "English Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "French (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 3",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "German (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Health and Social Care, and Child Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (options 1 to 8)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2 (options 1 to 8)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Law (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Law (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Media Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Music (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physical Education (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Physics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Psychology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Psychology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1 (options A to F)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Sociology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 1",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Sociology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 2",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Spanish (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 2",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Welsh First Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "AS-Level",
+    "subject": "Welsh Second Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-19"
+  },
+]
 
 const ALEVEL_2027 = [
   {
@@ -11450,6 +14931,1043 @@ const ALEVEL_2027 = [
     "paperName": "Paper 3: Listening, reading and writing in Urdu",
     "date": "2027-06-08"
   },
+
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Greek period study (options: Sparta, Athens or Macedon) (H407/11-13)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Ancient History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Roman period study (options: Republic and empire, The eleven Caesars or Emperors and empire) (H407/21-23)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biological processes (H420/01)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Biological diversity (H420/02)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified biology (H420/03)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of biology (H422/01)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific literacy in biology (H422/02)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology B (Advancing Biology)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical skills in biology (H422/03)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Operating in a local business environment (H431/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The UK business environment (H431/02)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Business",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "The global business environment (H431/03)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Periodic table, elements and physical chemistry (H432/01)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Synthesis and analytical techniques (H432/02)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified chemistry (H432/03)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of chemistry (H433/01)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific literacy in chemistry (H433/02)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry B (Salters)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical skills in chemistry (H433/03)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The world of the hero (H408/11)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2 options: Greek theatre, Imperial image, Invention of the barbarian or Greek art (H408/21-24)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Civilisation",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3 options: Greek religion, Love and relationships, Politics of the late republic or Democracy and the Athenians (H408/31-34)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unseen translation (H444/01)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Prose composition or comprehension (H444/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Prose literature (H444/03)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Classical Greek",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Verse literature (H444/04)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Computer systems (H446/01)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Computer Science",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Algorithms and programming (H446/02)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Design and Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of design engineering, fashion and textiles or product design (H404/01, H405/01, H406/01)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Design and Technology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Problem solving in design engineering, fashion and textiles or product design (H404/02, H405/02, H406/02)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Analysing performance (H459/31)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Drama and Theatre",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Deconstructing texts for performance (H459/41-51)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Microeconomics (H460/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Macroeconomics (H460/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Themes in economics (H460/03)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring language (H470/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Dimensions of linguistic variation (H470/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language and Literature (EMC)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Exploring non-fiction and spoken texts (H474/01)",
+    "date": "2027-05-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language and Literature (EMC)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "The language of poetry and plays (H474/02)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Language and Literature (EMC)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Reading as a writer, writing as a reader (H474/03)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Drama and poetry pre-1900 (H472/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Comparative and contextual study (H472/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Film history (H410/01)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Critical approaches to film (H410/02)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure core 1 (Y540)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure core 2 (Y541)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Statistics (Y542)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Mechanics (Y543)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Discrete mathematics (Y544)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics A",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Additional pure mathematics (Y545)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Core pure (Y420)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Mechanics major (Y421)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Statistics major (Y422)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Mechanics minor (Y431)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "Statistics minor (Y432)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "Modelling with algorithms (Y433)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "Numerical methods (Y434)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "Extra pure (Y435)",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Further Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 9,
+    "paperName": "Further pure with technology (Y436)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physical systems (H481/01)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Human interactions (H481/02)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geography",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Geographical debates (H481/03)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of geology (H414/01)",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific literacy in geology (H414/02)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical skills in geology (H414/03)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Thematic study and historical interpretations - unit group 3 (Y301-Y321)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "British period study and enquiry - unit group 1 (Y101-Y113)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Non-British period study - unit group 2 (Y201-Y224)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "The legal system and criminal law (H418/01)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Law making and the law of tort (H418/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Law",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "The nature of law and human rights or the law of contract (options) (H418/03-04)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unseen translation (H443/01)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Prose composition or comprehension (H443/02)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Prose literature (H443/03)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Latin",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Verse literature (H443/04)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics (H240/01)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and statistics (H240/02)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Pure mathematics and mechanics (H240/03)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics and mechanics (H640/01)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and statistics (H640/02)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics B (MEI)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Pure mathematics and comprehension (H640/03)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Media messages (H409/01)",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Media Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Evolving media (H409/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Listening and appraising (H543/05)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Physiological factors affecting performance (H555/01)",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological factors affecting performance (H555/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physical Education",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Socio-cultural issues in physical activity and sport (H555/03)",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Modelling physics (H556/01)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring physics (H556/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics A",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified physics (H556/03)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Fundamentals of physics (H557/01)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Scientific literacy in physics (H557/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics B (Advancing Physics)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Practical skills in physics (H557/03)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Research methods (H567/01)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Psychological themes through core studies (H567/02)",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Psychology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Applied psychology (H567/03)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Philosophy of religion (H573/01)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Religion and ethics (H573/02)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Developments in religious thought (options: Christian, Islamic, Jewish, Buddhist, Hindu) (H573/03-07)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Socialisation, culture and identity (H580/01)",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Researching and understanding social inequalities (H580/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Sociology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Debates in contemporary society (H580/03)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Biological processes (H420/01) / Fundamentals of biology (H422/01)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Biological diversity (H420/02) / Scientific literacy in biology (H422/02)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified biology (H420/03) / Practical skills in biology (H422/03)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Periodic table, elements and physical chemistry (H432/01) / Fundamentals of chemistry (H433/01)",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Synthesis and analytical techniques (H432/02) / Scientific literacy in chemistry (H433/02)",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified chemistry (H432/03) / Practical skills in chemistry (H433/03)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Modelling physics (H556/01) / Fundamentals of physics (H557/01)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Exploring physics (H556/02) / Scientific literacy in physics (H557/02)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unified physics (H556/03) / Practical skills in physics (H557/03)",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Pure mathematics (H240/01) / Pure mathematics and mechanics (H640/01)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Pure mathematics and statistics (H240/02) / Pure mathematics and statistics (H640/02)",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Pure mathematics and mechanics (H240/03) / Pure mathematics and comprehension (H640/03)",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Thematic study and historical interpretations - unit group 3 (Y301-Y321)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "British period study and enquiry - unit group 1 (Y101-Y113)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Non-British period study - unit group 2 (Y201-Y224)",
+    "date": "2027-06-14"
+  },
+
   {
     "board": "Eduqas",
     "level": "A-Level",
@@ -11466,7 +15984,7 @@ const ALEVEL_2027 = [
     "tier": "N/A",
     "paper": 2,
     "paperName": "Component 2",
-    "date": "2027-05-18"
+    "date": "2027-05-17"
   },
   {
     "board": "Eduqas",
@@ -11511,7 +16029,7 @@ const ALEVEL_2027 = [
     "tier": "N/A",
     "paper": 1,
     "paperName": "Component 1",
-    "date": "2027-05-10"
+    "date": "2027-05-11"
   },
   {
     "board": "Eduqas",
@@ -11772,7 +16290,7 @@ const ALEVEL_2027 = [
     "tier": "N/A",
     "paper": 3,
     "paperName": "Component 3",
-    "date": "2027-06-15"
+    "date": "2027-06-08"
   },
   {
     "board": "Eduqas",
@@ -11937,6 +16455,619 @@ const ALEVEL_2027 = [
     "date": "2027-06-15"
   },
   {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Electronics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Electronics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Film Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 1",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Component 2",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Component 3",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Component 3",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Biology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Built Environment",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Business (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Chemistry (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Computer Science (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Design and Technology (Engineering Design)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Design and Technology (Fashion and Textiles) (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Design and Technology (Product Design) (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Drama and Theatre (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 4",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Economics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language and Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Language and Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "English Literature (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "French (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 4",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "French (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 5",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 4",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 5",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 6",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Geography (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "German (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 4",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "German (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 5",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Health and Social Care, and Child Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Health and Social Care, and Child Care",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 5",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3 (options 1 to 10)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "History",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4 (options 1 to 8)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Law (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Media Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-12"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Music (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 6",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physical Education (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Physics (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Psychology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3 (Options A to F)",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "Unit 5",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Religious Studies (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "Unit 6",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 3",
+    "date": "2027-05-14"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Sociology (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 4",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Spanish (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 4",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Spanish (WJEC Wales)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 5",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Welsh First Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 5",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Welsh First Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 6",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Welsh Second Language",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Unit 5",
+    "date": "2027-05-24"
+  },
+  {
+    "board": "Eduqas",
+    "level": "A-Level",
+    "subject": "Welsh Second Language",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Unit 6",
+    "date": "2027-06-08"
+  },
+
+  {
     "board": "CCEA",
     "level": "A-Level",
     "subject": "Biology",
@@ -11953,6 +17084,15 @@ const ALEVEL_2027 = [
     "paper": 2,
     "paperName": "A2 Unit 2",
     "date": "2027-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Biology",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3 Theory",
+    "date": "2027-06-18"
   },
   {
     "board": "CCEA",
@@ -11989,6 +17129,24 @@ const ALEVEL_2027 = [
     "paper": 2,
     "paperName": "A2 Unit 2",
     "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3 Practical",
+    "date": "2027-05-06"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Chemistry",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 3 Theory",
+    "date": "2027-06-16"
   },
   {
     "board": "CCEA",
@@ -12074,14 +17232,577 @@ const ALEVEL_2027 = [
   {
     "board": "CCEA",
     "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3 Practical",
+    "date": "2027-05-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Physics",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 3 Theory",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
     "subject": "Technology and Design",
     "tier": "N/A",
     "paper": 1,
     "paperName": "A2 Unit 1",
     "date": "2027-05-24"
-  },]
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Digital Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Economics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-05-28"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-20"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "English Literature",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Environmental Technology",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2 Section A",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2 Section B",
+    "date": "2027-05-25"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "French",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Further Mathematics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2 Section A",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2 Section B",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "German",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Government and Politics",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 3",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 6",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Health and Social Care",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 7",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2 Section A",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2 Section B",
+    "date": "2027-06-02"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Irish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-16"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-04"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 4",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Life and Health Sciences",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 5",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Moving Image Arts",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-08"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 3 Paper 1",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Music",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 3 Paper 2",
+    "date": "2027-06-15"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Nutrition and Food Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-06-01"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Professional Business Services",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-06-10"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Professional Business Services",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-09"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 4,
+    "paperName": "A2 Unit 4",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 5,
+    "paperName": "A2 Unit 5",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 6,
+    "paperName": "A2 Unit 6",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 7,
+    "paperName": "A2 Unit 7",
+    "date": "2027-05-27"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Religious Studies",
+    "tier": "N/A",
+    "paper": 8,
+    "paperName": "A2 Unit 8",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Software Systems Development",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 1",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2 Section A",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "A2 Unit 2 Section B",
+    "date": "2027-06-03"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Spanish",
+    "tier": "N/A",
+    "paper": 3,
+    "paperName": "A2 Unit 3",
+    "date": "2027-06-11"
+  },
+  {
+    "board": "CCEA",
+    "level": "A-Level",
+    "subject": "Sports Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "A2 Unit 2",
+    "date": "2027-05-20"
+  },
+]
 
-export const EXAM_DATES_2027 = [...GCSE_2027, ...ASLEVEL_2027, ...CCEA_ASLEVEL_2027, ...ALEVEL_2027]
+// ── OCR Level 2 / Level 3 2027 — Cambridge Nationals, FSMQ and Core Maths (same OCR timetables as above) ──
+const L2_2027 = [
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Engineering Manufacture",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of engineering manufacture (R014)",
+    "date": "2027-05-26"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Health and Social Care",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of care in health and social care settings (R032)",
+    "date": "2027-06-07"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Engineering Design",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of engineering design (R038)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Engineering Programmable Systems",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Principles of electronic and programmable systems (R047)",
+    "date": "2027-06-17"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: IT",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "IT in the digital world (R050)",
+    "date": "2027-05-18"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Child Development",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Health and well-being for child development (R057)",
+    "date": "2027-05-19"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Enterprise and Marketing",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Enterprise and marketing concepts (R067)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Creative iMedia",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Creative iMedia in the media industry (R093)",
+    "date": "2027-06-14"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Sport Science",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Reducing the risk of sports injuries and dealing with common medical conditions (R180)",
+    "date": "2027-05-17"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "Cambridge National: Sport Studies",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Contemporary issues in sport (R184)",
+    "date": "2027-05-11"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 2",
+    "subject": "FSMQ Additional Mathematics",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Additional Mathematics (6993)",
+    "date": "2027-06-18"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 3",
+    "subject": "Core Maths A (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introduction to quantitative reasoning (H868/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 3",
+    "subject": "Core Maths A (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Critical maths (H868/02)",
+    "date": "2027-05-21"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 3",
+    "subject": "Core Maths B (MEI)",
+    "tier": "N/A",
+    "paper": 1,
+    "paperName": "Introduction to quantitative reasoning (H869/01)",
+    "date": "2027-05-13"
+  },
+  {
+    "board": "OCR",
+    "level": "Level 3",
+    "subject": "Core Maths B (MEI)",
+    "tier": "N/A",
+    "paper": 2,
+    "paperName": "Statistical problem solving (H869/02)",
+    "date": "2027-05-21"
+  },
+]
+
+export const EXAM_DATES_2027 = [...GCSE_2027, ...ASLEVEL_2027, ...CCEA_ASLEVEL_2027, ...ALEVEL_2027, ...L2_2027]
 
 // Board naming (every Eduqas/WJEC spelling) is resolved once in ./boards. This file only owns how ITS
 // data is keyed: every Eduqas/WJEC entry here is stored under 'Eduqas', all other boards under
