@@ -616,7 +616,7 @@ export default function Timer() {
                 width="100%"
                 height="90"
                 title={`${playlist.label} — study music`}
-                src={`https://www.youtube.com/embed/${playlist.vid}?autoplay=1&controls=1`}
+                src={`https://www.youtube-nocookie.com/embed/${playlist.vid}?autoplay=1&controls=1`}
                 allow="autoplay; encrypted-media"
               />
             </div>
