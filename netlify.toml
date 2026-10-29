@@ -40,7 +40,7 @@
     # mistral         = not called from browser (server-side only, omitted)
     # frame-src       = Firebase Auth's popup/iframe handshake (accounts.google.com,
     #                   *.firebaseapp.com) plus the Stripe Checkout embed
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self';"
 
 # ── Domain migration — old Netlify subdomain → custom domain ──────────────────
 # MUST stay first. This matches on hostname, not just path, so it needs to run before any
