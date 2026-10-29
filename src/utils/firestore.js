@@ -36,6 +36,7 @@ import { buildSubjectKey, isCurrentSubjectInstance } from './subjectKey'
 import { createNotification } from './notificationFeed'
 import { submitContentForReview } from './adminApi'
 import { todayLocalStr, localWeekStartStr, localMonthStartStr } from './localDate'
+import { actualSessionPatch } from './sessionRecord'
 
 export { auth, db }
 
@@ -520,7 +521,7 @@ export const getSessions = async (uid) => {
 
 // Idempotent: the completed flag flips inside a transaction, and XP is keyed to the session id,
 // so completing the same session twice (double-click, retry, timer + calendar) pays out once.
-export const completeSession = async (uid, id, notes = '', { actualDurationMinutes } = {}) => {
+export const completeSession = async (uid, id, notes = '', { actualDurationMinutes, startedAtMs, endedAtMs } = {}) => {
   const ref = doc(db, 'users', uid, 'sessions', id)
   const outcome = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref)
@@ -528,7 +529,8 @@ export const completeSession = async (uid, id, notes = '', { actualDurationMinut
     const d = snap.data()
     if (d.completed) return { alreadyCompleted: true }
     const patch = { completed: true, completedAt: serverTimestamp(), notes: notes || d.notes || '' }
-    if (Number.isFinite(actualDurationMinutes)) patch.actualDuration = Math.max(0, Math.round(actualDurationMinutes))
+    // Finished from the timer: record what really happened (real start, real minutes). The plan is kept as planned*.
+    Object.assign(patch, actualSessionPatch(d, { actualMinutes: actualDurationMinutes, startedAtMs, endedAtMs }))
     tx.update(ref, patch)
     return { planned: d.duration || 0 }
   })
@@ -1276,7 +1278,9 @@ export async function runBadgeAudit(uid) {
    Public sets also stored at: publicFlashcards/{id}
 ========================= */
 
-export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic = false, author, authorType, board, level }) => {  // Resolve display name for author
+export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic: wantPublic = false, author, authorType, board, level, aiGenerated = false }) => {  // Resolve display name for author
+  // AI-generated sets stay private: whatever was asked for, they are never made public.
+  const isPublic = wantPublic && !aiGenerated
   let resolvedAuthor = author
   if (!resolvedAuthor && uid) {
     try {
@@ -1293,6 +1297,7 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
     authorType: authorType || 'user',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    ...(aiGenerated ? { aiGenerated: true } : {}),
   }
   // Only regular (non-official) saves need this — official sets already always pass both via
   // saveOfficialFlashcardSet. Storing this at save time (rather than only ever guessing it later
@@ -1402,6 +1407,7 @@ export const updateFlashcardSet = async (uid, setId, { title, subject, topic, ca
   const snap = await getDoc(ref)
   if (!snap.exists()) return
   const prev = snap.data()
+  if (isPublic && prev.aiGenerated) throw new Error('AI-generated sets stay private. To share a set, create it yourself.')
   const updates = {
     title, subject, topic: topic || '',
     cards, isPublic,
@@ -1488,6 +1494,7 @@ export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
   const ref  = doc(db, 'users', uid, 'flashcardSets', setId)
   const snap = await getDoc(ref)
   if (!snap.exists()) return
+  if (isPublic && snap.data().aiGenerated) throw new Error('AI-generated sets stay private. To share a set, create it yourself.')
   await updateDoc(ref, { isPublic, updatedAt: serverTimestamp() })
   if (isPublic) {
     await setDoc(doc(db, 'publicFlashcards', setId), { ...snap.data(), isPublic: true, setId })
