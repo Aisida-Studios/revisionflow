@@ -53,6 +53,7 @@ export function TimerProvider({ children }) {
   const cdTotalRef         = useRef(cdTotal);
   const swClockRef         = useRef(freshClock());
   const swBaselineRef      = useRef(0);      // stopwatch seconds already on the clock when the session was linked
+  const linkedStartMsRef   = useRef(null);   // the real moment the timer first ran for the linked session
   const userRef            = useRef(user);
 
   const notifiedRef = useRef(false);
@@ -82,8 +83,11 @@ export function TimerProvider({ children }) {
     if (!id || !uid || completingRef.current === id) return null;
     completingRef.current = id;
     const seconds = getFocusSeconds();
+    const endedAtMs = Date.now();
+    // The session record gets the real start and the real time studied, not the calendar's plan.
+    const startedAtMs = linkedStartMsRef.current ?? (endedAtMs - seconds * 1000);
     try {
-      const res = await completeSession(uid, id, '', { actualDurationMinutes: seconds / 60 });
+      const res = await completeSession(uid, id, '', { actualDurationMinutes: seconds / 60, startedAtMs, endedAtMs });
       const result = res.completed
         ? { sessionId: id, completed: true, alreadyCompleted: !!res.alreadyCompleted, minutes: Math.round(seconds / 60) }
         : { sessionId: id, error: 'That session no longer exists.' };
@@ -91,6 +95,7 @@ export function TimerProvider({ children }) {
       linkedSessionRef.current = null;
       focusBankedRef.current = 0;
       swBaselineRef.current = 0;
+      linkedStartMsRef.current = null;
       setLinkedSessionId(null);
       return result;
     } catch (err) {
@@ -109,6 +114,8 @@ export function TimerProvider({ children }) {
     const t = Date.now();
     focusBankedRef.current = -Math.min(cdTotalRef.current, elapsedSeconds(cdClockRef.current, t));
     swBaselineRef.current  = elapsedSeconds(swClockRef.current, t);
+    // If a clock is already running the session starts now; otherwise at the first start after linking.
+    linkedStartMsRef.current = (cdClockRef.current.startedAt != null || swClockRef.current.startedAt != null) ? t : null;
     setSessionResult(null);
     setLinkedSessionId(id);
   }, []);
@@ -117,6 +124,7 @@ export function TimerProvider({ children }) {
     linkedSessionRef.current = null;
     focusBankedRef.current = 0;
     swBaselineRef.current = 0;
+    linkedStartMsRef.current = null;
     setLinkedSessionId(null);
   }, []);
 
@@ -137,12 +145,26 @@ export function TimerProvider({ children }) {
   // Tick only while something is live; the tick merely refreshes `now`.
   useEffect(() => {
     if (!cdRunning && !swRunning && !alarmTarget) return undefined;
-    const id = setInterval(() => setNow(Date.now()), 250);
     const refresh = () => setNow(Date.now());
+    // A Web Worker does the ticking: main-thread timers are throttled in background tabs (to once a minute
+    // after a few minutes hidden), which froze the live time in the browser-tab title exactly when it matters.
+    // If the worker cannot start, a normal interval takes over.
+    let worker = null;
+    let fallbackId = null;
+    const startFallback = () => { if (fallbackId == null) fallbackId = setInterval(refresh, 250); };
+    try {
+      worker = new Worker('/timer-ticker.js');
+      worker.onmessage = refresh;
+      worker.onerror = startFallback;
+      worker.postMessage('start');
+    } catch {
+      startFallback();
+    }
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('focus', refresh);
     return () => {
-      clearInterval(id);
+      if (worker) { try { worker.postMessage('stop'); } catch {} worker.terminate(); }
+      if (fallbackId != null) clearInterval(fallbackId);
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
     };
@@ -156,16 +178,22 @@ export function TimerProvider({ children }) {
   // untouched while idle so pages that set their own title (e.g. PublicProfile) are left alone.
   const baseTitleRef  = useRef(typeof document !== 'undefined' ? (document.title || BASE_TITLE) : BASE_TITLE);
   const titleShownRef = useRef(false);
+  const titleLastRef  = useRef(null);   // the last title this effect set, to tell our title from one a page set itself
   useEffect(() => {
     const title = buildTimerTabTitle({
       cdRemaining, cdTotal, cdRunning, cdFinished, swElapsed, swRunning, alarmFired,
       cdPaused: !cdRunning && cdClock.pausedAt != null,
     });
     if (title) {
+      // Whatever is in the tab that is not ours is the page's own title: remember it, so stopping the timer puts
+      // back the title of the page the student is on now, not the one the app opened with.
+      if (document.title !== titleLastRef.current) baseTitleRef.current = document.title || BASE_TITLE;
       if (document.title !== title) document.title = title;
+      titleLastRef.current = title;
       titleShownRef.current = true;
     } else if (titleShownRef.current) {
-      document.title = baseTitleRef.current || BASE_TITLE;
+      if (document.title === titleLastRef.current) document.title = baseTitleRef.current || BASE_TITLE;
+      titleLastRef.current = null;
       titleShownRef.current = false;
     }
   }, [cdRemaining, cdTotal, cdRunning, cdFinished, swElapsed, swRunning, alarmFired, cdClock.pausedAt]);
@@ -187,6 +215,7 @@ export function TimerProvider({ children }) {
   }, [cdRunning, cdRemaining, cdTotal, finishLinkedSession]);
 
   const cdStart = useCallback(() => {
+    if (linkedSessionRef.current && linkedStartMsRef.current == null) linkedStartMsRef.current = Date.now();
     cdFinishHandledRef.current = false;
     setCdFinished(false);
     setCdClock(c => {
@@ -228,6 +257,7 @@ export function TimerProvider({ children }) {
 
   // --- Stopwatch ---
   const swStart = useCallback(() => {
+    if (linkedSessionRef.current && linkedStartMsRef.current == null) linkedStartMsRef.current = Date.now();
     setSwClock(c => (c.startedAt != null ? c : { startedAt: Date.now(), accumulatedSeconds: c.accumulatedSeconds, pausedAt: null }));
     setNow(Date.now());
   }, []);
