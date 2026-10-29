@@ -356,13 +356,15 @@ export async function chatWithAI(messages, userContext, uid) {
   return callAIChat(messages.slice(-10), systemWithContext, uid, 'advisorChat', 2000)
 }
 
-export const AI_MARKING_DISCLAIMER = 'AI marking estimate — not official examiner marking. Compare with your teacher\'s or the board\'s published mark scheme.'
+export const AI_MARKING_DISCLAIMER = 'AI marking estimate — not official marking. Compare with your teacher\'s or the board\'s published mark scheme.'
+export const AI_MARKING_DISCLAIMER_NO_SCHEME = 'AI marking estimate — no mark scheme was supplied, so this is a guide based on the question and what is typically expected, not on the official mark scheme. Add the mark scheme for a more reliable estimate.'
 
 /**
  * AI marking estimate.
  * Contract (all required unless marked optional):
- *   question, studentAnswer, markScheme, marksAvailable, board, qualification,
- *   subject, topic (optional), markSchemeProvenance (optional, e.g. 'student-supplied')
+ *   question, studentAnswer, marksAvailable, board, qualification, subject,
+ *   markScheme (optional: without it the result is a labelled estimate), topic (optional),
+ *   markSchemeProvenance (optional, e.g. 'student-supplied')
  * Returns the callAI result ({ text } | { error }) with `disclaimer` attached.
  */
 export async function markAnswer(input, uid) {
@@ -374,37 +376,43 @@ export async function markAnswer(input, uid) {
   const missing = []
   if (!String(question || '').trim()) missing.push('question')
   if (!String(studentAnswer || '').trim()) missing.push('student answer')
-  if (!String(markScheme || '').trim()) missing.push('mark scheme')
   if (!Number.isFinite(marks) || marks < 1) missing.push('marks available')
   if (!String(board || '').trim()) missing.push('exam board')
   if (!String(qualification || '').trim()) missing.push('qualification')
   if (!String(subject || '').trim()) missing.push('subject')
   if (missing.length) return { error: 'Missing required marking input: ' + missing.join(', ') }
 
+  // The mark scheme is optional: most students do not have the official one. Without it the result is a clearly
+  // labelled estimate; it never claims to follow official criteria.
+  const hasScheme = String(markScheme || '').trim().length > 0
   const isLevelBased = marks >= 6
   const isMaths = subject === 'Mathematics' || subject === 'Further Mathematics'
 
   const markerSystem = `You are an AI marking assistant producing a marking ESTIMATE for ${board} ${qualification} ${subject}. You are not an examiner and your output is not official marking.
 
 RULES:
-1. Mark ONLY against the mark scheme supplied by the student. Do not invent mark scheme points that are not in it or clearly implied by it.
+${hasScheme ? `1. Mark ONLY against the mark scheme supplied by the student. Do not invent mark scheme points that are not in it or clearly implied by it.
 2. Never award marks for vague or generic statements. Every mark needs a specific, creditable point.
 3. Do not award implied points unless the supplied mark scheme says implied references are accepted.
 4. For level-based questions read the whole answer before choosing a level; do not upgrade for one good sentence.
 5. Be conservative: AI markers tend to over-mark. Maximum available is ${marks}; never exceed it.
 6. Quote the student's own words when awarding or denying marks.
-7. If the mark scheme is too thin to mark confidently, say so rather than guessing.`
+7. If the mark scheme is too thin to mark confidently, say so rather than guessing.` : `1. NO mark scheme was supplied. Mark against what the question asks and what a typical ${board} ${qualification} ${subject} answer at this level is expected to contain. Describe the expected points in your own words; never quote or invent official mark scheme wording.
+2. Never award marks for vague or generic statements. Every mark needs a specific, creditable point.
+3. For level-based questions read the whole answer before choosing a level; do not upgrade for one good sentence.
+4. Be conservative: AI markers tend to over-mark. Maximum available is ${marks}; never exceed it.
+5. Quote the student's own words when awarding or denying marks.
+6. If the question is too ambiguous to mark without the mark scheme, say so rather than guessing.`}`
 
   const prompt = `QUALIFICATION: ${board} ${qualification} ${subject}${topic ? `\nTOPIC: ${topic}` : ''}
 MARKS AVAILABLE: ${marks}
 ${isLevelBased ? 'MARKING TYPE: Level-based (holistic)' : `MARKING TYPE: Point-mark (maximum ${marks})`}
-MARK SCHEME PROVENANCE: ${markSchemeProvenance}
+MARK SCHEME PROVENANCE: ${hasScheme ? markSchemeProvenance : 'none supplied'}
 
 QUESTION:
 ${String(question).trim()}
 
-MARK SCHEME (use only this):
-${String(markScheme).trim()}
+${hasScheme ? `MARK SCHEME (use only this):\n${String(markScheme).trim()}` : 'MARK SCHEME: NOT SUPPLIED. Mark against the question and the expectations in the rules above.'}
 
 STUDENT'S ANSWER (mark exactly what is written):
 ${String(studentAnswer).trim()}
@@ -420,7 +428,7 @@ CREDITED POINTS:
 [Points credited, quoting the student's words. If none, write "None — no creditable content identified."]
 
 POINTS NOT CREDITED:
-[Mark scheme points not adequately addressed]
+[${hasScheme ? 'Mark scheme points not adequately addressed' : 'Points a strong answer would be expected to include that this one does not address'}]
 
 ANNOTATION:
 [2-3 quoted sentences from the answer, each with why it does or does not gain marks]
@@ -437,10 +445,10 @@ TO REACH THE NEXT MARK BAND:
 2. [Second improvement]
 3. [Third improvement]
 
-EXAMINER NOTE: [One sentence of feedback. Begin with "AI estimate:".]`
+FEEDBACK NOTE: [One sentence of feedback. Begin with "AI estimate:".${hasScheme ? '' : ' Say that no mark scheme was supplied.'}]`
 
   const res = await callAI(prompt, markerSystem, 4000, uid, 'markAnswer')
-  return { ...res, disclaimer: AI_MARKING_DISCLAIMER }
+  return { ...res, disclaimer: hasScheme ? AI_MARKING_DISCLAIMER : AI_MARKING_DISCLAIMER_NO_SCHEME, schemeSupplied: hasScheme }
 }
 
 
