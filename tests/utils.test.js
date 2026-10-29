@@ -5,6 +5,7 @@ import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../src/utils/
 import { getBoundaries, scaleBoundariesToPaper, calculateGradeFromBoundaries } from '../src/data/paperDatabase.js'
 import { miniTimerState, formatClock } from '../src/utils/miniTimerState.js'
 import { buildTimerTabTitle } from '../src/utils/timerTabTitle.js'
+import { actualSessionPatch } from '../src/utils/sessionRecord.js'
 import { ALL_TIME, academicYearStart, resolveAnalyticsStart, earliestRecordDay, recordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../src/utils/analyticsWindow.js'
 import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
@@ -578,6 +579,21 @@ ok('REGRESSION: old official flashcard sets carry board and level only in their 
   assert.deepEqual(setBoardLevel({ uid: 'someStudent', board: 'OCR', level: 'GCSE' }), { board: 'OCR', level: 'GCSE' })
   assert.deepEqual(srvOfficialSetMeta({ uid: 'official', title: 'WJEC A-Level Biology \u2014 Enzymes' }), { board: 'WJEC', level: 'A-Level' })
 })
+okLondon('a session finished from the timer records the REAL start and minutes; the plan is kept as planned*', () => {
+  const planned = { date: '2026-10-20', start: '17:00', startTime: '2026-10-20T16:00:00.000Z', endTime: '2026-10-20T17:00:00.000Z', duration: 60 }
+  const started = new Date(2026, 9, 21, 9, 5, 30).getTime()           // 21 Oct, 09:05 local: a day later than planned
+  const ended = started + 23 * 60000
+  const p = actualSessionPatch(planned, { actualMinutes: 23, startedAtMs: started, endedAtMs: ended })
+  assert.equal(p.date, '2026-10-21'); assert.equal(p.start, '09:05'); assert.equal(p.duration, 23); assert.equal(p.actualDuration, 23)
+  assert.equal(p.startTime, new Date(started).toISOString()); assert.equal(p.endTime, new Date(ended).toISOString())
+  assert.equal(p.plannedDate, '2026-10-20'); assert.equal(p.plannedStart, '17:00'); assert.equal(p.plannedDuration, 60)   // the plan is kept
+  const again = actualSessionPatch({ ...planned, ...p }, { actualMinutes: 30, startedAtMs: started, endedAtMs: ended })
+  assert.equal(again.plannedDate, '2026-10-20'); assert.equal(again.plannedDuration, 60)                                 // the ORIGINAL plan survives a second write
+  assert.deepEqual(actualSessionPatch(planned, {}), {})                                                                   // no measurement: the plan is untouched
+  assert.deepEqual(actualSessionPatch(planned, { actualMinutes: 0, startedAtMs: started }), { actualDuration: 0 })         // the timer never ran: nothing about the plan changes
+  assert.equal(actualSessionPatch(planned, { actualMinutes: 0.4, startedAtMs: started }).duration, undefined)             // under a minute: duration left alone
+  for (const v of Object.values(p)) assert.notEqual(v, undefined)                                                          // Firestore rejects undefined
+})
 ok('course options are cleared when a subject\'s board or qualification changes, and kept otherwise', () => {
   const prev = [{ id: 'a', name: 'History', board: 'AQA', qualification: 'GCSE', options: { slot1: ['x'] } }, { id: 'b', name: 'Geography', board: 'OCR', qualification: 'GCSE', options: ['y'] }]
   const same = dropOptionsWhenCourseChanges(prev.map(s => ({ ...s })), prev)
@@ -624,10 +640,10 @@ ok('tab title shows an hours-long countdown as h:mm:ss', () => {
   assert.equal(buildTimerTabTitle({ cdTotal: 5400, cdRemaining: 4865, cdRunning: true }), '1:21:05 · Countdown — RevisionFlow')
 })
 ok('tab title marks a paused countdown and keeps the time', () => {
-  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 600, cdRunning: false, cdPaused: true }), '⏸ 10:00 · Paused — RevisionFlow')
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 600, cdRunning: false, cdPaused: true }), '10:00 · Paused — RevisionFlow')
 })
 ok('tab title still shows a countdown paused before the first whole second ticked away', () => {
-  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500, cdRunning: false, cdPaused: true }), '⏸ 25:00 · Paused — RevisionFlow')
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500, cdRunning: false, cdPaused: true }), '25:00 · Paused — RevisionFlow')
 })
 ok('tab title is untouched for a countdown still sitting at full length', () => {
   assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500, cdRunning: false }), null)
@@ -637,8 +653,8 @@ ok('tab title shows the stopwatch while it runs and when paused', () => {
   assert.equal(buildTimerTabTitle({ swElapsed: 754, swRunning: false }), '12:34 · Stopwatch paused — RevisionFlow')
 })
 ok('tab title prioritises finished / alarm states over the clocks', () => {
-  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 0, cdFinished: true, swElapsed: 30, swRunning: true }), "⏰ Time's up — RevisionFlow")
-  assert.equal(buildTimerTabTitle({ alarmFired: true }), '⏰ Alarm — RevisionFlow')
+  assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 0, cdFinished: true, swElapsed: 30, swRunning: true }), "Time's up — RevisionFlow")
+  assert.equal(buildTimerTabTitle({ alarmFired: true }), 'Alarm — RevisionFlow')
 })
 ok('tab title is empty when nothing is running', () => {
   assert.equal(buildTimerTabTitle(), null)
