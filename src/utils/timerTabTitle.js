@@ -22,8 +22,8 @@ export function buildTimerTabTitle({
   swRunning = false,
   alarmFired = false,
 } = {}) {
-  if (alarmFired) return `⏰ Alarm — ${BASE_TITLE}`
-  if (cdFinished) return `⏰ Time's up — ${BASE_TITLE}`
+  if (alarmFired) return `Alarm — ${BASE_TITLE}`
+  if (cdFinished) return `Time's up — ${BASE_TITLE}`
 
   // Mid-run only: a countdown at full length hasn't started, so there is nothing to show.
   // cdPaused catches the "started then paused within the same second" case, where the rounded
@@ -33,7 +33,7 @@ export function buildTimerTabTitle({
     || (cdRemaining > 0 && cdRemaining < cdTotal)
   if (countdownLive) {
     const time = formatClock(cdRemaining)
-    return cdRunning ? `${time} · Countdown — ${BASE_TITLE}` : `⏸ ${time} · Paused — ${BASE_TITLE}`
+    return cdRunning ? `${time} · Countdown — ${BASE_TITLE}` : `${time} · Paused — ${BASE_TITLE}`
   }
 
   if (swRunning || swElapsed > 0) {
