@@ -992,15 +992,19 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
   const subjects = profile?.subjects?.map(s=>s.name)||[]
   const isTask = !!session.isTask
   const isPaperSection = !isTask && session.type === 'Past Paper Practice' && !!session.paper
+  const storedStart = session.startTime && !isNaN(new Date(session.startTime)) ? new Date(session.startTime) : null
   const [form,setForm] = useState({
     subject: session.subject||'',
     type: session.type  || 'Content Revision',
-    date: session.date  || format(new Date(), 'yyyy-MM-dd'),
-    start: session.start|| '17:00',
+    // Generated and timer-completed sessions store their time as startTime (an ISO string) and may have no
+    // separate date / start fields, so the form reads them from there instead of defaulting to 17:00 today.
+    date: session.date  || (storedStart ? format(storedStart, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
+    start: session.start|| (storedStart ? format(storedStart, 'HH:mm') : '17:00'),
     duration: session.duration||45,
     paper: session.paper||'',
     topics: session.topics || [],
     notes: session.notes||'',
+    actualDuration: session.actualDuration ?? '',     // minutes really studied (only edited for completed sessions)
   })
   const [taskForm,setTaskForm] = useState({
     title: session.title || '',
@@ -1047,13 +1051,17 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     const title = isPaperSection
       ? `${form.subject} Paper ${form.paper}${form.topics.length ? ` — ${form.topics.length} topic${form.topics.length>1?'s':''}` : ' — full paper'}`
       : `${form.subject}${form.paper?' P'+form.paper:''} – ${form.type}`
-    await onSaveSession({
-      ...form,
+    const { actualDuration, ...planned } = form
+    const payload = {
+      ...planned,
       duration: parseInt(form.duration),
       title,
       startTime: startDt.toISOString(),
       endTime: new Date(startDt.getTime()+parseInt(form.duration)*60000).toISOString(),
-    })
+    }
+    // A completed session also keeps the minutes actually studied; editing them here corrects the record.
+    if (session.completed && actualDuration !== '' && Number.isFinite(Number(actualDuration))) payload.actualDuration = Math.max(0, Math.round(Number(actualDuration)))
+    await onSaveSession(payload)
   }
   async function handleTaskSubmit(e) {
     e.preventDefault()
@@ -1113,7 +1121,11 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
               <div><label className="label">Start time</label>
                 <input className="input" type="time" value={form.start} onChange={e=>setForm(f=>({...f,start:e.target.value}))} required/></div>
               <div><label className="label">Duration (min)</label>
-                <input className="input" type="number" min={15} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
+                <input className="input" type="number" min={1} max={300} value={form.duration} onChange={e=>setForm(f=>({...f,duration:e.target.value}))} required/></div>
+              {session.completed && (
+                <div><label className="label">Minutes actually studied</label>
+                  <input className="input" type="number" min={0} max={600} value={form.actualDuration} onChange={e=>setForm(f=>({...f,actualDuration:e.target.value}))}/></div>
+              )}
             </div>
             {isPaperSection && (
               <div>
