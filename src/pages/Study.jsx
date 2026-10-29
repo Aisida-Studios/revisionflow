@@ -1059,7 +1059,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
 }
 
 /* ── Save set modal ────────────────────────────────────────────────────────── */
-function SaveSetModal({ cards, subject, topic, onSave, onClose }) {
+function SaveSetModal({ cards, subject, topic, onSave, onClose, aiGenerated }) {
   const [title, setTitle] = useState((subject || '') + (topic ? ' — ' + topic : '') + ' Flashcards')
   const [isPublic, setIsPublic] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -1079,13 +1079,19 @@ function SaveSetModal({ cards, subject, topic, onSave, onClose }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label className="label">Set title</label><input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Biology — Cell Biology" /></div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{cards.length} cards · {subject}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
-            <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Make public</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Other RevisionFlow students can discover and use your set</div>
+          {aiGenerated ? (
+            <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '1px solid var(--border)', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--text-primary)' }}>AI-generated draft.</strong> This set is saved to your own sets only and cannot be shared. Check it against your notes before you rely on it.
             </div>
-          </label>
+          ) : (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
+              <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Make public</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Other RevisionFlow students can discover and use your set</div>
+              </div>
+            </label>
+          )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving || !title.trim()}>{saving ? 'Saving…' : 'Save set'}</button>
@@ -1214,8 +1220,8 @@ function EditSetModal({ set, subjects, onSave, onClose }) {
             <div><label className="label">Topic <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span></label><input className="input" value={topic} onChange={e => setTopic(e.target.value)} /></div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
-            <span style={{ fontSize: '0.83rem' }}>Make public — other students can use this set</span>
+            <input type="checkbox" checked={isPublic} disabled={!!set.aiGenerated && !set.isPublic} onChange={e => setIsPublic(e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
+            <span style={{ fontSize: '0.83rem' }}>{set.aiGenerated && !set.isPublic ? 'AI-generated sets stay private' : 'Make public — other students can use this set'}</span>
           </label>
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -2187,8 +2193,9 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   }, [subjects.length])
 
   async function handleMark() {
-    if (!mkSubject || !mkQ.trim() || !mkAnswer.trim() || !mkScheme.trim() || !mkMarks) {
-      toast.error('Fill in the question, mark scheme, your answer and marks before marking')
+    // The mark scheme is optional: without one the result is a labelled estimate (see markAnswer in utils/ai.js).
+    if (!mkSubject || !mkQ.trim() || !mkAnswer.trim() || !mkMarks) {
+      toast.error('Fill in the question, your answer and the marks before marking')
       return
     }
     setMkLoading(true)
@@ -2196,11 +2203,11 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
     try {
       const { markAnswer } = await import('../utils/ai')
       const res = await markAnswer({
-        question: mkQ, studentAnswer: mkAnswer, markScheme: mkScheme, marksAvailable: parseInt(mkMarks),
+        question: mkQ, studentAnswer: mkAnswer, markScheme: mkScheme.trim(), marksAvailable: parseInt(mkMarks),
         board: mkBoard, qualification: mkLevel, subject: mkSubject, topic: mkTopic.trim() || null,
       }, uid)
       if (res.error) { toast.error(res.error); setMkLoading(false); return }
-      const parsed = parseMarkerResult(res.text || '')
+      const parsed = { ...parseMarkerResult(res.text || ''), schemeSupplied: res.schemeSupplied !== false }
       setMkResult(parsed)
       setMkHistory(h => [{ subject: mkSubject, board: mkBoard, level: mkLevel,
         question: mkQ.slice(0, 60) + (mkQ.length > 60 ? '...' : ''),
@@ -2238,13 +2245,13 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
       annotation: getSection('ANNOTATION', '(AO BREAKDOWN|MARK BREAKDOWN|GRADE BOUNDARY)'),
       aoBreakdown:getSection('(AO BREAKDOWN|MARK BREAKDOWN)', 'GRADE BOUNDARY'),
       gradeBoundary:getSection('GRADE BOUNDARY CONTEXT', 'TO REACH'),
-      improvements:getSection('TO REACH THE NEXT', 'EXAMINER NOTE'),
-      examinerNote:getField('EXAMINER NOTE'),
+      improvements:getSection('TO REACH THE NEXT', '(FEEDBACK NOTE|EXAMINER NOTE)'),
+      examinerNote:getField('(?:FEEDBACK NOTE|EXAMINER NOTE)'),   // older results used the label EXAMINER NOTE
       raw: text,
     }
   }
 
-  const canMark = mkSubject && mkQ.trim().length > 5 && mkAnswer.trim().length > 5 && mkScheme.trim().length > 5 && mkMarks
+  const canMark = mkSubject && mkQ.trim().length > 5 && mkAnswer.trim().length > 5 && mkMarks
 
   // ── Result display
   function ResultCard({ r }) {
@@ -2252,7 +2259,6 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
     const tier   = r.pct >= 70 ? 'success' : r.pct >= 50 ? 'warning' : 'danger'
     const colour = `var(--${tier})`
     const pale   = `var(--${tier}-pale)`
-    const grade  = r.pct >= 90 ? 'A*' : r.pct >= 80 ? 'A' : r.pct >= 70 ? 'B' : r.pct >= 60 ? 'C' : r.pct >= 50 ? 'D' : 'U'
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Score hero */}
@@ -2267,10 +2273,12 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
           <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '3px 12px', borderRadius: 999, background: pale,
             fontSize: '0.8rem', fontWeight: 700, color: colour }}>
-            Estimated grade: {grade}
+            {r.schemeSupplied === false ? 'Estimate, no mark scheme supplied' : 'AI marking estimate'}
           </div>
           <div style={{ marginTop: 10, fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            AI marking estimate — not official examiner marking. Check against your own mark scheme.
+            {r.schemeSupplied === false
+              ? 'No mark scheme was supplied, so this is a guide based on the question and what is typically expected, not the official mark scheme. Add the mark scheme for a more reliable estimate.'
+              : 'AI marking estimate, not official marking. Check it against your own mark scheme.'}
           </div>
         </div>
 
@@ -2334,12 +2342,12 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
           </div>
         )}
 
-        {/* Examiner note */}
+        {/* Feedback note */}
         {r.examinerNote && (
           <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-lg)',
             background: 'var(--warning-pale)', border: '1px solid var(--warning-border)',
             fontSize: '0.84rem', fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--warning)' }}>Examiner: </span>
+            <span style={{ fontWeight: 700, fontStyle: 'normal', color: 'var(--warning)' }}>Feedback: </span>
             {r.examinerNote}
           </div>
         )}
@@ -2358,7 +2366,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               <Brain size={18} color="var(--accent-light)" /> Mark my answer
             </h4>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Paste the question, its mark scheme and your answer. You get an AI marking estimate — not official marking.
+              Paste the question and your answer. Add the mark scheme if you have it; without one you still get an estimate, clearly labelled as a guide. It is never official marking.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -2409,9 +2417,12 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                 <CommandWordHint questionText={mkQ} />
               </div>
               <div>
-                <label className="label">Mark scheme</label>
-                <textarea className="textarea" rows={4} placeholder="Paste the mark scheme points for this question..."
+                <label className="label">Mark scheme (optional)</label>
+                <textarea className="textarea" rows={4} placeholder="Paste the mark scheme points if you have them. Leave this empty to get an estimate without one."
                   value={mkScheme} onChange={e => setMkScheme(e.target.value)} />
+                <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Official mark schemes are published free on your exam board's website, under past papers.
+                </p>
               </div>
               <div>
                 <label className="label">Topic (optional)</label>
@@ -2629,6 +2640,7 @@ export default function Study() {
           saveFlashcardSetToCache(board, level, fcSubject, fcTopic, fcCount, parsed).catch(() => {})
         }
       }
+      setStudyAI(true)
       setStudyCards(parsed)
       setStudyTitle(fcSubject + (fcTopic ? ' — ' + fcTopic : ''))
       setStudySubj(fcSubject)
@@ -2642,8 +2654,8 @@ export default function Study() {
 
   async function handleSaveSet({ title, isPublic }) {
     try {
-      const savedId = await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic, ...myQualificationFor(studySubj, profile) })
-      toast.success('Set saved!' + (isPublic ? ' It\'s now public.' : ''))
+      const savedId = await saveFlashcardSet(user.uid, { title, subject: studySubj, topic: studyTopic, cards: studyCards, isPublic: isPublic && !studyAI, aiGenerated: studyAI, ...myQualificationFor(studySubj, profile) })
+      toast.success('Set saved!' + (isPublic && !studyAI ? ' It\'s now public.' : ''))
       setShowSave(false)
       if (savedId) setStudySetId(savedId)      // the session now belongs to the saved set, so Save cannot create a duplicate
       loadMySets()
@@ -2668,9 +2680,12 @@ export default function Study() {
   }
 
   async function handleTogglePublic(set) {
-    await updateFlashcardSetVisibility(user.uid, set.id, !set.isPublic)
-    toast.success(set.isPublic ? 'Set is now private' : 'Set is now public')
-    loadMySets()
+    if (!set.isPublic && set.aiGenerated) { toast.error('AI-generated sets stay private. To share a set, create it yourself.'); return }
+    try {
+      await updateFlashcardSetVisibility(user.uid, set.id, !set.isPublic)
+      toast.success(set.isPublic ? 'Set is now private' : 'Set is now public')
+      loadMySets()
+    } catch (e) { toast.error(e.message || 'Could not change that set') }
   }
 
   async function handleEditSet({ title, subject, topic, cards, isPublic }) {
@@ -2693,8 +2708,10 @@ export default function Study() {
   }
 
   const [studySetId, setStudySetId] = useState(null)
+  const [studyAI, setStudyAI] = useState(false)     // the open set was generated by AI: it stays private
 
   function studySet(set) {
+    setStudyAI(!!set.aiGenerated)
     setStudyCards(set.cards)
     setStudyTitle(set.title)
     setStudySubj(set.subject)
@@ -2749,8 +2766,8 @@ export default function Study() {
   // If studying a set
   if (studyCards) return (
     <div className="fade-in">
-      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => { setStudyCards(null); setStudySetId(null) }} onSave={() => setShowSave(true)} uid={user?.uid} setId={studySetId} />
-      {showSave && <SaveSetModal cards={studyCards} subject={studySubj} topic={studyTopic} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
+      <StudySession cards={studyCards} title={studyTitle} subject={studySubj} onClose={() => { setStudyCards(null); setStudySetId(null); setStudyAI(false) }} onSave={() => setShowSave(true)} uid={user?.uid} setId={studySetId} />
+      {showSave && <SaveSetModal cards={studyCards} subject={studySubj} topic={studyTopic} aiGenerated={studyAI} onSave={handleSaveSet} onClose={() => setShowSave(false)} />}
     </div>
   )
 
@@ -2914,14 +2931,14 @@ export default function Study() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, overflow: 'hidden' }}>
                             <SubjectTile subject={set.subject} size={32} />
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}</div>
+                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 2, overflowWrap: 'anywhere' }}>{set.title}{set.aiGenerated && <span className="badge badge-grey" style={{ marginLeft: 6, fontSize: '0.65rem', verticalAlign: 'middle' }}>AI draft</span>}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{set.subject}{deriveSetBoardLevel(set, null).board ? ' · ' + boardLabel(deriveSetBoardLevel(set, null).board) : ''}{set.topic ? ' · ' + set.topic : ''} · {set.cardCount || set.cards?.length || 0} cards</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                             <button className="btn btn-ghost btn-icon btn-sm" title="Export / print PDF" onClick={() => generateFlashcardsPDF(set)}><Download size={13} /></button>
                             <button className="btn btn-ghost btn-icon btn-sm" title="Edit set" onClick={() => setShowEdit(set)}><Edit3 size={13} /></button>
-                            <button className="btn btn-ghost btn-icon btn-sm" title={set.isPublic ? 'Make private' : 'Make public'} onClick={() => handleTogglePublic(set)}>
+                            <button className="btn btn-ghost btn-icon btn-sm" title={!set.isPublic && set.aiGenerated ? 'AI-generated sets stay private' : set.isPublic ? 'Make private' : 'Make public'} disabled={!set.isPublic && !!set.aiGenerated} onClick={() => handleTogglePublic(set)}>
                               {set.isPublic ? <Globe size={13} style={{ color: 'var(--success)' }} /> : <Lock size={13} />}
                             </button>
                             <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteSet(set)}><Trash2 size={13} /></button>
