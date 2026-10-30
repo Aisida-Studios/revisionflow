@@ -21,6 +21,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { getTopicAdvice, generatePredictedQuestions } from '../utils/ai'
+import { isTopicHidden } from '../utils/courseOptions'
 import {
   getNotes, saveNote, deleteNote, getPaperAttempts, getMistakes, autoCompleteQuest, awardXP,
   runBadgeAudit, getQuizResults, getFlashcardSets,
@@ -342,6 +343,10 @@ export default function TopicDetail() {
           <ChevronLeft size={14} /> Back to topics
         </button>
       </div>
+
+      {isTopicHidden(topic, profile) && (
+        <div className="topic-hidden-note" role="note">This topic belongs to a course option you have not chosen, so it is hidden from your topic lists and progress. Your ratings and notes are kept.</div>
+      )}
 
       {/* Hero */}
       <div className="card topic-hero" style={{ marginBottom: 18 }}>
