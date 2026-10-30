@@ -18,6 +18,8 @@ import toast from 'react-hot-toast'
 import { Zap, Plus, X, ChevronRight, ChevronLeft, Check, Brain, Sparkles, BookOpen, CalendarDays, ListChecks, Trophy, Sprout, Link2, BarChart2, CheckCircle2, Target, Compass } from 'lucide-react'
 import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
+import { CourseOptionsForm } from '../components/CourseOptionsModal'
+import { hasOptions, needsOptionChoice, optionsSummary } from '../utils/courseOptions'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -84,6 +86,7 @@ export default function Onboarding() {
 
   const [qual,    setQual]    = useState('GCSE')
   const [subjects, setSubjects] = useState([])
+  const [pickingOptionsFor, setPickingOptionsFor] = useState(null)
   const [newSubj, setNewSubj] = useState({ name:'', board:'AQA', tier:'N/A', currentGrade:'', targetGrade:'' })
   const [globalTarget, setGlobalTarget] = useState('')
   const [availability, setAvailability] = useState(
@@ -128,7 +131,9 @@ export default function Onboarding() {
     if (!newSubj.name || subjects.find(s => s.name === newSubj.name)) return
     const opts   = getGradeOptions(newSubj.name, qual, newSubj.tier)
     const target = newSubj.targetGrade || (opts.includes(globalTarget) ? globalTarget : '')
-    setSubjects(s => [...s, { ...newSubj, qualification: qual, targetGrade: target, id: Date.now().toString() }])
+    const entry = { ...newSubj, qualification: qual, targetGrade: target, id: Date.now().toString() }
+    setSubjects(s => [...s, entry])
+    if (hasOptions(entry, { qualification: qual })) setPickingOptionsFor(entry.id)
     setNewSubj({ name:'', board:'AQA', tier:'N/A', currentGrade:'', targetGrade:'' })
   }
 
@@ -351,7 +356,7 @@ export default function Onboarding() {
                       <SubjectTile subject={s.name} size={28} />
                       {s.name}
                       <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>
-                      <button onClick={() => setSubjects(ss => ss.filter(x => x.id !== s.id))}
+                      <button onClick={() => { setSubjects(ss => ss.filter(x => x.id !== s.id)); if (pickingOptionsFor === s.id) setPickingOptionsFor(null) }}
                         style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit' }}>
                         <X size={12} />
                       </button>
@@ -360,6 +365,34 @@ export default function Onboarding() {
                   <style>{`@keyframes chipIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }`}</style>
                 </div>
               )}
+                {subjects.some(s => hasOptions(s, { qualification: qual })) && (
+                  <div style={{ marginBottom: 14 }}>
+                    {subjects.filter(s => hasOptions(s, { qualification: qual })).map(s => {
+                      const needs = needsOptionChoice(s, { qualification: qual })
+                      return (
+                        <div key={s.id} style={{ marginBottom: 10 }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+                            <div style={{ minWidth:0, flex:'1 1 200px' }}>
+                              <div style={{ fontWeight:700, fontSize:'0.85rem' }}>{s.name}</div>
+                              <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', overflowWrap:'anywhere' }}>{needs ? 'Options not chosen yet' : 'Options: ' + optionsSummary(s, { qualification: qual })}</div>
+                            </div>
+                            {pickingOptionsFor !== s.id && (
+                              <button type="button" className="btn btn-secondary btn-sm" style={{ minHeight:44 }} onClick={() => setPickingOptionsFor(s.id)}>{needs ? 'Choose options' : 'Change'}</button>
+                            )}
+                          </div>
+                          {pickingOptionsFor === s.id && (
+                            <div className="card" style={{ marginTop:10, padding:'1rem' }}>
+                              <h4 style={{ marginBottom:4 }}>{'Choose your options for ' + s.name}</h4>
+                              <CourseOptionsForm subject={s} profile={{ qualification: qual }} cancelLabel="Skip for now"
+                                onSave={options => { updateSubj(s.id, 'options', options); setPickingOptionsFor(null) }}
+                                onCancel={() => setPickingOptionsFor(null)} />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
 
               {/* Add form */}
               <div style={{ background:'var(--bg-surface)', padding:14, borderRadius:12, border:'1px solid var(--border)' }}>
