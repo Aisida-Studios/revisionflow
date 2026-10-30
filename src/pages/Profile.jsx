@@ -21,6 +21,8 @@ import toast from 'react-hot-toast'
 import BadgeAuditButton from '../components/BadgeAuditButton'
 import './AccountPages.css'
 import './Profile.css'
+import CourseOptionsModal from '../components/CourseOptionsModal'
+import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
 
 // Opens a Stripe Customer Portal session for subscription management
 function ManageSubButton({ uid }) {
@@ -54,12 +56,27 @@ function ManageSubButton({ uid }) {
 }
 
 export default function Profile() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const { isPro, isBeta } = useIsPro()
   const [copied,      setCopied]      = useState(false)
   const [exporting,   setExporting]   = useState(false)
   const [timetabling, setTimetabling] = useState(false)
   const [showCard,        setShowCard]        = useState(false)
+  const [optionsFor, setOptionsFor] = useState(null)
+  const [savingOptions, setSavingOptions] = useState(false)
+
+  async function handleSaveOptions(options) {
+    setSavingOptions(true)
+    try {
+      await saveSubjectOptions(user.uid, profile, optionsFor, options)
+      await refreshProfile()
+      setOptionsFor(null)
+      toast.success('Options saved')
+    } catch (e) {
+      toast.error("Couldn't save your options. Try again.")
+    }
+    setSavingOptions(false)
+  }
   const [cardUrl,         setCardUrl]         = useState(null)
   const [cardLoading,     setCardLoading]     = useState(false)
   const [showMilestone,   setShowMilestone]   = useState(false)
@@ -227,6 +244,8 @@ export default function Profile() {
       )}
 
       {/* ── Streak card modal ── */}
+      {optionsFor && <CourseOptionsModal subject={optionsFor} profile={profile} onSave={handleSaveOptions} onClose={() => setOptionsFor(null)} saving={savingOptions} />}
+
       {showCard && (
         <div className="modal-overlay" onClick={() => setShowCard(false)}>
           <div className="modal" style={{ maxWidth: 520, padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
@@ -390,6 +409,12 @@ export default function Profile() {
                       {target ? <span className="pf-grade-val">{target}</span> : <span className="pf-muted">Not set</span>}
                     </div>
                   </div>
+                  {hasOptions(s, profile) && (
+                    <div className="pf-subject-options">
+                      <span className="pf-subject-options-text">{needsOptionChoice(s, profile) ? 'Options not chosen yet' : 'Options: ' + optionsSummary(s, profile)}</span>
+                      <button type="button" className="btn btn-secondary btn-sm pf-options-btn" onClick={() => setOptionsFor(s)}>{needsOptionChoice(s, profile) ? 'Choose options' : 'Change options'}</button>
+                    </div>
+                  )}
                 </div>
               )
             })}
