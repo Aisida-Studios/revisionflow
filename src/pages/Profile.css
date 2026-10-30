@@ -22,3 +22,8 @@
   .pf-subject { grid-template-columns: auto minmax(0, 1fr); }
   .pf-subject-grades { grid-column: 1 / -1; padding-left: 48px; }
 }
+
+/* Course options row under a subject */
+.pf-subject-options { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-left: 48px; }
+.pf-subject-options-text { min-width: 0; flex: 1 1 180px; font-size: 0.78rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.pf-options-btn { min-height: 44px; }
