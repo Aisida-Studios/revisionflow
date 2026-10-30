@@ -1,5 +1,5 @@
 // src/pages/Topics.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import { format } from 'date-fns'
+import CourseOptionsModal from '../components/CourseOptionsModal'
+import { filterTopicsByOptions, filterSpecTopics, needsOptionChoice, hasOptions, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
 import './Topics.css'
 
 // Evidence-based revision resource links per subject (unchanged real curated data)
@@ -155,11 +157,16 @@ function formatDate(value, pattern) {
 }
 
 export default function Topics() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [topics, setTopics] = useState([])
-  const [allTopics, setAllTopics] = useState([])
+  const [rawTopics, setTopics] = useState([])
+  const [rawAllTopics, setAllTopics] = useState([])
+  // What the student sees: topics that belong to a course option they did not choose are hidden, never deleted.
+  const topics = useMemo(() => filterTopicsByOptions(rawTopics, profile), [rawTopics, profile])
+  const allTopics = useMemo(() => filterTopicsByOptions(rawAllTopics, profile), [rawAllTopics, profile])
+  const [optionsFor, setOptionsFor] = useState(null)
+  const [savingOptions, setSavingOptions] = useState(false)
   const [selSubj, setSelSubj] = useState(() => searchParams.get('subject') || 'All')
   const [showAdd, setShowAdd] = useState(false)
   const [aiAdvice, setAiAdvice] = useState({})
@@ -179,6 +186,19 @@ export default function Topics() {
 
   const subjects   = profile?.subjects?.map(s=>s.name) || []
   const selSubjObj  = profile?.subjects?.find(s => s.name === selSubj)
+  const pendingOptions = (selSubj === 'All' ? (profile?.subjects || []) : (profile?.subjects || []).filter(s => s.name === selSubj)).find(s => needsOptionChoice(s, profile))
+  async function handleSaveOptions(options) {
+    setSavingOptions(true)
+    try {
+      await saveSubjectOptions(user.uid, profile, optionsFor, options)
+      await refreshProfile()
+      setOptionsFor(null)
+      toast.success('Options saved')
+    } catch (e) {
+      toast.error("Couldn't save your options. Try again.")
+    }
+    setSavingOptions(false)
+  }
   const selBoard    = selSubjObj?.board || 'AQA'
   const selLevel    = getSubjectQualification(selSubjObj, profile)
 
@@ -203,7 +223,7 @@ export default function Topics() {
         const level = getSubjectQualification(s, profile)
         try {
           const list = await getMergedTopicsFlat(s.board || 'AQA', s.name, level)
-          return [s.name, list.length]
+          return [s.name, filterSpecTopics(list, s, profile).length]
         } catch (e) {
           return [s.name, null]
         }
@@ -212,7 +232,7 @@ export default function Topics() {
     })()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, JSON.stringify((profile?.subjects || []).map(s => [s.name, s.board, getSubjectQualification(s, profile)]))])
+  }, [user, JSON.stringify((profile?.subjects || []).map(s => [s.name, s.board, getSubjectQualification(s, profile), s.options]))])
 
   async function loadTopics() {
     const snap = await getDocs(collection(db,'users',user.uid,'topics'))
@@ -288,7 +308,7 @@ export default function Topics() {
         { merge:true })
     }
     await loadTopics()
-    toast.success(`Loaded ${topicList.length} topics for ${selSubj}`)
+    toast.success(`Loaded ${filterSpecTopics(topicList, subj, profile).length} topics for ${selSubj}`)
     setLoading(false)
   }
 
@@ -432,6 +452,15 @@ export default function Topics() {
             </div>
           </div>
 
+          {pendingOptions && (
+            <div className="topics-options-banner" role="status">
+              <div className="topics-options-banner-text">
+                <span className="topics-options-banner-title">{'Choose your ' + pendingOptions.name + ' options'}</span>
+                <span className="topics-options-banner-sub">This course has options. Every option's topics are shown until you choose, and your ratings and notes are never removed.</span>
+              </div>
+              <button type="button" className="btn btn-primary" onClick={() => setOptionsFor(pendingOptions)}>Choose options</button>
+            </div>
+          )}
           {selSubj === 'All' ? (
             // ── All Subjects — summary cards ──
             visibleSubjectSummaries.length === 0 ? (
@@ -475,6 +504,11 @@ export default function Topics() {
                   <div className="topic-subject-header-meta">
                     {selBoard} · {selLevel}{selSpecTotal!=null?` · ${Math.min(topics.length,selSpecTotal)} of ${selSpecTotal} spec topics tracked`:''}
                   </div>
+                  {selSubjObj && hasOptions(selSubjObj, profile) && (
+                    <button type="button" className="topics-options-link" onClick={() => setOptionsFor(selSubjObj)}>
+                      {needsOptionChoice(selSubjObj, profile) ? 'Choose your options' : 'Options: ' + optionsSummary(selSubjObj, profile) + ' · Change'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -511,15 +545,6 @@ export default function Topics() {
 
                   {view==='resources' ? (
                     <div>
-                      <div style={{padding:'10px 14px',borderRadius:10,background:'var(--accent-pale)',border:'1px solid var(--border-strong)',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-                        <div>
-                          <div style={{fontWeight:600,fontSize:'0.85rem'}}>Revision guides for {selSubj}</div>
-                          <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:2}}>Worked examples, mark scheme language and exam technique per topic</div>
-                        </div>
-                        <button className="btn btn-primary btn-sm" onClick={()=>navigate('/study?tab=notes&subject='+encodeURIComponent(selSubj)+'&board='+encodeURIComponent(selBoard)+'&level='+encodeURIComponent(selLevel||'GCSE'))}>
-                          <BookOpen size={13}/> Open guides
-                        </button>
-                      </div>
                       <ResourcesPanel subject={selSubj} allSubjects={subjects}/>
                     </div>
                   ) : view==='notes' ? (
@@ -649,6 +674,8 @@ export default function Topics() {
         </>
       )}
 
+      {optionsFor && <CourseOptionsModal subject={optionsFor} profile={profile} onSave={handleSaveOptions} onClose={() => setOptionsFor(null)} saving={savingOptions} />}
+
       {showAdd&&(
         <div className="modal-overlay" onClick={()=>setShowAdd(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -680,7 +707,6 @@ export default function Topics() {
 
 // ── Topic row (List view) ───────────────────────────────────────────────────
 function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSetConfidence, onOpenAdvice, loadingAdvice, advice, onToggleResources, resourcesOpen, onDelete }) {
-  const navigate = useNavigate()
   const conf = topic.confidence || 0
   const cleanName = displayTopicName(topic.name)
   const showRaw = cleanName !== topic.name
@@ -709,10 +735,6 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
           </div>
         </div>
         <div className="topic-row-actions">
-          <button className="btn btn-ghost btn-icon btn-sm" title="Study guide"
-            onClick={()=>navigate('/study?tab=notes&topic='+encodeURIComponent(topic.name)+'&subject='+encodeURIComponent(subject)+'&board='+encodeURIComponent(board)+'&level='+encodeURIComponent(level||'GCSE'))}>
-            <BookOpen size={13}/>
-          </button>
           <button className="btn btn-ghost btn-icon btn-sm" title="AI advice" onClick={onOpenAdvice} disabled={loadingAdvice}>
             {loadingAdvice ? '…' : <Brain size={13}/>}
           </button>
