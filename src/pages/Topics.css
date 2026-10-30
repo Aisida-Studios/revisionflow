@@ -219,3 +219,21 @@
 .topic-mini-row-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
 .topic-mini-row-meta { flex-shrink: 0; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
 .topic-perf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+/* ── Course options ───────────────────────────────────────────────────────── */
+.topics-options-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--accent-pale);
+}
+.topics-options-banner-text { min-width: 0; flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px; }
+.topics-options-banner-title { font-weight: 700; font-size: 0.88rem; }
+.topics-options-banner-sub { font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
+.topics-options-banner .btn { min-height: 44px; }
+.topics-options-link {
+  display: block; margin-top: 2px; padding: 10px 0; background: none; border: none; cursor: pointer;
+  color: var(--accent-light); font-weight: 700; font-size: 0.8rem; text-align: left; overflow-wrap: anywhere;
+}
+.topic-hidden-note {
+  padding: 10px 14px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--bg-surface); font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary);
+}
