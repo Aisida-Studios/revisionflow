@@ -1,0 +1,5 @@
+/* Help.jsx: touch sizes for the quick-question chips and the FAQ category tabs on phones and tablets.
+   AccountPages.css and globals.css style these, so the minimum height is added here instead. */
+@media (max-width: 768px) {
+  .hp-touch { min-height: 44px; }
+}
