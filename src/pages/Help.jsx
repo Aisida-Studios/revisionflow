@@ -9,6 +9,8 @@ import {
   Star, Globe, Shield, Palette, Link2, Repeat, GraduationCap
 } from 'lucide-react'
 import './AccountPages.css'
+import './Help.css'
+import { usePageMeta } from '../utils/pageMeta'
 
 const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level revision web app. AS-Level is a standalone qualification, kept completely separate from A-Level throughout the app (own topics, exam dates, past papers, grade scale) — not treated as "year one of A-Level". Here is the complete up-to-date feature set:
 
@@ -236,6 +238,7 @@ const FEATURES = [
 
 export default function Help() {
   const { profile } = useAuth()
+  usePageMeta({ title: 'Help centre | RevisionFlow' })
   const [question, setQuestion] = useState('')
   const [answer,   setAnswer]   = useState('')
   const [loading,  setLoading]  = useState(false)
@@ -319,7 +322,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
         )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
           {QUICK_QUESTIONS.map(q => (
-            <button key={q} onClick={() => ask(q)} className="ap-chat-chip">
+            <button key={q} onClick={() => ask(q)} className="ap-chat-chip hp-touch">
               {q}
             </button>
           ))}
@@ -355,7 +358,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
           {faqCategories.map(cat => (
             <button
               key={cat.id}
-              className={`tab${openCat === cat.id ? ' active' : ''}`}
+              className={`tab hp-touch${openCat === cat.id ? ' active' : ''}`}
               onClick={() => setOpenCat(openCat === cat.id ? null : cat.id)}
             >
               {cat.label}
@@ -422,9 +425,9 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
             { action: 'Earn a badge',            xp: '+50 to +600' },
             { action: 'Referral accepted',       xp: '+100–200' },
           ].map(r => (
-            <div key={r.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--r-sm)' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.action}</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-light)', flexShrink: 0, marginLeft: 8 }}>{r.xp}</span>
+            <div key={r.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--r-sm)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minWidth: 0 }}>{r.action}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-light)', minWidth: 0, textAlign: 'right' }}>{r.xp}</span>
             </div>
           ))}
         </div>
