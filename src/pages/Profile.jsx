@@ -23,6 +23,7 @@ import './AccountPages.css'
 import './Profile.css'
 import CourseOptionsModal from '../components/CourseOptionsModal'
 import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
+import { usePageMeta } from '../utils/pageMeta'
 
 // Opens a Stripe Customer Portal session for subscription management
 function ManageSubButton({ uid }) {
@@ -58,6 +59,7 @@ function ManageSubButton({ uid }) {
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth()
   const { isPro, isBeta } = useIsPro()
+  usePageMeta({ title: 'Your profile | RevisionFlow' })
   const [copied,      setCopied]      = useState(false)
   const [exporting,   setExporting]   = useState(false)
   const [timetabling, setTimetabling] = useState(false)
