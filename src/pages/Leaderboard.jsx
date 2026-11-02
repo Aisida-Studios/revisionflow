@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
+import { usePageMeta } from '../utils/pageMeta'
 
 const PERIODS = [
   { key: 'week',    label: 'This week' },
@@ -62,6 +63,7 @@ function BoardRow({ entry, rank, isMe, xp }) {
 
 export default function Leaderboard() {
   const { user, profile, refreshProfile } = useAuth()
+  usePageMeta({ title: 'Leaderboard | RevisionFlow' })
   const [tab,          setTab]          = useState('friends')
   const [period,       setPeriod]       = useState('allTime')
   const [friendsBoard, setFriendsBoard] = useState([])
