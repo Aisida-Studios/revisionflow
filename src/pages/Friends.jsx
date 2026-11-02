@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
+import { usePageMeta } from '../utils/pageMeta'
 
 // Shows a real profile photo when one is available (Google sign-in), falling back to the
 // initial letter — on missing avatarUrl, or if the image fails to load (photo URLs can expire).
@@ -25,6 +26,7 @@ function PersonAvatar({ name, avatarUrl, size = 'md' }) {
 
 export default function Friends() {
   const { user, profile, refreshProfile } = useAuth()
+  usePageMeta({ title: 'Friends | RevisionFlow' })
   const [friends,       setFriends]       = useState([])
   const [requests,      setRequests]      = useState([])
   const [search,        setSearch]        = useState('')
