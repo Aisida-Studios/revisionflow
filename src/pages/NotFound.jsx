@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ArrowLeft } from 'lucide-react'
 import Illustration from '../components/illustrations/Illustration'
+import { usePageMeta } from '../utils/pageMeta'
 
 export default function NotFound() {
   const { user } = useAuth()
+  usePageMeta({ title: 'Page not found | RevisionFlow', noindex: true })
   const homeHref = user ? '/dashboard' : '/'
 
   return (
