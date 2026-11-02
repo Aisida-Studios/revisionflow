@@ -43,6 +43,7 @@ import {
 import EmptyState from '../components/illustrations/EmptyState'
 import { format } from 'date-fns'
 import './Topics.css'
+import { usePageMeta } from '../utils/pageMeta'
 
 const TABS = [
   { id: 'overview', label: 'Overview',    icon: Layers },
@@ -124,6 +125,7 @@ export default function TopicDetail() {
   const { user, profile } = useAuth()
 
   const [topic, setTopic] = useState(null)
+  usePageMeta({ title: topic && topic.name ? topic.name + ' | RevisionFlow' : 'Topic | RevisionFlow' })
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('overview')
   const [notes, setNotes] = useState([])
