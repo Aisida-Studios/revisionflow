@@ -20,6 +20,7 @@ import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { CourseOptionsForm } from '../components/CourseOptionsModal'
 import { hasOptions, needsOptionChoice, optionsSummary } from '../utils/courseOptions'
+import { usePageMeta } from '../utils/pageMeta'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -77,6 +78,7 @@ function XPPill({ xp }) {
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth()
   const navigate  = useNavigate()
+  usePageMeta({ title: 'Set up your account | RevisionFlow' })
   const [step,    setStep]    = useState(0)
   const [dir,     setDir]     = useState(1)   // 1 = forward, -1 = back
   const [saving,  setSaving]  = useState(false)
@@ -357,7 +359,8 @@ export default function Onboarding() {
                       {s.name}
                       <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>
                       <button onClick={() => { setSubjects(ss => ss.filter(x => x.id !== s.id)); if (pickingOptionsFor === s.id) setPickingOptionsFor(null) }}
-                        style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit' }}>
+                        aria-label={'Remove ' + s.name}
+                        style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit', width:36, height:36, margin:'-4px -12px -4px 0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                         <X size={12} />
                       </button>
                     </div>
@@ -429,7 +432,7 @@ export default function Onboarding() {
                     </select>
                   </div>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={addSubject} disabled={!newSubj.name}>
+                <button className="btn btn-primary" onClick={addSubject} disabled={!newSubj.name}>
                   <Plus size={14}/> Add subject
                 </button>
               </div>
@@ -505,23 +508,25 @@ export default function Onboarding() {
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {DAYS.map(day => (
                   <div key={day} style={{
-                    display:'flex', alignItems:'center', gap:8, padding:'9px 12px',
+                    display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, padding:'9px 12px',
                     background:'var(--bg-surface)', borderRadius:10, border:'1px solid var(--border)',
                   }}>
-                    <input type="checkbox" checked={availability[day].enabled}
+                    <input type="checkbox" id={'avail-' + day} checked={availability[day].enabled}
                       onChange={e => setAvailability(a => ({ ...a, [day]:{ ...a[day], enabled:e.target.checked } }))}
                       style={{ width:15, height:15, accentColor:'var(--accent)', flexShrink:0 }} />
-                    <span style={{ width:92, fontWeight:600, fontSize:'0.85rem', flexShrink:0 }}>{day}</span>
+                    <label htmlFor={'avail-' + day} style={{ width:92, fontWeight:600, fontSize:'0.85rem', flexShrink:0, cursor:'pointer', padding:'12px 0', margin:'-12px 0' }}>{day}</label>
                     {availability[day].enabled ? (
-                      <>
-                        <input type="time" className="input" style={{ flex:1, padding:'4px 7px', fontSize:'0.84rem' }}
+                      <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, flex:'1 1 200px', minWidth:0 }}>
+                        <input type="time" className="input" aria-label={day + ' start time'} style={{ flex:'1 1 112px', minWidth:0, minHeight:44, padding:'4px 7px', fontSize:'0.84rem' }}
                           value={availability[day].startTime}
                           onChange={e => setAvailability(a => ({ ...a, [day]:{ ...a[day], startTime:e.target.value } }))} />
-                        <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>–</span>
-                        <input type="time" className="input" style={{ flex:1, padding:'4px 7px', fontSize:'0.84rem' }}
-                          value={availability[day].endTime}
-                          onChange={e => setAvailability(a => ({ ...a, [day]:{ ...a[day], endTime:e.target.value } }))} />
-                      </>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, flex:'1 1 130px', minWidth:0 }}>
+                          <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>–</span>
+                          <input type="time" className="input" aria-label={day + ' end time'} style={{ flex:'1 1 112px', minWidth:0, minHeight:44, padding:'4px 7px', fontSize:'0.84rem' }}
+                            value={availability[day].endTime}
+                            onChange={e => setAvailability(a => ({ ...a, [day]:{ ...a[day], endTime:e.target.value } }))} />
+                        </div>
+                      </div>
                     ) : (
                       <span style={{ fontSize:'0.78rem', color:'var(--text-muted)' }}>Rest day</span>
                     )}
@@ -554,7 +559,7 @@ export default function Onboarding() {
                     </div>
                   )}
                   <div style={{ marginTop:14 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => go(1)}>Skip for now →</button>
+                    <button className="btn btn-ghost" onClick={() => go(1)}>Skip for now →</button>
                   </div>
                 </div>
               ) : (
@@ -636,19 +641,19 @@ export default function Onboarding() {
           )}
 
           {/* Navigation */}
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:24, gap:10 }}>
+          <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'space-between', marginTop:24, gap:10 }}>
             <button className="btn btn-secondary" onClick={() => go(-1)}
               style={{ visibility: step === 0 ? 'hidden' : 'visible' }}>
               <ChevronLeft size={15}/> Back
             </button>
             {step < STEPS.length - 1 ? (
               <button className="btn btn-primary" onClick={() => go(1)} disabled={!canContinue}
-                style={{ padding:'10px 24px' }}>
+                style={{ padding:'10px 24px', marginLeft:'auto' }}>
                 {step === STEPS.length - 2 ? 'Almost done' : 'Continue'} <ChevronRight size={15}/>
               </button>
             ) : (
               <button className="btn btn-primary" onClick={finish} disabled={saving}
-                style={{ padding:'10px 24px', fontSize:'0.95rem' }}>
+                style={{ padding:'10px 24px', fontSize:'0.95rem', marginLeft:'auto' }}>
                 {saving ? 'Setting up…' : 'Go to dashboard'}
               </button>
             )}
