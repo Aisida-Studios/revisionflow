@@ -26,6 +26,7 @@ import { format } from 'date-fns'
 import CourseOptionsModal from '../components/CourseOptionsModal'
 import { filterTopicsByOptions, filterSpecTopics, needsOptionChoice, hasOptions, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
 import './Topics.css'
+import { usePageMeta } from '../utils/pageMeta'
 
 // Evidence-based revision resource links per subject (unchanged real curated data)
 const SUBJECT_RESOURCES = {
@@ -160,6 +161,7 @@ export default function Topics() {
   const { user, profile, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  usePageMeta({ title: 'Topics | RevisionFlow' })
   const [rawTopics, setTopics] = useState([])
   const [rawAllTopics, setAllTopics] = useState([])
   // What the student sees: topics that belong to a course option they did not choose are hidden, never deleted.
