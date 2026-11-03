@@ -2521,7 +2521,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 export default function Study() {
   const { user, profile } = useAuth()
   const { isPro } = useIsPro()
-  // Read URL params — Topics page links here with ?tab=notes&topic=...&subject=...
+  // Read URL params. Older links (for example from the Topics page) used ?tab=notes. The topic-notes tab no longer exists,
+  // so those links, and a link with no tab, open Flashcards.
   const urlParams  = new URLSearchParams(window.location.search)
   const requestedTab = urlParams.get('tab')
   const initTab    = !requestedTab || requestedTab === 'notes' ? 'flashcards' : requestedTab   // the topic-notes tab no longer exists
