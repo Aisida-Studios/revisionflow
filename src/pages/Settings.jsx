@@ -10,8 +10,10 @@ import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isT
 import { canonicalBoard, boardLabel } from '../data/boards'
 import { getSupportedSubjects } from '../data/curriculumSupport'
 import { isValidTargetGrade } from '../utils/gradeTargets'
-import { dropOptionsWhenCourseChanges } from '../utils/subjectEdits'
+import { dropOptionsWhenCourseChanges, isSavedCourse } from '../utils/subjectEdits'
+import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions, withSubjectOptions } from '../utils/courseOptions'
 import BoardOptions from '../components/BoardOptions'
+import CourseOptionsModal from '../components/CourseOptionsModal'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
@@ -79,6 +81,11 @@ export default function Settings() {
   const [newSubj,      setNewSubj]      = useState({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '' })
   const [newSubjLevel, setNewSubjLevel] = useState(null)
   const [newQualFlow,  setNewQualFlow]  = useState(null)
+  // Subjects waiting for the course-options chooser (a subject just added, or the subjects a qualification switch created).
+  // The first is shown; saving or skipping moves on to the next.
+  const [optionsQueue, setOptionsQueue] = useState([])
+  const [optionsSaving, setOptionsSaving] = useState(false)
+  const optionsFor = optionsQueue[0] || null
   const [qual,         setQual]         = useState(profile?.qualification || 'GCSE')
 
   React.useEffect(() => {
@@ -158,12 +165,42 @@ export default function Settings() {
     setSaving(false)
   }
 
+  // A subject's course options (the optional papers or topics the student studies). The choice is always written into the
+  // subject list on this page, so a later "Save subjects" cannot overwrite it. A subject that is already saved is also
+  // written straight away; one that was only just added is saved with the rest when "Save subjects" is pressed.
+  async function handleSaveOptions(options) {
+    const target = optionsFor
+    if (!target || optionsSaving) return
+    setOptionsSaving(true)
+    try {
+      const saved = isSavedCourse(profile?.subjects, target, profile)
+      // Written first: if that fails nothing changes on this page and the chooser stays open to try again.
+      if (saved) await saveSubjectOptions(user.uid, profile, target, options)
+      // Keep this page's own subject list in step, so a later "Save subjects" cannot overwrite the choice.
+      setSubjects(ss => withSubjectOptions(ss, target, options, profile))
+      if (saved) {
+        toast.success('Options saved')
+        refreshProfile().catch(() => {})   // the live profile listener delivers it too; this just hurries it along
+      } else {
+        toast.success('Options chosen. Press Save subjects to keep them.')
+      }
+      setOptionsQueue(q => q.slice(1))
+    } catch (e) {
+      console.error('[saveSubjectOptions]', e)
+      toast.error('Could not save your options. Please try again.')
+    }
+    setOptionsSaving(false)
+  }
+
   function addSubj() {
     if (!newSubj.name) return
     const gradeOpts = getGradeOptions(newSubj.name, addSubjQual, newSubj.tier)
     const targetGrade = gradeOpts.includes(newSubj.targetGrade) ? newSubj.targetGrade : ''   // left unset stays unset
-    setSubjects(s => [...s, { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }])
+    const entry = { ...newSubj, qualification: addSubjQual, targetGrade, id: Date.now().toString() }
+    setSubjects(s => [...s, entry])
     setNewSubj({ name: '', board: 'AQA', tier: 'N/A', currentGrade: '', targetGrade: '' })
+    // A subject with optional papers or topics asks for the choice straight away.
+    if (hasOptions(entry, profile)) setOptionsQueue(q => [...q, entry])
   }
 
   async function handleDeleteAccount() {
@@ -266,6 +303,16 @@ export default function Settings() {
                       <Trash2 size={14} />
                     </button>
                   </div>
+                  {hasOptions(s, profile) && (
+                    <div style={{ flex: '1 1 100%', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', minWidth: 0, overflowWrap: 'anywhere' }}>
+                        {needsOptionChoice(s, profile) ? 'Course options not chosen yet' : 'Options: ' + optionsSummary(s, profile)}
+                      </span>
+                      <button className="btn btn-secondary btn-sm" style={{ minHeight: 44 }} onClick={() => setOptionsQueue(q => [s, ...q.filter(x => x !== s)])}>
+                        {needsOptionChoice(s, profile) ? 'Choose options' : 'Change options'}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 )
               })}
@@ -483,11 +530,25 @@ export default function Settings() {
             await detectAndOfferSwitchChoice(oldSubjects, newSubjects, [])
             setQual(newQualFlow)
             setSubjects(newSubjects)
+            // The new subjects start without options. Ask for them one subject at a time.
+            setOptionsQueue(newSubjects.filter(s => hasOptions(s, { ...profile, qualification: newQualFlow })))
             setNewQualFlow(null)
             setTab('subjects')
             toast.success(`Switched to ${newQualFlow}`)
             setSaving(false)
           }}
+        />
+      )}
+
+      {/* Course options chooser, one subject at a time. Held back while the keep/remove history question is open. */}
+      {optionsFor && !pendingSwitches && !newQualFlow && (
+        <CourseOptionsModal
+          key={[optionsFor.id, optionsFor.name, optionsFor.board, optionsFor.qualification].join('|')}
+          subject={optionsFor}
+          profile={profile}
+          saving={optionsSaving}
+          onSave={handleSaveOptions}
+          onClose={() => { if (!optionsSaving) setOptionsQueue(q => q.slice(1)) }}
         />
       )}
 
