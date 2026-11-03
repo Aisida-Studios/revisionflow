@@ -1,5 +1,5 @@
 // src/App.jsx
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -11,6 +11,7 @@ import { PriorityProvider } from './context/PriorityContext'
 import Layout from './components/Layout'
 import LoadingScreen from './components/LoadingScreen'
 import { Toaster } from 'react-hot-toast'
+import { usePageMeta } from './utils/pageMeta'
 import XPToast from './components/XPToast'
 import StreakCelebration from './components/StreakCelebration'
 import TooltipTour from './components/TooltipTour'
@@ -54,11 +55,12 @@ function GlobalTooltipTour() {
   )
 }
 
-// Global referral reward popup — covers BOTH sides of a referral. The referred user gets an
-// immediate, locally-triggered version at the point they enter a code (see Dashboard.jsx); the
-// referrer usually isn't looking at the app at that exact moment, so their side is detected via
-// AuthContext's profile listener (badges array gaining 'referral' since the last snapshot) and
-// shown next time they're active, wherever that is in the app.
+// Global referral reward popup — covers BOTH sides of a referral, and both are detected by
+// AuthContext's profile listener. The referrer usually isn't looking at the app at that exact moment,
+// so their side (badges array gaining 'referral' since the last snapshot) is shown next time they're
+// active, wherever that is. The referred user's side (referredBy stamped on the new account) shows up
+// wherever they are right after signing up, because the Signup page unmounts too early to show it.
+// An existing user who enters a code later gets an immediate, local version (see Dashboard.jsx).
 function GlobalReferralReward() {
   const { referralReward, clearReferralReward } = useAuth()
   if (!referralReward) return null
@@ -143,13 +145,35 @@ function OnboardingRoute({ children }) {
   return children
 }
 
+// How long someone who is already signed in waits on the sign-in pages for their profile before being sent on anyway.
+const PROFILE_WAIT_MS = 8000
+
 function PublicOnly({ children }) {
   const { user, profile, loading } = useAuth()
+  const waitingForProfile = !loading && !!user && !profile
+  const [gaveUp, setGaveUp] = useState(false)
+  useEffect(() => {
+    if (!waitingForProfile) { setGaveUp(false); return undefined }
+    const timer = setTimeout(() => setGaveUp(true), PROFILE_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [waitingForProfile])
   if (loading) return <LoadingScreen />
   if (!user) return children
+  // Wait for the profile, so a new account goes straight to the right page instead of flashing the dashboard first.
+  // If it never arrives (the read failed, or the profile document does not exist) carry on to the app as before
+  // rather than sit on a loading screen forever.
+  if (!profile) return gaveUp ? <Navigate to="/dashboard" replace /> : <LoadingScreen />
   // Logged in but onboarding not done — go to onboarding
-  if (profile && !profile.onboardingComplete) return <Navigate to="/onboarding" replace />
+  if (!profile.onboardingComplete) return <Navigate to="/onboarding" replace />
   return <Navigate to="/dashboard" replace />
+}
+
+// index.html no longer carries one canonical URL for every route (that pointed every page at the home page). These
+// public pages get their own here, because their own files do not set it: the privacy policy is frozen and the Pro
+// page's copy edit is still to come. Login and Signup set theirs with usePageMeta.
+function WithCanonical({ path, children }) {
+  usePageMeta({ path })
+  return children
 }
 
 function PageLoader() {
@@ -173,9 +197,9 @@ export default function App() {
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     {/* Public — no sidebar */}
-                    <Route path="/"            element={<Landing />} />
-                    <Route path="/privacy"     element={<PrivacyPolicy />} />
-                    <Route path="/pro"         element={<Pro />} />
+                    <Route path="/"            element={<WithCanonical path="/"><Landing /></WithCanonical>} />
+                    <Route path="/privacy"     element={<WithCanonical path="/privacy"><PrivacyPolicy /></WithCanonical>} />
+                    <Route path="/pro"         element={<WithCanonical path="/pro"><Pro /></WithCanonical>} />
                     <Route path="/pro/success"  element={<Pro />} />
                     <Route path="/u/:username" element={<PublicProfile />} />
 
