@@ -138,13 +138,14 @@ export default function AIAdvisor() {
   async function buildContext() {
     if (!user || !profile) return
     try {
-      const [papersSnap, topicsSnap, mistakesSnap] = await Promise.all([
+      // Topics come through getTopicsWithConfidence, so only the course the student is on now and the course options they
+      // chose are described to the AI (a topic from an option they did not choose is never called weak).
+      const [papersSnap, topics, mistakesSnap] = await Promise.all([
         getDocs(collection(db,'users',user.uid,'paperAttempts')),
-        getDocs(collection(db,'users',user.uid,'topics')),
+        getTopicsWithConfidence(user.uid, profile),
         getDocs(collection(db,'users',user.uid,'mistakes')),
       ])
       const papers   = papersSnap.docs.map(d=>d.data())
-      const topics   = topicsSnap.docs.map(d=>d.data())
       const mistakes = mistakesSnap.docs.map(d=>d.data())
 
       const currentSubjectNames = new Set((profile.subjects||[]).map(s=>s.name))
