@@ -28,7 +28,9 @@ import {
 } from 'lucide-react'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import EmptyState from '../components/illustrations/EmptyState'
-import { subjectColour } from '../data/subjects'
+import { subjectColour, getSubjectQualification } from '../data/subjects'
+import { hiddenTopicNames } from '../utils/courseOptions'
+import { dropHiddenTopics, dropHiddenFromPapers } from '../utils/topicVisibility'
 import { toLocalDateStr as localDateStr, parseLocalDate } from '../utils/localDate'
 import './Calendar.css'
 
@@ -1024,12 +1026,13 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
     if (!isPaperSection) return
     setPaperTopicsLoading(true)
     const subjMeta = profile?.subjects?.find(s=>s.name===form.subject)
-    const sb = subjMeta?.board || 'AQA', lv = subjMeta?.qualification || 'GCSE'
+    const sb = subjMeta?.board || 'AQA', lv = getSubjectQualification(subjMeta, profile)
     Promise.all([
       import('../data/topics').then(({ getTopicsForSubject }) => (getTopicsForSubject(sb, form.subject, lv) || {})[form.paper] || []),
       import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile)).catch(() => []),
     ]).then(([topics, confTopics]) => {
-      setPaperTopics(topics)
+      // Topics from course options the student did not choose are not offered for revision
+      setPaperTopics(dropHiddenTopics(topics, hiddenTopicNames(subjMeta, profile)))
       const confMap = {}
       confTopics.filter(t => t.subjectId === form.subject).forEach(t => { confMap[t.name] = t.confidence })
       setPaperTopicConfidence(confMap)
@@ -1351,11 +1354,13 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
     setPaperTopicsLoading(true)
     const subjMeta = profile?.subjects?.find(s=>s.name===paperForm.subject)
     const sb = subjMeta?.board || 'AQA'
-    const lv = subjMeta?.qualification || 'GCSE'
+    const lv = getSubjectQualification(subjMeta, profile)
     Promise.all([
       import('../data/topics').then(({ getTopicsForSubject }) => getTopicsForSubject(sb, paperForm.subject, lv) || {}),
       import('../utils/firestore').then(({ getTopicsWithConfidence }) => getTopicsWithConfidence(user.uid, profile)).catch(() => []),
-    ]).then(([papers, confTopics]) => {
+    ]).then(([rawPapers, confTopics]) => {
+      // Topics from course options the student did not choose are not offered for revision
+      const papers = dropHiddenFromPapers(rawPapers, hiddenTopicNames(subjMeta, profile))
       setPaperTopicsByPaper(papers)
       const confMap = {}
       confTopics.filter(t => t.subjectId === paperForm.subject).forEach(t => { confMap[t.name] = t.confidence })
@@ -1372,7 +1377,7 @@ function AddEventModal({ user, profile, selectedDate, prefill, onClose, onSaveSe
     if (kind!=='paper' || !paperForm.subject || !paperForm.paperNum) { setPaperSpec(null); return }
     const subjMeta = profile?.subjects?.find(s=>s.name===paperForm.subject)
     import('../data/paperDatabase').then(({ getPaperSpec }) => {
-      const spec = getPaperSpec(subjMeta?.board || 'AQA', paperForm.subject, subjMeta?.tier, paperForm.paperNum, subjMeta?.qualification || 'GCSE')
+      const spec = getPaperSpec(subjMeta?.board || 'AQA', paperForm.subject, subjMeta?.tier, paperForm.paperNum, getSubjectQualification(subjMeta, profile))
       setPaperSpec(spec || null)
       if (spec?.duration) setPaperForm(f => ({ ...f, duration: spec.duration }))
     })
