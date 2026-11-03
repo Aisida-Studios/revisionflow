@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import AuthNotice from '../components/AuthNotice'
-import { authErrorMessage, isStandaloneApp, REDIRECT_WAIT_MS } from '../utils/authUi'
+import { authErrorMessage, isStandaloneApp, markRedirectStarted, consumeFailedRedirect, REDIRECT_WAIT_MS } from '../utils/authUi'
 import { usePageMeta } from '../utils/pageMeta'
 
 export default function Login() {
@@ -25,7 +25,6 @@ export default function Login() {
   const busyRef = useRef(false)
   const redirectTimer = useRef(null)
 
-  // Hands the form back: clears the wait timer and re-enables both sign-in options.
   const release = useCallback(() => {
     clearTimeout(redirectTimer.current)
     busyRef.current = false
@@ -33,8 +32,10 @@ export default function Login() {
     setGoogleBusy(false)
   }, [])
 
-  // Coming back to this page from Google (for example with the back gesture) can restore it still
-  // showing "Opening Google…". Hand the form back instead of leaving every button disabled.
+  useEffect(() => {
+    if (consumeFailedRedirect()) setError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
+  }, [])
+
   useEffect(() => {
     function onPageShow(e) {
       if (e.persisted && busyRef.current) {
@@ -66,9 +67,8 @@ export default function Login() {
     setError('')
     setLoading(true)
     setGoogleBusy(true)
-    // In the installed app Google sign-in is a redirect: this page is replaced and the promise below
-    // never settles. If we are still here after a while, the redirect did not happen.
     if (isStandaloneApp()) {
+      markRedirectStarted()
       redirectTimer.current = setTimeout(() => {
         release()
         setError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
@@ -117,7 +117,6 @@ export default function Login() {
             <div className="form-group" style={{marginBottom:0}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
                 <label className="label">Password</label>
-                {/* 44px tall hit area; the negative margins keep the row exactly as tall as the label */}
                 <button type="button" style={{fontSize:'0.78rem',color:'var(--accent-light)',background:'none',border:'none',cursor:'pointer',minHeight:44,padding:'12px 12px 0',margin:'-16px -12px -2px 0'}} onClick={() => setResetMode(true)}>Forgot password?</button>
               </div>
               <div style={{position:'relative'}}>
