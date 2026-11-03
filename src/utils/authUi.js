@@ -16,13 +16,31 @@ export function isStandaloneApp() {
 // If the page is still here after this long, the redirect did not happen and the form is handed back.
 export const REDIRECT_WAIT_MS = 15000
 
+export const CONSENT_FLAG = 'rf_consent'
+const REDIRECT_FLAG = 'rf_google_redirect'
+
+export function markRedirectStarted() {
+  try { sessionStorage.setItem(REDIRECT_FLAG, String(Date.now())) } catch { return }
+}
+
+// True when this page load is the return from a Google redirect that started in this tab less than two
+// minutes ago, so the person is back on a sign-in page without a session.
+export function consumeFailedRedirect() {
+  try {
+    const started = Number(sessionStorage.getItem(REDIRECT_FLAG))
+    sessionStorage.removeItem(REDIRECT_FLAG)
+    return !!started && Date.now() - started < 120000 && performance.now() < 20000
+  } catch {
+    return false
+  }
+}
+
 const INVALID_LOGIN = 'That email and password do not match. Check them or reset your password.'
 const NO_CONNECTION = 'No connection. Check your internet, then try again.'
 const GOOGLE_UNAVAILABLE = 'Google sign-in is not available right now. Use your email and password instead.'
 const GOOGLE_NOT_IN_BROWSER = 'Google sign-in is not available in this browser. Use your email and password, or open RevisionFlow in your browser.'
 const GENERIC = 'Something went wrong. Check your connection and try again.'
 
-// Messages that make sense for any sign-in or sign-up form.
 const ANY_CONTEXT = {
   'auth/invalid-credential': INVALID_LOGIN,
   'auth/invalid-login-credentials': INVALID_LOGIN,
@@ -38,7 +56,6 @@ const ANY_CONTEXT = {
   'unavailable': NO_CONNECTION,
 }
 
-// Messages that only make sense for the Google button; other forms fall back to the generic message.
 const GOOGLE_ONLY = {
   'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups for this site, or use your email and password instead.',
   'auth/account-exists-with-different-credential': 'This email is already registered with a different sign-in method. Sign in with that method instead.',
@@ -50,7 +67,7 @@ const GOOGLE_ONLY = {
   'rf/redirect-stalled': 'Google sign-in did not finish. Try again, or use your email and password instead.',
 }
 
-// Closing the Google window is the person's own choice, not an error.
+// Closing the Google window is a choice, not an error.
 const SILENT = new Set([
   'auth/popup-closed-by-user',
   'auth/cancelled-popup-request',
