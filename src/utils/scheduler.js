@@ -13,6 +13,8 @@ import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek }
 import { getPaperSpec } from '../data/paperDatabase'
 import { parseLocalDate } from './examUtils'
 import { buildSubjectKey } from './subjectKey'
+import { getSubjectQualification } from '../data/subjects'
+import { createFairShare } from './fairShare'
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 // Fallback only — getExamDuration checks the real per-board/tier paper database
@@ -119,10 +121,6 @@ function fmtTime(minutes) {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
-}
-
-function getWeekMon(d) {
-  return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd')
 }
 
 // ── MULTI-WINDOW AVAILABILITY ─────────────────────────────────────────────────
@@ -263,46 +261,54 @@ export function generateSchedule(options) {
     typePtr[s.name]    = 0
   })
 
-  // Build exam date lookup
+  // Build exam date lookup. An exam date that cannot be read is skipped rather than allowed to stop the whole schedule.
   const examDateMap = {}  // 'subj-paper' -> Date
   const examsByDate = {}  // dateStr -> [{subj, paper}]
+  const examByKey   = new Map()  // 'subj-paper' -> { subj, paper, date } kept as data, so nothing has to split a key back
+                                 // apart (a subject name may contain a '-')
 
   subjects.forEach(s => {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
       const d   = parseLocalDate(ed.date) // never new Date(ed.date) — that's UTC midnight, which in BST can land the exam on the wrong local day and shift every session placed relative to it
+      if (!d) return
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
       examsByDate[ds].push({ subj: s.name, paper: ed.paper })
+      examByKey.set(key, { subj: s.name, paper: parseInt(ed.paper), date: d })
     })
   })
+  // A paused subject (a 0:0 ratio, "Paused — no sessions generated" in the settings) gets no sessions at all. That includes
+  // the emergency and day-before-exam sessions, which used to be placed for it anyway.
+  const isPaused = (s) => { const r = s.ratio || [contentRatio, examRatio]; return r[0] === 0 && r[1] === 0 }
+  const pausedNames = new Set(subjects.filter(isPaused).map(s => s.name))
+  const examList = [...examByKey.values()].filter(e => !pausedNames.has(e.subj))
 
   // Emergency sessions map: prevDay -> [{subj, paper}]. Gated behind includeEmergency —
   // left empty when the toggle is off, which naturally makes both the "emergency first"
   // block below and Sunday's emergency-only handling no-ops (nothing to place).
   const emergencyMap = {}
   if (includeEmergency) {
-    Object.entries(examDateMap).forEach(([key, edate]) => {
-      const [subj, paper] = key.split('-')
-      let prev = addDays(edate, -1)
-      const ds = format(prev, 'yyyy-MM-dd')
+    examList.forEach(({ subj, paper, date }) => {
+      const ds = format(addDays(date, -1), 'yyyy-MM-dd')
       if (!emergencyMap[ds]) emergencyMap[ds] = []
-      emergencyMap[ds].push({ subj, paper: parseInt(paper) })
+      emergencyMap[ds].push({ subj, paper })
     })
   }
 
   // Exams tomorrow map
   const examsTomorrow = {}
-  Object.entries(examDateMap).forEach(([key, edate]) => {
-    const [subj, paper] = key.split('-')
-    const prev = format(addDays(edate, -1), 'yyyy-MM-dd')
+  examList.forEach(({ subj, paper, date }) => {
+    const prev = format(addDays(date, -1), 'yyyy-MM-dd')
     if (!examsTomorrow[prev]) examsTomorrow[prev] = []
-    examsTomorrow[prev].push({ subj, paper: parseInt(paper) })
+    examsTomorrow[prev].push({ subj, paper })
   })
 
-  // Week subject round-robin
-  const weekSubjSeen = {}
+  // Fair-share rotation (utils/fairShare.js). Which subject is placed next, and which topic a content session is about,
+  // follows each subject's and topic's total minutes so far, so equal weights give equal hours. Without this the order
+  // fell back to list order every day and the first subjects in a profile took most of the slots.
+  const share = createFairShare({ subjects, topicFocus })
 
   function activePapers(subjName) {
     const s = subjects.find(x => x.name === subjName)
@@ -362,9 +368,11 @@ export function generateSchedule(options) {
   // whenever there's no exam data or the feature is off.
   function effectiveRatio(subjName, baseRatio, date) {
     if (!dynamicRatio) return baseRatio
-    const upcoming = Object.entries(examDateMap)
-      .filter(([k]) => k.startsWith(`${subjName}-`) && examDateMap[k] >= date)
-      .map(([, d]) => d)
+    // A 0 on either side (exam practice only, or content only) is the student's own choice, so it is left alone.
+    if (Array.isArray(baseRatio) && (baseRatio[0] === 0 || baseRatio[1] === 0)) return baseRatio
+    const upcoming = examList
+      .filter(e => e.subj === subjName && e.date >= date)
+      .map(e => e.date)
     if (!upcoming.length) return baseRatio
     const nearestDays = differenceInDays(new Date(Math.min(...upcoming.map(d => d.getTime()))), date)
     if (nearestDays <= 7)  return [1, 3]
@@ -391,9 +399,11 @@ export function generateSchedule(options) {
       }
     }
 
+    // Content sessions rotate through the paper's focus topics (utils/fairShare.js) instead of all being about one.
+    const focusTopic = (!isEmergency && stype === 'content') ? share.topicFor(subjName, paper) : null
     const name = isEmergency
       ? `EMERGENCY: ${subjName} Paper ${paper} \u2013 Final Revision`
-      : getSessionName(subjName, paper, stype, counters, topicFocus[`${subjName}-${paper}`])
+      : getSessionName(subjName, paper, stype, counters, focusTopic)
 
     const session = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -416,8 +426,17 @@ export function generateSchedule(options) {
       isEmergency,
       completed: false,
       source: 'generated',
+      // Which topic a content session is about, when the paper has focus topics (left out otherwise: Firestore
+      // does not accept undefined). The free-period pass reads it to carry on the rotation.
+      ...(focusTopic ? { focusTopic } : {}),
     }
     return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
+  }
+
+  // Every placed session goes through here, so the fair-share totals always match what was actually scheduled.
+  function commit(session) {
+    sessions.push(session)
+    share.record(session)
   }
 
   // ── Day loop ────────────────────────────────────────────────────────────────
@@ -431,7 +450,7 @@ export function generateSchedule(options) {
 
     // Update completed
     Object.entries(examDateMap).forEach(([key, edate]) => {
-      if (edate < current) completed.add(key.replace('-', '-'))
+      if (edate < current) completed.add(key)
     })
 
     // Holiday / unavailable period — a genuine blackout now. Previously this only
@@ -445,16 +464,17 @@ export function generateSchedule(options) {
       continue
     }
 
-    // Sunday: emergency sessions only — a fixed window, not part of the multi-range
-    // availability system (free periods don't apply on a Sunday either).
-    if (isSunday) {
+    // Sunday stays emergency-only (a fixed window, not part of the multi-range availability system, and free periods
+    // don't apply) UNLESS the student turned Sunday on in their availability. The availability step lists Sunday as a
+    // day they can pick, and that choice used to be ignored. When it is on, Sunday is handled like any other day below.
+    if (isSunday && !availability?.Sunday?.enabled) {
       const emergencies = emergencyMap[dateStr] || []
       if (!emergencies.length) { current = addDays(current, 1); continue }
       let curMin = 15 * 60  // Sunday always starts at 15:00
       const endMin = extendedFromDate && current >= new Date(extendedFromDate) ? 22 * 60 : 21 * 60
       emergencies.forEach(({ subj, paper }) => {
         const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
-        if (result) { sessions.push(result.session); curMin = result.newMin }
+        if (result) { commit(result.session); curMin = result.newMin }
       })
       current = addDays(current, 1)
       continue
@@ -507,21 +527,13 @@ export function generateSchedule(options) {
       examsTodayMap[e.subj].push(e.paper)
     })
 
-    const wmon = getWeekMon(current)
-    if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
-
     // Built once per day, then walked across as many windows as it takes rather than
     // restarting per window — each subject still gets at most one placement attempt per day.
+    // Fairest first (utils/fairShare.js): whoever has had the fewest minutes for their weight goes first, ties go to
+    // whoever was placed longest ago. Equal subjects therefore get equal hours, and a "High priority" subject (weight 2)
+    // gets about twice as many. Every subject is still reached within a week, because the least-served always lead.
     let ordered = []
-    if (preExamSubjs.length === 0) {
-      const notSeen = activeSubjects
-        .filter(s => !weekSubjSeen[wmon].has(s.name))
-        .sort((a,b) => (a.priority?0:1)-(b.priority?0:1))
-      const seen = activeSubjects
-        .filter(s => weekSubjSeen[wmon].has(s.name))
-        .sort((a,b) => (a.priority?0:1)-(b.priority?0:1))
-      ordered = [...notSeen, ...seen]
-    }
+    if (preExamSubjs.length === 0) ordered = share.order(activeSubjects)
     let orderedIdx = 0
     let preExamI   = 0
 
@@ -535,7 +547,7 @@ export function generateSchedule(options) {
         const { subj, paper } = emergencies[0]
         const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
         if (!result) break // doesn't fit here — leave it for the next window
-        sessions.push(result.session)
+        commit(result.session)
         curMin = result.newMin
         slotsUsed++
         emergencies.shift()
@@ -554,13 +566,13 @@ export function generateSchedule(options) {
           if (curMin + dur > endMin) {
             if (curMin + CONTENT_DUR <= endMin) {
               const result = placeSession(current, curMin, endMin, subj, paper, 'content')
-              if (result) { sessions.push(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
+              if (result) { commit(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
             }
             break // window exhausted — move to the next one, preExamI carries over
           }
           const result = placeSession(current, curMin, endMin, subj, paper, stype)
           if (result) {
-            sessions.push(result.session)
+            commit(result.session)
             curMin = result.newMin
             typePtr[subj]++
             slotsUsed++
@@ -599,11 +611,10 @@ export function generateSchedule(options) {
 
           const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
           if (result) {
-            sessions.push(result.session)
+            commit(result.session)
             curMin = result.newMin
             typePtr[subj.name]++
             advancePaperPtr(subj.name, result.stype, current)
-            weekSubjSeen[wmon].add(subj.name)
             slotsUsed++
           }
         }
@@ -638,6 +649,7 @@ export function scheduleFreePeriods(options) {
     sessionGap = 30,
     topicFocus = {},
     rotation = null,   // { enabled, evenWeekLabel } — fortnight Week A/B rotation for the timetable
+    existingSessions = [], // sessions generateSchedule already placed over the same dates: this pass carries on from their totals
   } = options
 
   const CONTENT_DUR = contentDuration || 45
@@ -646,6 +658,13 @@ export function scheduleFreePeriods(options) {
   const sessions  = []
   const counters  = {}
   const completed = new Set()
+  // Same fair-share rule as generateSchedule, starting from what that pass already gave each subject and topic, so the
+  // two passes together stay even instead of each favouring the same subjects.
+  const share = createFairShare({ subjects, topicFocus, existingSessions })
+  function commit(session) {
+    sessions.push(session)
+    share.record(session)
+  }
 
   const contentPtr = {}
   const examPtr    = {}
@@ -662,6 +681,7 @@ export function scheduleFreePeriods(options) {
     (s.examDates || []).forEach(ed => {
       const key = `${s.name}-${ed.paper}`
       const d   = parseLocalDate(ed.date) // see note on the equivalent block above — same fix
+      if (!d) return
       examDateMap[key] = d
       const ds = format(d, 'yyyy-MM-dd')
       if (!examsByDate[ds]) examsByDate[ds] = []
@@ -701,7 +721,8 @@ export function scheduleFreePeriods(options) {
       if (stype === 'exam' && currentMin + CONTENT_DUR <= endMin) { stype = 'content'; dur = CONTENT_DUR }
       else return null
     }
-    const name = getSessionName(subjName, paper, stype, counters, topicFocus[`${subjName}-${paper}`])
+    const focusTopic = stype === 'content' ? share.topicFor(subjName, paper) : null
+    const name = getSessionName(subjName, paper, stype, counters, focusTopic)
     const session = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       subject: subjName,
@@ -727,13 +748,13 @@ export function scheduleFreePeriods(options) {
       // "replace previously generated sessions" logic in CalendarGenerator.jsx still cleans
       // these up too when the student regenerates their schedule.
       viaFreePeriod: true,
+      ...(focusTopic ? { focusTopic } : {}),
     }
     return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
   }
 
   let current = new Date(startDate)
   const end   = new Date(endDate)
-  const weekSubjSeen = {}
 
   while (current <= end) {
     Object.entries(examDateMap).forEach(([key, edate]) => { if (edate < current) completed.add(key) })
@@ -761,11 +782,7 @@ export function scheduleFreePeriods(options) {
     })
     if (!activeSubjects.length) { current = addDays(current, 1); continue }
 
-    const wmon = getWeekMon(current)
-    if (!weekSubjSeen[wmon]) weekSubjSeen[wmon] = new Set()
-    const notSeen = activeSubjects.filter(s => !weekSubjSeen[wmon].has(s.name))
-    const seen    = activeSubjects.filter(s => weekSubjSeen[wmon].has(s.name))
-    const ordered = [...notSeen, ...seen]
+    const ordered = share.order(activeSubjects)
     let orderedIdx = 0
 
     const windows = mergeWindows(periods.map(p => rangeToMinutes({ start: p.startTime, end: p.endTime })))
@@ -790,11 +807,10 @@ export function scheduleFreePeriods(options) {
         }
         const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
         if (result) {
-          sessions.push(result.session)
+          commit(result.session)
           curMin = result.newMin
           typePtr[subj.name]++
           advancePaperPtr(subj.name, result.stype)
-          weekSubjSeen[wmon].add(subj.name)
         }
       }
     }
@@ -823,7 +839,7 @@ export function buildSubjectsFromProfile(profile) {
       ?.filter(e => e.subject === s.name)
       ?.map(e => parseInt(e.paper))
       ?.filter((v,i,a) => a.indexOf(v)===i)
-      ?.sort() || [1, 2]
+      ?.sort((a, b) => a - b) || [1, 2]
 
     const examDates = (profile?.examDates || [])
       .filter(e => e.subject === s.name)
@@ -838,11 +854,11 @@ export function buildSubjectsFromProfile(profile) {
       name: s.name,
       board: s.board,
       tier: s.tier,
-      qualification: s.qualification || 'GCSE',
+      qualification: getSubjectQualification(s, profile),   // the course it is really studied at, never assumed GCSE
       papers: papers.length ? papers : [1, 2],
       ratio,
       examDates,
-      priority: ['Mathematics','Further Mathematics','Computer Science','Physics'].includes(s.name),
+      priority: false,   // chosen by the student (CalendarGenerator, "High priority"); no subject gets extra hours by default
     }
   })
 }
