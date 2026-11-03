@@ -11,7 +11,9 @@ import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
 import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
 import { mergeOutcomes, hasOutcomes } from '../src/utils/progressMerge.js'
-import { dropOptionsWhenCourseChanges } from '../src/utils/subjectEdits.js'
+import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
+import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
+import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
 import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
@@ -659,6 +661,64 @@ ok('tab title prioritises finished / alarm states over the clocks', () => {
 ok('tab title is empty when nothing is running', () => {
   assert.equal(buildTimerTabTitle(), null)
   assert.equal(buildTimerTabTitle({ cdTotal: 1500, cdRemaining: 1500 }), null)
+})
+
+// ── Course options: hiding topics the student did not choose ─────────────────
+ok('topicKey compares names lower-case and trimmed, like courseOptions.js', () => {
+  assert.equal(topicKey('  Further Pure 2 '), 'further pure 2')
+  assert.equal(topicKey(null), ''); assert.equal(topicKey(undefined), '')
+})
+ok('dropHiddenTopics removes hidden names from a list of strings, ignoring case and spacing', () => {
+  const hidden = new Set(['mechanics', 'further pure 2'])
+  assert.deepEqual(dropHiddenTopics(['Mechanics', 'Statistics', 'FURTHER PURE 2', '  mechanics  ', 'Core Pure'], hidden), ['Statistics', 'Core Pure'])
+})
+ok('dropHiddenTopics works on topic objects and returns the same array when nothing is hidden', () => {
+  const rows = [{ name: 'Mechanics' }, { name: 'Statistics' }, { name: null }, null]
+  assert.deepEqual(dropHiddenTopics(rows, new Set(['mechanics'])), [{ name: 'Statistics' }, { name: null }, null])
+  assert.equal(dropHiddenTopics(rows, new Set()), rows)
+  assert.equal(dropHiddenTopics(rows, undefined), rows)
+  assert.deepEqual(dropHiddenTopics(undefined, new Set(['x'])), [])
+})
+ok('dropHiddenFromPapers filters every paper without changing the input', () => {
+  const papers = { 1: ['Algebra', 'Mechanics'], 2: ['Statistics', 'Mechanics'], 3: ['Calculus'] }
+  assert.deepEqual(dropHiddenFromPapers(papers, new Set(['mechanics'])), { 1: ['Algebra'], 2: ['Statistics'], 3: ['Calculus'] })
+  assert.deepEqual(papers[1], ['Algebra', 'Mechanics'])
+  assert.equal(dropHiddenFromPapers(papers, new Set()), papers)
+  assert.deepEqual(dropHiddenFromPapers(null, new Set(['x'])), {})
+})
+ok('isSavedCourse matches on subject, board and qualification (Eduqas and WJEC are one board)', () => {
+  const profile = { qualification: 'A-Level' }
+  const saved = [{ name: 'Further Mathematics', board: 'WJEC', qualification: 'A-Level' }, { name: 'Physics', board: 'AQA' }]
+  assert.equal(isSavedCourse(saved, { name: 'Further Mathematics', board: 'Eduqas', qualification: 'A-Level' }, profile), true)
+  assert.equal(isSavedCourse(saved, { name: 'Physics', board: 'AQA', qualification: 'A-Level' }, profile), true)    // saved entry stores no qualification: the profile's is used
+  assert.equal(isSavedCourse(saved, { name: 'Physics', board: 'AQA', qualification: 'AS-Level' }, profile), false)  // AS-Level is a different course
+  assert.equal(isSavedCourse(saved, { name: 'Physics', board: 'OCR', qualification: 'A-Level' }, profile), false)
+  assert.equal(isSavedCourse(saved, { name: 'Chemistry', board: 'AQA', qualification: 'A-Level' }, profile), false)
+  assert.equal(isSavedCourse(undefined, { name: 'Physics' }, profile), false)
+  assert.equal(isSameCourse(null, { name: 'Physics' }, profile), false)
+})
+
+// ── Referred-side referral popup ─────────────────────────────────────────────
+ok('timestampMs reads a Firestore Timestamp, { seconds }, a Date or a number, and 0 for anything else', () => {
+  assert.equal(timestampMs({ toMillis: () => 1234 }), 1234)
+  assert.equal(timestampMs({ seconds: 10, nanoseconds: 500000000 }), 10500)
+  assert.equal(timestampMs(new Date(2026, 10, 3)), new Date(2026, 10, 3).getTime())
+  assert.equal(timestampMs(99), 99)
+  assert.equal(timestampMs(null), 0); assert.equal(timestampMs('soon'), 0); assert.equal(timestampMs({}), 0)
+})
+ok('isFreshReferral is true only for a referral stamped in the last few minutes that has not been shown', () => {
+  const now = 1_800_000_000_000
+  const stamp = (offsetMs) => ({ toMillis: () => now + offsetMs })
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(-30_000) }, now), true)
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(-FRESH_REFERRAL_MS + 1000) }, now), true)
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(-FRESH_REFERRAL_MS - 1000) }, now), false)   // referred a while ago
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(-3 * 24 * 3600 * 1000) }, now), false)      // referred days ago
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(60_000) }, now), true)                       // device clock a minute behind
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(3 * 24 * 3600 * 1000) }, now), false)        // clock days behind: not a new referral
+  assert.equal(isFreshReferral({ referredBy: 'abc', referredAt: stamp(-1000), referredRewardShown: true }, now), false)
+  assert.equal(isFreshReferral({ referredAt: stamp(-1000) }, now), false)                                          // not referred
+  assert.equal(isFreshReferral({ referredBy: 'abc' }, now), false)                                                 // no timestamp yet
+  assert.equal(isFreshReferral(null, now), false)
 })
 
 console.log(`\n${n} checks passed`)
