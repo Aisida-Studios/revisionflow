@@ -21,6 +21,9 @@ import SubjectTile from '../components/illustrations/SubjectTile'
 import { CourseOptionsForm } from '../components/CourseOptionsModal'
 import { hasOptions, needsOptionChoice, optionsSummary } from '../utils/courseOptions'
 import { usePageMeta } from '../utils/pageMeta'
+import ReferralRewardPopup from '../components/ReferralRewardPopup'
+import { applyReferralCode, getPendingReferral, clearPendingReferral } from '../utils/referrals'
+import { CONSENT_FLAG } from '../utils/authUi'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -76,7 +79,7 @@ function XPPill({ xp }) {
 }
 
 export default function Onboarding() {
-  const { user, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const navigate  = useNavigate()
   usePageMeta({ title: 'Set up your account | RevisionFlow' })
   const [step,    setStep]    = useState(0)
@@ -95,6 +98,34 @@ export default function Onboarding() {
     Object.fromEntries(DAYS.map(d => [d, { enabled: d !== 'Sunday', startTime: DEFAULT_TIMES[d], endTime:'21:00' }]))
   )
   const [username, setUsername] = useState('')
+  const [consent, setConsent] = useState(false)
+  const [consentFlag] = useState(() => { try { return sessionStorage.getItem(CONSENT_FLAG) === '1' } catch { return false } })
+  const [showReferredReward, setShowReferredReward] = useState(false)
+  const consentWritten = useRef(false)
+  const referralTried = useRef(false)
+
+  const needsConsent = !consentFlag && !(profile && profile.consentAcceptedAt)
+
+  useEffect(() => {
+    if (!user || !profile || consentWritten.current || profile.consentAcceptedAt) return
+    if (!consentFlag && !consent) return
+    consentWritten.current = true
+    updateDoc(doc(db, 'users', user.uid), { consentAcceptedAt: serverTimestamp() })
+      .then(() => { try { sessionStorage.removeItem(CONSENT_FLAG) } catch { return } })
+      .catch(() => {})
+  }, [user, profile, consentFlag, consent])
+
+  useEffect(() => {
+    if (!user || !profile || referralTried.current) return
+    referralTried.current = true
+    let code = null
+    try { code = getPendingReferral() } catch { code = null }
+    if (!code) return
+    if (profile.referredBy) { clearPendingReferral(); return }
+    applyReferralCode(user.uid, code)
+      .then(ok => { clearPendingReferral(); if (ok) { setShowReferredReward(true); refreshProfile() } })
+      .catch(() => {})
+  }, [user, profile, refreshProfile])
 
   useEffect(() => {
     setGlobalTarget('')
@@ -202,13 +233,14 @@ export default function Onboarding() {
     finally { setSaving(false) }
   }
 
-  const canContinue = !(step === 2 && subjects.length === 0)
+  const canContinue = !(step === 2 && subjects.length === 0) && !(step === 0 && needsConsent && !consent)
 
   return (
     <div style={{
       minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
       padding:24, background:'var(--bg-base)',
     }}>
+      {showReferredReward && <ReferralRewardPopup variant="referred" onClose={() => setShowReferredReward(false)} />}
       <div style={{ width:'100%', maxWidth:580 }}>
 
         {/* Logo */}
@@ -270,6 +302,17 @@ export default function Onboarding() {
                   Your public profile: www.revisionflow.co.uk/u/{username || 'yourname'}
                 </span>
               </div>
+              {needsConsent && (
+                <label style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', textAlign:'left', marginTop:16, padding:'10px 12px', background:'var(--bg-surface)', borderRadius:'var(--radius-md)', border:'1px solid var(--border)' }}>
+                  <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+                    style={{ marginTop:2, width:16, height:16, accentColor:'var(--accent)', flexShrink:0 }} />
+                  <span style={{ fontSize:'0.82rem', color:'var(--text-secondary)', lineHeight:1.5 }}>
+                    I have read and agree to the{' '}
+                    <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:'var(--accent-light)', fontWeight:600 }}>Privacy Policy</a>
+                    {' '}and confirm I am aged 13 or over.
+                  </span>
+                </label>
+              )}
             </div>
           )}
 
@@ -348,7 +391,7 @@ export default function Onboarding() {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:14 }}>
                   {subjects.map(s => (
                     <div key={s.id} style={{
-                      display:'flex', alignItems:'center', gap:6, padding:'4px 12px 4px 4px',
+                      display:'flex', alignItems:'center', gap:6, minHeight:44, padding:'0 0 0 8px',
                       borderRadius:999, fontWeight:700, fontSize:'0.8rem',
                       background: (SUBJECT_COLOURS[s.name] || 'var(--accent)') + '22',
                       border: `1px solid ${SUBJECT_COLOURS[s.name] || 'var(--accent)'}55`,
@@ -360,7 +403,7 @@ export default function Onboarding() {
                       <span style={{ fontSize:'0.68rem', opacity:0.7, fontWeight:400 }}>{boardLabel(s.board)}</span>
                       <button onClick={() => { setSubjects(ss => ss.filter(x => x.id !== s.id)); if (pickingOptionsFor === s.id) setPickingOptionsFor(null) }}
                         aria-label={'Remove ' + s.name}
-                        style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit', width:36, height:36, margin:'-4px -12px -4px 0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        style={{ background:'none', border:'none', cursor:'pointer', padding:0, lineHeight:1, opacity:0.6, color:'inherit', width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                         <X size={12} />
                       </button>
                     </div>
