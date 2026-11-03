@@ -7131,12 +7131,82 @@ const ALEVEL = {
         'Paper 1 – Breadth Study: Russia and Its Rulers 1855–1964',
         'Paper 1 – Breadth Study: India 1845–1947: The Case for Independence',
         'Paper 1 – Analysing and Evaluating Historical Interpretations',
+        '1A Crusades – Theme 1: Reasons for the crusades, 1095–1192: Religious motives, Political motives, The knights and the crusades',
+        '1A Crusades – Theme 2: Leadership of the crusades, 1095–1192: The First Crusade, Louis VII, Conrad III and the Second Crusade',
+        '1A Crusades – Theme 3: The crusader states of Outremer, 1100–92: Geography and economy, Defence',
+        '1A Crusades – Theme 4: The changing Muslim response to the crusades, 1095–1192: Muslim political and religious divisions',
+        '1A Crusades – Interpretations: What explains the failure of the Fourth Crusade?: Innocent III\'s plans',
+        '1B Tudor England – Theme 1: Monarchy and government, 1509–88: The Tudor monarchs, The changing role of parliament',
+        '1B Tudor England – Theme 2: Religious changes, 1509–88: Tudor monarchs and religious change, Catholicism and its survival',
+        '1B Tudor England – Theme 3: State control and popular resistance, 1509–88: Tudor control of the country, The state and the poor',
+        '1B Tudor England – Theme 4: Economic, social and cultural change, 1509–88: Domestic and foreign trade',
+        '1B Tudor England – Interpretations: Was there a general crisis of government in Elizabeth I\'s last years, 1589–1603?',
+        '1C Stuart Britain – Theme 1: The quest for political stability, 1625–88: Failure of monarchical government 1625–46',
+        '1C Stuart Britain – Theme 2: Religion: conflict and dissent, 1625–88: The Church of England, Religious nonconformity',
+        '1C Stuart Britain – Theme 3: Social and intellectual challenge, 1625–88: Population, The changing structure of society',
+        '1C Stuart Britain – Theme 4: Economy, trade and empire, 1625–88: Agriculture, Changing domestic trade patterns',
+        '1C Stuart Britain – Interpretations: How revolutionary was the Glorious Revolution of 1688–89?: revolutionary ideals',
+        '1D Reform Britain – Theme 1: The growth of parliamentary democracy, c1785–c1870: The unreformed parliament',
+        '1D Reform Britain – Theme 2: Industrialisation and protest, c1785–c1870: The impact of industrialisation, Working conditions',
+        '1D Reform Britain – Theme 3: Unionism and cooperation, c1785–c1870: Unions and their opponents, New model unionism 1835–70',
+        '1D Reform Britain – Theme 4: Poverty and pauperism, c1785–c1870: The old Poor Law, The Poor Law Amendment Act 1834',
+        '1D Reform Britain – Interpretations: What explains the abolition of the slave trade, c1785–1807?',
+        '1E Russia 1917–91 – Theme 1: Communist government in the USSR, 1917–85: Establishing Communist Party control 1917–24',
+        '1E Russia 1917–91 – Theme 2: Industrial and agricultural change, 1917–85: Towards a command economy',
+        '1E Russia 1917–91 – Theme 3: Control of the people, 1917–85: Media, propaganda and religion, The secret police',
+        '1E Russia 1917–91 – Theme 4: Social developments, 1917–85: Social security, Women and the family, Education and young people',
+        '1E Russia 1917–91 – Interpretations: What explains the fall of the USSR, c1985–91?: economic weaknesses and failed reform',
+        '1F American Dream – Theme 1: The changing political environment, 1917–80: A changing presidency',
+        '1F American Dream – Theme 2: The quest for civil rights, 1917–80: Black American civil rights c1917–55',
+        '1F American Dream – Theme 3: Society and culture in change, 1917–80: The changing position of women, The impact of immigration',
+        '1F American Dream – Theme 4: The changing quality of life, 1917–80: Economic influences, Changing living standards',
+        '1F American Dream – Interpretations: What impact did the Reagan presidency have on the USA, 1981–96?: economic policies',
       ],
       2: [
         'Paper 2 – Depth Study: Germany 1918–45',
         'Paper 2 – Depth Study: Mao\'s China 1949–76',
         'Paper 2 – Depth Study: South Africa 1948–94',
         'Paper 2 – Depth Study: The USA and Vietnam 1954–75',
+        '2A.1 Anglo-Saxon England – Key Topic 1: Late Anglo-Saxon England, c1053–66: Monarchy and government, The economy of England',
+        '2A.1 Anglo-Saxon England – Key Topic 2: The Norman conquest of England and extension of control in Wales and Scotland, 1066–93',
+        '2A.1 Anglo-Saxon England – Key Topic 3: State, church and society, 1066–1106: Central and local government',
+        '2A.1 Anglo-Saxon England – Key Topic 4: Normandy, 1066–1106: Reasons for the invasion, Problems in Normandy 1066–87',
+        '2A.2 Henry II – Key Topic 1: The restoration and extension of royal authority, 1154–72: England and the Angevin Empire in 1154',
+        '2A.2 Henry II – Key Topic 2: Reforms in England, 1154–89: Central institutions, Financial reforms, Legal reforms',
+        '2A.2 Henry II – Key Topic 3: Henry II and the English church, 1154–74: Henry\'s problems with the church, Becket and the king',
+        '2A.2 Henry II – Key Topic 4: Crises of the Angevin Empire, 1170–89: Family rivalries, Causes of the Great Rebellion',
+        '2B.1 Luther – Key Topic 1: Conditions in early sixteenth-century Germany: The Holy Roman Empire, The German economy',
+        '2B.1 Luther – Key Topic 2: Luther\'s early challenge to the Catholic Church, 1517–20: Influences on Luther',
+        '2B.1 Luther – Key Topic 3: The development of Lutheranism, 1521–46: The Diet of Worms, Luther and radicalism',
+        '2B.1 Luther – Key Topic 4: The spread and survival of Lutheranism, 1521–55: Failed negotiations, The German princes',
+        '2B.2 Dutch Revolt – Key Topic 1: Origins of the Dutch Revolt, c1563–67: The Habsburg Netherlands, The situation c1563',
+        '2B.2 Dutch Revolt – Key Topic 2: Alva and Orange, 1567–73: Alva\'s rule, Orange\'s failure, The Sea Beggars, Orange\'s triumph',
+        '2B.2 Dutch Revolt – Key Topic 3: Spain and the reconquest, 1573–84: Failure of Requesens, Success of Parma, Foreign intervention',
+        '2B.2 Dutch Revolt – Key Topic 4: Securing the independence of the United Provinces, 1584–1609: Maurice of Nassau',
+        '2C.1 France in Revolution – Key Topic 1: The origins and onset of revolution, 1774–89: The ancien régime in 1774',
+        '2C.1 France in Revolution – Key Topic 2: Revolution and the failure of constitutional monarchy, 1789–93: Creating a constitution',
+        '2C.1 France in Revolution – Key Topic 3: The National Convention, the Jacobins and the Terror, 1793–94: Preconditions for terror',
+        '2C.1 France in Revolution – Key Topic 4: From the Directory to Brumaire, 1795–99: Problems facing the Directory',
+        '2C.2 Russia in Revolution – Key Topic 1: The rule of Nicholas II, 1894–1905: The nature of autocratic rule, Opposition to Tsarism',
+        '2C.2 Russia in Revolution – Key Topic 2: The end of Romanov rule, 1906–17: Change and continuity in government',
+        '2C.2 Russia in Revolution – Key Topic 3: The Provisional government and its opponents, February–October 1917: Dual power',
+        '2C.2 Russia in Revolution – Key Topic 4: Defending the Bolshevik revolution, October 1917–24: Consolidating Bolshevik power',
+        '2D.1 Unification of Italy – Key Topic 1: Challenges to the restored order and the failure of revolution, c1830–49',
+        '2D.1 Unification of Italy – Key Topic 2: The rise of Piedmont, 1849–56: Legacy of 1848–49, Political developments',
+        '2D.1 Unification of Italy – Key Topic 3: The creation of the Kingdom of Italy, 1856–61: Second Italian War of Independence',
+        '2D.1 Unification of Italy – Key Topic 4: Consolidating the Kingdom of Italy, 1861–70: Obstacles to unity, The \'Venetian question\'',
+        '2D.2 Unification of Germany – Key Topic 1: Popular pressure and causes of revolution, 1840–48: The political situation',
+        '2D.2 Unification of Germany – Key Topic 2: Failure of revolution, 1848–51: The Frankfurt Parliament, Revolution in Prussia',
+        '2D.2 Unification of Germany – Key Topic 3: Austro-Prussian rivalry, 1852–66: Austrian strengths and weaknesses',
+        '2D.2 Unification of Germany – Key Topic 4: Prussia and the Kleindeutschland solution, 1866–71: Prussia\'s role in Germany',
+        '2E.1 Mao\'s China – Key Topic 1: Establishing communist rule: China in 1949, The new power structure, Defeating the CCP\'s opponents',
+        '2E.1 Mao\'s China – Key Topic 2: Agriculture and industry, 1949–65: Early changes in agriculture, The communes',
+        '2E.1 Mao\'s China – Key Topic 3: The Cultural Revolution and its aftermath, 1966–76: Mao\'s reasons, The Red Guards and Red Terror',
+        '2E.1 Mao\'s China – Key Topic 4: Social and cultural changes, 1949–76: The changing status of women, Education and health provision',
+        '2E.2 GDR – Key Topic 1: Establishing and consolidating communist rule in the GDR, c1949–61: The post-war division of Germany',
+        '2E.2 GDR – Key Topic 2: The development of the East German state, 1961–85: Economic situation after 1961',
+        '2E.2 GDR – Key Topic 3: Life in East Germany, 1949–85: Social change and welfare, Repression and control',
+        '2E.2 GDR – Key Topic 4: Growing crises and the collapse of communist rule in the GDR: Economic situation in the 1980s',
       ],
       3: [
         'Paper 3 – Themes in Breadth with Aspects in Depth: Thematic Essay Question',
@@ -12061,6 +12131,306 @@ export const TOPIC_OPTIONS = {
                   'Decision Mathematics 2 – Game Theory: Pay-Off Matrices, Play-Safe Strategies, Dominance, Optimal Mixed Strategies',
                   'Decision Mathematics 2 – Recurrence Relations: Modelling, First and Second Order Linear Recurrences',
                   'Decision Mathematics 2 – Decision Analysis: Decision Trees, Expected Monetary Values, Utility',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      History: {
+        slots: [
+          {
+            id: 'route',
+            label: 'Route',
+            pick: 1,
+            rule: 'Your route decides your Paper 1 option and the two Paper 2 options you can choose from. Paper 3 options are not listed yet.',
+            options: [
+              {
+                id: 'route-a',
+                label: 'Route A: Conquest, control and resistance in the medieval world (1A The crusades, c1095–1204)',
+                topics: [
+                  '1A Crusades – Theme 1: Reasons for the crusades, 1095–1192: Religious motives, Political motives, The knights and the crusades',
+                  '1A Crusades – Theme 2: Leadership of the crusades, 1095–1192: The First Crusade, Louis VII, Conrad III and the Second Crusade',
+                  '1A Crusades – Theme 3: The crusader states of Outremer, 1100–92: Geography and economy, Defence',
+                  '1A Crusades – Theme 4: The changing Muslim response to the crusades, 1095–1192: Muslim political and religious divisions',
+                  '1A Crusades – Interpretations: What explains the failure of the Fourth Crusade?: Innocent III\'s plans',
+                ],
+              },
+              {
+                id: 'route-b',
+                label: 'Route B: Religion and the state in early modern Europe (1B England, 1509–1603: authority, nation and religion)',
+                topics: [
+                  '1B Tudor England – Theme 1: Monarchy and government, 1509–88: The Tudor monarchs, The changing role of parliament',
+                  '1B Tudor England – Theme 2: Religious changes, 1509–88: Tudor monarchs and religious change, Catholicism and its survival',
+                  '1B Tudor England – Theme 3: State control and popular resistance, 1509–88: Tudor control of the country, The state and the poor',
+                  '1B Tudor England – Theme 4: Economic, social and cultural change, 1509–88: Domestic and foreign trade',
+                  '1B Tudor England – Interpretations: Was there a general crisis of government in Elizabeth I\'s last years, 1589–1603?',
+                ],
+              },
+              {
+                id: 'route-c',
+                label: 'Route C: Revolutions in early modern and modern Europe (1C Britain, 1625–1701: conflict, revolution and settlement)',
+                topics: [
+                  'Paper 1 – Breadth Study with Interpretations: Britain 1625–1701: Conflict, Revolution and Settlement',
+                  '1C Stuart Britain – Theme 1: The quest for political stability, 1625–88: Failure of monarchical government 1625–46',
+                  '1C Stuart Britain – Theme 2: Religion: conflict and dissent, 1625–88: The Church of England, Religious nonconformity',
+                  '1C Stuart Britain – Theme 3: Social and intellectual challenge, 1625–88: Population, The changing structure of society',
+                  '1C Stuart Britain – Theme 4: Economy, trade and empire, 1625–88: Agriculture, Changing domestic trade patterns',
+                  '1C Stuart Britain – Interpretations: How revolutionary was the Glorious Revolution of 1688–89?: revolutionary ideals',
+                ],
+              },
+              {
+                id: 'route-d',
+                label: 'Route D: Challenges to the authority of the state in the late eighteenth and nineteenth centuries (1D Britain, c1785–c1870: democracy, protest and reform)',
+                topics: [
+                  '1D Reform Britain – Theme 1: The growth of parliamentary democracy, c1785–c1870: The unreformed parliament',
+                  '1D Reform Britain – Theme 2: Industrialisation and protest, c1785–c1870: The impact of industrialisation, Working conditions',
+                  '1D Reform Britain – Theme 3: Unionism and cooperation, c1785–c1870: Unions and their opponents, New model unionism 1835–70',
+                  '1D Reform Britain – Theme 4: Poverty and pauperism, c1785–c1870: The old Poor Law, The Poor Law Amendment Act 1834',
+                  '1D Reform Britain – Interpretations: What explains the abolition of the slave trade, c1785–1807?',
+                ],
+              },
+              {
+                id: 'route-e',
+                label: 'Route E: Communist states in the twentieth century (1E Russia, 1917–91: from Lenin to Yeltsin)',
+                topics: [
+                  '1E Russia 1917–91 – Theme 1: Communist government in the USSR, 1917–85: Establishing Communist Party control 1917–24',
+                  '1E Russia 1917–91 – Theme 2: Industrial and agricultural change, 1917–85: Towards a command economy',
+                  '1E Russia 1917–91 – Theme 3: Control of the people, 1917–85: Media, propaganda and religion, The secret police',
+                  '1E Russia 1917–91 – Theme 4: Social developments, 1917–85: Social security, Women and the family, Education and young people',
+                  '1E Russia 1917–91 – Interpretations: What explains the fall of the USSR, c1985–91?: economic weaknesses and failed reform',
+                ],
+              },
+              {
+                id: 'route-f',
+                label: 'Route F: Searching for rights and freedoms in the twentieth century (1F In search of the American Dream: the USA, c1917–96)',
+                topics: [
+                  '1F American Dream – Theme 1: The changing political environment, 1917–80: A changing presidency',
+                  '1F American Dream – Theme 2: The quest for civil rights, 1917–80: Black American civil rights c1917–55',
+                  '1F American Dream – Theme 3: Society and culture in change, 1917–80: The changing position of women, The impact of immigration',
+                  '1F American Dream – Theme 4: The changing quality of life, 1917–80: Economic influences, Changing living standards',
+                  '1F American Dream – Interpretations: What impact did the Reagan presidency have on the USA, 1981–96?: economic policies',
+                ],
+              },
+              {
+                id: 'route-g',
+                label: 'Route G: Nationalism, dictatorship and democracy in twentieth-century Europe (1G Germany and West Germany, 1918–89)',
+                topics: [
+                  'Paper 2 – Depth Study: Germany 1918–45',
+                ],
+              },
+              {
+                id: 'route-h',
+                label: 'Route H: Democracies in change: Britain and the USA in the twentieth century (1H Britain transformed, 1918–97)',
+                topics: [
+
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-a',
+            label: 'Paper 2 option (Route A)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-a' },
+            options: [
+              {
+                id: '2a-1',
+                label: '2A.1 Anglo-Saxon England and the Anglo-Norman Kingdom, c1053–1106',
+                topics: [
+                  '2A.1 Anglo-Saxon England – Key Topic 1: Late Anglo-Saxon England, c1053–66: Monarchy and government, The economy of England',
+                  '2A.1 Anglo-Saxon England – Key Topic 2: The Norman conquest of England and extension of control in Wales and Scotland, 1066–93',
+                  '2A.1 Anglo-Saxon England – Key Topic 3: State, church and society, 1066–1106: Central and local government',
+                  '2A.1 Anglo-Saxon England – Key Topic 4: Normandy, 1066–1106: Reasons for the invasion, Problems in Normandy 1066–87',
+                ],
+              },
+              {
+                id: '2a-2',
+                label: '2A.2 England and the Angevin Empire in the reign of Henry II, 1154–89',
+                topics: [
+                  '2A.2 Henry II – Key Topic 1: The restoration and extension of royal authority, 1154–72: England and the Angevin Empire in 1154',
+                  '2A.2 Henry II – Key Topic 2: Reforms in England, 1154–89: Central institutions, Financial reforms, Legal reforms',
+                  '2A.2 Henry II – Key Topic 3: Henry II and the English church, 1154–74: Henry\'s problems with the church, Becket and the king',
+                  '2A.2 Henry II – Key Topic 4: Crises of the Angevin Empire, 1170–89: Family rivalries, Causes of the Great Rebellion',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-b',
+            label: 'Paper 2 option (Route B)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-b' },
+            options: [
+              {
+                id: '2b-1',
+                label: '2B.1 Luther and the German Reformation, c1515–55',
+                topics: [
+                  '2B.1 Luther – Key Topic 1: Conditions in early sixteenth-century Germany: The Holy Roman Empire, The German economy',
+                  '2B.1 Luther – Key Topic 2: Luther\'s early challenge to the Catholic Church, 1517–20: Influences on Luther',
+                  '2B.1 Luther – Key Topic 3: The development of Lutheranism, 1521–46: The Diet of Worms, Luther and radicalism',
+                  '2B.1 Luther – Key Topic 4: The spread and survival of Lutheranism, 1521–55: Failed negotiations, The German princes',
+                ],
+              },
+              {
+                id: '2b-2',
+                label: '2B.2 The Dutch Revolt, c1563–1609',
+                topics: [
+                  '2B.2 Dutch Revolt – Key Topic 1: Origins of the Dutch Revolt, c1563–67: The Habsburg Netherlands, The situation c1563',
+                  '2B.2 Dutch Revolt – Key Topic 2: Alva and Orange, 1567–73: Alva\'s rule, Orange\'s failure, The Sea Beggars, Orange\'s triumph',
+                  '2B.2 Dutch Revolt – Key Topic 3: Spain and the reconquest, 1573–84: Failure of Requesens, Success of Parma, Foreign intervention',
+                  '2B.2 Dutch Revolt – Key Topic 4: Securing the independence of the United Provinces, 1584–1609: Maurice of Nassau',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-c',
+            label: 'Paper 2 option (Route C)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-c' },
+            options: [
+              {
+                id: '2c-1',
+                label: '2C.1 France in revolution, 1774–99',
+                topics: [
+                  '2C.1 France in Revolution – Key Topic 1: The origins and onset of revolution, 1774–89: The ancien régime in 1774',
+                  '2C.1 France in Revolution – Key Topic 2: Revolution and the failure of constitutional monarchy, 1789–93: Creating a constitution',
+                  '2C.1 France in Revolution – Key Topic 3: The National Convention, the Jacobins and the Terror, 1793–94: Preconditions for terror',
+                  '2C.1 France in Revolution – Key Topic 4: From the Directory to Brumaire, 1795–99: Problems facing the Directory',
+                ],
+              },
+              {
+                id: '2c-2',
+                label: '2C.2 Russia in revolution, 1894–1924',
+                topics: [
+                  '2C.2 Russia in Revolution – Key Topic 1: The rule of Nicholas II, 1894–1905: The nature of autocratic rule, Opposition to Tsarism',
+                  '2C.2 Russia in Revolution – Key Topic 2: The end of Romanov rule, 1906–17: Change and continuity in government',
+                  '2C.2 Russia in Revolution – Key Topic 3: The Provisional government and its opponents, February–October 1917: Dual power',
+                  '2C.2 Russia in Revolution – Key Topic 4: Defending the Bolshevik revolution, October 1917–24: Consolidating Bolshevik power',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-d',
+            label: 'Paper 2 option (Route D)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-d' },
+            options: [
+              {
+                id: '2d-1',
+                label: '2D.1 The unification of Italy, c1830–70',
+                topics: [
+                  '2D.1 Unification of Italy – Key Topic 1: Challenges to the restored order and the failure of revolution, c1830–49',
+                  '2D.1 Unification of Italy – Key Topic 2: The rise of Piedmont, 1849–56: Legacy of 1848–49, Political developments',
+                  '2D.1 Unification of Italy – Key Topic 3: The creation of the Kingdom of Italy, 1856–61: Second Italian War of Independence',
+                  '2D.1 Unification of Italy – Key Topic 4: Consolidating the Kingdom of Italy, 1861–70: Obstacles to unity, The \'Venetian question\'',
+                ],
+              },
+              {
+                id: '2d-2',
+                label: '2D.2 The unification of Germany, c1840–71',
+                topics: [
+                  '2D.2 Unification of Germany – Key Topic 1: Popular pressure and causes of revolution, 1840–48: The political situation',
+                  '2D.2 Unification of Germany – Key Topic 2: Failure of revolution, 1848–51: The Frankfurt Parliament, Revolution in Prussia',
+                  '2D.2 Unification of Germany – Key Topic 3: Austro-Prussian rivalry, 1852–66: Austrian strengths and weaknesses',
+                  '2D.2 Unification of Germany – Key Topic 4: Prussia and the Kleindeutschland solution, 1866–71: Prussia\'s role in Germany',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-e',
+            label: 'Paper 2 option (Route E)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-e' },
+            options: [
+              {
+                id: '2e-1',
+                label: '2E.1 Mao\'s China, 1949–76',
+                topics: [
+                  'Paper 2 – Depth Study: Mao\'s China 1949–76',
+                  '2E.1 Mao\'s China – Key Topic 1: Establishing communist rule: China in 1949, The new power structure, Defeating the CCP\'s opponents',
+                  '2E.1 Mao\'s China – Key Topic 2: Agriculture and industry, 1949–65: Early changes in agriculture, The communes',
+                  '2E.1 Mao\'s China – Key Topic 3: The Cultural Revolution and its aftermath, 1966–76: Mao\'s reasons, The Red Guards and Red Terror',
+                  '2E.1 Mao\'s China – Key Topic 4: Social and cultural changes, 1949–76: The changing status of women, Education and health provision',
+                ],
+              },
+              {
+                id: '2e-2',
+                label: '2E.2 The German Democratic Republic, 1949–90',
+                topics: [
+                  '2E.2 GDR – Key Topic 1: Establishing and consolidating communist rule in the GDR, c1949–61: The post-war division of Germany',
+                  '2E.2 GDR – Key Topic 2: The development of the East German state, 1961–85: Economic situation after 1961',
+                  '2E.2 GDR – Key Topic 3: Life in East Germany, 1949–85: Social change and welfare, Repression and control',
+                  '2E.2 GDR – Key Topic 4: Growing crises and the collapse of communist rule in the GDR: Economic situation in the 1980s',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-f',
+            label: 'Paper 2 option (Route F)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-f' },
+            options: [
+              {
+                id: '2f-1',
+                label: '2F.1 India, c1914–48: the road to independence',
+                topics: [
+
+                ],
+              },
+              {
+                id: '2f-2',
+                label: '2F.2 South Africa, 1948–94: from apartheid state to \'rainbow nation\'',
+                topics: [
+                  'Paper 2 – Depth Study: South Africa 1948–94',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-g',
+            label: 'Paper 2 option (Route G)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-g' },
+            options: [
+              {
+                id: '2g-1',
+                label: '2G.1 The rise and fall of fascism in Italy, c1911–46',
+                topics: [
+
+                ],
+              },
+              {
+                id: '2g-2',
+                label: '2G.2 Spain, 1930–78: republicanism, Francoism and the re-establishment of democracy',
+                topics: [
+
+                ],
+              },
+            ],
+          },
+          {
+            id: 'paper-2-route-h',
+            label: 'Paper 2 option (Route H)',
+            pick: 1,
+            onlyIf: { slot: 'route', option: 'route-h' },
+            options: [
+              {
+                id: '2h-1',
+                label: '2H.1 The USA, c1920–55: boom, bust and recovery',
+                topics: [
+
+                ],
+              },
+              {
+                id: '2h-2',
+                label: '2H.2 The USA, 1955–92: conformity and challenge',
+                topics: [
+
                 ],
               },
             ],
