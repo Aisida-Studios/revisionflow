@@ -108,6 +108,15 @@
   to     = "/.netlify/functions/public-data"
   status = 200
 
+# ── Missing built assets are a real 404 ───────────────────────────────────────
+# Without this the catch-all below answers a missing /assets/<hash>.js (an old tab after a deploy) with index.html and a
+# 200, which the browser then fails to run as a script and the service worker used to cache. A file that exists is still
+# served as normal: this rule only applies when nothing is at that path.
+[[redirects]]
+  from   = "/assets/*"
+  to     = "/404.html"
+  status = 404
+
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
   from   = "/*"
