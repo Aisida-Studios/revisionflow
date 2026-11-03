@@ -18,8 +18,9 @@ import { resolveProfileIcon } from '../data/themes'
 import { db } from '../firebase'
 import { getPermissionState, requestNotificationPermission } from '../utils/notifications'
 import { getAllTopicsFlat } from '../data/topics'
+import { filterSpecTopics } from '../utils/courseOptions'
 import { buildTopicId } from '../utils/topicId'
-import { SUBJECT_COLOURS } from '../data/subjects'
+import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import {
   subscribeToNotifications, markNotificationRead, markAllNotificationsRead,
 } from '../utils/notificationFeed'
@@ -103,18 +104,23 @@ function Avatar({ profile, user, size }) {
    static, synchronous, no Firestore read). Topic results link straight
    to /topics/:topicId using the same buildTopicId() scheme
    TopicDetail.jsx reads its Firestore doc by. */
-function useSearchResults(query, profileSubjects) {
+function useSearchResults(query, profile) {
+  const profileSubjects = profile?.subjects
   const subjectTopics = useMemo(() => {
     if (!profileSubjects?.length) return []
     const out = []
     profileSubjects.forEach((s) => {
       if (!s?.name) return
       try {
-        const topics = getAllTopicsFlat(s.board, s.name, s.qualification)
+        // The qualification this subject is actually studied at (older entries may not store one), so an A-Level or
+        // AS-Level subject never searches the GCSE topic list. Topics from course options the student did not choose
+        // are not offered as results.
+        const qualification = getSubjectQualification(s, profile)
+        const topics = filterSpecTopics(getAllTopicsFlat(s.board, s.name, qualification), s, profile)
         topics.forEach((t) => out.push({
           name: t.name,
           subject: s.name,
-          topicId: buildTopicId(s.board, s.qualification, s.name, t.name),
+          topicId: buildTopicId(s.board, qualification, s.name, t.name),
         }))
       } catch {
         // Static syllabus data may not cover every board/subject/qualification
@@ -122,7 +128,7 @@ function useSearchResults(query, profileSubjects) {
       }
     })
     return out
-  }, [profileSubjects])
+  }, [profileSubjects, profile?.qualification])
 
   return useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -135,7 +141,7 @@ function useSearchResults(query, profileSubjects) {
 }
 
 function QuickJump({ query, profile, onNavigate }) {
-  const { pages, subjects, topics } = useSearchResults(query, profile?.subjects)
+  const { pages, subjects, topics } = useSearchResults(query, profile)
   const hasAny = pages.length || subjects.length || topics.length
   if (!query.trim()) return null
   return (
