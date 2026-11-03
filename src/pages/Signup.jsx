@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ensureReferralCode, applyReferralCode, lookupReferrer, getPendingReferral, clearPendingReferral } from '../utils/referrals'
-import toast from 'react-hot-toast'
+import { lookupReferrer, getPendingReferral } from '../utils/referrals'
 import { Zap, Mail, Lock, User, Eye, EyeOff, Gift } from 'lucide-react'
-import ReferralRewardPopup from '../components/ReferralRewardPopup'
 import AuthNotice from '../components/AuthNotice'
-import { authErrorMessage, isStandaloneApp, REDIRECT_WAIT_MS } from '../utils/authUi'
+import { authErrorMessage, isStandaloneApp, markRedirectStarted, consumeFailedRedirect, CONSENT_FLAG, REDIRECT_WAIT_MS } from '../utils/authUi'
 import { usePageMeta } from '../utils/pageMeta'
+
+const CONSENT_ERROR = 'You must accept the Privacy Policy to create an account'
 
 export default function Signup() {
   const { signup, loginWithGoogle } = useAuth()
@@ -30,13 +30,12 @@ export default function Signup() {
   const [consent,     setConsent]      = useState(false)
   const [referrerName,setReferrerName] = useState('')
   const [codeChecking,setCodeChecking] = useState(false)
-  const [showReferredReward, setShowReferredReward] = useState(false)
   const [googleBusy,  setGoogleBusy]   = useState(false)
   const [authError,   setAuthError]    = useState('')
   const busyRef       = useRef(false)
+  const consentRef    = useRef(null)
   const redirectTimer = useRef(null)
 
-  // Hands the form back: clears the wait timer and re-enables both sign-up options.
   const release = useCallback(() => {
     clearTimeout(redirectTimer.current)
     busyRef.current = false
@@ -44,8 +43,6 @@ export default function Signup() {
     setGoogleBusy(false)
   }, [])
 
-  // Coming back to this page from Google (for example with the back gesture) can restore it still
-  // showing "Opening Google…". Hand the form back instead of leaving every button disabled.
   useEffect(() => {
     function onPageShow(e) {
       if (e.persisted && busyRef.current) {
@@ -56,6 +53,10 @@ export default function Signup() {
     window.addEventListener('pageshow', onPageShow)
     return () => { window.removeEventListener('pageshow', onPageShow); clearTimeout(redirectTimer.current) }
   }, [release])
+
+  useEffect(() => {
+    if (consumeFailedRedirect()) setAuthError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
+  }, [])
 
   // If ?ref= in URL, store it
   useEffect(() => {
@@ -92,28 +93,21 @@ export default function Signup() {
     if (!form.email.includes('@'))       e.email    = 'Valid email required'
     if (form.password.length < 6)       e.password = 'At least 6 characters'
     if (form.password !== form.confirm)  e.confirm  = 'Passwords do not match'
-    if (!consent)                        e.consent  = 'You must accept the Privacy Policy to create an account'
+    if (!consent)                        e.consent  = CONSENT_ERROR
     return e
   }
 
-  // Runs once the account exists. Nothing in here may turn a created account into a failed sign-up
-  // (a retry would only say the email is already in use), so a failed step is logged and sign-up
-  // carries on to onboarding.
-  async function handleSignupComplete(uid) {
-    let applied = false
+  function rememberChoices() {
     try {
-      await ensureReferralCode(uid)
-      const code = form.referralCode.trim() || getPendingReferral()
+      const code = form.referralCode.trim().toUpperCase()
       if (code) {
-        const ok = await applyReferralCode(uid, code)
-        if (ok) applied = true
-        else if (form.referralCode.trim()) toast.error('Referral code not found — continuing without it.')
-        clearPendingReferral()
+        sessionStorage.setItem('pendingReferral', code)
+        localStorage.setItem('pendingReferralFallback', code)
       }
-    } catch (err) {
-      console.warn('[signup] post-signup step failed:', err)
+      sessionStorage.setItem(CONSENT_FLAG, '1')
+    } catch {
+      return
     }
-    return applied
   }
 
   async function handleSubmit(evt) {
@@ -124,13 +118,10 @@ export default function Signup() {
     busyRef.current = true
     setAuthError('')
     setLoading(true)
+    rememberChoices()
     try {
-      const cred = await signup(form.email, form.password, form.name)
-      const uid  = cred?.user?.uid
-      let applied = false
-      if (uid) applied = await handleSignupComplete(uid)
-      if (applied) setShowReferredReward(true)
-      else navigate('/onboarding')
+      await signup(form.email, form.password, form.name)
+      navigate('/onboarding')
     } catch (err) {
       setAuthError(authErrorMessage(err, 'signup'))
     } finally { release() }
@@ -138,25 +129,26 @@ export default function Signup() {
 
   async function handleGoogle() {
     if (busyRef.current) return
+    if (!consent) {
+      setErrors(er => ({ ...er, consent: CONSENT_ERROR }))
+      if (consentRef.current) consentRef.current.focus()
+      return
+    }
     busyRef.current = true
     setAuthError('')
     setLoading(true)
     setGoogleBusy(true)
-    // In the installed app Google sign-in is a redirect: this page is replaced and the promise below
-    // never settles. If we are still here after a while, the redirect did not happen.
+    rememberChoices()
     if (isStandaloneApp()) {
+      markRedirectStarted()
       redirectTimer.current = setTimeout(() => {
         release()
         setAuthError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
       }, REDIRECT_WAIT_MS)
     }
     try {
-      const cred = await loginWithGoogle()
-      const uid  = cred?.user?.uid
-      let applied = false
-      if (uid) applied = await handleSignupComplete(uid)
-      if (applied) setShowReferredReward(true)
-      else navigate('/onboarding')
+      await loginWithGoogle()
+      navigate('/onboarding')
     } catch (err) {
       setAuthError(authErrorMessage(err, 'google'))
     } finally { release() }
@@ -172,9 +164,6 @@ export default function Signup() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg-base)' }}>
-      {showReferredReward && (
-        <ReferralRewardPopup variant="referred" onClose={() => { setShowReferredReward(false); navigate('/onboarding') }} />
-      )}
       <div style={{ width: '100%', maxWidth: 420 }}>
 
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -188,6 +177,20 @@ export default function Signup() {
         <div className="card" style={{ padding: 28 }}>
 
           <AuthNotice message={authError} style={{ marginBottom: 20 }} />
+
+          <div style={{ marginBottom: 20 }}>
+            {/* GDPR consent */}
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: `1px solid ${errors.consent ? 'var(--danger)' : 'var(--border)'}` }}>
+              <input ref={consentRef} type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); if (e.target.checked) setErrors(er => ({ ...er, consent: '' })) }}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--accent)', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                I have read and agree to the{' '}
+                <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Privacy Policy</a>
+                {' '}and confirm I am aged 13 or over.
+              </span>
+            </label>
+            {errors.consent && <span className="form-error">{errors.consent}</span>}
+          </div>
 
           <button className="btn btn-secondary" style={{ width: '100%', marginBottom: 20, gap: 10 }} onClick={handleGoogle} disabled={loading} aria-busy={googleBusy}>
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -278,18 +281,6 @@ export default function Signup() {
                 </span>
               )}
             </div>
-
-            {/* GDPR consent */}
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: `1px solid ${errors.consent ? 'var(--danger)' : 'var(--border)'}` }}>
-              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
-                style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--accent)', flexShrink: 0 }} />
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                I have read and agree to the{' '}
-                <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Privacy Policy</a>
-                {' '}and confirm I am aged 13 or over.
-              </span>
-            </label>
-            {errors.consent && <span className="form-error">{errors.consent}</span>}
 
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 4 }}>
               {loading && !googleBusy ? 'Creating account…' : 'Create free account'}
