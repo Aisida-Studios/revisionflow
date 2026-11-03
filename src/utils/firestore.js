@@ -30,6 +30,7 @@ import {
 import { auth, db, getAppCheckHeader } from '../firebase'
 import { BADGE_MAP } from '../data/badges'
 import { getDailyQuests } from '../data/badges'
+import { filterTopicsByOptions } from './courseOptions'
 import { levelFromXP } from '../data/subjects'
 import { buildTopicId, isLegacyTopicId } from './topicId'
 import { buildSubjectKey, isCurrentSubjectInstance } from './subjectKey'
@@ -79,7 +80,9 @@ export async function ensureUser(uid, initialData = {}) {
       streak:       0,
       lastLogin:    null,
       badges:       [],
-      friends:      [],
+      // No `friends` here: it is a server-owned field (firestore.rules refuses a client create that contains it, which
+      // would stop this whole create). netlify/functions/friends.js adds it with arrayUnion; every reader treats a
+      // missing value as an empty list.
       referralCode,
       displayName:  initialData.displayName || '',
       avatarUrl:    initialData.avatarUrl   || '',
@@ -897,7 +900,10 @@ export const deleteSubjectAttempts = async (uid, subjectName, newInstance) => {
 export const getTopicsWithConfidence = async (uid, profile) => {
   const snap = await getDocs(collection(db, 'users', uid, 'topics'))
   const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  return all.filter(t => isCurrentSubjectInstance({ ...t, subject: t.subjectId }, profile))
+  const current = all.filter(t => isCurrentSubjectInstance({ ...t, subject: t.subjectId }, profile))
+  // Topics from course options the student did not choose (profile.subjects[].options) are left out here as well, so no
+  // consumer rates, recommends, schedules, counts or describes them to the AI. Their stored ratings are never touched.
+  return filterTopicsByOptions(current, profile)
 }
 
 /* =========================
@@ -1090,7 +1096,8 @@ export async function runBadgeAudit(uid) {
   const papers    = papersSnap.docs.map(d => d.data())
   const mistakes  = mistakesSnap.docs.map(d => d.data())
   const notes     = notesSnap.docs.map(d => d.data())
-  const topics    = topicsSnap.docs.map(d => d.data())
+  // Topics from options the student did not choose neither count towards nor block the mastery badges.
+  const topics    = filterTopicsByOptions(topicsSnap.docs.map(d => d.data()), user)
 
   const completedSessions = sessions.filter(s => s.completed)
   const resolvedMistakes  = mistakes.filter(m => m.resolved)
