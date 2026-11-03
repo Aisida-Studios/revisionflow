@@ -1,6 +1,6 @@
-// RevisionFlow Service Worker v6 — Web Push + caching (same-origin only fetch handling)
-const CACHE_STATIC  = 'rf-static-v6'
-const CACHE_DYNAMIC = 'rf-dynamic-v6'
+// RevisionFlow Service Worker v7 — Web Push + caching (same-origin only fetch handling)
+const CACHE_STATIC  = 'rf-static-v7'
+const CACHE_DYNAMIC = 'rf-dynamic-v7'
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json']
 
 // ── Install ──────────────────────────────────────────────────────
@@ -46,6 +46,9 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       caches.match(e.request).then(cached => {
         const networkFetch = fetch(e.request).then(res => {
+          // A missing script, style or image used to come back as the app's index.html (the catch-all rewrite) and was cached
+          // as if it were the file. HTML is never a valid answer here, so it is refused and never stored.
+          if (/text\/html/i.test(res.headers.get('content-type') || '')) return Response.error()
           if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
           return res
         }).catch(() => cached || Response.error())
