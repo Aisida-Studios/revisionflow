@@ -11,6 +11,7 @@ import { sessionMinutes } from '../utils/sessionTime'
 import { toLocalDateStr, parseLocalDate } from '../utils/localDate'
 import { ALL_TIME, resolveAnalyticsStart, earliestRecordDay, inAnalyticsWindow, currentOrUnstamped, analyticsRangeStart, analyticsRangeDays } from '../utils/analyticsWindow'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
+import { filterTopicsByOptions } from '../utils/courseOptions'
 import { format, subDays, eachDayOfInterval, getDay } from 'date-fns'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -216,7 +217,10 @@ export default function Analytics() {
     }))
   }, [subjectDist, totalMinutes])
 
-  const currentTopics = useMemo(() => filterToCurrentSubjectInstance(topics, profile), [topics, profile])
+  // Topics from course options the student did not choose are left out of every topic figure (their ratings stay stored).
+  // Subjects the student no longer takes are not affected, so the lifetime counts still include earlier courses.
+  const countedTopics = useMemo(() => filterTopicsByOptions(topics, profile), [topics, profile])
+  const currentTopics = useMemo(() => filterToCurrentSubjectInstance(countedTopics, profile), [countedTopics, profile])
 
   // ── Topic confidence breakdown ────────────────────────────────────────────
   const confidenceBreakdown = useMemo(() => {
@@ -389,7 +393,7 @@ export default function Analytics() {
         <StatCard icon={<Flame size={18}/>}    label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
         <StatCard icon={<Target size={18}/>}   label="Completion rate"     val={`${completionRate}%`}         colour="var(--success)" />
         <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={windowAttempts.length}              colour="var(--accent)" />
-        <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={topics.length}                colour="#0891b2" />
+        <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={countedTopics.length}                colour="#0891b2" />
         <StatCard icon={<BarChart2 size={18}/>}label="Avg daily (period)"  val={`${avgDailyMinutes}m`}        colour="var(--info)" />
       </div>
 
@@ -511,7 +515,7 @@ export default function Analytics() {
               { label: 'Most productive day', val: records.mostProductiveDay ? `${records.mostProductiveDay[0]} (${records.mostProductiveDay[1]} sessions)` : '–' },
               { label: 'Top subject',         val: records.topSubject ? `${records.topSubject[0]} (${fmtMins(records.topSubject[1])})` : '–' },
               { label: 'Papers attempted',    val: windowAttempts.length },
-              { label: 'Topics rated',        val: topics.filter(t => (t.confidence || 0) > 0).length },
+              { label: 'Topics rated',        val: countedTopics.filter(t => (t.confidence || 0) > 0).length },
             ].map(r => (
               <div key={r.label} style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>{r.label}</div>
