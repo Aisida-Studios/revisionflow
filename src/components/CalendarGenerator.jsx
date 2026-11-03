@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate } from '../utils/scheduler'
+import { weakTopicFocus } from '../utils/fairShare'
 import { getUserTimetable } from '../utils/firestore'
 import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
 import { parseLocalDate } from '../utils/examUtils'
@@ -187,7 +188,19 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
     setNewHol({ start:'', end:'', label:'' })
   }
 
+  // Wrapped so an unexpected error (for example an unreadable date in the saved exam list) shows a message instead of
+  // leaving the dialog on its loading spinner for good.
   async function generate() {
+    try {
+      await buildPreview()
+    } catch (e) {
+      console.error('[CalendarGenerator] could not build the schedule:', e)
+      toast.error('Could not build your schedule. Please check your dates and try again.')
+      setLoading(false)
+    }
+  }
+
+  async function buildPreview() {
     const builtSubjects = buildSubjectsFromProfile(profile).map(s => ({
       ...s,
       ratio: subjectRatios[s.name] === 'global' ? [contentRatio, examRatio] : subjectRatioValues[s.name],
@@ -212,13 +225,13 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
           for (const paperNum of s.papers) {
             const paperTopics = papers[paperNum] || papers[String(paperNum)]
             if (!paperTopics?.length) continue
-            // Weakest real topic on this specific paper — same "confidence<=2, ignore the
-            // unrated default of 3" rule computeWeakTopics/Recommendations already use, so
-            // this can't surface a topic nobody has actually rated as if it were evidence.
-            const rated = confTopics
-              .filter(t => t.subjectId === s.name && paperTopics.includes(t.name) && t.confidence > 0 && t.confidence <= 2)
-              .sort((a, b) => a.confidence - b.confidence)
-            if (rated.length) topicFocus[`${s.name}-${paperNum}`] = rated[0].name
+            // The real weak topics on this specific paper: confidence 1 or 2, never the unrated default. Same rule
+            // computeWeakTopics/Recommendations already use, so this can't surface a topic nobody has actually rated
+            // as if it were evidence. ALL of them are passed on, weakest weighted most, and the generator rotates
+            // through them (utils/fairShare.js). Equally weak topics get equal hours; before, every content session
+            // on the paper went to the single first one.
+            const weak = weakTopicFocus(confTopics, s.name, paperTopics)
+            if (weak.length) topicFocus[`${s.name}-${paperNum}`] = weak
           }
         }
       } catch (e) { /* graceful degradation — generation still works without topic focus */ }
@@ -260,6 +273,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
         sessionGap,
         topicFocus,
         rotation: timetableRotation,
+        existingSessions: sessions,   // carry on the fair-share totals from the pass above
       })
       const takenSlots = new Set(sessions.map(s => `${s.date}|${s.start}`))
       const freeSessions = rawFreeSessions.filter(s => !takenSlots.has(`${s.date}|${s.start}`))
@@ -277,6 +291,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
     try {
       const BATCH_SIZE = 400 // Firestore caps a single batch at 500 ops — chunk well under that
 
+      let keptSlots = new Set()   // date|start of generated sessions that stay, so new ones are not stacked on top of them
       if (replaceChoice === 'replace') {
         const snap = await getDocs(
           query(collection(db,'users',user.uid,'sessions'), where('source','==','generated'))
@@ -285,23 +300,28 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
         // created. Filtered client-side (rather than a date range where() clause) to avoid
         // needing a new composite index on source+date for this collection.
         const toDelete = snap.docs.filter(d => {
-          const date = d.data().date
-          return date && date >= startDate && date <= endDate
+          const data = d.data()
+          // A session already ticked off is the student's record of work done (study time, XP), so it is never replaced.
+          return data.date && data.date >= startDate && data.date <= endDate && data.completed !== true
         })
         for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
           const delBatch = writeBatch(db)
           toDelete.slice(i, i + BATCH_SIZE).forEach(d => delBatch.delete(doc(db,'users',user.uid,'sessions',d.id)))
           await delBatch.commit()
         }
+        // Completed sessions that were kept hold their slot: a new session is never stacked on top of one.
+        const deleting = new Set(toDelete.map(d => d.id))
+        keptSlots = new Set(snap.docs.filter(d => !deleting.has(d.id)).map(d => `${d.data().date}|${d.data().start}`))
       }
 
       // Was `preview.slice(0, 500)` — silently dropped anything past the first 500 generated
       // sessions with no error and no warning (a full term's worth, multiple sessions a day,
       // easily clears that). Chunking through writeBatch instead saves everything and is fewer
       // network round-trips than the old one-addDoc-at-a-time loop besides.
-      for (let i = 0; i < preview.length; i += BATCH_SIZE) {
+      const toSave = preview.filter(s => !keptSlots.has(`${s.date}|${s.start}`))
+      for (let i = 0; i < toSave.length; i += BATCH_SIZE) {
         const addBatch = writeBatch(db)
-        preview.slice(i, i + BATCH_SIZE).forEach(s => {
+        toSave.slice(i, i + BATCH_SIZE).forEach(s => {
           addBatch.set(doc(collection(db,'users',user.uid,'sessions')), { ...s, createdAt: serverTimestamp() })
         })
         await addBatch.commit()
@@ -317,7 +337,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
 
-      toast.success(`Added ${preview.length} session${preview.length !== 1 ? 's' : ''} to your calendar!`)
+      toast.success(`Added ${toSave.length} session${toSave.length !== 1 ? 's' : ''} to your calendar!`)
       onGenerated?.()
       onClose()
     } catch(err) { toast.error('Failed to save: ' + err.message) }
@@ -662,9 +682,10 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
                 <div>
                   <span style={{fontWeight:600,fontSize:'0.875rem'}}>Focus content sessions on your weakest topics</span>
                   <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:0}}>
-                    Where a paper has topics you've rated low confidence on, names that session after the
-                    specific topic instead of a generic "Content Revision" block. Falls back to generic
-                    when there's no confidence data for a paper.
+                    Where a paper has topics you've rated low confidence on, each content session is about one
+                    of them instead of a generic "Content Revision" block, taking turns so equally weak topics
+                    get equal time (the weakest get more turns). Falls back to generic when there's no
+                    confidence data for a paper.
                   </p>
                 </div>
               </label>
@@ -693,7 +714,8 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
           <div>
             <h4 style={{marginBottom:4}}>Subject-specific settings</h4>
             <p style={{fontSize:'0.82rem',marginBottom:14}}>
-              Override the global ratio for individual subjects, or mark subjects as high priority.
+              Override the global ratio for individual subjects, or mark subjects as high priority. With none marked, every
+              subject gets the same number of hours; a high priority subject gets about twice as many.
             </p>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {subjects.map(s=>(
@@ -775,7 +797,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
                 ['Day caps', dayCaps.length?dayCaps.map(c=>`${c.day} max ${c.max}`).join(', '):'None'],
                 ['Max per day (flat)', maxSessionsPerDay===''?'None':`${maxSessionsPerDay} sessions`],
                 ['Emergency sessions', emergencySessions?`Yes (${examDates.length} exams)`:'No'],
-                ['Topic focus', useTopicFocus?'On — uses your weakest topics':'Off — generic titles'],
+                ['Topic focus', useTopicFocus?'On — takes turns across your weakest topics':'Off — generic titles'],
                 ['Dynamic ratio', dynamicRatio?'On — more exam practice as exams near':'Off — fixed ratio throughout'],
                 ['Holidays', holidays.length?holidays.map(h=>h.label||'Holiday').join(', '):'None'],
               ].map(([label, val])=>(
@@ -790,7 +812,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
             <label className="label">What should happen to your existing calendar?</label>
             <div style={{display:'flex',flexDirection:'column',gap:7}}>
               {[
-                {val:'replace',label:'Replace existing generated sessions',desc:`Removes previous auto-generated sessions between ${startDate} and ${endDate} only — manually added sessions and anything outside this range are kept`},
+                {val:'replace',label:'Replace existing generated sessions',desc:`Removes previous auto-generated sessions between ${startDate} and ${endDate} only — manually added sessions and anything outside this range are kept, as are sessions you have already ticked off`},
                 {val:'add',label:'Add to existing calendar',desc:'All current sessions are kept — new ones are added on top'},
               ].map(opt=>(
                 <button key={opt.val} onClick={()=>setReplaceChoice(opt.val)}
