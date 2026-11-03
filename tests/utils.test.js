@@ -14,6 +14,8 @@ import { mergeOutcomes, hasOutcomes } from '../src/utils/progressMerge.js'
 import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
 import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
+import { PRIORITY_WEIGHT, fairOrder, pickFairest, normaliseTopics, weakTopicFocus, createFairShare } from '../src/utils/fairShare.js'
+import { generateSchedule, scheduleFreePeriods, buildSubjectsFromProfile } from '../src/utils/scheduler.js'
 import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
@@ -719,6 +721,185 @@ ok('isFreshReferral is true only for a referral stamped in the last few minutes 
   assert.equal(isFreshReferral({ referredAt: stamp(-1000) }, now), false)                                          // not referred
   assert.equal(isFreshReferral({ referredBy: 'abc' }, now), false)                                                 // no timestamp yet
   assert.equal(isFreshReferral(null, now), false)
+})
+
+// ── Calendar generator: fair share (utils/fairShare.js) ──────────────────────
+ok('fairOrder gives equal subjects equal turns instead of falling back to list order', () => {
+  const keys = ['A', 'B', 'C', 'D', 'E', 'F']
+  const used = {}, last = {}; let seq = 0
+  for (let day = 0; day < 30; day++) fairOrder(keys, used, {}, last).slice(0, 2).forEach(k => { used[k] = (used[k] || 0) + 45; last[k] = ++seq })
+  keys.forEach(k => assert.equal(used[k], 450))          // 60 turns across 6 keys: 10 each, the first keys in the list are not favoured
+})
+ok('fairOrder gives a weight-2 key about twice the turns', () => {
+  const keys = ['A', 'B', 'C', 'D'], weight = { A: PRIORITY_WEIGHT }
+  const used = {}, last = {}; let seq = 0
+  for (let i = 0; i < 40; i++) { const k = pickFairest(keys, used, weight, last); used[k] = (used[k] || 0) + 45; last[k] = ++seq }
+  assert.deepEqual(used, { A: 16 * 45, B: 8 * 45, C: 8 * 45, D: 8 * 45 })
+})
+ok('fairOrder treats a missing, zero, negative or non-numeric weight as 1', () => {
+  const keys = ['A', 'B', 'C', 'D']
+  const used = {}, last = {}; let seq = 0
+  const weight = { A: 0, B: -3, C: NaN, D: 'big' }
+  for (let i = 0; i < 40; i++) { const k = pickFairest(keys, used, weight, last); used[k] = (used[k] || 0) + 1; last[k] = ++seq }
+  keys.forEach(k => assert.equal(used[k], 10))
+  assert.equal(pickFairest([]), undefined)
+})
+ok('normaliseTopics accepts a name, names or { name, weight }, drops empties and duplicates, and fixes bad weights', () => {
+  assert.deepEqual(normaliseTopics('Waves'), [{ name: 'Waves', weight: 1 }])
+  assert.deepEqual(normaliseTopics(['Waves', { name: 'Forces', weight: 2 }, '', null, 'Waves', { name: 'Light', weight: -1 }]),
+    [{ name: 'Waves', weight: 1 }, { name: 'Forces', weight: 2 }, { name: 'Light', weight: 1 }])
+  assert.deepEqual(normaliseTopics(undefined), []); assert.deepEqual(normaliseTopics(42), [])
+})
+ok('weakTopicFocus keeps only rated-weak topics on that paper, weakest weighted most, equal confidence equal weight', () => {
+  const rows = [
+    { subjectId: 'Physics', name: 'Waves',  confidence: 1 }, { subjectId: 'Physics', name: 'Forces', confidence: 2 },
+    { subjectId: 'Physics', name: 'Atoms',  confidence: 2 }, { subjectId: 'Physics', name: 'Energy', confidence: 3 },     // not weak
+    { subjectId: 'Physics', name: 'Space',  confidence: 0 },                                                             // unrated is never weak
+    { subjectId: 'Physics', name: 'Magnets', confidence: 1 },                                                            // weak but on another paper
+    { subjectId: 'Biology', name: 'Cells',  confidence: 1 },                                                             // another subject
+  ]
+  assert.deepEqual(weakTopicFocus(rows, 'Physics', ['Waves', 'Forces', 'Atoms', 'Energy', 'Space']),
+    [{ name: 'Waves', weight: 2 }, { name: 'Atoms', weight: 1 }, { name: 'Forces', weight: 1 }])
+  assert.deepEqual(weakTopicFocus(rows, 'Chemistry', ['Waves']), []); assert.deepEqual(weakTopicFocus(null, 'Physics', null), [])
+})
+ok('createFairShare rotates a paper through its topics, with equal weights giving equal minutes', () => {
+  const share = createFairShare({ subjects: [{ name: 'Physics' }], topicFocus: { 'Physics-1': ['Waves', 'Forces', 'Atoms', 'Light'] } })
+  const first = share.topicFor('Physics', 1)
+  assert.equal(share.topicFor('Physics', 1), first)                                  // choosing records nothing
+  const got = {}
+  for (let i = 0; i < 40; i++) { const t = share.topicFor('Physics', 1); got[t] = (got[t] || 0) + 1; share.record({ subject: 'Physics', paper: 1, type: 'Content Revision', focusTopic: t, duration: 45 }) }
+  assert.deepEqual(got, { Waves: 10, Forces: 10, Atoms: 10, Light: 10 })
+  assert.equal(share.topicFor('Physics', 2), null)                                   // a paper with no focus topics
+})
+ok('createFairShare weights topics and still accepts the old single-name focus', () => {
+  const share = createFairShare({ topicFocus: { 'P-1': [{ name: 'Big', weight: 2 }, { name: 'Small', weight: 1 }], 'P-2': 'Only' } })
+  const got = {}
+  for (let i = 0; i < 30; i++) { const t = share.topicFor('P', 1); got[t] = (got[t] || 0) + 1; share.record({ subject: 'P', paper: 1, type: 'Content Revision', focusTopic: t, duration: 30 }) }
+  assert.deepEqual(got, { Big: 20, Small: 10 })
+  assert.equal(share.topicFor('P', 2), 'Only')
+})
+ok('createFairShare carries on from sessions an earlier pass already placed', () => {
+  const earlier = [{ subject: 'A', paper: 1, duration: 90, type: 'Content Revision' }, { subject: 'B', paper: 1, duration: 45, type: 'Content Revision' }]
+  const share = createFairShare({ subjects: [{ name: 'A' }, { name: 'B' }, { name: 'C' }], existingSessions: earlier })
+  assert.equal(share.usedMinutes('A'), 90)
+  assert.deepEqual(share.order([{ name: 'A' }, { name: 'B' }, { name: 'C' }]).map(s => s.name), ['C', 'B', 'A'])
+})
+
+// ── Calendar generator: the engine itself ────────────────────────────────────
+const gSubj = (name, extra = {}) => ({ name, board: 'AQA', tier: 'N/A', qualification: 'GCSE', papers: [1, 2], ratio: [2, 1], examDates: [], priority: false, ...extra })
+const gAvail = (start = '17:00', end = '20:00') => {
+  const a = {}
+  ;['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(d => { a[d] = { enabled: true, ranges: [{ start, end }] } })
+  a.Sunday = { enabled: false }
+  return a
+}
+const gBase = { startDate: new Date(2027, 0, 4), endDate: new Date(2027, 1, 28), holidays: [], contentDuration: 45, sessionGap: 30, includeEmergency: true }   // Mon 4 Jan to Sun 28 Feb 2027
+const gMinutes = (sessions) => { const m = {}; sessions.forEach(s => { m[s.subject] = (m[s.subject] || 0) + s.duration }); return m }
+const gDow = (s) => { const [y, m, d] = s.date.split('-').map(Number); return new Date(y, m - 1, d).getDay() }
+
+ok('generator: subjects with the same settings and no priority get (almost) equal hours', () => {
+  const subjects = ['History', 'Geography', 'Biology', 'Chemistry', 'French', 'Spanish'].map(nm => gSubj(nm))
+  const m = gMinutes(generateSchedule({ ...gBase, subjects, availability: gAvail() }))
+  const v = subjects.map(s => m[s.name])
+  assert.ok(Math.max(...v) - Math.min(...v) <= 150, 'hours by subject: ' + JSON.stringify(m))   // was 350 to 1980 minutes: the first subjects in the list took most slots
+})
+ok('generator: one subject marked high priority gets about twice the hours of the others', () => {
+  const subjects = ['Mathematics', 'History', 'Geography', 'French', 'Spanish'].map((nm, i) => gSubj(nm, { priority: i === 0 }))
+  const m = gMinutes(generateSchedule({ ...gBase, subjects, availability: gAvail() }))
+  const others = ['History', 'Geography', 'French', 'Spanish'].map(k => m[k]); const avg = others.reduce((a, b) => a + b, 0) / others.length
+  assert.ok(m.Mathematics / avg > 1.7 && m.Mathematics / avg < 2.3, JSON.stringify(m))
+})
+ok('generator: equally weak topics on a paper get equal minutes, and each session says which topic it is about', () => {
+  const four = ['Cold War', 'Weimar', 'Elizabethan', 'Health']
+  const topicFocus = { 'History-1': four, 'History-2': four }
+  const out = generateSchedule({ ...gBase, subjects: [gSubj('History'), gSubj('Geography')], availability: gAvail(), topicFocus })
+  const byTopic = {}; out.filter(s => s.focusTopic).forEach(s => { byTopic[s.focusTopic] = (byTopic[s.focusTopic] || 0) + s.duration })
+  const v = four.map(t => byTopic[t])
+  assert.ok(v.every(Boolean) && Math.max(...v) - Math.min(...v) <= 90, JSON.stringify(byTopic))
+  const s1 = out.find(s => s.focusTopic)
+  assert.ok(s1.title.includes(s1.focusTopic) && s1.type === 'Content Revision')
+  assert.ok(out.filter(s => s.subject === 'Geography').every(s => s.focusTopic === undefined))        // no focus data: generic title, and no undefined field for Firestore
+  assert.ok(out.filter(s => s.type === 'Exam Practice').every(s => !('focusTopic' in s)))
+})
+ok('generator: weakest topics get more turns, and the old single-topic focus still works', () => {
+  const topicFocus = { 'Geography-1': [{ name: 'Rivers', weight: 2 }, { name: 'Coasts', weight: 1 }], 'Geography-2': [{ name: 'Rivers', weight: 2 }, { name: 'Coasts', weight: 1 }] }
+  const out = generateSchedule({ ...gBase, subjects: [gSubj('Geography'), gSubj('History')], availability: gAvail(), topicFocus })
+  const r = out.filter(s => s.focusTopic === 'Rivers').length, c = out.filter(s => s.focusTopic === 'Coasts').length
+  assert.ok(r / c > 1.6 && r / c < 2.4, `${r} vs ${c}`)
+  const legacy = generateSchedule({ ...gBase, subjects: [gSubj('History')], availability: gAvail(), topicFocus: { 'History-1': 'Weimar', 'History-2': 'Weimar' } })
+  assert.deepEqual([...new Set(legacy.filter(s => s.type === 'Content Revision').map(s => s.focusTopic))], ['Weimar'])
+})
+ok('generator: Sunday is used when the student turned it on, and stays emergency-only when they did not', () => {
+  const on = gAvail(); on.Sunday = { enabled: true, ranges: [{ start: '10:00', end: '12:00' }] }
+  const subjects = [gSubj('History'), gSubj('Geography')]
+  const withSunday = generateSchedule({ ...gBase, subjects, availability: on }).filter(s => gDow(s) === 0)
+  assert.ok(withSunday.length > 0 && withSunday.every(s => s.start >= '10:00' && s.end <= '12:00'))
+  assert.equal(generateSchedule({ ...gBase, subjects, availability: gAvail() }).filter(s => gDow(s) === 0).length, 0)
+})
+ok('generator: a paused subject gets nothing, a hyphenated subject name still gets its emergency session, a bad exam date is skipped', () => {
+  const subjects = [
+    gSubj('Food-Tech', { examDates: [{ paper: 1, date: '2027-02-10' }] }),
+    gSubj('French', { ratio: [0, 0], examDates: [{ paper: 1, date: '2027-02-10' }] }),
+    gSubj('History', { examDates: [{ paper: 1, date: 'not a date' }] }),
+  ]
+  const out = generateSchedule({ ...gBase, subjects, availability: gAvail() })
+  assert.equal(out.filter(s => s.subject === 'French').length, 0)
+  assert.deepEqual(out.filter(s => s.subject === 'Food-Tech' && s.isEmergency).map(s => s.date), ['2027-02-09'])
+  assert.ok(out.some(s => s.subject === 'History'))
+})
+ok('generator: the dynamic ratio leaves an exam-practice-only subject as exam practice only', () => {
+  const subjects = [gSubj('English Language', { ratio: [0, 1], examDates: [{ paper: 1, date: '2027-02-20' }, { paper: 2, date: '2027-02-22' }] })]
+  const out = generateSchedule({ ...gBase, subjects, availability: gAvail(), dynamicRatio: true })
+  assert.equal(out.filter(s => s.type === 'Content Revision').length, 0)
+  assert.ok(out.filter(s => s.type === 'Exam Practice').length > 0)
+})
+ok('generator: free-period sessions carry on from the evening totals instead of favouring the same subjects', () => {
+  const subjects = ['History', 'Geography', 'Biology', 'French', 'Spanish'].map(nm => gSubj(nm))
+  const cfg = { ...gBase, endDate: new Date(2027, 0, 20) }                         // three Mondays: 4, 11 and 18 January
+  const evening = generateSchedule({ ...cfg, subjects, availability: { Monday: { enabled: true, ranges: [{ start: '17:00', end: '17:50' }] } } })
+  const timetable = { Monday: [{ type: 'free', startTime: '10:00', endTime: '10:50' }] }
+  const spread = (ss) => { const m = gMinutes(ss); const v = subjects.map(s => m[s.name] || 0); return Math.max(...v) - Math.min(...v) }
+  const independent = scheduleFreePeriods({ ...cfg, subjects, timetable })
+  const carried = scheduleFreePeriods({ ...cfg, subjects, timetable, existingSessions: evening })
+  assert.equal(evening.length, 3); assert.equal(carried.length, 3)
+  assert.equal(spread([...evening, ...independent]), 90)                           // the same three subjects twice
+  assert.equal(spread([...evening, ...carried]), 45)                               // the other two subjects first
+})
+ok('buildSubjectsFromProfile uses the real qualification, numeric paper order, and gives no subject extra priority', () => {
+  const out = buildSubjectsFromProfile({ qualification: 'A-Level', subjects: [{ name: 'Mathematics', board: 'AQA' }, { name: 'Physics', board: 'AQA', qualification: 'AS-Level' }],
+    examDates: [{ subject: 'Mathematics', paper: '10', examDate: '2027-06-01' }, { subject: 'Mathematics', paper: '2', examDate: '2027-06-02' }, { subject: 'Mathematics', paper: '1', examDate: '2027-06-03' }] })
+  assert.deepEqual(out.map(s => s.qualification), ['A-Level', 'AS-Level'])
+  assert.deepEqual(out[0].papers, [1, 2, 10])
+  assert.deepEqual(out.map(s => s.priority), [false, false])
+})
+ok('generator: across many random set-ups no session overlaps, leaves the student\'s availability, lands on a holiday, or is for a paused subject', () => {
+  const rng = (seed) => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+  const NAMES = ['Mathematics', 'Biology', 'Chemistry', 'Physics', 'History', 'Geography', 'French', 'Spanish']
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  for (let seed = 1; seed <= 60; seed++) {
+    const r = rng(seed)
+    const start = new Date(2027, 0, 4 + Math.floor(r() * 14)), end = new Date(2027, 0, 4 + 30 + Math.floor(r() * 60))
+    const subjects = [...NAMES].sort(() => r() - 0.5).slice(0, 2 + Math.floor(r() * 6)).map(nm => gSubj(nm, {
+      ratio: [[2, 1], [1, 1], [0, 1], [1, 2], [0, 0]][Math.floor(r() * 5)], priority: r() < 0.25,
+      examDates: r() < 0.6 ? [{ paper: 1, date: ymd(new Date(2027, 0, 20 + Math.floor(r() * 60))) }] : [] }))
+    const availability = {}
+    DAYS.forEach(d => { availability[d] = { enabled: r() < 0.75, ranges: [{ start: `${15 + Math.floor(r() * 3)}:00`, end: `${19 + Math.floor(r() * 3)}:30` }] } })
+    const holidays = r() < 0.4 ? [{ start: ymd(new Date(2027, 0, 12)), end: ymd(new Date(2027, 0, 16)) }] : []
+    const out = generateSchedule({ ...gBase, startDate: start, endDate: end, subjects, availability, holidays, dynamicRatio: r() < 0.4 })
+    const byDay = {}
+    out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
+    Object.entries(byDay).forEach(([date, list]) => {
+      const av = availability[DAYS[gDow(list[0])]]
+      assert.ok(!holidays.some(h => date >= h.start && date <= h.end), `seed ${seed}: session on holiday ${date}`)
+      const sorted = [...list].sort((a, b) => mins(a.start) - mins(b.start))
+      for (let i = 1; i < sorted.length; i++) assert.ok(mins(sorted[i].start) >= mins(sorted[i - 1].end), `seed ${seed}: overlap on ${date}`)
+      if (av.enabled) list.forEach(s => assert.ok(mins(s.start) >= mins(av.ranges[0].start) && mins(s.end) <= mins(av.ranges[0].end), `seed ${seed}: ${s.subject} outside availability on ${date}`))
+      else list.forEach(s => assert.ok(s.isEmergency, `seed ${seed}: session on a day that is off, ${date}`))
+    })
+    subjects.filter(s => s.ratio[0] === 0 && s.ratio[1] === 0).forEach(s => assert.equal(out.filter(x => x.subject === s.name).length, 0, `seed ${seed}: paused ${s.name} scheduled`))
+  }
 })
 
 console.log(`\n${n} checks passed`)
