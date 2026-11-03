@@ -10,6 +10,7 @@ import {
 } from '../utils/firestore'
 import { LEVELS, levelFromXP } from '../data/subjects'
 import LoadingScreen from '../components/LoadingScreen'
+import { isFreshReferral } from '../utils/referralReward'
 
 const AuthContext = createContext(null)
 
@@ -56,7 +57,12 @@ export function AuthProvider({ children }) {
   // profile.tourComplete to true, exactly mirroring how the badge/streak checks below detect a
   // one-shot transition rather than a static value.
   const [onboardingRecap,    setOnboardingRecap]    = useState(null)
+  // Why a Google redirect sign-in failed (a Firebase error code), so the sign-in pages can tell the person instead of the
+  // failure only reaching the console. Cleared by clearRedirectError.
+  const [redirectError,      setRedirectError]      = useState(null)
   const prevTourCompleteRef = useRef(null)
+  // Referred-side referral popup: set once per sign-in so a later snapshot cannot show it twice (see the profile listener).
+  const referredShownRef = useRef(false)
 
   useEffect(() => {
     let profileUnsub = () => {}
@@ -68,9 +74,10 @@ export function AuthProvider({ children }) {
     // popup either fails to open or never reports its result back. The redirect flow instead
     // navigates the whole app to Google and back; onAuthStateChanged below picks up the resulting
     // session automatically once the app reloads, this just surfaces an error if the redirect
-    // itself failed (e.g. an existing account with a different sign-in method).
+    // itself failed (e.g. an existing account with a different sign-in method). The code is exposed as redirectError.
     getRedirectResult(auth).catch(e => {
       console.error('[AuthContext] Google redirect sign-in failed:', e.code)
+      setRedirectError(e.code || 'unknown')
     })
 
     const authUnsub = onAuthStateChanged(auth, async u => {
@@ -144,6 +151,16 @@ export function AuthProvider({ children }) {
             }
           }
           if (data) prevBadgesRef.current = data.badges || []
+          // The REFERRED side. netlify/functions/referral.js stamps referredBy and referredAt on the new account the moment a
+          // code is applied, usually while the Signup page is still on screen. Signup unmounts as soon as the profile exists,
+          // so it cannot show the popup itself; showing it from here puts it in front of the new user wherever they are
+          // (onboarding). Only a referral stamped in the last few minutes counts (utils/referralReward.js), so accounts
+          // referred long ago never see it, and referredRewardShown stops another device repeating it.
+          if (data && !referredShownRef.current && isFreshReferral(data)) {
+            referredShownRef.current = true
+            setReferralReward({ variant: 'referred' })
+            updateDoc(doc(db, 'users', u.uid), { referredRewardShown: true }).catch(() => {})
+          }
           // Detect level increase — same shape as streak, same gating rationale (onboarding alone
           // can be enough XP to cross a level threshold; that shouldn't interrupt the wizard either).
           if (data && prevLevelRef.current !== null) {
@@ -192,6 +209,7 @@ export function AuthProvider({ children }) {
         setLoading(false)
         prevBadgesRef.current = null
         seenRequestIdsRef.current = null
+        referredShownRef.current = false
       }
     })
 
@@ -207,21 +225,21 @@ export function AuthProvider({ children }) {
 
   const login = (email, pw) => loginWithEmail(email, pw)
 
-  // signup: creates the Firebase Auth user AND sets displayName immediately
+  // signup: creates the Firebase Auth user AND records the display name. The account exists once signupWithEmail has
+  // resolved, so neither name write below may turn a created account into a failed sign-up (a retry would only say the
+  // email is already in use). The nested profile map is written as a map: with setDoc a dotted key is a literal field name.
   const signup = async (email, pw, displayName) => {
     const cred = await signupWithEmail(email, pw)
     if (displayName && cred?.user) {
       // Set displayName on the Firebase Auth user object
-      await updateProfile(cred.user, { displayName })
+      try { await updateProfile(cred.user, { displayName }) } catch (e) { /* ensureUser patches the name later */ }
       // Also write it to Firestore immediately so leaderboard/referral queries work
       try {
         await setDoc(doc(db, 'users', cred.user.uid), {
           displayName,
-          'profile.displayName': displayName,
+          profile: { displayName },
         }, { merge: true })
-      } catch (e) {
-        // Non-fatal — ensureUser will handle this
-      }
+      } catch (e) { /* non-fatal: ensureUser will handle this */ }
     }
     return cred
   }
@@ -238,6 +256,7 @@ export function AuthProvider({ children }) {
       newFriendRequest, clearNewFriendRequest: () => setNewFriendRequest(null),
       levelUp, clearLevelUp: () => setLevelUp(null),
       onboardingRecap,
+      redirectError, clearRedirectError: () => setRedirectError(null),
       clearOnboardingRecap: async () => {
         setOnboardingRecap(null)
         if (user) {
