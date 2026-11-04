@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
-import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate } from '../utils/scheduler'
+import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate, longPaperWarnings } from '../utils/scheduler'
 import { weakTopicFocus } from '../utils/fairShare'
 import { getUserTimetable } from '../utils/firestore'
 import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
@@ -100,6 +100,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
   const [examRatio,       setExamRatio]       = useState(1)
   const [contentDuration, setContentDuration] = useState(45)
   const [sessionGap,      setSessionGap]      = useState(30)
+  const [longPapers,      setLongPapers]      = useState([])   // exam papers longer than any study window (see longPaperWarnings)
   const [emergencySessions, setEmergency]     = useState(true)
   const [dayCaps,          setDayCaps]        = useState([]) // [{day, max}] - was a single day
   const [newCapDay,        setNewCapDay]      = useState('Tuesday')
@@ -254,6 +255,8 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
       dynamicRatio,
       topicFocus,
     })
+
+    setLongPapers(longPaperWarnings({ subjects: builtSubjects, availability, startDate: parseLocalDate(startDate), extendedFromDate: parseLocalDate(extendedDate) }))
 
     // Free periods are a separate, additive pass (see scheduleFreePeriods in scheduler.js) —
     // merged in here and re-sorted chronologically so the preview reads as one schedule.
@@ -614,7 +617,10 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
 
             {/* Gap */}
             <div>
-              <label className="label">Break between sessions (minutes)</label>
+              <label className="label">Shortest break between sessions (minutes)</label>
+              <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 6px'}}>
+                Time left over in a study window is used for extra or shorter sessions, and anything still spare makes the breaks longer.
+              </p>
               <select className="select" style={{width:'auto'}} value={sessionGap} onChange={e=>setSessionGap(parseInt(e.target.value))}>
                 {[15,20,30,45,60].map(n=><option key={n} value={n}>{n} minutes</option>)}
               </select>
@@ -793,7 +799,7 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
                 ]] : []),
                 ['Ratio', `${contentRatio} content : ${examRatio} exam practice`],
                 ['Session length', `${contentDuration} minutes`],
-                ['Session gap', `${sessionGap} minutes`],
+                ['Shortest break', `${sessionGap} minutes`],
                 ['Day caps', dayCaps.length?dayCaps.map(c=>`${c.day} max ${c.max}`).join(', '):'None'],
                 ['Max per day (flat)', maxSessionsPerDay===''?'None':`${maxSessionsPerDay} sessions`],
                 ['Emergency sessions', emergencySessions?`Yes (${examDates.length} exams)`:'No'],
@@ -856,6 +862,14 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {longPapers.length > 0 && (
+              <div role="note" style={{marginBottom:14,padding:'8px 10px',background:'var(--bg-surface)',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',fontSize:'0.78rem',color:'var(--text-secondary)',lineHeight:1.5}}>
+                <strong style={{color:'var(--text-primary)'}}>Some papers are longer than your longest study window.</strong>{' '}
+                {longPapers.map(p => `${p.subject} Paper ${p.paper} (${formatDuration(p.minutes)})`).join(', ')} can only be revised
+                as content sessions. Make one study window at least {formatDuration(Math.max(...longPapers.map(p => p.minutes)))} long to schedule them as exam practice.
               </div>
             )}
 
