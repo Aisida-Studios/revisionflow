@@ -7,7 +7,10 @@
 // - Pre-exam day multi-sessions
 // - Holiday handling
 // - Tuesday caps
-// - Sunday emergency-only sessions
+// - Sunday emergency-only sessions (unless the student turned Sunday on)
+// - Time is FILLED: a day is planned across all its windows (utils/dayFill.js), subjects can repeat, long exam
+//   papers get first pick of the time, and spare time is spread out as extra break (see "Plan the day" below)
+// - Equal subjects get equal hours; a "High priority" subject gets about twice as many (utils/fairShare.js)
 
 import { addDays, format, startOfWeek, isSameDay, differenceInDays, getISOWeek } from 'date-fns'
 import { getPaperSpec } from '../data/paperDatabase'
@@ -15,6 +18,7 @@ import { parseLocalDate } from './examUtils'
 import { buildSubjectKey } from './subjectKey'
 import { getSubjectQualification } from '../data/subjects'
 import { createFairShare } from './fairShare'
+import { createDayPlan, layoutPlan, separateNeighbours, fitSessionLength, fillPlan, topUp, MIN_SHORT_SESSION, MAX_EXTRA_GAP } from './dayFill'
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 // Fallback only — getExamDuration checks the real per-board/tier paper database
@@ -121,6 +125,15 @@ function fmtTime(minutes) {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+}
+
+// A planned session has no time yet; this gives it one once its window has been laid out.
+function stampSession(session, date, startMin) {
+  const endMin = startMin + session.duration
+  session.start = fmtTime(startMin)
+  session.end = fmtTime(endMin)
+  session.startTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(startMin / 60), startMin % 60).toISOString()
+  session.endTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(endMin / 60), endMin % 60).toISOString()
 }
 
 // ── MULTI-WINDOW AVAILABILITY ─────────────────────────────────────────────────
@@ -384,20 +397,14 @@ export function generateSchedule(options) {
     return subjects.find(x => x.name === subjName)
   }
 
-  function placeSession(date, currentMin, endMin, subjName, paper, stype, isEmergency = false) {
+  // A session without its clock time (stampSession adds that once the day has been laid out). durOverride is for the
+  // shorter top-up sessions that use up time too short for a full one.
+  function buildSession(date, subjName, paper, stype, isEmergency = false, durOverride = null) {
     const meta = subjMeta(subjName)
-    const dur = isEmergency ? CONTENT_DUR
-      : stype === 'content' ? CONTENT_DUR
-      : getExamDuration(subjName, paper, meta?.board, meta?.tier, meta?.qualification)
-
-    if (currentMin + dur > endMin) {
-      // Try content if exam doesn't fit
-      if (stype === 'exam' && currentMin + CONTENT_DUR <= endMin) {
-        stype = 'content'
-      } else {
-        return null
-      }
-    }
+    const dur = durOverride
+      || (isEmergency ? CONTENT_DUR
+        : stype === 'content' ? CONTENT_DUR
+        : getExamDuration(subjName, paper, meta?.board, meta?.tier, meta?.qualification))
 
     // Content sessions rotate through the paper's focus topics (utils/fairShare.js) instead of all being about one.
     const focusTopic = (!isEmergency && stype === 'content') ? share.topicFor(subjName, paper) : null
@@ -416,12 +423,6 @@ export function generateSchedule(options) {
       type: isEmergency ? 'Emergency Revision' : stype === 'content' ? 'Content Revision' : 'Exam Practice',
       title: name,
       date: format(date, 'yyyy-MM-dd'),
-      start: fmtTime(currentMin),
-      end:   fmtTime(currentMin + dur),
-      startTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
-        Math.floor(currentMin/60), currentMin%60).toISOString(),
-      endTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
-        Math.floor((currentMin+dur)/60), (currentMin+dur)%60).toISOString(),
       duration: dur,
       isEmergency,
       completed: false,
@@ -430,10 +431,18 @@ export function generateSchedule(options) {
       // does not accept undefined). The free-period pass reads it to carry on the rotation.
       ...(focusTopic ? { focusTopic } : {}),
     }
-    return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
+    return { session, dur }
   }
 
-  // Every placed session goes through here, so the fair-share totals always match what was actually scheduled.
+  // Sunday's emergency-only branch places sessions one after another at a fixed time.
+  function placeSession(date, currentMin, endMin, subjName, paper, stype, isEmergency = false) {
+    const built = buildSession(date, subjName, paper, stype, isEmergency)
+    if (currentMin + built.dur > endMin) return null
+    stampSession(built.session, date, currentMin)
+    return { session: built.session, newMin: currentMin + built.dur + GAP_MINUTES, stype }
+  }
+
+  // Sessions placed outside the day plan go through here, so the fair-share totals always match what was scheduled.
   function commit(session) {
     sessions.push(session)
     share.record(session)
@@ -500,9 +509,6 @@ export function generateSchedule(options) {
     const capLimit = isDayCapped ? Math.min(...effectiveCap) : Infinity
 
     let slotsUsed = 0
-    // Emergencies are shifted off the front as they're placed — one that doesn't fit in
-    // the current window is retried in the next window rather than lost for the day.
-    let emergencies = [...(emergencyMap[dateStr] || [])]
 
     // Active subjects (not all papers completed, and not paused via ratio [0,0])
     const activeSubjects = subjects.filter(s => {
@@ -519,6 +525,7 @@ export function generateSchedule(options) {
       if (!preExamPapersMap[e.subj]) preExamPapersMap[e.subj] = []
       preExamPapersMap[e.subj].push(e.paper)
     })
+    const isPreExam = preExamSubjs.length > 0
 
     const examsToday = examsByDate[dateStr] || []
     const examsTodayMap = {}
@@ -527,99 +534,93 @@ export function generateSchedule(options) {
       examsTodayMap[e.subj].push(e.paper)
     })
 
-    // Built once per day, then walked across as many windows as it takes rather than
-    // restarting per window — each subject still gets at most one placement attempt per day.
-    // Fairest first (utils/fairShare.js): whoever has had the fewest minutes for their weight goes first, ties go to
-    // whoever was placed longest ago. Equal subjects therefore get equal hours, and a "High priority" subject (weight 2)
-    // gets about twice as many. Every subject is still reached within a week, because the least-served always lead.
-    let ordered = []
-    if (preExamSubjs.length === 0) ordered = share.order(activeSubjects)
-    let orderedIdx = 0
-    let preExamI   = 0
+    // ── Plan the day ──────────────────────────────────────────────────────────
+    // Sessions are first PLANNED across all of today's windows together (utils/dayFill.js) and then laid out in time.
+    // The old loop gave each subject at most one session a day and stopped, so an evening with more time than subjects
+    // was left part empty, and an exam paper that did not fit right after another session was quietly turned into a
+    // content session. Now it keeps going, round after round, until nothing else fits or the daily cap is reached:
+    //   - the order each round is fair share (utils/fairShare.js): equal subjects get equal hours, "High priority" about twice;
+    //   - a subject whose turn is exam practice goes ahead of the content turns, and if its paper still cannot fit it is
+    //     NOT used up: the time is filled with an extra content session and the exam practice is tried again next time;
+    //   - time too short for a full session gets one shorter session;
+    //   - time still left over is spread between the sessions as extra break, instead of all being left at the end.
+    const plan = createDayPlan(windows, GAP_MINUTES)
+    const capReached = () => isDayCapped && slotsUsed >= capLimit
+    const pool = isPreExam ? preExamSubjs.map(subjMeta).filter(Boolean) : activeSubjects
 
-    for (const win of windows) {
-      if (isDayCapped && slotsUsed >= capLimit) break
-      let curMin = win.start
-      const endMin = win.end
+    const durationFor = (name, paper, stype) => stype === 'content' ? CONTENT_DUR
+      : getExamDuration(name, paper, subjMeta(name)?.board, subjMeta(name)?.tier, subjMeta(name)?.qualification)
 
-      // Emergency sessions first, this window
-      while (emergencies.length && curMin < endMin && !(isDayCapped && slotsUsed >= capLimit)) {
-        const { subj, paper } = emergencies[0]
-        const result = placeSession(current, curMin, endMin, subj, paper, 'content', true)
-        if (!result) break // doesn't fit here — leave it for the next window
-        commit(result.session)
-        curMin = result.newMin
-        slotsUsed++
-        emergencies.shift()
+    // The paper a session of this type would be about today, or null when there is none.
+    function paperFor(name, stype) {
+      const ap = activePapers(name)
+      if (!ap.length) return null
+      if (isPreExam) {
+        const pre = ap.filter(p => preExamPapersMap[name]?.includes(p))
+        return pre.length ? pickPaper(name, stype, current, pre) : null
       }
-
-      if (preExamSubjs.length > 0) {
-        while (curMin + CONTENT_DUR <= endMin) {
-          if (isDayCapped && slotsUsed >= capLimit) break
-          const subj = preExamSubjs[preExamI % preExamSubjs.length]
-          const ap = activePapers(subj).filter(p => preExamPapersMap[subj]?.includes(p))
-          if (!ap.length) { preExamI++; if (preExamI > preExamSubjs.length * 3) break; continue }
-          const stype = nextSessionType(subj)
-          const paper = pickPaper(subj, stype, current, ap)
-          if (!paper) { preExamI++; continue }
-          const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj, paper, subjMeta(subj)?.board, subjMeta(subj)?.tier, subjMeta(subj)?.qualification)
-          if (curMin + dur > endMin) {
-            if (curMin + CONTENT_DUR <= endMin) {
-              const result = placeSession(current, curMin, endMin, subj, paper, 'content')
-              if (result) { commit(result.session); curMin = result.newMin; typePtr[subj]++; slotsUsed++ }
-            }
-            break // window exhausted — move to the next one, preExamI carries over
-          }
-          const result = placeSession(current, curMin, endMin, subj, paper, stype)
-          if (result) {
-            commit(result.session)
-            curMin = result.newMin
-            typePtr[subj]++
-            slotsUsed++
-          }
-          preExamI++
-          if (preExamI > 200) break
-        }
-      } else {
-        while (orderedIdx < ordered.length) {
-          if (curMin + CONTENT_DUR > endMin) break // window exhausted — same subject retried next window
-          if (isDayCapped && slotsUsed >= capLimit) break
-
-          const subj = ordered[orderedIdx]
-          orderedIdx++
-
-          const ap = activePapers(subj.name)
-          if (!ap.length) continue
-
-          const ratioToday = effectiveRatio(subj.name, subj.ratio, current)
-          let stype = nextSessionType(subj.name, ratioToday)
-          let paper = pickPaper(subj.name, stype, current)
-          if (!paper) continue
-
-          // Skip paper if its exam is today
-          if (examsTodayMap[subj.name]?.includes(paper)) {
-            const alts = ap.filter(p => !examsTodayMap[subj.name]?.includes(p))
-            if (!alts.length) continue
-            paper = alts[(stype === 'content' ? contentPtr[subj.name] : examPtr[subj.name]) % alts.length]
-          }
-
-          const dur = stype === 'content' ? CONTENT_DUR : getExamDuration(subj.name, paper, subj.board, subj.tier, subj.qualification)
-          if (curMin + dur > endMin) {
-            if (stype === 'exam' && curMin + CONTENT_DUR <= endMin) stype = 'content'
-            else continue
-          }
-
-          const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
-          if (result) {
-            commit(result.session)
-            curMin = result.newMin
-            typePtr[subj.name]++
-            advancePaperPtr(subj.name, result.stype, current)
-            slotsUsed++
-          }
-        }
+      let paper = pickPaper(name, stype, current)
+      if (!paper) return null
+      // Skip paper if its exam is today
+      if (examsTodayMap[name]?.includes(paper)) {
+        const alts = ap.filter(p => !examsTodayMap[name]?.includes(p))
+        if (!alts.length) return null
+        paper = alts[(stype === 'content' ? contentPtr[name] : examPtr[name]) % alts.length]
       }
+      return paper
     }
+    // What this subject is due for next, following its content : exam ratio.
+    function dueCandidate(subj) {
+      const stype = nextSessionType(subj.name, isPreExam ? undefined : effectiveRatio(subj.name, subj.ratio, current))
+      const paper = paperFor(subj.name, stype)
+      return paper ? { name: subj.name, paper, stype, dur: durationFor(subj.name, paper, stype) } : null
+    }
+    // An extra content session that does not use up the subject's exam practice turn. Never for a subject the student set
+    // to exam practice only (a content ratio of 0): their choice stands, so its time is simply left for other subjects.
+    function fillerCandidate(subj) {
+      if ((subj.ratio || [contentRatio, examRatio])[0] === 0) return null
+      const paper = paperFor(subj.name, 'content')
+      return paper ? { name: subj.name, paper, stype: 'content', dur: CONTENT_DUR } : null
+    }
+    function addToPlan(w, built) {
+      plan.add(w, built.session, built.dur)
+      share.record(built.session)
+      slotsUsed++
+    }
+    function placeCandidate(c, w, isFiller) {
+      addToPlan(w, buildSession(current, c.name, c.paper, c.stype, false))
+      if (!isFiller) typePtr[c.name]++
+      if (!isPreExam) advancePaperPtr(c.name, c.stype, current)
+    }
+
+    // 1. Emergency sessions (the day before an exam) take their place first, in the first window they fit.
+    for (const { subj, paper } of emergencyMap[dateStr] || []) {
+      if (capReached()) break
+      const built = buildSession(current, subj, paper, 'content', true)
+      const w = plan.fit(built.dur)
+      if (w >= 0) addToPlan(w, built)
+    }
+
+    // 2. Full-length sessions.
+    fillPlan(plan, { pool, order: (list) => share.order(list), dueCandidate, fillerCandidate, place: placeCandidate, capReached })
+
+    // 3. Time too short for a full session.
+    topUp(plan, {
+      pool, order: (list) => share.order(list), fillerCandidate, capReached, maxLen: CONTENT_DUR,
+      placeShort: (c, w, minutes) => {
+        addToPlan(w, buildSession(current, c.name, c.paper, 'content', false, minutes))
+        if (!isPreExam) advancePaperPtr(c.name, 'content', current)
+      },
+    })
+
+    // 4. Lay each window out in time. Spare time becomes extra break between sessions, and the same subject is not
+    //    placed twice in a row where the other sessions allow it.
+    plan.windows.forEach(win => { win.items = separateNeighbours(win.items) })
+    layoutPlan(plan, { maxExtraGap: MAX_EXTRA_GAP })
+    plan.windows.forEach(win => win.items.forEach(it => {
+      stampSession(it.session, current, it.startMin)
+      sessions.push(it.session)
+    }))
 
     current = addDays(current, 1)
   }
@@ -658,13 +659,12 @@ export function scheduleFreePeriods(options) {
   const sessions  = []
   const counters  = {}
   const completed = new Set()
-  // Same fair-share rule as generateSchedule, starting from what that pass already gave each subject and topic, so the
-  // two passes together stay even instead of each favouring the same subjects.
-  const share = createFairShare({ subjects, topicFocus, existingSessions })
-  function commit(session) {
-    sessions.push(session)
-    share.record(session)
-  }
+  // Free periods have NO priority bias: every subject counts the same here, however the student ranked their subjects
+  // for evening study, and what the evening pass gave each subject is not "made up" here. The evening pass is carried
+  // on only for the ROTATION (who was placed last, which topic is next), so the same subjects are not favoured twice.
+  const share = createFairShare({ subjects, topicFocus, existingSessions, equalWeights: true, carryMinutes: false })
+  // A short break inside a double free period. The student's own gap setting is for evening study.
+  const FP_GAP = Math.min(GAP_MINUTES, 10)
 
   const contentPtr = {}
   const examPtr    = {}
@@ -713,14 +713,9 @@ export function scheduleFreePeriods(options) {
     else examPtr[subjName] = (examPtr[subjName] + 1) % ap.length
   }
 
-  function placeSession(date, currentMin, endMin, subjName, paper, stype) {
+  // A session without its clock time (stampSession adds that once the free period has been planned).
+  function buildSession(date, subjName, paper, stype, dur) {
     const meta = subjMeta(subjName)
-    let dur = stype === 'content' ? CONTENT_DUR
-      : getExamDuration(subjName, paper, meta?.board, meta?.tier, meta?.qualification)
-    if (currentMin + dur > endMin) {
-      if (stype === 'exam' && currentMin + CONTENT_DUR <= endMin) { stype = 'content'; dur = CONTENT_DUR }
-      else return null
-    }
     const focusTopic = stype === 'content' ? share.topicFor(subjName, paper) : null
     const name = getSessionName(subjName, paper, stype, counters, focusTopic)
     const session = {
@@ -734,12 +729,6 @@ export function scheduleFreePeriods(options) {
       type: stype === 'content' ? 'Content Revision' : 'Exam Practice',
       title: name,
       date: format(date, 'yyyy-MM-dd'),
-      start: fmtTime(currentMin),
-      end:   fmtTime(currentMin + dur),
-      startTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
-        Math.floor(currentMin / 60), currentMin % 60).toISOString(),
-      endTime: new Date(date.getFullYear(), date.getMonth(), date.getDate(),
-        Math.floor((currentMin + dur) / 60), (currentMin + dur) % 60).toISOString(),
       duration: dur,
       isEmergency: false,
       completed: false,
@@ -750,7 +739,7 @@ export function scheduleFreePeriods(options) {
       viaFreePeriod: true,
       ...(focusTopic ? { focusTopic } : {}),
     }
-    return { session, newMin: currentMin + dur + GAP_MINUTES, stype }
+    return { session, dur }
   }
 
   let current = new Date(startDate)
@@ -782,43 +771,98 @@ export function scheduleFreePeriods(options) {
     })
     if (!activeSubjects.length) { current = addDays(current, 1); continue }
 
-    const ordered = share.order(activeSubjects)
-    let orderedIdx = 0
-
-    const windows = mergeWindows(periods.map(p => rangeToMinutes({ start: p.startTime, end: p.endTime })))
-
-    for (const win of windows) {
-      let curMin = win.start
-      const endMin = win.end
-      while (orderedIdx < ordered.length) {
-        if (curMin + CONTENT_DUR > endMin) break
-        const subj = ordered[orderedIdx]
-        orderedIdx++
-        const ap = activePapers(subj.name)
-        if (!ap.length) continue
-        const ratio = subj.ratio || [2, 1]
-        let stype = nextSessionType(subj.name, ratio)
-        let paper = pickPaper(subj.name, stype)
-        if (!paper) continue
-        if (examsTodayMap[subj.name]?.includes(paper)) {
-          const alts = ap.filter(p => !examsTodayMap[subj.name]?.includes(p))
-          if (!alts.length) continue
-          paper = alts[0]
-        }
-        const result = placeSession(current, curMin, endMin, subj.name, paper, stype)
-        if (result) {
-          commit(result.session)
-          curMin = result.newMin
-          typePtr[subj.name]++
-          advancePaperPtr(subj.name, result.stype)
-        }
+    // The paper a session of this type would be about today, or null.
+    function paperFor(name, stype) {
+      const ap = activePapers(name)
+      let paper = pickPaper(name, stype)
+      if (!paper) return null
+      if (examsTodayMap[name]?.includes(paper)) {
+        const alts = ap.filter(p => !examsTodayMap[name]?.includes(p))
+        if (!alts.length) return null
+        paper = alts[0]
       }
+      return paper
+    }
+
+    // ALWAYS fill the free periods. Every free period is planned on its own, whatever its length (and with no daily
+    // cap: free periods are separate from the evening caps). Sessions are sized to use the period up: a 50 minute
+    // free period gets one 50 minute session, a double period two, a short one a shorter session, and anything too
+    // short to be worth a session none. Subjects repeat when there is more free time than subjects.
+    const windows = mergeWindows(periods.map(p => rangeToMinutes({ start: p.startTime, end: p.endTime })))
+    for (const win of windows) {
+      const fit = fitSessionLength(win.end - win.start, CONTENT_DUR, FP_GAP)
+      if (!fit.count) continue
+      const plan = createDayPlan([{ start: win.start, end: win.end }], FP_GAP)
+      const addToPlan = (built) => { plan.add(0, built.session, built.dur); share.record(built.session) }
+
+      const durationFor = (name, paper, stype) => stype === 'content' ? fit.len
+        : getExamDuration(name, paper, subjMeta(name)?.board, subjMeta(name)?.tier, subjMeta(name)?.qualification)
+      const dueCandidate = (subj) => {
+        const stype = nextSessionType(subj.name, subj.ratio || [2, 1])
+        const paper = paperFor(subj.name, stype)
+        return paper ? { name: subj.name, paper, stype, dur: durationFor(subj.name, paper, stype) } : null
+      }
+      const fillerCandidate = (subj) => {
+        if ((subj.ratio || [2, 1])[0] === 0) return null   // exam practice only: no filler content (see generateSchedule)
+        const paper = paperFor(subj.name, 'content')
+        return paper ? { name: subj.name, paper, stype: 'content', dur: fit.len } : null
+      }
+
+      fillPlan(plan, {
+        pool: activeSubjects, order: (list) => share.order(list), dueCandidate, fillerCandidate,
+        place: (c, w, isFiller) => {
+          addToPlan(buildSession(current, c.name, c.paper, c.stype, c.dur))
+          if (!isFiller) typePtr[c.name]++
+          advancePaperPtr(c.name, c.stype)
+        },
+      })
+      topUp(plan, {
+        pool: activeSubjects, order: (list) => share.order(list), fillerCandidate, maxLen: fit.len,
+        placeShort: (c, w, minutes) => {
+          addToPlan(buildSession(current, c.name, c.paper, 'content', minutes))
+          advancePaperPtr(c.name, 'content')
+        },
+      })
+
+      plan.windows.forEach(w => { w.items = separateNeighbours(w.items) })
+      layoutPlan(plan)
+      plan.windows.forEach(w => w.items.forEach(it => {
+        stampSession(it.session, current, it.startMin)
+        sessions.push(it.session)
+      }))
     }
 
     current = addDays(current, 1)
   }
 
   return sessions
+}
+
+// Exam papers that are longer than every study window the student has. The generator can never place those as exam
+// practice (there is nowhere for a paper that long to go), so it fills the time with content sessions instead, and
+// the student should be told rather than find it out later. Looks at the week from startDate; a subject that is paused
+// or set to content only is skipped, as is a paper whose exam date has already passed.
+export function longPaperWarnings({ subjects = [], availability, startDate, extendedFromDate = null }) {
+  if (!startDate) return []
+  const start = new Date(startDate)
+  let longest = 0
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(start, i)
+    const useExtended = !!(extendedFromDate && day >= extendedFromDate)
+    getBaseWindows(day, availability, useExtended).forEach(w => { longest = Math.max(longest, w.end - w.start) })
+  }
+  const out = []
+  subjects.forEach(s => {
+    const r = s.ratio || [2, 1]
+    if (r[1] === 0) return                                  // paused (0:0) or content only: no exam practice wanted
+    const gone = new Set((s.examDates || []).filter(e => { const d = parseLocalDate(e.date); return d && d < start }).map(e => String(e.paper)))
+    ;(s.papers || []).forEach(paper => {
+      if (gone.has(String(paper))) return
+      const minutes = getExamDuration(s.name, paper, s.board, s.tier, s.qualification)
+      if (minutes > longest) out.push({ subject: s.name, paper, minutes, longest })
+    })
+  })
+  return out
 }
 
 // ── PREFERENCE DEFAULTS ───────────────────────────────────────────────────────
