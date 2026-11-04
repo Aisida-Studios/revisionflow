@@ -9,7 +9,7 @@ import { generateProgressReport } from '../utils/pdfReport'
 import { generateTimetablePDF } from '../utils/pdfTimetable'
 import { LEVELS, getSubjectQualification } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
-import { resolveProfileIcon } from '../data/themes'
+import ProfileIcon from '../components/ProfileIcon'
 import { gradeColour } from '../utils/calendar'
 import { resolveTargetGrade } from '../utils/gradeTargets'
 import ReferralCard from '../components/ReferralCard'
@@ -96,7 +96,6 @@ export default function Profile() {
 
   const earnedIds      = profile?.badges || []
   const unlockedBadges = BADGE_LIST.filter(b => earnedIds.includes(b.id))
-  const iconEmoji      = resolveProfileIcon(profile?.profileIcon).emoji
   const [avatarError, setAvatarError] = useState(false)
   const hasRealAvatar  = !!profile?.avatarUrl && !avatarError
 
@@ -282,10 +281,10 @@ export default function Profile() {
 
       {/* ── Header card ── */}
       <div className="card accent-card" style={{ marginBottom: 20, padding: 28, textAlign: 'center' }}>
-        <div className="ap-avatar ap-avatar--xl" style={{ margin: '0 auto 14px', fontSize: (!hasRealAvatar && iconEmoji) ? '2.4rem' : undefined }}>
+        <div className="ap-avatar ap-avatar--xl" style={{ margin: '0 auto 14px' }}>
           {hasRealAvatar
             ? <img src={profile.avatarUrl} alt="" onError={() => setAvatarError(true)} />
-            : (iconEmoji || (profile?.displayName || 'U')[0].toUpperCase())}
+            : <ProfileIcon id={profile?.profileIcon} size={44} />}
         </div>
 
         <h2 style={{ marginBottom: 4, display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
