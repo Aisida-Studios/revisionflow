@@ -7,6 +7,19 @@ import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { THEMES, PROFILE_ICONS, isUnlocked, applyTheme, eligibleBadgeIcons } from '../data/themes'
 import { Lock } from 'lucide-react'
+import ProfileIcon from './ProfileIcon'
+
+const tileStyle = (active, enabled) => ({
+  width: 76, minHeight: 76, padding: '10px 4px 8px', gap: 6, borderRadius: 12,
+  border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+  background: active ? 'var(--accent-bg, rgba(34,197,94,0.08))' : 'var(--bg-surface)',
+  display: 'flex', flexDirection: 'column', alignItems: 'center',
+  cursor: enabled ? 'pointer' : 'not-allowed', transition: 'border-color 0.15s',
+})
+const captionStyle = (enabled) => ({
+  fontSize: '0.68rem', lineHeight: 1.25, textAlign: 'center',
+  color: enabled ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: enabled ? 600 : 500,
+})
 
 export default function ThemeSelector() {
   const { profile, user, refreshProfile } = useAuth()
@@ -70,13 +83,12 @@ export default function ThemeSelector() {
                   border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                   background: active ? 'var(--accent-bg, rgba(34,197,94,0.08))' : 'var(--bg-surface)',
                   cursor: unlocked ? 'pointer' : 'not-allowed',
-                  opacity: unlocked ? 1 : 0.6,
                   position: 'relative',
                   transition: 'border-color 0.15s',
                 }}
               >
                 {/* Colour swatches */}
-                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 4, marginBottom: 8, opacity: unlocked ? 1 : 0.5 }}>
                   {theme.preview.map((color, i) => (
                     <div key={i} style={{
                       width: 16, height: 16,
@@ -119,31 +131,15 @@ export default function ThemeSelector() {
                 key={id}
                 onClick={() => selectIcon(id)}
                 disabled={!unlocked}
-                title={unlocked ? icon.name : "Locked: " + icon.unlockLabel}
-                style={{
-                  width: 52, height: 52,
-                  borderRadius: 12,
-                  border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-                  background: active ? 'var(--accent-bg, rgba(34,197,94,0.08))' : 'var(--bg-surface)',
-                  fontSize: '1.5rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: unlocked ? 'pointer' : 'not-allowed',
-                  opacity: unlocked ? 1 : 0.45,
-                  position: 'relative',
-                  transition: 'border-color 0.15s',
-                }}
+                aria-label={unlocked ? icon.name : icon.name + ', locked: ' + icon.unlockLabel}
+                aria-pressed={active}
+                style={tileStyle(active, unlocked)}
               >
-                {icon.emoji}
-                {!unlocked && (
-                  <div style={{
-                    position: 'absolute', bottom: -2, right: -2,
-                    background: 'var(--bg-card)',
-                    borderRadius: '50%',
-                    padding: 1,
-                  }}>
-                    <Lock size={10} color="var(--text-muted)" />
-                  </div>
-                )}
+                <span style={{ position: 'relative', display: 'flex', color: unlocked ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  <ProfileIcon id={id} size={24} />
+                  {!unlocked && <Lock size={11} aria-hidden="true" style={{ position: 'absolute', right: -9, bottom: -4, color: 'var(--text-muted)' }} />}
+                </span>
+                <span style={captionStyle(unlocked)}>{unlocked ? icon.name : icon.unlockLabel}</span>
               </button>
             )
           })}
@@ -165,31 +161,14 @@ export default function ThemeSelector() {
                 key={badge.id}
                 onClick={() => selectBadgeIcon(badge.id)}
                 disabled={!earned}
-                title={earned ? badge.name : "Locked: " + badge.name + " — " + badge.desc}
-                style={{
-                  width: 52, height: 52,
-                  borderRadius: 12,
-                  border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-                  background: active ? 'var(--accent-bg, rgba(34,197,94,0.08))' : 'var(--bg-surface)',
-                  fontSize: '1.5rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: earned ? 'pointer' : 'not-allowed',
-                  opacity: earned ? 1 : 0.45,
-                  position: 'relative',
-                  transition: 'border-color 0.15s',
-                }}
+                title={badge.desc}
+                aria-label={earned ? badge.name : 'Locked: ' + badge.name + ', ' + badge.desc}
+                aria-pressed={active}
+                style={{ ...tileStyle(active, earned), minHeight: 92 }}
               >
-                {badge.icon}
-                {!earned && (
-                  <div style={{
-                    position: 'absolute', bottom: -2, right: -2,
-                    background: 'var(--bg-card)',
-                    borderRadius: '50%',
-                    padding: 1,
-                  }}>
-                    <Lock size={10} color="var(--text-muted)" />
-                  </div>
-                )}
+                <ProfileIcon id={'badge:' + badge.id} size={36} earned={earned} />
+                <span style={captionStyle(earned)}>{badge.name}</span>
+                {!earned && <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Not earned yet</span>}
               </button>
             )
           })}
