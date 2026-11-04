@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { LEVELS, levelFromXP } from '../data/subjects'
 import { BADGE_LIST } from '../data/badges'
-import { resolveProfileIcon } from '../data/themes'
+import ProfileIcon from '../components/ProfileIcon'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import BadgeArt from '../components/illustrations/BadgeArt'
 import { Zap, Star } from 'lucide-react'
@@ -68,7 +68,6 @@ export default function PublicProfile() {
   const level = levelFromXP(p.xp)
   const lvl = LEVELS[Math.min(level - 1, LEVELS.length - 1)]
   const unlockedBadges = (p.badges||[]).map(id => BADGE_LIST.find(b => b.id===id)).filter(Boolean)
-  const iconEmoji = resolveProfileIcon(p.profileIcon).emoji
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', padding:24 }}>
@@ -88,8 +87,8 @@ export default function PublicProfile() {
 
         {/* Hero card */}
         <div className="card accent-card" style={{ padding:'28px 20px', textAlign:'center', marginBottom:20 }}>
-          <div className="ap-avatar ap-avatar--xl" style={{ margin:'0 auto 16px', fontSize: iconEmoji ? '2.4rem' : undefined }}>
-            {iconEmoji || (p.displayName||'U')[0].toUpperCase()}
+          <div className="ap-avatar ap-avatar--xl" style={{ margin:'0 auto 16px' }}>
+            <ProfileIcon id={p.profileIcon} size={44} />
           </div>
           <h2 style={{ marginBottom:4 }}>{p.displayName || 'Anonymous'}</h2>
           {p.username && (
