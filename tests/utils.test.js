@@ -15,7 +15,8 @@ import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../sr
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
 import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
 import { PRIORITY_WEIGHT, fairOrder, pickFairest, normaliseTopics, weakTopicFocus, createFairShare } from '../src/utils/fairShare.js'
-import { generateSchedule, scheduleFreePeriods, buildSubjectsFromProfile } from '../src/utils/scheduler.js'
+import { generateSchedule, scheduleFreePeriods, buildSubjectsFromProfile, longPaperWarnings } from '../src/utils/scheduler.js'
+import { createDayPlan, layoutPlan, separateNeighbours, fitSessionLength, fillPlan, topUp } from '../src/utils/dayFill.js'
 import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
@@ -785,6 +786,86 @@ ok('createFairShare carries on from sessions an earlier pass already placed', ()
   assert.deepEqual(share.order([{ name: 'A' }, { name: 'B' }, { name: 'C' }]).map(s => s.name), ['C', 'B', 'A'])
 })
 
+// ── Calendar generator: planning a day (utils/dayFill.js) ────────────────────
+ok('createDayPlan packs best fit with the break between sessions counted', () => {
+  const plan = createDayPlan([{ start: 600, end: 660 }, { start: 1020, end: 1260 }], 30)    // a 1 hour window and a 4 hour window
+  assert.equal(plan.fit(45), 0)                      // the small window: the big one stays free for a long session
+  assert.equal(plan.fit(105), 1)
+  assert.equal(plan.fit(300), -1)
+  plan.add(0, { id: 'a' }, 45)
+  assert.equal(plan.fit(45), 1)                      // 45 + 30 + 45 no longer fits one hour
+  assert.equal(plan.spare(0), 0)
+  plan.add(1, { id: 'b' }, 105)
+  assert.equal(plan.spare(1), 240 - (105 + 30))
+  assert.equal(plan.count(), 2)
+})
+ok('layoutPlan starts at the window start and spreads spare time as extra break, up to the maximum', () => {
+  const plan = createDayPlan([{ start: 1020, end: 1260 }], 30)                              // 17:00 to 21:00
+  plan.add(0, { n: 1 }, 45); plan.add(0, { n: 2 }, 45)
+  layoutPlan(plan, { maxExtraGap: 60 })
+  const [a, b] = plan.windows[0].items
+  assert.equal(a.startMin, 1020)
+  assert.equal(b.startMin - (a.startMin + 45), 90)   // the 30 minute gap plus 60 extra (the spare time was 120)
+  layoutPlan(plan, { maxExtraGap: 0 })
+  assert.equal(plan.windows[0].items[1].startMin, 1020 + 45 + 30)
+  const three = createDayPlan([{ start: 1020, end: 1260 }], 30)
+  ;[1, 2, 3].forEach(k => three.add(0, { k }, 45))
+  layoutPlan(three, { maxExtraGap: 60 })
+  assert.deepEqual(three.windows[0].items.map(i => i.startMin), [1020, 1115, 1210])         // the last ends at 21:00 or before
+})
+ok('separateNeighbours keeps the same subject apart where it can and never moves the first session', () => {
+  const mk = (...s) => s.map(x => ({ session: { subject: x } }))
+  const subs = (items) => separateNeighbours(items).map(i => i.session.subject).join('')
+  assert.equal(subs(mk('A', 'A', 'B', 'C')), 'ABAC')
+  assert.equal(subs(mk('A', 'B', 'B', 'A')), 'ABAB')
+  assert.equal(subs(mk('A', 'B', 'B', 'B')), 'ABBB')     // nothing to swap with
+  assert.equal(subs(mk('A', 'A')), 'AA')
+})
+ok('fitSessionLength sizes sessions so a free period is used up', () => {
+  assert.deepEqual(fitSessionLength(50, 45, 10), { count: 1, len: 50 })      // one 50 minute session, not 45 and 5 wasted
+  assert.deepEqual(fitSessionLength(100, 45, 10), { count: 2, len: 45 })
+  assert.deepEqual(fitSessionLength(110, 45, 10), { count: 2, len: 50 })
+  assert.deepEqual(fitSessionLength(40, 45, 10), { count: 1, len: 40 })      // shorter than a normal session: one shorter session
+  assert.deepEqual(fitSessionLength(65, 45, 10), { count: 1, len: 60 })      // stretched by at most 15
+  assert.deepEqual(fitSessionLength(25, 45, 10), { count: 1, len: 25 })
+  assert.deepEqual(fitSessionLength(20, 45, 10), { count: 0, len: 0 })       // too short to be worth a session
+})
+ok('fillPlan places exam practice that fits first, then one session at a time, fairest first', () => {
+  const plan = createDayPlan([{ start: 0, end: 200 }], 10)
+  const used = { A: 0, B: 0 }, state = { A: 'exam' }, placed = []
+  fillPlan(plan, {
+    pool: [{ n: 'B' }, { n: 'A' }],
+    order: (list) => [...list].sort((x, y) => used[x.n] - used[y.n]),
+    dueCandidate: (s) => s.n === 'A' ? (state.A === 'exam' ? { n: 'A', stype: 'exam', dur: 120 } : { n: 'A', stype: 'content', dur: 50 }) : { n: 'B', stype: 'content', dur: 50 },
+    fillerCandidate: (s) => ({ n: s.n, stype: 'content', dur: 50 }),
+    place: (c, w, filler) => { plan.add(w, c, c.dur); used[c.n] += c.dur; placed.push(`${c.n}:${c.stype}${filler ? '*' : ''}`); if (c.n === 'A' && !filler) state.A = 'content' },
+  })
+  assert.deepEqual(placed, ['A:exam', 'B:content'])        // the long paper got the time first, B filled what was left
+})
+ok('fillPlan fills with extra content when an exam paper cannot fit anywhere, and respects the daily cap', () => {
+  const plan = createDayPlan([{ start: 0, end: 100 }], 10)
+  const placed = []
+  fillPlan(plan, {
+    pool: [{ n: 'A' }], order: (l) => l,
+    dueCandidate: () => ({ n: 'A', stype: 'exam', dur: 120 }),            // longer than the window
+    fillerCandidate: () => ({ n: 'A', stype: 'content', dur: 40 }),
+    place: (c, w, filler) => { plan.add(w, c, c.dur); placed.push(filler ? 'filler' : c.stype) },
+  })
+  assert.deepEqual(placed, ['filler', 'filler'])                          // 40 + 10 + 40, and the exam turn was never used up
+  let n = 0
+  const capped = createDayPlan([{ start: 0, end: 1000 }], 0), got = []
+  fillPlan(capped, { pool: [{ n: 'A' }], order: (l) => l, dueCandidate: () => ({ n: 'A', stype: 'content', dur: 10 }), fillerCandidate: () => null,
+    place: (c, w) => { capped.add(w, c, c.dur); n++; got.push(n) }, capReached: () => n >= 3 })
+  assert.deepEqual(got, [1, 2, 3])
+})
+ok('topUp adds one shorter session where a window has room for it, and none where the room is too short', () => {
+  const plan = createDayPlan([{ start: 0, end: 100 }, { start: 200, end: 220 }], 10)
+  plan.add(0, {}, 50)
+  const got = []
+  topUp(plan, { pool: [{ n: 'A' }], order: (l) => l, fillerCandidate: (s) => ({ n: s.n }), maxLen: 60, placeShort: (c, w, m) => { got.push(`${w}:${m}`); plan.add(w, c, m) } })
+  assert.deepEqual(got, ['0:40'])                                          // 100 - (50 + 10); the 20 minute window is too short to be worth a session
+})
+
 // ── Calendar generator: the engine itself ────────────────────────────────────
 const gSubj = (name, extra = {}) => ({ name, board: 'AQA', tier: 'N/A', qualification: 'GCSE', papers: [1, 2], ratio: [2, 1], examDates: [], priority: false, ...extra })
 const gAvail = (start = '17:00', end = '20:00') => {
@@ -853,17 +934,84 @@ ok('generator: the dynamic ratio leaves an exam-practice-only subject as exam pr
   assert.equal(out.filter(s => s.type === 'Content Revision').length, 0)
   assert.ok(out.filter(s => s.type === 'Exam Practice').length > 0)
 })
-ok('generator: free-period sessions carry on from the evening totals instead of favouring the same subjects', () => {
+ok('generator: an evening with more time than subjects is filled, not left part empty', () => {
+  const out = generateSchedule({ ...gBase, subjects: [gSubj('History'), gSubj('Geography')], availability: gAvail('17:00', '21:00') })
+  const byDay = {}; out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
+  const days = Object.values(byDay)
+  assert.ok(days.length >= 40)
+  assert.ok(days.every(l => l.length >= 3), 'two subjects used to get one session each: ' + Math.min(...days.map(l => l.length)))
+  const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+  assert.ok(days.every(l => 21 * 60 - Math.max(...l.map(s => mins(s.end))) <= 15), 'the evening ends with spare time left over')
+})
+ok('generator: with a daily cap the sessions are spread through the evening instead of bunched at the start', () => {
+  const subjects = ['History', 'Geography', 'Biology'].map(nm => gSubj(nm))
+  const out = generateSchedule({ ...gBase, subjects, availability: gAvail('17:00', '21:00'), maxSessionsPerDay: 2 })
+  const byDay = {}; out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
+  const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+  assert.ok(Object.values(byDay).every(l => l.length === 2))
+  Object.values(byDay).forEach(l => {
+    const [a, b] = [...l].sort((x, y) => mins(x.start) - mins(y.start))
+    assert.ok(mins(b.start) - mins(a.end) > 30, 'second session starts straight after the first')      // more than the 30 minute gap
+    assert.ok(mins(b.start) - mins(a.end) <= 90 && mins(b.end) <= 21 * 60)
+  })
+})
+ok('generator: long exam papers are not squeezed out, and minutes stay even between subjects', () => {
+  const subjects = ['History', 'Geography', 'Biology', 'Chemistry', 'French', 'Spanish'].map(nm => gSubj(nm))
+  const out = generateSchedule({ ...gBase, subjects, availability: gAvail() })
+  subjects.forEach(s => assert.ok(out.filter(x => x.subject === s.name && x.type === 'Exam Practice').length >= 3, `${s.name} got too little exam practice`))
+  const m = gMinutes(out), v = subjects.map(s => m[s.name])
+  assert.ok(Math.max(...v) - Math.min(...v) <= 100, JSON.stringify(m))
+})
+ok('generator: a subject set to exam practice only never gets filler content, even when its paper does not fit', () => {
+  const out = generateSchedule({ ...gBase, subjects: [gSubj('Chemistry', { ratio: [0, 1] }), gSubj('History')], availability: gAvail('17:00', '18:00') })   // Chemistry's paper is longer than one hour
+  assert.equal(out.filter(s => s.subject === 'Chemistry').length, 0)
+  assert.ok(out.filter(s => s.subject === 'History').length > 40)
+})
+const gFree = (a, b) => ({ type: 'free', startTime: a, endTime: b })
+const gTimetable = { Monday: [gFree('10:00', '10:50')], Tuesday: [gFree('10:00', '11:40')], Wednesday: [gFree('10:00', '10:40')], Thursday: [gFree('10:00', '10:15')], Friday: [gFree('10:00', '10:50'), gFree('13:00', '14:40')] }
+ok('generator: free periods are always filled, whatever their length', () => {
+  const subjects = ['History', 'Geography', 'Biology'].map(nm => gSubj(nm))
+  const out = scheduleFreePeriods({ ...gBase, subjects, timetable: gTimetable })
+  const total = (dow, from) => out.filter(s => gDow(s) === dow && (!from || s.start >= from)).reduce((n, s) => n + s.duration, 0)
+  const each = (dow) => { const by = {}; out.filter(s => gDow(s) === dow).forEach(s => { (by[s.date] = by[s.date] || []).push(s) }); return Object.values(by) }
+  each(1).forEach(l => { assert.equal(l.length, 1); assert.equal(l[0].start, '10:00'); assert.equal(l[0].end, '10:50') })   // 50 minutes: one 50 minute session
+  each(3).forEach(l => { assert.equal(l.length, 1); assert.equal(l[0].duration, 40) })                                     // 40 minutes: one shorter session
+  assert.equal(out.filter(s => gDow(s) === 4).length, 0)                                                                    // 15 minutes is too short to be worth a session
+  each(2).forEach(l => assert.ok(l.reduce((n, s) => n + s.duration, 0) >= 90))                                              // 100 minutes: two sessions (or one long paper)
+  assert.ok(each(2).some(l => l.length === 2), 'a double free period holds two sessions')
+  each(5).forEach(l => assert.ok(l.reduce((n, s) => n + s.duration, 0) >= 140))                                             // 50 minutes plus 100 minutes
+  assert.ok(total(1) > 0 && total(2) > 0)
+  out.forEach(s => assert.ok(s.viaFreePeriod === true && s.completed === false))
+})
+ok('generator: free periods have no priority bias, and are not limited by the evening daily caps', () => {
+  const subjects = ['History', 'Geography', 'Biology'].map((nm, i) => gSubj(nm, { priority: i === 0 }))      // History is "High priority"
+  const evening = generateSchedule({ ...gBase, subjects, availability: gAvail(), maxSessionsPerDay: 1 })
+  const free = scheduleFreePeriods({ ...gBase, subjects, timetable: gTimetable, maxSessionsPerDay: 1, dayCaps: [{ day: 'Tuesday', max: 1 }] })
+  const eve = gMinutes(evening)
+  assert.ok(eve.History > eve.Geography * 1.5, 'high priority still applies to the evening: ' + JSON.stringify(eve))
+  const m = gMinutes(free), v = subjects.map(s => m[s.name])
+  assert.ok(Math.max(...v) - Math.min(...v) <= 120, 'free periods favoured a subject: ' + JSON.stringify(m))
+  const byDay = {}; free.filter(s => gDow(s) === 2).forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
+  assert.ok(Object.values(byDay).some(l => l.length === 2), 'the daily cap must not apply to free periods')
+})
+ok('generator: free periods carry on the rotation from the evening pass without making up its minutes', () => {
   const subjects = ['History', 'Geography', 'Biology', 'French', 'Spanish'].map(nm => gSubj(nm))
   const cfg = { ...gBase, endDate: new Date(2027, 0, 20) }                         // three Mondays: 4, 11 and 18 January
   const evening = generateSchedule({ ...cfg, subjects, availability: { Monday: { enabled: true, ranges: [{ start: '17:00', end: '17:50' }] } } })
-  const timetable = { Monday: [{ type: 'free', startTime: '10:00', endTime: '10:50' }] }
-  const spread = (ss) => { const m = gMinutes(ss); const v = subjects.map(s => m[s.name] || 0); return Math.max(...v) - Math.min(...v) }
+  const timetable = { Monday: [gFree('10:00', '10:50')] }
   const independent = scheduleFreePeriods({ ...cfg, subjects, timetable })
   const carried = scheduleFreePeriods({ ...cfg, subjects, timetable, existingSessions: evening })
-  assert.equal(evening.length, 3); assert.equal(carried.length, 3)
-  assert.equal(spread([...evening, ...independent]), 90)                           // the same three subjects twice
-  assert.equal(spread([...evening, ...carried]), 45)                               // the other two subjects first
+  assert.deepEqual(evening.map(s => s.subject), ['History', 'Geography', 'Biology'])
+  assert.deepEqual(independent.map(s => s.subject), ['History', 'Geography', 'Biology'])    // the same three subjects twice
+  assert.deepEqual(carried.map(s => s.subject), ['French', 'Spanish', 'History'])           // the subjects that missed out come first
+})
+ok('longPaperWarnings names the exam papers that are longer than every study window', () => {
+  const subjects = [gSubj('Chemistry'), gSubj('History', { ratio: [3, 0] }), gSubj('Biology', { ratio: [0, 0] })]
+  const w = longPaperWarnings({ subjects, availability: gAvail('17:00', '18:00'), startDate: new Date(2027, 0, 4) })
+  assert.ok(w.length > 0 && w.every(x => x.subject === 'Chemistry' && x.minutes > 60 && x.longest === 60))     // content-only and paused subjects are not flagged
+  assert.deepEqual(longPaperWarnings({ subjects, availability: gAvail('17:00', '21:00'), startDate: new Date(2027, 0, 4) }), [])   // a 4 hour window holds any paper
+  const past = [gSubj('Chemistry', { examDates: [{ paper: 1, date: '2026-12-01' }, { paper: 2, date: '2026-12-02' }] })]
+  assert.deepEqual(longPaperWarnings({ subjects: past, availability: gAvail('17:00', '18:00'), startDate: new Date(2027, 0, 4) }), [])   // exams already sat
 })
 ok('buildSubjectsFromProfile uses the real qualification, numeric paper order, and gives no subject extra priority', () => {
   const out = buildSubjectsFromProfile({ qualification: 'A-Level', subjects: [{ name: 'Mathematics', board: 'AQA' }, { name: 'Physics', board: 'AQA', qualification: 'AS-Level' }],
@@ -872,7 +1020,7 @@ ok('buildSubjectsFromProfile uses the real qualification, numeric paper order, a
   assert.deepEqual(out[0].papers, [1, 2, 10])
   assert.deepEqual(out.map(s => s.priority), [false, false])
 })
-ok('generator: across many random set-ups no session overlaps, leaves the student\'s availability, lands on a holiday, or is for a paused subject', () => {
+ok('generator: across many random set-ups no session overlaps, leaves the student\'s availability, lands on a holiday, goes over the daily cap, or is for a paused subject', () => {
   const rng = (seed) => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
   const NAMES = ['Mathematics', 'Biology', 'Chemistry', 'Physics', 'History', 'Geography', 'French', 'Spanish']
   const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -887,7 +1035,8 @@ ok('generator: across many random set-ups no session overlaps, leaves the studen
     const availability = {}
     DAYS.forEach(d => { availability[d] = { enabled: r() < 0.75, ranges: [{ start: `${15 + Math.floor(r() * 3)}:00`, end: `${19 + Math.floor(r() * 3)}:30` }] } })
     const holidays = r() < 0.4 ? [{ start: ymd(new Date(2027, 0, 12)), end: ymd(new Date(2027, 0, 16)) }] : []
-    const out = generateSchedule({ ...gBase, startDate: start, endDate: end, subjects, availability, holidays, dynamicRatio: r() < 0.4 })
+    const cap = r() < 0.35 ? 1 + Math.floor(r() * 3) : null
+    const out = generateSchedule({ ...gBase, startDate: start, endDate: end, subjects, availability, holidays, dynamicRatio: r() < 0.4, maxSessionsPerDay: cap })
     const byDay = {}
     out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
     Object.entries(byDay).forEach(([date, list]) => {
@@ -895,8 +1044,12 @@ ok('generator: across many random set-ups no session overlaps, leaves the studen
       assert.ok(!holidays.some(h => date >= h.start && date <= h.end), `seed ${seed}: session on holiday ${date}`)
       const sorted = [...list].sort((a, b) => mins(a.start) - mins(b.start))
       for (let i = 1; i < sorted.length; i++) assert.ok(mins(sorted[i].start) >= mins(sorted[i - 1].end), `seed ${seed}: overlap on ${date}`)
-      if (av.enabled) list.forEach(s => assert.ok(mins(s.start) >= mins(av.ranges[0].start) && mins(s.end) <= mins(av.ranges[0].end), `seed ${seed}: ${s.subject} outside availability on ${date}`))
-      else list.forEach(s => assert.ok(s.isEmergency, `seed ${seed}: session on a day that is off, ${date}`))
+      if (av.enabled) {
+        list.forEach(s => assert.ok(mins(s.start) >= mins(av.ranges[0].start) && mins(s.end) <= mins(av.ranges[0].end), `seed ${seed}: ${s.subject} outside availability on ${date}`))
+        if (cap) assert.ok(list.length <= cap, `seed ${seed}: ${list.length} sessions on ${date}, over the cap of ${cap}`)
+      } else {
+        list.forEach(s => assert.ok(s.isEmergency, `seed ${seed}: session on a day that is off, ${date}`))
+      }
     })
     subjects.filter(s => s.ratio[0] === 0 && s.ratio[1] === 0).forEach(s => assert.equal(out.filter(x => x.subject === s.name).length, 0, `seed ${seed}: paused ${s.name} scheduled`))
   }
