@@ -5,6 +5,7 @@
 // since the visual shell and dismiss behaviour are identical — only the copy and reward list differ.
 import { Gift, X, Zap } from 'lucide-react'
 import { LazyBadgeArt, LazyIllustration } from './illustrations/lazy'
+import ProfileIcon from './ProfileIcon'
 
 const COPY = {
   referrer: {
@@ -14,7 +15,7 @@ const COPY = {
     rewards: [
       { icon: <Zap size={18} />, label: '+200 XP' },
       { icon: <LazyBadgeArt id="referral" size={26} />, label: 'Recruiter badge earned' },
-      { icon: '🚀', label: 'Rocket icon unlocked' },   // stays an emoji: it is the Rocket profile avatar being unlocked
+      { icon: <ProfileIcon id="rocket" size={18} />, label: 'Rocket icon unlocked' },
     ],
   },
   referred: {
@@ -23,7 +24,7 @@ const COPY = {
     body: "You've been credited for signing up with a referral link.",
     rewards: [
       { icon: <Zap size={18} />, label: '+100 XP' },
-      { icon: '🚀', label: 'Rocket icon unlocked' },
+      { icon: <ProfileIcon id="rocket" size={18} />, label: 'Rocket icon unlocked' },
     ],
   },
 }
