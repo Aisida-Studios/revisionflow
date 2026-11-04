@@ -71,12 +71,17 @@ export function weakTopicFocus(topicRows, subjectName, paperTopicNames) {
 //   subjects         [{ name, priority }]  priority gives PRIORITY_WEIGHT
 //   topicFocus       { 'Subject-paper': name | [names] | [{ name, weight }] }
 //   existingSessions sessions already placed by an earlier pass over the same dates, so a second pass (school free
-//                    periods) carries on from the first pass's totals instead of starting from zero
-export function createFairShare({ subjects = [], topicFocus = {}, existingSessions = [] } = {}) {
+//                    periods) carries on from the first pass instead of starting from zero
+//   equalWeights     ignore "High priority": every subject counts the same (used for school free periods, which have
+//                    no priority bias)
+//   carryMinutes     false: existingSessions only carry on the ROTATION (who was placed last, which topic is next) and
+//                    not the subject minutes, so a subject that got extra evening hours from being high priority is
+//                    not given less in the free periods to make up for it
+export function createFairShare({ subjects = [], topicFocus = {}, existingSessions = [], equalWeights = false, carryMinutes = true } = {}) {
   const used = {}, last = {}, weight = {}
   const topicUsed = {}, topicLast = {}
   let seq = 0
-  subjects.forEach(s => { if (s && s.name) weight[s.name] = s.priority ? PRIORITY_WEIGHT : 1 })
+  subjects.forEach(s => { if (s && s.name) weight[s.name] = (!equalWeights && s.priority) ? PRIORITY_WEIGHT : 1 })
 
   const share = {
     // The subjects (objects with a .name) fairest first.
@@ -95,12 +100,13 @@ export function createFairShare({ subjects = [], topicFocus = {}, existingSessio
       topics.forEach(t => { w[t.name] = t.weight })
       return pickFairest(topics.map(t => t.name), topicUsed[key] || {}, w, topicLast[key] || {})
     },
-    // Count a session that has been placed.
-    record(session) {
+    // Count a session that has been placed. skipMinutes counts it for the rotation (who was placed last, which topic is
+    // next) but not towards the subject's total minutes.
+    record(session, { skipMinutes = false } = {}) {
       if (!session || !session.subject) return
       const mins = Number(session.duration) > 0 ? Number(session.duration) : 0
       seq += 1
-      used[session.subject] = (used[session.subject] || 0) + mins
+      if (!skipMinutes) used[session.subject] = (used[session.subject] || 0) + mins
       last[session.subject] = seq
       if (session.focusTopic && session.type === 'Content Revision') {
         const key = `${session.subject}-${session.paper}`
@@ -111,6 +117,6 @@ export function createFairShare({ subjects = [], topicFocus = {}, existingSessio
     },
     usedMinutes(subjectName) { return used[subjectName] || 0 },
   }
-  ;(existingSessions || []).forEach(s => share.record(s))
+  ;(existingSessions || []).forEach(s => share.record(s, { skipMinutes: !carryMinutes }))
   return share
 }
