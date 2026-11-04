@@ -127,10 +127,11 @@ export const PROFILE_ICONS = {
 export function resolveProfileIcon(iconId) {
   if (iconId && iconId.startsWith('badge:')) {
     const badge = BADGE_LIST.find(b => b.id === iconId.slice(6))
-    if (badge) return { emoji: badge.icon, name: badge.name }
+    if (badge) return { emoji: badge.icon, name: badge.name, badgeId: badge.id }
   }
-  const preset = PROFILE_ICONS[iconId] || PROFILE_ICONS.lightning
-  return { emoji: preset.emoji, name: preset.name }
+  const id = PROFILE_ICONS[iconId] ? iconId : 'lightning'
+  const preset = PROFILE_ICONS[id]
+  return { emoji: preset.emoji, name: preset.name, id }
 }
 
 // Badges whose emoji doesn't already exist as a PROFILE_ICONS option. Several PROFILE_ICONS
