@@ -29,7 +29,7 @@ import {
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { subjectColour } from '../data/subjects'
-import { componentForSubject } from '../data/illustrationThemes'
+import { componentForSubject } from '../components/illustrations/SubjectIllustration'
 import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, parseCategory } from '../utils/topicDisplay'
 import { buildSubjectKey } from '../utils/subjectKey'
