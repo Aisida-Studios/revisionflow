@@ -219,6 +219,7 @@ export const GRADE_OPTIONS = {
 }
 
 export function getGradeOptions(subjectName, qualification, tier) {
+  if (qualification && !QUALIFICATIONS.includes(qualification)) return []
   // Qualification takes absolute priority — must check before subject name
   if (qualification === 'BTEC-L3') return GRADE_OPTIONS['BTEC-L3']
   if (qualification === 'BTEC-L2') return GRADE_OPTIONS['BTEC-L2']
@@ -379,20 +380,3 @@ export function levelFromXP(xp) {
   }
   return lvl
 }
-
-export const BADGES = [
-  { id: 'first_session',    name: 'First Step',      desc: 'Complete your first revision session',     icon: '🎯', xp: 50 },
-  { id: 'streak_3',         name: 'Hat Trick',        desc: '3-day revision streak',                    icon: '🔥', xp: 75 },
-  { id: 'streak_7',         name: 'Week Warrior',     desc: '7-day revision streak',                    icon: '💪', xp: 150 },
-  { id: 'streak_30',        name: 'Monthly Master',   desc: '30-day revision streak',                   icon: '🏆', xp: 500 },
-  { id: 'paper_10',         name: 'Paper Pusher',     desc: 'Complete 10 past papers',                  icon: '📝', xp: 100 },
-  { id: 'paper_50',         name: 'Exam Expert',      desc: 'Complete 50 past papers',                  icon: '🎓', xp: 300 },
-  { id: 'all_subjects',     name: 'Balanced Scholar', desc: 'Revise all your subjects in one week',     icon: '⚖️', xp: 200 },
-  { id: 'session_100',      name: 'Centurion',        desc: '100 revision sessions completed',          icon: '💯', xp: 400 },
-  { id: 'friend_5',         name: 'Study Squad',      desc: 'Add 5 friends',                           icon: '👥', xp: 100 },
-  { id: 'grade_9',          name: 'Grade Master',     desc: 'Score a grade 9 on a past paper',          icon: '⭐', xp: 200 },
-  { id: 'perfect_paper',    name: 'Perfectionist',    desc: 'Score 100% on a past paper',              icon: '💎', xp: 500 },
-  { id: 'mistake_log_20',   name: 'Error Analyst',    desc: 'Log 20 mistakes in your mistake tracker', icon: '🔍', xp: 100 },
-  { id: 'calendar_import',  name: 'Planner',          desc: 'Import a revision calendar',               icon: '📅', xp: 50 },
-  { id: 'ai_plan',          name: 'AI Student',       desc: 'Generate an AI study plan',               icon: '🤖', xp: 75 },
-]
