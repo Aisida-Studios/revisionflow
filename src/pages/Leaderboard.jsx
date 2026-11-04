@@ -6,7 +6,7 @@ import {
   getLeaderboard, getGlobalLeaderboard,
   updateUserProfile, checkAndAwardBadge,
 } from '../utils/firestore'
-import { resolveProfileIcon } from '../data/themes'
+import ProfileIcon from '../components/ProfileIcon'
 import toast from 'react-hot-toast'
 import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
@@ -22,14 +22,13 @@ const XP_FIELD = { week: 'xpThisWeek', month: 'xpThisMonth', allTime: 'xp' }
 
 function Avatar({ icon, name, avatarUrl }) {
   const [imgError, setImgError] = useState(false)
-  const emoji  = icon ? resolveProfileIcon(icon).emoji : null
   const letter = (name || 'A')[0].toUpperCase()
   if (avatarUrl && !imgError) {
     return <div className="ap-avatar ap-avatar--md"><img src={avatarUrl} alt="" onError={() => setImgError(true)} /></div>
   }
   return (
-    <div className="ap-avatar ap-avatar--md" style={emoji ? { fontSize: '1.3rem' } : undefined}>
-      {emoji || letter}
+    <div className="ap-avatar ap-avatar--md">
+      {icon ? <ProfileIcon id={icon} size={22} /> : letter}
     </div>
   )
 }
