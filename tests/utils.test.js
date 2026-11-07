@@ -17,6 +17,9 @@ import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/re
 import { PRIORITY_WEIGHT, fairOrder, pickFairest, normaliseTopics, weakTopicFocus, createFairShare } from '../src/utils/fairShare.js'
 import { generateSchedule, scheduleFreePeriods, buildSubjectsFromProfile, longPaperWarnings } from '../src/utils/scheduler.js'
 import { createDayPlan, layoutPlan, separateNeighbours, fitSessionLength, fillPlan, topUp } from '../src/utils/dayFill.js'
+import ent from '../netlify/functions/lib/entitlementLogic.js'
+import { describeEntitlement, freeUsesLabel, entitlementMessage, isUpgradeCode, FREE_FEATURES, PRO_ONLY_FEATURES } from '../src/utils/entitlementsCore.js'
+import { makeFakeFirestore } from './helpers/fakeFirestore.js'
 import { parseSetTitle as srvParseSetTitle, officialSetMeta as srvOfficialSetMeta } from '../netlify/functions/lib/setMeta.js'
 import { gradePaper, staleGradeFix, customBoundarySetFor } from '../src/utils/attemptGrade.js'
 import { validateQuestionStructure } from '../netlify/functions/lib/structure.js'
@@ -29,6 +32,8 @@ import { computeTopicRecommendations, RECOMMENDATION_WEIGHTS } from '../src/util
 
 let n = 0
 const ok = (name, fn) => { fn(); n++; console.log('ok -', name) }
+// Tests that talk to the (fake) database are async. The file is bundled as ESM, so top-level await works.
+const okAsync = async (name, fn) => { await fn(); n++; console.log('ok -', name) }
 const IN_LONDON = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Europe/London'
 const okLondon = (name, fn) => IN_LONDON ? ok(name, fn) : console.log('skip - ' + name + ' (needs TZ=Europe/London)')
 
@@ -1053,6 +1058,140 @@ ok('generator: across many random set-ups no session overlaps, leaves the studen
     })
     subjects.filter(s => s.ratio[0] === 0 && s.ratio[1] === 0).forEach(s => assert.equal(out.filter(x => x.subject === s.name).length, 0, `seed ${seed}: paused ${s.name} scheduled`))
   }
+})
+
+// ── Free / Pro entitlements (netlify/functions/lib/entitlementLogic.js, src/utils/entitlementsCore.js) ──────────
+const E_DAY1 = new Date('2026-11-05T10:00:00Z'), E_DAY2 = new Date('2026-11-06T10:00:00Z'), E_DAY3 = new Date('2026-11-07T10:00:00Z')
+const freeUser = (extra = {}) => ({ 'users/u1': { displayName: 'A', ...extra } })
+
+ok('entitlement config holds the agreed numbers, and every Pro-only feature is listed', () => {
+  const f = ent.CONFIG.free
+  assert.deepEqual([f.mathsSolver.lifetime, f.mathsSolver.daily], [5, 2])
+  assert.deepEqual([f.essayFeedback.lifetime, f.essayFeedback.daily], [2, 1])
+  assert.deepEqual([f.timedChallenge.lifetime, f.recommendedTopics.lifetime, f.photoMarking.lifetime, f.timetable.lifetime], [3, 3, 3, 1])
+  assert.deepEqual(Object.keys(ent.CONFIG.proOnly).sort(), ['deepAnalytics', 'exports', 'multiSubjectPredictions', 'paperAnalysis', 'parentReport', 'timetableReschedule'])
+  assert.ok(!FREE_FEATURES.includes('lifetime') && !FREE_FEATURES.includes('aiCalls'))      // would collide with documents tutor.js and this module already use
+  assert.deepEqual(FREE_FEATURES, Object.keys(f)); assert.deepEqual(PRO_ONLY_FEATURES, Object.keys(ent.CONFIG.proOnly))
+})
+ok('Pro means isPro or betaUser, strictly', () => {
+  assert.equal(ent.isProUser({ isPro: true }), true); assert.equal(ent.isProUser({ betaUser: true }), true)
+  assert.equal(ent.isProUser({ isPro: 'true' }), false); assert.equal(ent.isProUser({}), false); assert.equal(ent.isProUser(null), false)
+})
+ok('decideConsume: first use, daily cap, lifetime cap (lifetime is reported first)', () => {
+  const d1 = ent.decideConsume('mathsSolver', {}, { day: '2026-11-05' })
+  assert.equal(d1.allowed, true); assert.equal(d1.usedLifetime, 1); assert.equal(d1.remainingLifetime, 4); assert.equal(d1.dailyRemaining, 1)
+  assert.deepEqual(d1.write, { mathsSolver: 1, daily: { mathsSolver: { day: '2026-11-05', n: 1 } } })
+  const today = { mathsSolver: 2, daily: { mathsSolver: { day: '2026-11-05', n: 2 } } }
+  const d2 = ent.decideConsume('mathsSolver', today, { day: '2026-11-05' })
+  assert.equal(d2.allowed, false); assert.equal(d2.code, 'DAILY_LIMIT'); assert.equal(d2.remainingLifetime, 3); assert.equal(d2.dailyRemaining, 0)
+  assert.equal(ent.decideConsume('mathsSolver', today, { day: '2026-11-06' }).allowed, true)              // a new day resets the daily count only
+  const spent = { mathsSolver: 5, daily: { mathsSolver: { day: '2026-11-05', n: 2 } } }
+  assert.equal(ent.decideConsume('mathsSolver', spent, { day: '2026-11-05' }).code, 'LIFETIME_EXHAUSTED')   // both caps reached: told to upgrade, not to wait
+  assert.equal(ent.decideConsume('timedChallenge', { timedChallenge: 2 }, {}).remainingLifetime, 0)          // a feature with no daily cap
+  assert.equal(ent.decideConsume('timedChallenge', { timedChallenge: 3 }, {}).code, 'LIFETIME_EXHAUSTED')
+  assert.equal(ent.decideConsume('nonsense', {}, {}).code, 'UNKNOWN_FEATURE')
+  assert.equal(ent.decideConsume('mathsSolver', { mathsSolver: 99 }, { pro: true }).allowed, true)           // Pro has no lifetime cap
+})
+ok('decideRefund gives one use back, never below zero, and only touches today\'s daily count', () => {
+  const doc = { mathsSolver: 3, daily: { mathsSolver: { day: '2026-11-05', n: 2 } } }
+  assert.deepEqual(ent.decideRefund('mathsSolver', doc, { day: '2026-11-05' }).write, { mathsSolver: 2, daily: { mathsSolver: { day: '2026-11-05', n: 1 } } })
+  assert.deepEqual(ent.decideRefund('mathsSolver', doc, { day: '2026-11-06' }).write, { mathsSolver: 2 })     // yesterday's daily count is left alone
+  assert.equal(ent.decideRefund('mathsSolver', {}, {}).refunded, false)
+  assert.equal(ent.decideRefund('timetable', { timetable: 0 }, {}).refunded, false)
+})
+ok('every refusal is worded softly: no quota, rate limit or throttling, and Pro is never "unlimited"', () => {
+  for (const feature of FREE_FEATURES) for (const code of ['LIFETIME_EXHAUSTED', 'DAILY_LIMIT', 'PRO_REQUIRED']) {
+    const m = ent.messageFor(code, feature)
+    assert.ok(m && !/quota|rate limit|throttl|unlimited/i.test(m), `${feature}/${code}: ${m}`)
+  }
+  for (const feature of PRO_ONLY_FEATURES) assert.match(ent.messageFor('PRO_REQUIRED', feature), /is a Pro feature\.$/)
+  assert.equal(ent.messageFor('LIFETIME_EXHAUSTED', 'timetable'), "You've used your free timetable. Upgrade to Pro to generate another.")
+})
+ok('the browser\'s numbers and wording agree with the server\'s', () => {
+  const docs = [undefined, {}, { mathsSolver: 2 }, { mathsSolver: 5 }, { essayFeedback: 1, daily: { essayFeedback: { day: '2026-11-05', n: 1 } } }, { essayFeedback: 1, daily: { essayFeedback: { day: '2026-11-04', n: 1 } } }, { timetable: 1 }, { timedChallenge: 7 }]
+  for (const feature of FREE_FEATURES) for (const doc of docs) for (const pro of [false, true]) {
+    assert.deepEqual(describeEntitlement(feature, doc, { pro, day: '2026-11-05' }), ent.describeStatus(feature, doc, { pro, day: '2026-11-05' }), `${feature} ${JSON.stringify(doc)} pro=${pro}`)
+  }
+  for (const feature of [...FREE_FEATURES, ...PRO_ONLY_FEATURES]) for (const code of ['LIFETIME_EXHAUSTED', 'DAILY_LIMIT', 'PRO_REQUIRED']) assert.equal(entitlementMessage(code, feature), ent.messageFor(code, feature), `${feature}/${code}`)
+  assert.equal(describeEntitlement('nonsense', {}, {}), null)
+})
+ok('freeUsesLabel says how many free uses are left, and nothing at all for Pro', () => {
+  assert.equal(freeUsesLabel(describeEntitlement('mathsSolver', { mathsSolver: 3 }, {})), '2 of 5 free Maths solves left')
+  assert.equal(freeUsesLabel(describeEntitlement('timetable', {}, {})), '1 free timetable left')
+  assert.equal(freeUsesLabel(describeEntitlement('timetable', { timetable: 1 }, {})), 'Your free timetable is used')
+  assert.equal(freeUsesLabel(describeEntitlement('mathsSolver', {}, { pro: true })), null)
+  assert.equal(freeUsesLabel(null), null)
+  assert.equal(isUpgradeCode('LIFETIME_EXHAUSTED'), true); assert.equal(isUpgradeCode('PRO_REQUIRED'), true); assert.equal(isUpgradeCode('DAILY_LIMIT'), false)
+})
+ok('denialResponse gives the browser a machine-readable code and the right status', () => {
+  const r = (code) => ent.denialResponse({ code, message: 'm', remainingLifetime: 0, dailyRemaining: 0 })
+  assert.deepEqual([r('LIFETIME_EXHAUSTED').status, r('PRO_REQUIRED').status, r('DAILY_LIMIT').status, r('UNKNOWN_FEATURE').status], [402, 402, 429, 400])
+  assert.deepEqual(r('DAILY_LIMIT').body, { error: 'm', code: 'DAILY_LIMIT', remainingLifetime: 0, dailyRemaining: 0 })
+})
+await okAsync('consumeLifetimeUse counts a free account across days: 2 a day, 5 in all, then it is for Pro', async () => {
+  const db = makeFakeFirestore(freeUser())
+  const use = (now) => ent.consumeLifetimeUse(db, 'u1', 'mathsSolver', { now })
+  assert.equal((await use(E_DAY1)).allowed, true); assert.equal((await use(E_DAY1)).allowed, true)
+  assert.equal((await use(E_DAY1)).code, 'DAILY_LIMIT')
+  assert.equal((await use(E_DAY2)).allowed, true); assert.equal((await use(E_DAY2)).allowed, true)
+  assert.equal((await use(E_DAY2)).code, 'DAILY_LIMIT')
+  const fifth = await use(E_DAY3); assert.equal(fifth.allowed, true); assert.equal(fifth.remainingLifetime, 0)
+  assert.equal((await use(E_DAY3)).code, 'LIFETIME_EXHAUSTED')
+  assert.equal((await use(new Date('2026-12-25T10:00:00Z'))).code, 'LIFETIME_EXHAUSTED')                  // the lifetime allowance never resets
+  assert.equal(db.read('users/u1/usage/lifetime').mathsSolver, 5)
+})
+await okAsync('ten requests racing for the one free timetable: exactly one gets it', async () => {
+  const db = makeFakeFirestore(freeUser())
+  const results = await Promise.all(Array.from({ length: 10 }, () => ent.consumeLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1, seedUsed: async () => 0 })))
+  assert.equal(results.filter(r => r.allowed).length, 1)
+  assert.equal(results.filter(r => r.code === 'LIFETIME_EXHAUSTED').length, 9)
+  assert.equal(db.read('users/u1/usage/lifetime').timetable, 1)                                            // never double counted
+})
+await okAsync('Pro and beta accounts are never counted and nothing is written for them', async () => {
+  const db = makeFakeFirestore({ 'users/p1': { isPro: true }, 'users/b1': { betaUser: true } })
+  for (const uid of ['p1', 'b1']) for (let i = 0; i < 8; i++) { const r = await ent.consumeLifetimeUse(db, uid, 'mathsSolver', { now: E_DAY1 }); assert.equal(r.allowed, true); assert.equal(r.pro, true) }
+  assert.equal((await ent.refundLifetimeUse(db, 'p1', 'mathsSolver')).pro, true)
+  assert.deepEqual(db.allWrites(), [])
+})
+await okAsync('an account that already has a generated schedule has used its free timetable, and nothing is deleted', async () => {
+  const db = makeFakeFirestore({ 'users/u1': {}, 'users/u1/sessions/s1': { source: 'generated', date: '2026-11-01' }, 'users/u2': {} })
+  let asked = 0
+  const seed = (count) => async () => { asked++; return count }
+  const r1 = await ent.consumeLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1, seedUsed: seed(1) })
+  assert.equal(r1.allowed, false); assert.equal(r1.code, 'LIFETIME_EXHAUSTED')
+  assert.equal(db.read('users/u1/usage/lifetime').timetable, 1)                                            // remembered
+  await ent.consumeLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1, seedUsed: seed(1) })
+  assert.equal(asked, 1)                                                                                   // not worked out again
+  assert.ok(db.read('users/u1/sessions/s1'))                                                               // the existing schedule is untouched
+  assert.equal((await ent.consumeLifetimeUse(db, 'u2', 'timetable', { now: E_DAY1, seedUsed: seed(0) })).allowed, true)   // no schedule yet: the free one is available
+  assert.equal((await ent.consumeLifetimeUse(db, 'u2', 'timetable', { now: E_DAY1, seedUsed: seed(0) })).code, 'LIFETIME_EXHAUSTED')
+})
+await okAsync('a use is given back after a failure, once, and never below zero', async () => {
+  const db = makeFakeFirestore(freeUser())
+  await ent.consumeLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1 })
+  const back = await ent.refundLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1 })
+  assert.equal(back.refunded, true); assert.equal(db.read('users/u1/usage/lifetime').timetable, 0)
+  assert.equal((await ent.refundLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1 })).refunded, false)
+  assert.equal((await ent.consumeLifetimeUse(db, 'u1', 'timetable', { now: E_DAY1 })).allowed, true)       // the free use is available again
+  await ent.consumeLifetimeUse(db, 'u1', 'essayFeedback', { now: E_DAY1 })
+  await ent.refundLifetimeUse(db, 'u1', 'essayFeedback', { now: E_DAY1 })
+  assert.equal((await ent.consumeLifetimeUse(db, 'u1', 'essayFeedback', { now: E_DAY1 })).allowed, true)    // today's 1-a-day cap came back too
+})
+await okAsync('requireProFeature turns a free account away from a Pro-only feature, and an unknown feature is never counted', async () => {
+  const db = makeFakeFirestore({ ...freeUser(), 'users/p1': { isPro: true } })
+  const no = await ent.requireProFeature(db, 'u1', 'timetableReschedule')
+  assert.equal(no.allowed, false); assert.equal(no.code, 'PRO_REQUIRED'); assert.equal(no.message, 'Automatic rescheduling is a Pro feature.')
+  assert.equal((await ent.requireProFeature(db, 'p1', 'timetableReschedule')).allowed, true)
+  assert.equal((await ent.consumeLifetimeUse(db, 'u1', 'nonsense')).code, 'UNKNOWN_FEATURE')
+  assert.deepEqual(db.allWrites(), [])
+})
+await okAsync('getStatus reports every capped feature, includes work already done, and shows nothing counted for Pro', async () => {
+  const db = makeFakeFirestore({ ...freeUser(), 'users/u1/usage/lifetime': { mathsSolver: 3 }, 'users/p1': { betaUser: true } })
+  const s = await ent.getStatus(db, 'u1', { now: E_DAY1, seeds: { timetable: 1 } })
+  assert.equal(s.pro, false); assert.equal(s.features.mathsSolver.remainingLifetime, 2); assert.equal(s.features.timetable.exhausted, true)
+  assert.equal(s.features.timedChallenge.remainingLifetime, 3); assert.deepEqual(s.proOnly, PRO_ONLY_FEATURES)
+  const p = await ent.getStatus(db, 'p1', { now: E_DAY1 })
+  assert.equal(p.pro, true); assert.ok(Object.values(p.features).every(f => f.pro === true && f.remainingLifetime === null))
 })
 
 console.log(`\n${n} checks passed`)
