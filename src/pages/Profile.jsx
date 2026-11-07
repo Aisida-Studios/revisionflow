@@ -24,6 +24,7 @@ import './Profile.css'
 import CourseOptionsModal from '../components/CourseOptionsModal'
 import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
 import { usePageMeta } from '../utils/pageMeta'
+import './Touch.css'
 
 // Opens a Stripe Customer Portal session for subscription management
 function ManageSubButton({ uid }) {
@@ -209,7 +210,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="fade-in ap-page ap-page--md">
+    <div className="fade-in ap-page ap-page--md touch-44">
 
       {/* ── Milestone celebration modal ── */}
       {showMilestone && (
