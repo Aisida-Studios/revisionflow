@@ -1,11 +1,14 @@
 // src/components/CalendarGenerator.jsx
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { collection, serverTimestamp, getDocs, query, where, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { generateSchedule, buildSubjectsFromProfile, scheduleFreePeriods, weekLabelForDate, longPaperWarnings } from '../utils/scheduler'
 import { weakTopicFocus } from '../utils/fairShare'
+import { useIsPro } from './ProGate'
+import UpgradeNotice from './UpgradeNotice'
+import { fetchEntitlementStatus, consumeFeatureUse, refundFeatureUse, isUpgradeCode, entitlementMessage } from '../utils/entitlementsClient'
 import { getUserTimetable } from '../utils/firestore'
 import { downloadICS, hoursBySubject, formatDuration } from '../utils/calendar'
 import { parseLocalDate } from '../utils/examUtils'
@@ -49,6 +52,25 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
   const [step,    setStep]    = useState(0)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState(null)
+
+  // ── The free plan includes ONE saved timetable ───────────────────────────
+  // The server counts it and refuses a second (netlify/functions/entitlements.js); this only asks and shows the result.
+  //   freeTimetable: 'pro' | 'checking' | 'available' | 'used' | 'error'
+  const { isPro } = useIsPro()
+  const [freeTimetable, setFreeTimetable] = useState(isPro ? 'pro' : 'checking')
+  const [freeSpent, setFreeSpent] = useState(false)      // this dialog has used the free timetable (by saving or exporting)
+  const [upgradeMessage, setUpgradeMessage] = useState('')
+  const spentRef = useRef(false)
+  useEffect(() => {
+    if (isPro) { setFreeTimetable('pro'); return undefined }
+    let live = true
+    fetchEntitlementStatus().then(r => {
+      if (!live) return
+      if (!r.ok) setFreeTimetable('error')                 // could not tell: the dialog still opens, and the save is checked again
+      else setFreeTimetable(r.pro ? 'pro' : (r.features && r.features.timetable && r.features.timetable.exhausted) ? 'used' : 'available')
+    })
+    return () => { live = false }
+  }, [isPro])
 
   // ── Step 0: Exam dates check ─────────────────────────────────────────────
   const examDates = profile?.examDates || []
@@ -289,9 +311,29 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
     setStep(6)
   }
 
+  // Use the account's free timetable, once per dialog, however many times saving or exporting is pressed. Saving AND
+  // exporting both count, so exporting a preview is not a way round the limit. Pro and beta accounts are never counted.
+  async function spendFreeTimetable() {
+    if (isPro || spentRef.current) return { ok: true, spent: false }
+    const r = await consumeFeatureUse('timetable')
+    if (!r.ok) {
+      if (isUpgradeCode(r.code)) { setUpgradeMessage(r.message || entitlementMessage('LIFETIME_EXHAUSTED', 'timetable')); setFreeTimetable('used') }
+      else toast.error(r.message || 'Could not check your plan just now. Please try again.')
+      return { ok: false }
+    }
+    if (r.pro) return { ok: true, spent: false }           // the server says this account is Pro after all: nothing is counted
+    spentRef.current = true
+    setFreeSpent(true)
+    return { ok: true, spent: true }
+  }
+
   async function saveToCalendar() {
     setLoading(true)
+    let spentHere = false   // this save is what used the free timetable, so it is given back if the save fails
     try {
+      const spend = await spendFreeTimetable()
+      if (!spend.ok) return                                // refused: the message is on screen, and `finally` stops the spinner
+      spentHere = spend.spent
       const BATCH_SIZE = 400 // Firestore caps a single batch at 500 ops — chunk well under that
 
       let keptSlots = new Set()   // date|start of generated sessions that stay, so new ones are not stacked on top of them
@@ -340,10 +382,14 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
         }, { merge: true })
       } catch (err) { console.error('Failed to save prefs', err) }
 
-      toast.success(`Added ${toSave.length} session${toSave.length !== 1 ? 's' : ''} to your calendar!`)
+      toast.success(`Added ${toSave.length} session${toSave.length !== 1 ? 's' : ''} to your calendar!${spentRef.current ? ' That was your free timetable.' : ''}`)
       onGenerated?.()
       onClose()
-    } catch(err) { toast.error('Failed to save: ' + err.message) }
+    } catch(err) {
+      // A student must never lose their free timetable to a failed save. The server only agrees if nothing was saved.
+      if (spentHere) refundFeatureUse('timetable').then(r => { if (r.ok) { spentRef.current = false; setFreeSpent(false) } })
+      toast.error('Failed to save: ' + err.message)
+    }
     finally { setLoading(false) }
   }
 
@@ -368,6 +414,27 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
     3: contentRatio + examRatio > 0,
     4: true,
     5: !!replaceChoice,
+  }
+
+  // The free timetable is used up: say so instead of walking through the steps. Saved sessions stay on the calendar and
+  // can still be edited or deleted by hand; only making a NEW timetable needs Pro.
+  if (freeTimetable === 'used') {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" style={{maxWidth:480,maxHeight:'90vh',overflowY:'auto'}} onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <span className="modal-title" style={{display:'flex',alignItems:'center',gap:8}}>
+              <Calendar size={16} color="var(--accent-light)"/> Generate Revision Schedule
+            </span>
+            <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><X size={18}/></button>
+          </div>
+          <UpgradeNotice message={upgradeMessage || entitlementMessage('LIFETIME_EXHAUSTED', 'timetable')} />
+          <p style={{fontSize:'0.8rem',color:'var(--text-muted)',margin:'14px 0 0',lineHeight:1.6}}>
+            Your sessions stay on your calendar, and you can still add, move and delete them yourself.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -885,8 +952,15 @@ export default function CalendarGenerator({ onClose, onGenerated, onOpenTimetabl
               {preview.length>10&&<div style={{padding:'4px 10px',fontSize:'0.72rem',color:'var(--text-muted)'}}>…and {preview.length-10} more sessions</div>}
             </div>
 
+            {!isPro && freeTimetable !== 'used' && (
+              <p style={{fontSize:'0.78rem',color:'var(--text-muted)',margin:'0 0 10px',lineHeight:1.5}}>
+                {freeSpent
+                  ? 'This is your free timetable. Making another needs Pro.'
+                  : 'The free plan includes one timetable. Saving or exporting this one uses it, and another needs Pro.'}
+              </p>
+            )}
             <div style={{display:'flex',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
-              <button className="btn btn-secondary btn-sm" onClick={()=>downloadICS(preview,'revision-schedule.ics')}>
+              <button className="btn btn-secondary btn-sm" disabled={loading} onClick={async () => { const s = await spendFreeTimetable(); if (s.ok) downloadICS(preview,'revision-schedule.ics') }}>
                 <Download size={13}/> Download ICS
               </button>
               <button className="btn btn-primary" onClick={saveToCalendar} disabled={loading}>
