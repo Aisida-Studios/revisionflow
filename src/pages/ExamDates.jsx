@@ -15,9 +15,12 @@ import { Plus, X, Trash2, Check, Zap, Edit2 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { format } from 'date-fns'
+import { usePageMeta } from '../utils/pageMeta'
+import './Touch.css'
 
 export default function ExamDates() {
   const { user, profile, refreshProfile } = useAuth()
+  usePageMeta({ title: 'Exam dates | RevisionFlow' })
   const [showAdd,       setShowAdd]       = useState(false)
   const [showFillAll,   setShowFillAll]   = useState(false)
   const [selected,      setSelected]      = useState([])
@@ -100,7 +103,7 @@ export default function ExamDates() {
     :                { background:'var(--bg-surface)',       border:'1px solid var(--border)' }
 
   return (
-    <div className="fade-in">
+    <div className="fade-in touch-44">
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
         <div><h2>Exam Dates</h2><p>Countdowns to your final exams</p></div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -228,7 +231,7 @@ export default function ExamDates() {
                       {isDone ? 'done' : days === 0 ? 'TODAY' : days === 1 ? 'day' : 'days'}
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(e.id)} style={{color:'var(--danger)'}}>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(e.id)} aria-label={'Delete ' + e.subject + ' paper ' + e.paper} style={{color:'var(--danger)',minWidth:44}}>
                     <Trash2 size={14}/>
                   </button>
                 </div>
@@ -259,7 +262,7 @@ export default function ExamDates() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">Add exam date manually</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowAdd(false)}><X size={18}/></button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowAdd(false)} aria-label="Close" style={{minWidth:44}}><X size={18}/></button>
             </div>
             <form onSubmit={handleAdd} style={{display:'flex',flexDirection:'column',gap:12}}>
               <div className="grid-2" style={{gap:10}}>
@@ -361,7 +364,7 @@ function FillAllModal({ subjects, qual, onClose, onConfirm }) {
           <span className="modal-title" style={{display:'flex',alignItems:'center',gap:8}}>
             <Zap size={16} color="var(--accent-light)"/> Fill all exam dates
           </span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close" style={{minWidth:44}}><X size={18}/></button>
         </div>
 
         <p style={{fontSize:'0.875rem',marginBottom:12}}>
