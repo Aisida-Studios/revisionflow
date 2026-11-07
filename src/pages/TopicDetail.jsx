@@ -44,6 +44,7 @@ import EmptyState from '../components/illustrations/EmptyState'
 import { format } from 'date-fns'
 import './Topics.css'
 import { usePageMeta } from '../utils/pageMeta'
+import './Touch.css'
 
 const TABS = [
   { id: 'overview', label: 'Overview',    icon: Layers },
@@ -332,9 +333,9 @@ export default function TopicDetail() {
   const questionBlocks = questions ? parseQuestionBlocks(questions) : []
 
   return (
-    <div className="fade-in">
+    <div className="fade-in touch-44">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+        <div className="td-crumbs" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
           <Link to="/topics" style={{ color: 'inherit', textDecoration: 'none' }}>Topics</Link>
           <span>/</span>
           <Link to={`/topics?subject=${encodeURIComponent(topic.subjectId)}`} style={{ color: 'inherit', textDecoration: 'none' }}>{topic.subjectId}</Link>
@@ -426,7 +427,7 @@ export default function TopicDetail() {
                 <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>How confident are you?</span>
                 <span style={{ fontSize: '0.8rem', color: CONF_COLOURS[conf], fontWeight: 700 }}>{CONF_LABELS[conf]}</span>
               </div>
-              <div className="conf-dots" style={{ gap: 8, marginBottom: 12 }} role="radiogroup" aria-label="Confidence rating">
+              <div className="conf-dots td-conf-dots" style={{ marginBottom: 12 }} role="radiogroup" aria-label="Confidence rating">
                 {[1, 2, 3, 4, 5].map(n => (
                   <button key={n} type="button" className={`conf-dot${conf >= n ? ` active-${n}` : ''}`} style={{ width: 22, height: 22 }}
                     onClick={() => updateConf(n)} title={CONF_LABELS[n]} aria-label={CONF_LABELS[n]} aria-pressed={conf >= n} />
@@ -473,7 +474,7 @@ export default function TopicDetail() {
               <div style={{ display: 'flex', gap: 6 }}>
                 <input className="input" style={{ flex: 1 }} placeholder="Add a sub-topic…" value={newSubtopic}
                   onChange={e => setNewSubtopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSubtopic()} />
-                <button className="btn btn-primary btn-sm" onClick={addSubtopic} disabled={!newSubtopic.trim()}><Plus size={14} /></button>
+                <button className="btn btn-primary btn-sm" onClick={addSubtopic} disabled={!newSubtopic.trim()} aria-label="Add sub-topic" style={{ minWidth: 44 }}><Plus size={14} /></button>
               </div>
             </div>
           </div>
