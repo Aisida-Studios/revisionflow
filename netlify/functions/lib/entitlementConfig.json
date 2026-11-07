@@ -1,0 +1,37 @@
+{
+  "free": {
+    "mathsSolver": {
+      "lifetime": 5, "daily": 2,
+      "label": "Maths solver", "single": "Maths solve", "plural": "Maths solves"
+    },
+    "essayFeedback": {
+      "lifetime": 2, "daily": 1,
+      "label": "Essay feedback", "single": "essay feedback", "plural": "essay feedback requests"
+    },
+    "timedChallenge": {
+      "lifetime": 3,
+      "label": "Timed challenge", "single": "timed challenge", "plural": "timed challenges"
+    },
+    "recommendedTopics": {
+      "lifetime": 3,
+      "label": "Recommended topics", "single": "look at recommended topics", "plural": "looks at recommended topics"
+    },
+    "photoMarking": {
+      "lifetime": 3,
+      "label": "Photo-scan marking", "single": "photo-scan marking", "plural": "photo-scan markings"
+    },
+    "timetable": {
+      "lifetime": 1,
+      "label": "Timetable generation", "single": "timetable", "plural": "timetables",
+      "upgradeHint": "Upgrade to Pro to generate another."
+    }
+  },
+  "proOnly": {
+    "timetableReschedule": "Automatic rescheduling",
+    "paperAnalysis": "Deep past-paper analysis",
+    "deepAnalytics": "Deeper analytics and exam readiness",
+    "exports": "Exports",
+    "parentReport": "Parent and teacher progress report",
+    "multiSubjectPredictions": "Predicted grades for every subject"
+  }
+}
