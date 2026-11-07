@@ -923,7 +923,7 @@ export default function Calendar() {
           onOpenTimetable={()=>setView('timetable')}/>
       )}
       {showClear&&(
-        <ClearModal sessions={sessions} clearing={clearing}
+        <ClearModal sessions={sessions} clearing={clearing} isPro={isPro || isBeta}
           onClose={()=>setShowClear(false)}
           onClear={clearCalendar}/>
       )}
@@ -1172,12 +1172,14 @@ function EditSessionModal({ user, profile, session, onClose, onSaveSession, onSa
 }
 
 // ── Clear Modal ───────────────────────────────────────────────────────────────
-function ClearModal({ sessions, clearing, onClose, onClear }) {
+function ClearModal({ sessions, clearing, isPro, onClose, onClear }) {
   const genCount    = sessions.filter(s =>
     s.source==='generated' || s.source==='import' ||
     (s.title&&(s.title.includes('Content Revision')||s.title.includes('Exam Practice')||s.title.includes('EMERGENCY')))
   ).length
   const manualCount = sessions.length - genCount
+  // A free account has one timetable for good, so clearing a generated one cannot be followed by making another.
+  const warnFreeTimetable = !isPro && sessions.some(s => s.source === 'generated')
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -1188,7 +1190,12 @@ function ClearModal({ sessions, clearing, onClose, onClear }) {
           </span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18}/></button>
         </div>
-        <p style={{marginBottom:20,fontSize:'0.875rem'}}>Choose what to clear. This cannot be undone.</p>
+        <p style={{marginBottom:warnFreeTimetable?10:20,fontSize:'0.875rem'}}>Choose what to clear. This cannot be undone.</p>
+        {warnFreeTimetable && (
+          <p style={{marginBottom:20,fontSize:'0.8rem',color:'var(--text-muted)',lineHeight:1.5}}>
+            The free plan includes one timetable. If you clear yours, making another needs Pro.
+          </p>
+        )}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           <button className="card"
             style={{textAlign:'left',cursor:clearing?'not-allowed':'pointer',padding:14,border:'2px solid var(--border)',background:'var(--bg-card)',opacity:clearing?0.6:1}}
