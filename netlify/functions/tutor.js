@@ -310,14 +310,16 @@ module.exports.handler = async function(event) {
     else if (feature === 'essayFeedback') rateCheck = await checkEssayLimit(uid)
     else rateCheck = await checkRateLimit(uid)
   } catch(e) {
-    // If Firestore is unreachable, fail open (don't block users) but log it
+    // If the allowance cannot be checked (Firestore unreachable, a transaction that keeps aborting under load...) the answer
+    // is NO. This used to fail OPEN, which made every AI call free and uncounted for as long as the check was failing, and
+    // a student could provoke that by firing many requests at once. A short outage is better than an open tap to a paid API.
     console.error('[tutor] allowance check failed:', e.message)
-    rateCheck = { allowed: true, remaining: FREE_LIMIT }
+    return respond(503, { error: 'AI help is temporarily unavailable. Please try again in a moment.', code: 'TEMPORARILY_UNAVAILABLE' })
   }
   const allowanceMs = Date.now() - allowanceStart
 
   if (!rateCheck.allowed) {
-    return respond(429, { error: rateCheck.reason })
+    return respond(429, { error: rateCheck.reason, code: 'DAILY_LIMIT' })
   }
 
   const apiKey = process.env.MISTRAL_API_KEY
