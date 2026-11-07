@@ -26,6 +26,7 @@ import { format } from 'date-fns'
 import CourseOptionsModal from '../components/CourseOptionsModal'
 import { filterTopicsByOptions, filterSpecTopics, needsOptionChoice, hasOptions, optionsSummary, saveSubjectOptions } from '../utils/courseOptions'
 import './Topics.css'
+import './Touch.css'
 import { usePageMeta } from '../utils/pageMeta'
 
 // Evidence-based revision resource links per subject (unchanged real curated data)
@@ -402,7 +403,7 @@ export default function Topics() {
   const selSpecTotal = specTotals[selSubj]
 
   return (
-    <div className="fade-in">
+    <div className="fade-in touch-44">
       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
         <div>
           <h2 style={{marginBottom:2}}>Topics</h2>
