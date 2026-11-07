@@ -10,6 +10,7 @@ import { Zap, Star } from 'lucide-react'
 import LoadingScreen from '../components/LoadingScreen'
 import './AccountPages.css'
 import './Profile.css'
+import './Touch.css'
 
 export default function PublicProfile() {
   const { username } = useParams()
@@ -71,7 +72,7 @@ export default function PublicProfile() {
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', padding:24 }}>
-      <div className="ap-page ap-page--narrow">
+      <div className="ap-page ap-page--narrow touch-44">
 
         {/* Nav — works for signed-out users too */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', rowGap:12, marginBottom:32 }}>
