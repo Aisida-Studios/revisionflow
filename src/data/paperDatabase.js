@@ -1,14 +1,16 @@
 // src/data/paperDatabase.js
 // ─────────────────────────────────────────────────────────────────────────────
-// All boundaries are PER-PAPER (single paper marks, not cumulative totals).
-// Verified: AQA/OCR/Edexcel published grade boundary PDFs June 2024
-// Estimates (marked ~) derived from 3-year historical averages
+// GRADE_BOUNDARIES holds the boards' WHOLE-QUALIFICATION boundaries (for example 240 marks for three 80-mark papers)
+// as the boards publish them; scaleBoundariesToPaper() converts a set to a single paper by percentage.
+// A few untiered GCSE subjects are keyed per paper (BOARD-Subject-P<n>) because the board publishes one set per paper.
+// The board documents used are listed under each year in GRADE_BOUNDARIES. An entry whose note contains '~' or 'estimat'
+// is an estimate, not a board figure, and the app labels it as one.
 
 import { TIERED_SUBJECTS } from './subjects'
 import { canonicalBoard } from './boards'
-// GCSE format: boundaries [G9,G8,G7,G6,G5,G4,G3,G2,G1]
-// A-Level format: [A*,A,B,C,D,E] — 6 entries
-// NO null values — every subject has a full boundary array
+// GCSE format: boundaries [G9,G8,G7,G6,G5,G4,G3,G2,G1], with null in a slot the tier does not award
+// (Combined Science entries carry their own `grades` labels, 9-9 ... 1-1)
+// A-Level format: [A*,A,B,C,D,E] — 6 entries (AS-Level: [A,B,C,D,E])
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PAPER_DATABASE = {
@@ -50,27 +52,27 @@ export const PAPER_DATABASE = {
   'AQA-Combined Science-Foundation-P6':     { maxMarks:70,  duration:75  },
   'AQA-Geography-N/A-P1':                   { maxMarks:88,  duration:90  },
   'AQA-Geography-N/A-P2':                   { maxMarks:88,  duration:90  },
-  'AQA-Geography-N/A-P3':                   { maxMarks:76,  duration:75  },
-  'AQA-History-N/A-P1':                     { maxMarks:64,  duration:90  },
-  'AQA-History-N/A-P2':                     { maxMarks:64,  duration:90  },
-  'AQA-Religious Studies-N/A-P1':           { maxMarks:102, duration:105 },
-  'AQA-Religious Studies-N/A-P2':           { maxMarks:102, duration:105 },
+  'AQA-Geography-N/A-P3': { maxMarks:76, duration:90 },
+  'AQA-History-N/A-P1': { maxMarks:84, duration:120 },
+  'AQA-History-N/A-P2': { maxMarks:84, duration:120 },
+  'AQA-Religious Studies-N/A-P1': { maxMarks:102, duration:105, note:'Paper total 102: 96 marks plus 6 for spelling, punctuation and grammar' },
+  'AQA-Religious Studies-N/A-P2': { maxMarks:99, duration:105, note:'Paper total 99: 96 marks plus 3 for spelling, punctuation and grammar; AQA scales it by 1.03 to 102 when it combines the two components' },
   'AQA-Sociology-N/A-P1':                   { maxMarks:100, duration:105 },
   'AQA-Sociology-N/A-P2':                   { maxMarks:100, duration:105 },
   'AQA-Psychology-N/A-P1':                  { maxMarks:100, duration:105 },
   'AQA-Psychology-N/A-P2':                  { maxMarks:100, duration:105 },
   'AQA-Media Studies-N/A-P1':               { maxMarks:84,  duration:90  },
   'AQA-Media Studies-N/A-P2':               { maxMarks:84,  duration:90  },
-  'AQA-Business-N/A-P1':            { maxMarks:95,  duration:105 },
-  'AQA-Business-N/A-P2':            { maxMarks:95,  duration:105 },
+  'AQA-Business-N/A-P1': { maxMarks:90, duration:105 },
+  'AQA-Business-N/A-P2': { maxMarks:90, duration:105 },
   'AQA-Drama-N/A-P1': { maxMarks:80, duration:105 },
   'AQA-Music-N/A-P1':                       { maxMarks:96,  duration:90  },
-  'AQA-Physical Education-N/A-P1':          { maxMarks:100, duration:105 },
-  'AQA-Physical Education-N/A-P2':          { maxMarks:100, duration:105 },
+  'AQA-Physical Education-N/A-P1': { maxMarks:78, duration:75 },
+  'AQA-Physical Education-N/A-P2': { maxMarks:78, duration:75 },
   'AQA-Food Preparation & Nutrition-N/A-P1':{ maxMarks:100, duration:105 },
   'AQA-Design & Technology-N/A-P1':         { maxMarks:100, duration:120 },
-  'AQA-Statistics-N/A-P1':                  { maxMarks:100, duration:90  },
-  'AQA-Statistics-N/A-P2':                  { maxMarks:100, duration:90  },
+  'AQA-Statistics-N/A-P1': { maxMarks:80, duration:105 },
+  'AQA-Statistics-N/A-P2': { maxMarks:80, duration:105 },
   'AQA-German-Higher-P1': { maxMarks:50, duration:45 },
   'AQA-German-Higher-P2': { maxMarks:50, duration:12, note:'Non-exam speaking test: 7-9 min (Foundation) or 10-12 min (Higher) plus 15 min supervised preparation; duration is the upper limit' },
   'AQA-German-Higher-P3': { maxMarks:50, duration:60 },
@@ -796,14 +798,14 @@ export const PAPER_DATABASE = {
 }
 
 // ── GRADE BOUNDARIES ─────────────────────────────────────────────────────────
-// GCSE:    [G9, G8, G7, G6, G5, G4, G3, G2, G1]  — per paper, no nulls
-// A-Level: [A*, A,  B,  C,  D,  E ]               — per paper, no nulls
-// ~ = estimated from 3-year historical averages or adjacent board data
-// Higher tier entries cover G9-G4; Foundation covers G5-G1
+// GCSE:    [G9, G8, G7, G6, G5, G4, G3, G2, G1]  — whole-qualification marks, null where the tier awards no such grade
+// A-Level: [A*, A,  B,  C,  D,  E ]               — whole-qualification marks
+// A note containing '~' or 'estimat' marks an estimate (not a board figure); the app labels it as one
+// Higher tier entries cover G9-G3; Foundation covers G5-G1
 // For tiered subjects, separate Higher/Foundation entries are used
 export const GRADE_BOUNDARIES = {
-  // 2026 boundaries are not yet published (released by boards in August 2026).
-  // We use 2025 values as estimates — the app shows a disclaimer when 2026 is selected.
+  // The boards published their 2026 boundaries in August 2026. Where a 2026 entry is missing, getBoundaries() falls back to
+  // 2025 and says so in its provenance field (the app shows that as an estimate).
   2026: {
     // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
     // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
@@ -1518,7 +1520,7 @@ export const GRADE_BOUNDARIES = {
     'AQA-French-Higher':                 { maxMarks:240, boundaries:[195,172,150,135,121,107,100,null,null] },
     'AQA-Spanish-Higher':                { maxMarks:240, boundaries:[195,170,145,130,116,102,95,null,null] },
     // ── OCR GCSE ─────────────────────────────────────────────────────────────
-    'OCR-Computer Science':              { maxMarks:80,  boundaries:[68,63,59,51,44,36,26,16,7] },
+    'OCR-Computer Science': { maxMarks:160, boundaries:[136,126,117,102,87,72,52,32,13] }, // OCR GCSE grade boundaries June 2024, overall rows J277
     'OCR-Mathematics-Higher': { maxMarks:300, boundaries:[245,195,145,110,76,42,25,null,null] }, // OCR GCSE grade boundaries June 2024, overall rows J560
     'OCR-Mathematics-Foundation': { maxMarks:300, boundaries:[null,null,null,null,180,131,93,55,18] }, // OCR GCSE grade boundaries June 2024, overall rows J560
     'OCR-Geography': { maxMarks:200, boundaries:[158,145,132,118,105,92,67,43,19], note:'Geography B (J384) shown; Geography A (J383) boundaries are 157/141/126/110/95/80/57/35/13' }, // OCR GCSE grade boundaries June 2024, overall rows J384 Geography B
@@ -1604,7 +1606,7 @@ export const GRADE_BOUNDARIES = {
     'CCEA-Business Studies':             { maxMarks:80,  boundaries:[63,57,51,44,37,30,22,14,7], grades:['A*','A','B','C*','C','D','E','F','G'], note:'~estimated' },
     'CCEA-Computer Science':             { maxMarks:80,  boundaries:[63,57,51,44,37,30,22,14,7], grades:['A*','A','B','C*','C','D','E','F','G'], note:'~estimated' },
     // ── A-Level 2024 ─────────────────────────────────────────────────────────
-    'AQA-Mathematics-N/A-Alevel':        { maxMarks:100, level:'A-Level', boundaries:[68,55,44,34,24,14], grades:['A*','A','B','C','D','E'] },
+    'AQA-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[259,222,184,147,110,73], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7357
     'AQA-Further Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[234,196,162,128,94,60], grades:['A*','A','B','C','D','E'], note:'Option MD shown; option DS is 239/198/164/130/96/62 and option SM is 238/195/160/126/92/58' }, // AQA A-level grade boundaries June 2024 7367 option MD
     'AQA-Biology-N/A-Alevel': { maxMarks:260, level:'A-Level', boundaries:[192,165,140,115,91,67], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7402
     'AQA-Chemistry-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[239,198,162,126,90,55], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7405
@@ -1617,8 +1619,8 @@ export const GRADE_BOUNDARIES = {
     'AQA-Geography-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[239,211,179,148,117,86], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7037
     'AQA-History-N/A-Alevel': { maxMarks:200, level:'A-Level', boundaries:[161,137,114,92,70,48], grades:['A*','A','B','C','D','E'], note:'Option CT shown; the published option combinations differ by up to about 25 marks at A* (146 to 172)' }, // AQA A-level grade boundaries June 2024 7042 option CT
     'AQA-Law-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[218,190,155,120,86,52], grades:['A*','A','B','C','D','E'], note:'Option A shown; option B is 215/188/154/121/88/55' }, // AQA A-level grade boundaries June 2024 7162 option A
-    'AQA-French-N/A-Alevel':             { maxMarks:133, level:'A-Level', boundaries:[118,105,91,77,63,49], grades:['A*','A','B','C','D','E'] },
-    'AQA-German-N/A-Alevel':             { maxMarks:133, level:'A-Level', boundaries:[112,93,78,63,47,32], grades:['A*','A','B','C','D','E'] },
+    'AQA-French-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[358,325,282,240,198,156], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7652
+    'AQA-German-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[351,304,257,210,163,116], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7662
     'AQA-Spanish-N/A-Alevel': { maxMarks:400, level:'A-Level', boundaries:[344,303,254,205,156,107], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7692
     'AQA-Media Studies-N/A-Alevel': { maxMarks:240, level:'A-Level', boundaries:[203,183,152,122,92,62], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7572
     'AQA-Music-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[242,214,187,160,134,108], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2024 7272
@@ -1697,6 +1699,15 @@ export const GRADE_BOUNDARIES = {
 
   // ─── 2023 ──────────────────────────────────────────────────────────────────
   2023: {
+    // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
+    // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
+    //   Pearson Edexcel GCSE (9-1) grade boundaries June 2023 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/GCSE/2306-gcse-9-1-subject-grade-boundaries.pdf
+    //   Pearson Edexcel GCE AS and A level grade boundaries June 2023 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/A-level/2306-gce-subject-grade-boundaries.pdf
+    //   AQA GCSE grade boundaries June 2023 — filestore.aqa.org.uk/over/stat_pdf/AQA-GCSE-GDE-BDY-JUN-2023.PDF
+    //   AQA A-level grade boundaries June 2023 — filestore.aqa.org.uk/over/stat_pdf/AQA-A-LEVEL-GDE-BDY-JUN-2023.PDF
+    //   OCR GCSE (9-1) grade boundaries June 2023 — ocr.org.uk/Images/690906-gcse-grade-boundaries-june-2023.pdf
+    //   OCR AS and A Level grade boundaries June 2023 — ocr.org.uk/Images/690902-as-and-a-level-grade-boundaries-june-2023.pdf
+    // Entries that still say '~estimated' have not been checked against a board document.
     'AQA-Mathematics-Higher':          { maxMarks:240, boundaries:[214,186,158,125,92,59,42,null,null] },
     'AQA-Mathematics-Foundation':      { maxMarks:240, boundaries:[null,null,null,null,189,158,117,76,35] },
     'AQA-English Language':            { maxMarks:160, boundaries:[121,111,102,91,81,71,52,34,16] },
@@ -1707,8 +1718,8 @@ export const GRADE_BOUNDARIES = {
     'AQA-Chemistry-Foundation':        { maxMarks:200, boundaries:[null,null,null,null,126,107,78,49,20] },
     'AQA-Physics-Higher':              { maxMarks:200, boundaries:[147,133,120,102,84,67,58,null,null] },
     'AQA-Physics-Foundation':          { maxMarks:200, boundaries:[null,null,null,null,133,120,86,53,20] },
-    'AQA-Combined Science-Higher':     { maxMarks:70,  boundaries:[47,44,41,38,35,31,23,16,8] },
-    'AQA-Combined Science-Foundation': { maxMarks:70,  boundaries:[43,39,35,31,27,23,17,11,6] },
+    'AQA-Combined Science-Higher': { maxMarks:420, boundaries:[291,273,255,237,220,199,179,159,139,119,99,89], grades:['9-9','9-8','8-8','8-7','7-7','7-6','6-6','6-5','5-5','5-4','4-4','4-3'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2023 8464 Combined Science: Trilogy
+    'AQA-Combined Science-Foundation': { maxMarks:420, boundaries:[270,250,230,202,174,146,118,91,64], grades:['5-5','5-4','4-4','4-3','3-3','3-2','2-2','2-1','1-1'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2023 8464 Combined Science: Trilogy
     'AQA-Geography':                   { maxMarks:252, boundaries:[189,170,151,133,115,97,70,43,17] },
     'AQA-History':                     { maxMarks:168, boundaries:[114,104,94,82,70,58,41,25,9] },
     'AQA-Religious Studies':           { maxMarks:204, boundaries:[177,166,155,140,125,111,83,55,27] },
@@ -1720,19 +1731,19 @@ export const GRADE_BOUNDARIES = {
     'AQA-German-Higher':               { maxMarks:240, boundaries:[199,177,156,134,113,92,81,null,null] },
     'AQA-French-Higher':               { maxMarks:240, boundaries:[188,166,144,129,114,99,91,null,null] },
     'AQA-Spanish-Higher':              { maxMarks:240, boundaries:[202,178,154,137,120,103,94,null,null] },
-    'OCR-Computer Science':            { maxMarks:90,  boundaries:[74,68,62,52,42,32,24,16,8] },
-    'Edexcel-Mathematics-Higher':      { maxMarks:80,  boundaries:[63,53,43,33,23,14,10,7,3] },
-    'Edexcel-Mathematics-Foundation':  { maxMarks:80,  boundaries:[57,50,43,36,29,22,16,11,5] },
-    'Edexcel-Business':        { maxMarks:90,  boundaries:[66,58,49,40,30,20,14,9,5] },
+    'OCR-Computer Science': { maxMarks:160, boundaries:[133,119,106,91,77,63,46,29,12] }, // OCR GCSE grade boundaries June 2023, overall rows J277
+    'Edexcel-Mathematics-Higher': { maxMarks:240, boundaries:[203,174,145,112,79,47,31,null,null] }, // Pearson Edexcel GCSE grade boundaries June 2023, overall rows 1MA1
+    'Edexcel-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,182,147,109,71,33] }, // Pearson Edexcel GCSE grade boundaries June 2023, overall rows 1MA1
+    'Edexcel-Business': { maxMarks:180, boundaries:[143,132,122,108,95,82,60,38,16] }, // Pearson Edexcel GCSE grade boundaries June 2023, overall rows 1BS0
     'WJEC-Mathematics-Higher':         { maxMarks:80,  boundaries:[63,55,47,38,30,22,16,11,5], note:'~estimated' },
     'CCEA-Mathematics-Higher':         { maxMarks:100, boundaries:[76,67,58,48,38,28,20,13,7], grades:['A*','A','B','C*','C','D','E','F','G'], note:'~estimated' },
     // A-Level 2023
-    'AQA-Mathematics-N/A-Alevel':      { maxMarks:100, level:'A-Level', boundaries:[67,54,43,33,23,14], grades:['A*','A','B','C','D','E'] },
-    'AQA-Biology-N/A-Alevel':          { maxMarks:87,  level:'A-Level', boundaries:[66,55,44,33,23,13], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Chemistry-N/A-Alevel':        { maxMarks:100, level:'A-Level', boundaries:[79,66,51,40,29,18], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Physics-N/A-Alevel':          { maxMarks:83,  level:'A-Level', boundaries:[61,50,39,29,20,11], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'Edexcel-Mathematics-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[69,55,44,34,24,14], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'OCR-Computer Science-N/A-Alevel': { maxMarks:100, level:'A-Level', boundaries:[71,59,47,36,25,15], grades:['A*','A','B','C','D','E'], note:'~estimated' },
+    'AQA-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[248,201,163,125,87,49], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2023 7357
+    'AQA-Biology-N/A-Alevel': { maxMarks:260, level:'A-Level', boundaries:[180,153,125,98,71,44], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2023 7402
+    'AQA-Chemistry-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[250,210,173,136,99,62], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2023 7405
+    'AQA-Physics-N/A-Alevel': { maxMarks:250, level:'A-Level', boundaries:[166,133,110,87,64,42], grades:['A*','A','B','C','D','E'], note:'Option D (Turning points) shown; the other options differ by up to 7 marks at A* (162 to 169)' }, // AQA A-level grade boundaries June 2023 7408 option D
+    'Edexcel-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[244,196,158,121,84,47], grades:['A*','A','B','C','D','E'] }, // Pearson Edexcel GCE AS and A level grade boundaries June 2023, overall rows 9MA0
+    'OCR-Computer Science-N/A-Alevel': { maxMarks:350, level:'A-Level', boundaries:[286,251,209,167,126,85], grades:['A*','A','B','C','D','E'] }, // OCR AS and A Level grade boundaries June 2023, overall rows H446
   
     // ── AQA GCSE additions, real June 2023 boundaries — not previously present for 2023 ──
     'AQA-Citizenship Studies': { maxMarks:160, boundaries:[133,122,112,96,81,66,49,33,17] },
@@ -1785,6 +1796,15 @@ export const GRADE_BOUNDARIES = {
 
   // ─── 2022 ──────────────────────────────────────────────────────────────────
   2022: {
+    // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
+    // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
+    //   Pearson Edexcel GCSE (9-1) grade boundaries June 2022 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/GCSE/2206-gcse-9-1-subject-grade-boundaries.pdf
+    //   Pearson Edexcel GCE AS and A level grade boundaries June 2022 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/A-level/2206-gce-subject-grade-boundaries.pdf
+    //   AQA GCSE grade boundaries June 2022 — filestore.aqa.org.uk/over/stat_pdf/AQA-GCSE-GDE-BDY-JUN-2022.PDF
+    //   AQA A-level grade boundaries June 2022 — filestore.aqa.org.uk/over/stat_pdf/AQA-A-LEVEL-GDE-BDY-JUN-2022.PDF
+    //   OCR GCSE grade boundaries June 2022 — ocr.org.uk/Images/658478-gcse-grade-boundaries-june-2022.pdf
+    //   OCR AS and A Level grade boundaries June 2022 — ocr.org.uk/Images/658475-as-and-a-level-grade-boundaries-june-2022.pdf
+    // Entries that still say '~estimated' have not been checked against a board document.
     'AQA-Mathematics-Higher':          { maxMarks:240, boundaries:[214,185,156,121,86,51,33,null,null] },
     'AQA-Mathematics-Foundation':      { maxMarks:240, boundaries:[null,null,null,null,172,135,101,67,33] },
     'AQA-English Language':            { maxMarks:160, boundaries:[119,109,100,90,80,70,52,34,16] },
@@ -1795,8 +1815,8 @@ export const GRADE_BOUNDARIES = {
     'AQA-Chemistry-Foundation':        { maxMarks:200, boundaries:[null,null,null,null,126,104,76,48,20] },
     'AQA-Physics-Higher':              { maxMarks:200, boundaries:[150,134,119,98,77,56,45,null,null] },
     'AQA-Physics-Foundation':          { maxMarks:200, boundaries:[null,null,null,null,135,115,83,52,21] },
-    'AQA-Combined Science-Higher':     { maxMarks:70,  boundaries:[48,45,42,39,36,32,24,16,8] },
-    'AQA-Combined Science-Foundation': { maxMarks:70,  boundaries:[43,39,35,31,27,23,17,11,6] },
+    'AQA-Combined Science-Higher': { maxMarks:420, boundaries:[276,257,238,220,202,183,164,145,126,107,89,80], grades:['9-9','9-8','8-8','8-7','7-7','7-6','6-6','6-5','5-5','5-4','4-4','4-3'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2022 8464 Combined Science: Trilogy
+    'AQA-Combined Science-Foundation': { maxMarks:420, boundaries:[242,222,203,175,148,121,94,67,40], grades:['5-5','5-4','4-4','4-3','3-3','3-2','2-2','2-1','1-1'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2022 8464 Combined Science: Trilogy
     'AQA-Geography':                   { maxMarks:252, boundaries:[193,173,154,134,114,94,68,42,17] },
     'AQA-History':                     { maxMarks:124, boundaries:[80,72,65,56,48,40,30,20,10] },
     'AQA-Religious Studies':           { maxMarks:204, boundaries:[176,164,152,136,120,104,76,48,21] },
@@ -1805,18 +1825,18 @@ export const GRADE_BOUNDARIES = {
     'AQA-German-Higher':               { maxMarks:240, boundaries:[189,166,143,124,105,86,76,null,null] },
     'AQA-French-Higher':               { maxMarks:240, boundaries:[183,159,136,120,104,89,81,null,null] },
     'AQA-Spanish-Higher':              { maxMarks:240, boundaries:[192,166,140,123,106,89,80,null,null] },
-    'OCR-Computer Science':            { maxMarks:90,  boundaries:[77,71,64,53,42,32,24,16,8] },
-    'Edexcel-Mathematics-Higher':      { maxMarks:80,  boundaries:[66,56,46,35,24,14,10,7,3] },
-    'Edexcel-Mathematics-Foundation':  { maxMarks:80,  boundaries:[56,49,42,35,28,21,15,10,5] },
+    'OCR-Computer Science': { maxMarks:160, boundaries:[132,119,106,90,75,60,45,30,16] }, // OCR GCSE grade boundaries June 2022, overall rows J277
+    'Edexcel-Mathematics-Higher': { maxMarks:240, boundaries:[194,165,137,104,71,38,21,null,null] }, // Pearson Edexcel GCSE grade boundaries June 2022, overall rows 1MA1
+    'Edexcel-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,173,135,100,66,32] }, // Pearson Edexcel GCSE grade boundaries June 2022, overall rows 1MA1
     'WJEC-Mathematics-Higher':         { maxMarks:80,  boundaries:[62,54,46,37,29,21,15,10,5], note:'~estimated' },
     'CCEA-Mathematics-Higher':         { maxMarks:100, boundaries:[75,66,57,47,37,27,19,13,6], grades:['A*','A','B','C*','C','D','E','F','G'], note:'~estimated' },
     // A-Level 2022
-    'AQA-Mathematics-N/A-Alevel':      { maxMarks:100, level:'A-Level', boundaries:[66,53,42,32,22,13], grades:['A*','A','B','C','D','E'] },
-    'AQA-Biology-N/A-Alevel':          { maxMarks:87,  level:'A-Level', boundaries:[65,54,43,32,22,12], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Chemistry-N/A-Alevel':        { maxMarks:100, level:'A-Level', boundaries:[78,65,50,39,28,17], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Physics-N/A-Alevel':          { maxMarks:83,  level:'A-Level', boundaries:[60,49,38,28,19,10], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'Edexcel-Mathematics-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[68,54,43,33,23,13], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'OCR-Computer Science-N/A-Alevel': { maxMarks:100, level:'A-Level', boundaries:[70,58,46,35,24,14], grades:['A*','A','B','C','D','E'], note:'~estimated' },
+    'AQA-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[220,171,138,106,74,42], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2022 7357
+    'AQA-Biology-N/A-Alevel': { maxMarks:260, level:'A-Level', boundaries:[173,142,115,89,63,37], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2022 7402
+    'AQA-Chemistry-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[237,196,158,121,84,47], grades:['A*','A','B','C','D','E'] }, // AQA A-level grade boundaries June 2022 7405
+    'AQA-Physics-N/A-Alevel': { maxMarks:250, level:'A-Level', boundaries:[165,134,111,88,65,42], grades:['A*','A','B','C','D','E'], note:'Option D (Turning points) shown; the other options differ by up to 10 marks at A* (165 to 175)' }, // AQA A-level grade boundaries June 2022 7408 option D
+    'Edexcel-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[217,164,130,96,62,28], grades:['A*','A','B','C','D','E'] }, // Pearson Edexcel GCE AS and A level grade boundaries June 2022, overall rows 9MA0
+    'OCR-Computer Science-N/A-Alevel': { maxMarks:350, level:'A-Level', boundaries:[264,229,189,150,111,72], grades:['A*','A','B','C','D','E'] }, // OCR AS and A Level grade boundaries June 2022, overall rows H446
   
     // ── AQA GCSE additions, real June 2022 boundaries — not previously present for 2022 ──
     'AQA-Business': { maxMarks:180, boundaries:[127,116,106,92,78,64,46,28,10] },
@@ -1980,6 +2000,15 @@ export const GRADE_BOUNDARIES = {
 
   // ─── 2019 ──────────────────────────────────────────────────────────────────
   2019: {
+    // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
+    // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
+    //   Pearson Edexcel GCSE (9-1) grade boundaries June 2019 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/GCSE/1906-GCSE-9--1-subject-grade-boundaries.pdf
+    //   Pearson Edexcel GCE AS and A level grade boundaries June 2019 — qualifications.pearson.com/content/dam/pdf/Support/Grade-boundaries/A-level/gce-subject-grade-boundaries.pdf
+    //   AQA GCSE grade boundaries June 2019 — filestore.aqa.org.uk/over/stat_pdf/AQA-GCSE-GDE-BDY-JUN-2019.PDF
+    //   AQA A-level reformed linear grade boundaries June 2019 — filestore.aqa.org.uk/over/stat_pdf/AQA-A-LEVEL-RL-GDE-BDY-JUN-2019.PDF
+    //   OCR GCSE (9-1) grade boundaries June 2019 — ocr.org.uk/Images/552370-gcse-9-1-grade-boundaries-june-2019.pdf
+    //   OCR AS and A Level grade boundaries June 2019 — ocr.org.uk/Images/552365-reformed-a-level-grade-boundaries-june-2019.pdf
+    // Entries that still say '~estimated' have not been checked against a board document.
     'AQA-Mathematics-Higher':          { maxMarks:240, boundaries:[206,171,136,105,74,43,27,null,null] },
     'AQA-Mathematics-Foundation':      { maxMarks:240, boundaries:[null,null,null,null,157,122,89,57,25] },
     'AQA-English Language':            { maxMarks:160, boundaries:[127,117,108,97,86,76,56,36,16] },
@@ -1990,8 +2019,8 @@ export const GRADE_BOUNDARIES = {
     'AQA-Chemistry-Foundation':        { maxMarks:200, boundaries:[null,null,null,null,133,115,83,52,21] },
     'AQA-Physics-Higher':              { maxMarks:200, boundaries:[143,125,108,89,70,51,41,null,null] },
     'AQA-Physics-Foundation':          { maxMarks:200, boundaries:[null,null,null,null,129,111,80,50,20] },
-    'AQA-Combined Science-Higher':     { maxMarks:70,  boundaries:[46,43,40,37,34,30,23,15,8] },
-    'AQA-Combined Science-Foundation': { maxMarks:70,  boundaries:[41,37,33,29,25,21,16,10,5] },
+    'AQA-Combined Science-Higher': { maxMarks:420, boundaries:[269,251,233,216,199,180,161,142,123,105,87,78], grades:['9-9','9-8','8-8','8-7','7-7','7-6','6-6','6-5','5-5','5-4','4-4','4-3'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2019 8464 Combined Science: Trilogy
+    'AQA-Combined Science-Foundation': { maxMarks:420, boundaries:[243,221,200,173,146,119,93,67,41], grades:['5-5','5-4','4-4','4-3','3-3','3-2','2-2','2-1','1-1'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2019 8464 Combined Science: Trilogy
     'AQA-Geography':                   { maxMarks:252, boundaries:[184,165,147,129,112,95,69,44,19] },
     'AQA-History':                     { maxMarks:168, boundaries:[112,99,87,76,65,55,40,25,11] },
     'AQA-Religious Studies':           { maxMarks:204, boundaries:[182,169,157,141,125,110,81,52,24] },
@@ -2000,18 +2029,18 @@ export const GRADE_BOUNDARIES = {
     'AQA-German-Higher':               { maxMarks:240, boundaries:[201,179,157,135,114,93,82,null,null] },
     'AQA-French-Higher':               { maxMarks:240, boundaries:[203,181,159,141,123,106,97,null,null] },
     'AQA-Spanish-Higher':              { maxMarks:240, boundaries:[205,181,158,138,119,100,90,null,null] },
-    'OCR-Computer Science':            { maxMarks:90,  boundaries:[72,65,59,48,38,28,21,14,7] },
-    'Edexcel-Mathematics-Higher':      { maxMarks:80,  boundaries:[63,53,42,32,22,13,10,7,3] },
-    'Edexcel-Mathematics-Foundation':  { maxMarks:80,  boundaries:[51,44,37,30,23,16,12,8,4] },
+    'OCR-Computer Science': { maxMarks:160, boundaries:[137,125,113,99,85,71,54,38,22], note:'J276 (the specification before J277), Overall row for components 01 and 02' }, // OCR GCSE grade boundaries June 2019, overall rows J276
+    'Edexcel-Mathematics-Higher': { maxMarks:240, boundaries:[198,167,137,108,80,52,38,null,null] }, // Pearson Edexcel GCSE grade boundaries June 2019, overall rows 1MA1
+    'Edexcel-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,184,149,111,73,36] }, // Pearson Edexcel GCSE grade boundaries June 2019, overall rows 1MA1
     'WJEC-Mathematics-Higher':         { maxMarks:80,  boundaries:[60,52,44,35,27,19,14,9,4], note:'~estimated' },
     'CCEA-Mathematics-Higher':         { maxMarks:100, boundaries:[74,65,56,46,36,26,19,12,6], grades:['A*','A','B','C*','C','D','E','F','G'], note:'~estimated' },
     // A-Level 2019
-    'AQA-Mathematics-N/A-Alevel':      { maxMarks:100, level:'A-Level', boundaries:[65,52,41,31,21,12], grades:['A*','A','B','C','D','E'] },
-    'AQA-Biology-N/A-Alevel':          { maxMarks:87,  level:'A-Level', boundaries:[64,53,42,31,21,11], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Chemistry-N/A-Alevel':        { maxMarks:100, level:'A-Level', boundaries:[76,63,48,37,26,15], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'AQA-Physics-N/A-Alevel':          { maxMarks:83,  level:'A-Level', boundaries:[59,48,37,27,18,9],  grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'Edexcel-Mathematics-N/A-Alevel':  { maxMarks:100, level:'A-Level', boundaries:[67,53,42,32,22,12], grades:['A*','A','B','C','D','E'], note:'~estimated' },
-    'OCR-Computer Science-N/A-Alevel': { maxMarks:100, level:'A-Level', boundaries:[69,57,45,34,23,13], grades:['A*','A','B','C','D','E'], note:'~estimated' },
+    'AQA-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[231,185,151,118,85,52], grades:['A*','A','B','C','D','E'] }, // AQA A-level reformed linear grade boundaries June 2019 7357
+    'AQA-Biology-N/A-Alevel': { maxMarks:260, level:'A-Level', boundaries:[178,149,125,101,77,53], grades:['A*','A','B','C','D','E'] }, // AQA A-level reformed linear grade boundaries June 2019 7402
+    'AQA-Chemistry-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[246,206,170,135,100,65], grades:['A*','A','B','C','D','E'] }, // AQA A-level reformed linear grade boundaries June 2019 7405
+    'AQA-Physics-N/A-Alevel': { maxMarks:250, level:'A-Level', boundaries:[198,170,142,115,88,61], grades:['A*','A','B','C','D','E'], note:'Option D (Turning points) shown; the other options differ by up to 6 marks at A* (197 to 203)' }, // AQA A-level reformed linear grade boundaries June 2019 7408 option D
+    'Edexcel-Mathematics-N/A-Alevel': { maxMarks:300, level:'A-Level', boundaries:[217,165,134,103,73,43], grades:['A*','A','B','C','D','E'] }, // Pearson Edexcel GCE AS and A level grade boundaries June 2019, overall rows 9MA0
+    'OCR-Computer Science-N/A-Alevel': { maxMarks:350, level:'A-Level', boundaries:[285,250,212,174,137,100], grades:['A*','A','B','C','D','E'] }, // OCR AS and A Level grade boundaries June 2019, overall rows H446
   
     // ── AQA GCSE additions, real June 2019 boundaries — not previously present for 2019 ──
     'AQA-Business': { maxMarks:180, boundaries:[142,132,123,111,99,88,65,42,19] },
