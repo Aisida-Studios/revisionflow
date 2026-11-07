@@ -12,6 +12,7 @@ import { Trophy, Users, Globe, Lock, Crown } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 import { usePageMeta } from '../utils/pageMeta'
+import './Touch.css'
 
 const PERIODS = [
   { key: 'week',    label: 'This week' },
@@ -122,7 +123,7 @@ export default function Leaderboard() {
   const periodLabel   = PERIODS.find(p => p.key === period)?.label.toLowerCase() || 'all time'
 
   return (
-    <div className="fade-in ap-page ap-page--md">
+    <div className="fade-in ap-page ap-page--md touch-44">
       <div className="ap-page-head">
         <div>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
