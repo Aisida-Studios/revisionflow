@@ -13,6 +13,7 @@ import { UserPlus, UserCheck, UserX, Users, Search } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import './AccountPages.css'
 import { usePageMeta } from '../utils/pageMeta'
+import './Touch.css'
 
 // Shows a real profile photo when one is available (Google sign-in), falling back to the
 // initial letter — on missing avatarUrl, or if the image fails to load (photo URLs can expire).
@@ -129,7 +130,7 @@ export default function Friends() {
   const hasSentRequest     = (uid) => (profile?.sentFriendRequests || []).includes(uid)
 
   return (
-    <div className="fade-in ap-page ap-page--md">
+    <div className="fade-in ap-page ap-page--md touch-44">
       <div className="ap-page-head">
         <h2>Friends</h2>
         <span className="badge badge-accent"><Users size={12} /> {friends.length} friend{friends.length === 1 ? '' : 's'}</span>
