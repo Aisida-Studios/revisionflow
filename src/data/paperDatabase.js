@@ -1490,8 +1490,8 @@ export const GRADE_BOUNDARIES = {
     'AQA-Further Mathematics':           { maxMarks:80,  boundaries:[72,64,56,48,40,32,24,16,8], note:'~estimated' },
     'AQA-English Language':              { maxMarks:160, boundaries:[121,111,102,92,82,73,54,35,16] },
     'AQA-English Literature':            { maxMarks:160, boundaries:[137,121,106,90,74,58,42,27,12] },
-    'AQA-English Literature-P1':         { maxMarks:64,  boundaries:[55,48,42,36,30,23,17,11,5] },
-    'AQA-English Literature-P2':         { maxMarks:96,  boundaries:[82,73,63,54,44,35,25,17,8] },
+    'AQA-English Literature-P1': { maxMarks:64, boundaries:[55,49,44,38,32,27,19,12,5] }, // AQA GCSE grade boundaries June 2024 8702/1 English Literature Paper 1
+    'AQA-English Literature-P2': { maxMarks:96, boundaries:[82,72,62,51,41,31,23,15,7] }, // AQA GCSE grade boundaries June 2024 8702/2 English Literature Paper 2
     'AQA-Biology-Higher':                { maxMarks:200, boundaries:[141,126,112,90,69,48,37,null,null] },
     'AQA-Biology-Foundation':            { maxMarks:200, boundaries:[null,null,null,null,132,113,82,52,22] },
     'AQA-Chemistry-Higher':              { maxMarks:200, boundaries:[149,130,112,90,68,46,35,null,null] },
@@ -1501,11 +1501,11 @@ export const GRADE_BOUNDARIES = {
     'AQA-Combined Science-Higher': { maxMarks:420, boundaries:[289,270,251,233,215,194,173,153,133,113,93,83], grades:['9-9','9-8','8-8','8-7','7-7','7-6','6-6','6-5','5-5','5-4','4-4','4-3'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2024 8464 Combined Science: Trilogy
     'AQA-Combined Science-Foundation': { maxMarks:420, boundaries:[266,245,225,198,171,144,117,90,63], grades:['5-5','5-4','4-4','4-3','3-3','3-2','2-2','2-1','1-1'], note:'Combined Science: Trilogy (8464)' }, // AQA GCSE grade boundaries June 2024 8464 Combined Science: Trilogy
     'AQA-Geography':                     { maxMarks:252, boundaries:[202,182,162,142,123,104,76,48,20] },
-    'AQA-Geography-P1':                  { maxMarks:88,  boundaries:[71,64,57,50,43,36,26,17,8] },
-    'AQA-Geography-P2':                  { maxMarks:88,  boundaries:[71,64,57,50,43,36,26,17,8] },
-    'AQA-Geography-P3':                  { maxMarks:76,  boundaries:[61,55,49,43,37,31,22,15,7] },
+    'AQA-Geography-P1': { maxMarks:88, boundaries:[71,64,58,51,44,38,28,18,9] }, // AQA GCSE grade boundaries June 2024 8035/1 Geography Paper 1
+    'AQA-Geography-P2': { maxMarks:88, boundaries:[71,63,56,49,42,35,25,15,6] }, // AQA GCSE grade boundaries June 2024 8035/2 Geography Paper 2
+    'AQA-Geography-P3': { maxMarks:76, boundaries:[60,54,48,42,36,31,22,13,5] }, // AQA GCSE grade boundaries June 2024 8035/3 Geography Paper 3
     'AQA-History': { maxMarks:168, boundaries:[118,106,94,82,70,58,41,25,9], note:'Option JB shown; the published option combinations differ by a few marks (grade 9: 111 to 123)' }, // AQA GCSE grade boundaries June 2024 8145 option JB
-    'AQA-Religious Studies':             { maxMarks:102, boundaries:[89,83,77,69,62,54,39,25,12] },
+    'AQA-Religious Studies': { maxMarks:204, boundaries:[177,165,153,137,121,105,77,49,22], note:'Religious Studies A (8062), option TA shown; the published option combinations differ by up to 10 marks at grade 9 (170 to 180)' }, // AQA GCSE grade boundaries June 2024 8062 Religious Studies A option TA
     'AQA-Sociology':                     { maxMarks:200, boundaries:[158,147,136,120,105,90,64,38,12] },
     'AQA-Psychology':                    { maxMarks:200, boundaries:[158,144,130,111,92,74,53,32,11] },
     'AQA-Media Studies':                 { maxMarks:240, boundaries:[189,175,162,142,123,104,76,48,21] },
@@ -1892,8 +1892,13 @@ export const GRADE_BOUNDARIES = {
 
   // ─── 2021 (pandemic year — lower boundaries) ──────────────────────────────
   2021: {
-    'AQA-Mathematics-Higher':          { maxMarks:80,  boundaries:[64,52,40,30,21,11,8,5,3], note:'Nov 2021 pandemic grading' },
-    'AQA-Mathematics-Foundation':      { maxMarks:80,  boundaries:[48,40,32,25,18,12,9,6,3], note:'Nov 2021 pandemic grading' },
+    // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
+    // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
+    //   AQA GCSE grade boundaries November 2021 — filestore.aqa.org.uk/over/stat_pdf/AQA-GCSE-GDE-BDY-NOV-2021.PDF
+    //   OCR GCSE grade boundaries November 2021 — ocr.org.uk/Images/649341-gcse-grade-boundaries-except-english-and-maths-november-2021.pdf
+    // Entries that still say '~estimated' have not been checked against a board document.
+    'AQA-Mathematics-Higher': { maxMarks:240, boundaries:[192,155,119,90,62,34,20,null,null], note:'November 2021 series (no summer 2021 exams)' }, // AQA GCSE grade boundaries November 2021 8300H Mathematics Higher
+    'AQA-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,145,108,79,51,23], note:'November 2021 series (no summer 2021 exams)' }, // AQA GCSE grade boundaries November 2021 8300F Mathematics Foundation
     'AQA-English Language':            { maxMarks:80,  boundaries:[58,52,46,40,34,27,20,13,6], note:'~estimated pandemic year' },
     'AQA-English Literature':          { maxMarks:80,  boundaries:[65,58,50,42,34,26,19,12,5], note:'~estimated pandemic year' },
     'AQA-Biology-Higher':              { maxMarks:100, boundaries:[67,59,51,40,30,19,14,9,5], note:'~estimated pandemic year' },
@@ -1912,7 +1917,7 @@ export const GRADE_BOUNDARIES = {
     'AQA-German-Higher':               { maxMarks:60,  boundaries:[46,40,34,28,22,16,12,8,4], note:'~estimated pandemic year' },
     'AQA-French-Higher':               { maxMarks:60,  boundaries:[45,39,33,27,21,15,11,7,3], note:'~estimated pandemic year' },
     'AQA-Spanish-Higher':              { maxMarks:60,  boundaries:[45,39,33,27,21,15,11,7,3], note:'~estimated pandemic year' },
-    'OCR-Computer Science':            { maxMarks:80,  boundaries:[64,56,48,40,32,24,18,12,6], note:'2021 pandemic grading' },
+    'OCR-Computer Science': { maxMarks:160, boundaries:[127,111,95,79,63,48,36,25,14], note:'November 2021 series (no summer 2021 exams); J276 (the specification before J277), overall row for components 01 and 02' }, // OCR GCSE grade boundaries November 2021 J276 Computer Science overall
     'Edexcel-Mathematics-Higher':      { maxMarks:80,  boundaries:[60,50,40,30,21,12,9,6,3], note:'~estimated pandemic year' },
     'Edexcel-Mathematics-Foundation':  { maxMarks:80,  boundaries:[46,40,34,28,22,16,12,8,4], note:'~estimated pandemic year' },
     'WJEC-Mathematics-Higher':         { maxMarks:80,  boundaries:[58,50,42,34,26,18,13,9,4], note:'~estimated pandemic year' },
@@ -1946,8 +1951,12 @@ export const GRADE_BOUNDARIES = {
 
   // ─── 2020 (pandemic year — no summer exams) ────────────────────────────────
   2020: {
-    'AQA-Mathematics-Higher':          { maxMarks:80,  boundaries:[65,53,41,32,22,13,10,6,3], note:'Nov 2020 no summer exams' },
-    'AQA-Mathematics-Foundation':      { maxMarks:80,  boundaries:[49,43,37,31,25,19,14,9,4], note:'Nov 2020' },
+    // Whole-qualification boundaries below marked with a '// <board document>' tag were taken from the exam boards' own published documents (checked 2026-11),
+    // replacing the earlier '~estimated' or per-paper placeholder values. Documents used:
+    //   AQA GCSE grade boundaries November 2020 — filestore.aqa.org.uk/over/stat_pdf/AQA-GCSE-GDE-BDY-NOV-2020.PDF
+    // Entries that still say '~estimated' have not been checked against a board document.
+    'AQA-Mathematics-Higher': { maxMarks:240, boundaries:[194,159,124,95,67,39,25,null,null], note:'November 2020 series (no summer 2020 exams)' }, // AQA GCSE grade boundaries November 2020 8300H Mathematics Higher
+    'AQA-Mathematics-Foundation': { maxMarks:240, boundaries:[null,null,null,null,146,116,86,56,26], note:'November 2020 series (no summer 2020 exams)' }, // AQA GCSE grade boundaries November 2020 8300F Mathematics Foundation
     'AQA-English Language':            { maxMarks:80,  boundaries:[57,51,45,39,33,26,19,12,5], note:'~estimated Nov 2020' },
     'AQA-English Literature':          { maxMarks:80,  boundaries:[64,57,49,41,33,25,18,11,5], note:'~estimated Nov 2020' },
     'AQA-Biology-Higher':              { maxMarks:100, boundaries:[66,58,50,39,29,18,13,9,4], note:'~estimated pandemic year' },
