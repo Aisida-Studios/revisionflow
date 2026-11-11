@@ -6206,11 +6206,13 @@ export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...CCEA_ASLEVEL_2
 
 // ── 2027 EXAM DATES ──────────────────────────────────────────────────────────
 // Source (AQA GCSE rows): AQA's official "Exam timetable May/June 2027 – GCSE, AQA Certificates, ELC and
-// Projects", Version 1.2 (aqa.org.uk) — read in full and compared row by row on 2026-10-10. The document's
-// own version control says it builds on the CONFIRMED timetable published in May 2026; v1.1 only moved a
-// Physical Education submission date and v1.2 only moved the Level 2 Certificate in Further Mathematics
-// Paper 1 to 09 June (PM). Every AQA GCSE row below matches it. The comparison is automated: see
-// scripts/curriculum/inputs/official-timetables-2027.json and `npm run curriculum:validate`.
+// Projects", now Version 1.3 (aqa.org.uk). Version 1.2 was read in full and compared row by row on 2026-10-10; the
+// version-control table of version 1.3 was re-read on 2026-11-10. The document's own version control says it builds
+// on the CONFIRMED timetable published in May 2026: v1.1 only moved a Physical Education submission date, v1.2 moved
+// the Level 2 Certificate in Further Mathematics Paper 1 to 09 June (PM) and v1.3 moved that paper again, to 24 May (PM),
+// which is the date below. Version 1.3 changes nothing else, so every other AQA GCSE row is as compared against v1.2.
+// The version 1.2 comparison is automated: see scripts/curriculum/inputs/official-timetables-2027.json and
+// `npm run curriculum:validate` (if that file lists AQA 8365/1, it needs the same change to 2027-05-24).
 // Not included: NEA submission deadlines (except Art and Design), modern-foreign-language speaking-test
 // windows, and AQA qualifications RevisionFlow has no dataset for (Bengali, Italian, Modern Hebrew, Panjabi).
 //
@@ -6245,6 +6247,11 @@ export const EXAM_DATES_2026 = [...GCSE_2026, ...ASLEVEL_2026, ...CCEA_ASLEVEL_2
 // (Mon 3 and Mon 31 May) are empty, and no CCEA GCSE day has more than one morning or one afternoon session.
 // Not included: non-examined assessment deadlines (except the existing Art and Design "Submit by" rows), speaking tests,
 // and anything a board has not published.
+// Re-check on 2026-11-10 against each board's own published documents: AQA GCSE is now version 1.3 (one change since
+// version 1.2, applied below); AQA AS/A-level is still version 1.2; OCR's two documents are still the editions dated June 2026;
+// the WJEC/Eduqas GCSE document is still version 2. Pearson's FINAL timetables and the WJEC/Eduqas AS and A level document
+// print no version or date, so a change inside them cannot be detected from the label. CCEA was not re-checked
+// (ccea.org.uk cannot be read with the tools used for this check).
 const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:1, paperName:'Paper 1: Non-Calculator (F/H)', date:'2027-05-14' },
   { board:'AQA', level:'GCSE', subject:'Mathematics', tier:'N/A', paper:2, paperName:'Paper 2: Calculator (F/H)', date:'2027-05-27' },
@@ -6320,7 +6327,8 @@ const GCSE_2027 = [
   { board:'AQA', level:'GCSE', subject:'Polish', tier:'N/A', paper:3, paperName:'Reading', date:'2027-05-20' },
   { board:'AQA', level:'GCSE', subject:'Polish', tier:'N/A', paper:4, paperName:'Writing', date:'2027-06-11' },
   { board:'AQA', level:'GCSE', subject:'Engineering', tier:'N/A', paper:1, paperName:'Written', date:'2027-06-11' },
-  { board:'AQA', level:'GCSE', subject:'Further Mathematics', tier:'N/A', paper:1, paperName:'Paper 1 (Level 2 Certificate)', date:'2027-06-09' },
+  // 8365/1: 24 May (PM) per AQA version 1.3. The confirmed timetable had 11 June (AM); version 1.2 had 09 June (PM).
+  { board:'AQA', level:'GCSE', subject:'Further Mathematics', tier:'N/A', paper:1, paperName:'Paper 1 (Level 2 Certificate)', date:'2027-05-24' },
   { board:'AQA', level:'GCSE', subject:'Further Mathematics', tier:'N/A', paper:2, paperName:'Paper 2 (Level 2 Certificate)', date:'2027-06-17' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Fine Art)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
   { board:'AQA', level:'GCSE', subject:'Art & Design (Art, Craft & Design)', tier:'N/A', paper:1, paperName:'Portfolio & Externally Set Assignment', date:'Submit by 31 May 2027' },
