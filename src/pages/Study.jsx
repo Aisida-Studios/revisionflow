@@ -27,7 +27,7 @@ import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
-import { componentForSubject } from '../data/illustrationThemes'
+import { componentForSubject } from '../components/illustrations/SubjectIllustration'
 import toast from 'react-hot-toast'
 import {
   Zap, BookOpen, Brain, ChevronLeft, ChevronRight,
@@ -35,16 +35,16 @@ import {
   ClipboardList, Globe, Lock, Trash2, Edit3, Save,
   Users, ChevronDown, Repeat, BarChart2,
   Layers, PenLine, SpellCheck, Grid3x3, ListChecks,
-  Trophy, PartyPopper, Flame, FileText, Timer, CheckCircle2,
+  Trophy, PartyPopper, Sprout, FileText, Timer, CheckCircle2,
   Maximize2, Minimize2,
 } from 'lucide-react'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import EmptyState from '../components/illustrations/EmptyState'
 import './Study.css'
 
-// Subject-aware hero illustration — delegates to the shared illustrationThemes.js
-// resolver also used by Dashboard.jsx, Topics.jsx and TopicDetail.jsx, so the same
-// subject renders the same illustration everywhere rather than just biology-or-generic.
+// Subject-aware hero illustration — delegates to the shared resolver in
+// components/illustrations/SubjectIllustration.jsx, also used by Dashboard.jsx, Topics.jsx and TopicDetail.jsx, so the
+// same subject renders the same illustration everywhere rather than just biology-or-generic.
 function SubjectIllustration({ subject, size = 64 }) {
   const Illustration = componentForSubject(subject)
   return <Illustration size={size} />
@@ -966,7 +966,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
     const pct=Math.round(results.got/results.total*100)
     const tier = pct>=90?{Icon:Trophy,bg:'var(--success-pale)',c:'var(--success)'}
       : pct>=70?{Icon:PartyPopper,bg:'var(--success-pale)',c:'var(--success)'}
-      : pct>=50?{Icon:Flame,bg:'var(--warning-pale)',c:'var(--warning)'}
+      : pct>=50?{Icon:Sprout,bg:'var(--warning-pale)',c:'var(--warning)'}
       : {Icon:BookOpen,bg:'var(--accent-pale)',c:'var(--accent)'}
     return (
       <div style={{ maxWidth:520, margin:'0 auto' }}>
@@ -1590,7 +1590,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
           const pct = Math.round(results.got / results.total * 100)
           const tier = pct>=90?{Icon:Trophy,bg:'var(--success-pale)',c:'var(--success)'}
             : pct>=70?{Icon:PartyPopper,bg:'var(--success-pale)',c:'var(--success)'}
-            : pct>=50?{Icon:Flame,bg:'var(--warning-pale)',c:'var(--warning)'}
+            : pct>=50?{Icon:Sprout,bg:'var(--warning-pale)',c:'var(--warning)'}
             : {Icon:BookOpen,bg:'var(--accent-pale)',c:'var(--accent)'}
           return (
             <>
@@ -2008,7 +2008,7 @@ function PracticeTab({ mySets, uid }) {
       <div style={{ maxWidth: 520, margin: '0 auto' }}>
         <div className="card" style={{ textAlign: 'center', padding: '28px 24px' }}>
           <div className="rf-results-badge" style={{ background: missed===0?'var(--success-pale)':'var(--warning-pale)', color: missed===0?'var(--success)':'var(--warning)' }}>
-            {missed === 0 ? <Trophy size={30}/> : <Flame size={30}/>}
+            {missed === 0 ? <Trophy size={30}/> : <Sprout size={30}/>}
           </div>
           <h3 style={{ marginBottom: 4 }}>Practice complete!</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.85rem' }}>{sessionResults.length} cards reviewed</p>
