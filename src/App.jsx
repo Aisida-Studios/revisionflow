@@ -1,4 +1,6 @@
 // src/App.jsx
+// First, so Chrome's one-off beforeinstallprompt event is captured before anything else runs (see utils/pwaInstall.js).
+import './utils/pwaInstall'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
