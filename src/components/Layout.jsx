@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom'
 import ProfileMenu from './ProfileMenu'
 import MiniTimer from './MiniTimer'
+import ProfileIcon from './ProfileIcon'
 import { doc, updateDoc } from 'firebase/firestore'
 import {
   LayoutDashboard, CalendarDays, Award, ClipboardList, Target,
@@ -14,7 +15,6 @@ import {
 
 import { useAuth } from '../context/AuthContext'
 import { useIsPro } from './ProGate'
-import { resolveProfileIcon } from '../data/themes'
 import { db } from '../firebase'
 import { getPermissionState, requestNotificationPermission } from '../utils/notifications'
 import { getAllTopicsFlat } from '../data/topics'
@@ -86,12 +86,12 @@ function ProFlag() {
   )
 }
 
-function Avatar({ profile, user, size }) {
-  const resolved = resolveProfileIcon(profile?.profileIcon)
-  const initial = (profile?.displayName || user?.displayName || '?').trim()[0]?.toUpperCase() || '?'
+// The student's profile icon, drawn by ProfileIcon (a line icon, or the badge medallion for a badge icon) instead of an
+// emoji. A profile with no icon set gets the default mark, so there is no initial to fall back on.
+function Avatar({ profile, size }) {
   return (
     <span className={`sidebar-avatar ${size === 'sm' ? 'sidebar-avatar--sm' : ''}`}>
-      {resolved?.emoji || initial}
+      <ProfileIcon id={profile?.profileIcon} size={18} />
     </span>
   )
 }
@@ -436,7 +436,7 @@ export default function Layout() {
               </Link>
             )}
             <Link to="/profile" className="sidebar-user" title={collapsed ? (profile?.displayName || 'Your profile') : undefined}>
-              <Avatar profile={profile} user={user} />
+              <Avatar profile={profile} />
               {!collapsed && (
                 <span className="sidebar-user-name">{profile?.displayName || 'Your profile'}</span>
               )}
@@ -457,7 +457,7 @@ export default function Layout() {
           </Link>
           <MiniTimer variant="pill" />
           <button type="button" className="topbar-avatar-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
-            <Avatar profile={profile} user={user} size="sm" />
+            <Avatar profile={profile} size="sm" />
           </button>
         </header>
       )}
@@ -506,7 +506,7 @@ export default function Layout() {
               )}
             </div>
             <ProfileMenu user={user} profile={profile} isPro={isPro} onLogout={logout}
-              avatar={<Avatar profile={profile} user={user} size="sm" />} />
+              avatar={<Avatar profile={profile} size="sm" />} />
           </div>
         )}
         <AnnouncementBanner />
@@ -545,7 +545,7 @@ export default function Layout() {
         <div className="mobile-drawer-overlay" onClick={() => setMobileOpen(false)}>
           <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer-head">
-              <Avatar profile={profile} user={user} />
+              <Avatar profile={profile} />
               <span className="sidebar-user-name">{profile?.displayName || 'Your profile'}</span>
               <button type="button" className="btn-icon" onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X size={18} />
