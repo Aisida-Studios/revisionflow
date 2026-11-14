@@ -11,8 +11,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # Prevent your pages being embedded in iframes on other sites (clickjacking)
-    X-Frame-Options = "DENY"
+    # Stop other sites embedding your pages in iframes (clickjacking). SAMEORIGIN rather than DENY so this site can frame
+    # its own pages, which Firebase Auth does for its sign-in handler when the auth domain is this domain (see the
+    # commented-out /__/auth rule near the end of this file). Other sites still cannot frame it.
+    X-Frame-Options = "SAMEORIGIN"
 
     # Stop browsers guessing content types (MIME sniffing attacks)
     X-Content-Type-Options = "nosniff"
@@ -39,8 +41,8 @@
     # stripe.com      = Stripe Checkout redirect (not an embed)
     # mistral         = not called from browser (server-side only, omitted)
     # frame-src       = Firebase Auth's popup/iframe handshake (accounts.google.com,
-    #                   *.firebaseapp.com) plus the Stripe Checkout embed
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self';"
+    #                   *.firebaseapp.com, and 'self' for a first-party auth domain) plus the Stripe Checkout embed
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.stripe.com; frame-src 'self' https://js.stripe.com https://*.firebaseapp.com https://accounts.google.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self';"
 
 # ── Domain migration — old Netlify subdomain → custom domain ──────────────────
 # MUST stay first. This matches on hostname, not just path, so it needs to run before any
@@ -121,6 +123,22 @@
   from   = "/assets/*"
   to     = "/404.html"
   status = 404
+
+# ── First-party Firebase Auth handler (NOT enabled: it needs the Firebase project id) ─
+# Only needed if Google sign-in fails inside the installed app, because the sign-in redirect lives on
+# <project>.firebaseapp.com while the app lives on www.revisionflow.co.uk, and the result can be lost between the two.
+# To switch it on:
+#   1. In Netlify's environment variables set VITE_FIREBASE_AUTH_DOMAIN=www.revisionflow.co.uk, then redeploy.
+#   2. In the Google OAuth client that Firebase Auth uses, add https://www.revisionflow.co.uk/__/auth/handler as an
+#      authorised redirect URI.
+#   3. In the Firebase console (Authentication > Settings > Authorised domains) add www.revisionflow.co.uk.
+#   4. Replace <PROJECT_ID> below with the Firebase project id (Netlify cannot read an environment variable inside a
+#      redirect rule), uncomment the rule, and keep it ABOVE the /* catch-all so the catch-all does not swallow it.
+# [[redirects]]
+#   from   = "/__/auth/*"
+#   to     = "https://<PROJECT_ID>.firebaseapp.com/__/auth/:splat"
+#   status = 200
+#   force  = true
 
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
