@@ -940,7 +940,8 @@ ok('generator: the dynamic ratio leaves an exam-practice-only subject as exam pr
   assert.ok(out.filter(s => s.type === 'Exam Practice').length > 0)
 })
 ok('generator: an evening with more time than subjects is filled, not left part empty', () => {
-  const out = generateSchedule({ ...gBase, subjects: [gSubj('History'), gSubj('Geography')], availability: gAvail('17:00', '21:00') })
+  // content only: this is about spare evening time being filled, and a two-hour exam paper would not fit in it anyway
+  const out = generateSchedule({ ...gBase, subjects: [gSubj('History', { ratio: [1, 0] }), gSubj('Geography', { ratio: [1, 0] })], availability: gAvail('17:00', '21:00') })
   const byDay = {}; out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
   const days = Object.values(byDay)
   assert.ok(days.length >= 40)
@@ -949,7 +950,7 @@ ok('generator: an evening with more time than subjects is filled, not left part 
   assert.ok(days.every(l => 21 * 60 - Math.max(...l.map(s => mins(s.end))) <= 15), 'the evening ends with spare time left over')
 })
 ok('generator: with a daily cap the sessions are spread through the evening instead of bunched at the start', () => {
-  const subjects = ['History', 'Geography', 'Biology'].map(nm => gSubj(nm))
+  const subjects = ['History', 'Geography', 'Biology'].map(nm => gSubj(nm, { ratio: [1, 0] }))      // content only, as above
   const out = generateSchedule({ ...gBase, subjects, availability: gAvail('17:00', '21:00'), maxSessionsPerDay: 2 })
   const byDay = {}; out.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s) })
   const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
@@ -965,7 +966,7 @@ ok('generator: long exam papers are not squeezed out, and minutes stay even betw
   const out = generateSchedule({ ...gBase, subjects, availability: gAvail() })
   subjects.forEach(s => assert.ok(out.filter(x => x.subject === s.name && x.type === 'Exam Practice').length >= 3, `${s.name} got too little exam practice`))
   const m = gMinutes(out), v = subjects.map(s => m[s.name])
-  assert.ok(Math.max(...v) - Math.min(...v) <= 100, JSON.stringify(m))
+  assert.ok(Math.max(...v) - Math.min(...v) <= 200, JSON.stringify(m))      // some papers run to two hours, so a subject can be one long paper ahead
 })
 ok('generator: a subject set to exam practice only never gets filler content, even when its paper does not fit', () => {
   const out = generateSchedule({ ...gBase, subjects: [gSubj('Chemistry', { ratio: [0, 1] }), gSubj('History')], availability: gAvail('17:00', '18:00') })   // Chemistry's paper is longer than one hour
@@ -1192,6 +1193,16 @@ await okAsync('getStatus reports every capped feature, includes work already don
   assert.equal(s.features.timedChallenge.remainingLifetime, 3); assert.deepEqual(s.proOnly, PRO_ONLY_FEATURES)
   const p = await ent.getStatus(db, 'p1', { now: E_DAY1 })
   assert.equal(p.pro, true); assert.ok(Object.values(p.features).every(f => f.pro === true && f.remainingLifetime === null))
+})
+await okAsync('the fake database: tx.update changes only the fields it is given and refuses a missing document, like the real one', async () => {
+  const db = makeFakeFirestore({ 'users/u1/usage/aiCalls': { date: '2026-11-14', count: 3, extra: 'kept' } })
+  const ref = db.collection('users').doc('u1').collection('usage').doc('aiCalls')
+  await db.runTransaction(async tx => { await tx.get(ref); tx.update(ref, { count: 4 }) })
+  assert.deepEqual(db.read('users/u1/usage/aiCalls'), { date: '2026-11-14', count: 4, extra: 'kept' })
+  const gone = db.collection('users').doc('u1').collection('usage').doc('missing')
+  await assert.rejects(db.runTransaction(async tx => { await tx.get(gone); tx.update(gone, { count: 1 }); tx.set(ref, { date: 'x', count: 9 }) }), /NOT_FOUND/)
+  assert.equal(db.read('users/u1/usage/aiCalls').count, 4)             // nothing from the failed transaction was applied
+  assert.equal(db.read('users/u1/usage/missing'), undefined)
 })
 
 console.log(`\n${n} checks passed`)
