@@ -19,7 +19,7 @@ import {
   CartesianGrid, AreaChart, Area,
 } from 'recharts'
 import { SUBJECT_COLOURS } from '../data/subjects'
-import { Activity, Clock, Flame, TrendingUp, Award, Target, BookOpen,
+import { Activity, Clock, Sprout, TrendingUp, Award, Target, BookOpen,
          Zap, Brain, Calendar, Star, AlertCircle, CheckCircle, BarChart2 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 
@@ -390,7 +390,7 @@ export default function Analytics() {
         <StatCard icon={<Clock size={18}/>}    label="Total study time"    val={fmtMins(totalMinutes)}        colour="var(--accent-light)" />
         <StatCard icon={<Activity size={18}/>} label="Sessions completed"  val={completedSessions.length}     colour="var(--info)" />
         <StatCard icon={<Zap size={18}/>}      label="Avg session length"  val={`${avgSessionLength}m`}       colour="#0d9488" />
-        <StatCard icon={<Flame size={18}/>}    label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
+        <StatCard icon={<Sprout size={18}/>}   label="Current streak"      val={`${profile?.streak||0} days`} colour="var(--warning)" />
         <StatCard icon={<Target size={18}/>}   label="Completion rate"     val={`${completionRate}%`}         colour="var(--success)" />
         <StatCard icon={<BookOpen size={18}/>} label="Papers logged"       val={windowAttempts.length}              colour="var(--accent)" />
         <StatCard icon={<Brain size={18}/>}    label="Topics tracked"      val={countedTopics.length}                colour="#0891b2" />
