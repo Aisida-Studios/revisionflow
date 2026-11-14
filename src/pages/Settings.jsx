@@ -14,6 +14,7 @@ import { dropOptionsWhenCourseChanges, isSavedCourse } from '../utils/subjectEdi
 import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions, withSubjectOptions } from '../utils/courseOptions'
 import BoardOptions from '../components/BoardOptions'
 import CourseOptionsModal from '../components/CourseOptionsModal'
+import { PWAInstallCard } from '../components/PWAInstallBanner'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
@@ -411,20 +412,23 @@ export default function Settings() {
 
       {/* ── Notifications ── */}
       {tab === 'notifications' && (
-        <NotificationsSettings profile={profile} user={user} onSave={async (settings) => {
-          await updateUserProfile(user.uid, { notificationSettings: settings })
-          if (settings.dailyReminder && settings.reminderTime) {
-            if (Notification.permission === 'granted') {
-              scheduleDailyReminder(settings.reminderTime, () => 0)
+        <>
+          <PWAInstallCard style={{ marginBottom: 16 }} />
+          <NotificationsSettings profile={profile} user={user} onSave={async (settings) => {
+            await updateUserProfile(user.uid, { notificationSettings: settings })
+            if (settings.dailyReminder && settings.reminderTime) {
+              if (Notification.permission === 'granted') {
+                scheduleDailyReminder(settings.reminderTime, () => 0)
+              } else {
+                Notification.requestPermission().then(p => {
+                  if (p === 'granted') scheduleDailyReminder(settings.reminderTime, () => 0)
+                })
+              }
             } else {
-              Notification.requestPermission().then(p => {
-                if (p === 'granted') scheduleDailyReminder(settings.reminderTime, () => 0)
-              })
+              clearDailyReminder()
             }
-          } else {
-            clearDailyReminder()
-          }
-        }} />
+          }} />
+        </>
       )}
 
       {/* ── Privacy ── */}
