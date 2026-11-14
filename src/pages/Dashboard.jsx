@@ -14,10 +14,11 @@ import EmergencyBanner from '../components/EmergencyBanner'
 import TopicUpdateBanner from '../components/TopicUpdateBanner'
 import ReferralCard from '../components/ReferralCard'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
-import { componentForSubject } from '../data/illustrationThemes'
+import { componentForSubject } from '../components/illustrations/SubjectIllustration'
 import BadgeArt from '../components/illustrations/BadgeArt'
 import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
+import PWAInstallBanner from '../components/PWAInstallBanner'
 import AIOutput from '../components/AIOutput'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
@@ -78,7 +79,7 @@ function greetingWord(hour) {
 }
 
 /* Resolves a subject name to its illustration component via the shared
-   illustrationThemes.js map — the same resolver Topics.jsx and TopicDetail.jsx use, so a
+   registry in components/illustrations/SubjectIllustration.jsx — the same resolver Topics.jsx and TopicDetail.jsx use, so a
    given subject renders identically everywhere in the app. This used to be a self-contained
    import.meta.glob matcher here; diffing it against the shared resolver across every real
    subject in src/data/subjects.js turned up disagreements on about 40% of them (including a
@@ -439,6 +440,7 @@ export default function Dashboard() {
       <TopicUpdateBanner />
       {profile?.betaUser && !betaThanksDismissed && <BetaThanks onDismiss={dismissBetaThanks} />}
       <SetupChecklist profile={profile} />
+      <PWAInstallBanner />
 
       {/* ── Plain greeting — no card, no background, matching the reference ── */}
       <div className="dash-header">
