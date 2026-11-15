@@ -14,8 +14,10 @@ import {
   checkAndAwardBadge, autoCompleteQuest, getTopicsWithConfidence,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
   getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet, updateUserProfile,
+  getCachedDistractors, saveCachedDistractors,
 } from '../utils/firestore'
-import { generateFlashcards, generateFlashcardsChunked, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
+import { generateFlashcards, generateFlashcardsChunked, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache, generateDistractorBatch } from '../utils/ai'
+import { shuffled, pickLocalDistractors, buildOptions, cleanProposed, cardKey, createDistractorTopUp } from '../utils/distractors'
 import { getSubjectQualification, subjectColour, getSubjectList } from '../data/subjects'
 import { canonicalBoard, boardLabel } from '../data/boards'
 import BoardOptions from '../components/BoardOptions'
@@ -529,117 +531,71 @@ function SpellMode({ cards, onDone, onAttempt }) {
   )
 }
 
-function TestMode({ cards, onDone, uid, timePerQuestion, setId, onAttempt }) {
-  // Builds the deck using OTHER REAL ANSWERS from the same set as options — used as the
-  // fallback if AI generation fails or times out, never shown to the user as the default
-  // anymore (see init() below).
-  function buildFallbackDeck() {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5)
-    return shuffled.map((card, i) => {
-      if (i % 3 === 2) return { type: 'write', card, answer: '', checked: null, opts: [] }
-      const realWrong = cards.filter(c => c.a !== card.a).sort(() => Math.random() - 0.5).slice(0, 3)
-      const opts = [...realWrong, card].sort(() => Math.random() - 0.5)
-      return { type: 'mc', card, opts, selected: null, checked: null, aiOpts: false }
-    })
-  }
-
-  // Pure — merges a { [cardIndex]: [wrong1,wrong2,wrong3] } map (cardIndex is the card's
-  // position in the original, unshuffled `cards` array — the stable key both cache and
-  // generation use, since these cards have no id of their own) into a deck's MC questions.
-  function applyDistractors(deck, distractorsByCardIdx) {
-    return deck.map(q => {
-      if (q.type !== 'mc') return q
-      const cardIdx = cards.indexOf(q.card)
-      const wrongs = distractorsByCardIdx[cardIdx]
-      if (!Array.isArray(wrongs) || wrongs.length < 3) return q
-      const opts = [...wrongs.slice(0, 3).map(a => ({ ...q.card, a })), q.card].sort(() => Math.random() - 0.5)
-      return { ...q, opts, aiOpts: true }
-    })
-  }
-
-  async function generateDistractors(deck) {
-    const mcIndices = deck.map((q, i) => q.type === 'mc' ? i : -1).filter(i => i >= 0)
-    if (!mcIndices.length) return {}
-    const { callAI } = await import('../utils/ai')
-    // Batch all questions into one AI call for efficiency
-    const questions = mcIndices.map(i => `Q${i}: ${deck[i].card.q} | Answer: ${deck[i].card.a}`).join('\n')
-    const prompt = `You are generating multiple choice distractors for a flashcard quiz. For each question below, generate exactly 3 wrong answer options.
-
-RULES for good distractors:
-- Same length and style as the real answer (if the answer is 2 sentences, make distractors 2 sentences)
-- Use correct subject terminology — they must sound like they could be right
-- Change 1-2 key facts, numbers, or concepts to make them wrong (e.g. wrong direction of movement, wrong organ, wrong date, wrong formula)
-- Do NOT make them obviously wrong or silly
-- Do NOT use "None of the above" or "All of the above"
-- If the correct answer is very short (under 6 words), make distractors equally short but with a plausible wrong fact
-
-Return ONLY a valid JSON array of arrays — no markdown, no explanation, no backticks:
-[["distractor1","distractor2","distractor3"],["distractor1","distractor2","distractor3"],...]
-
-Questions and correct answers:
-${questions}`
-    const res = await callAI(prompt, null, 600, uid)
-    if (res.error || !res.text) return {}
-    const text = res.text.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(text)
-    if (!Array.isArray(parsed)) return {}
-    const byCardIdx = {}
-    mcIndices.forEach((deckIdx, arrayIdx) => {
-      const wrongs = parsed[arrayIdx]
-      if (Array.isArray(wrongs) && wrongs.length >= 3) byCardIdx[cards.indexOf(deck[deckIdx].card)] = wrongs
-    })
-    return byCardIdx
-  }
-
+function TestMode({ cards, pool, onDone, uid, timePerQuestion, setId, onAttempt }) {
   const [qs, setQs]         = useState([])
   const [idx, setIdx]       = useState(0)
   const [finished, setFin]  = useState(false)
   const [building, setBuilding] = useState(true)
   const [timeLeft, setTimeLeft] = useState(timePerQuestion || null)
+  // AI-written options for questions the student has not reached yet, { [position in the quiz]: options }. They sit beside
+  // `qs` rather than in it, so the background top-up below can never overwrite an answer that is being given.
+  const [aiOptions, setAiOptions] = useState({})
+  const qsRef  = useRef([])
+  const idxRef = useRef(0)
+  const topUp  = useRef(null)
+  useEffect(() => { qsRef.current = qs }, [qs])
+  useEffect(() => { idxRef.current = idx }, [idx])
+
+  // Every question starts on real answers taken from the same set. Nothing has to be fetched for that, so the quiz begins
+  // at once and cannot fail; better, AI-written options are swapped in as they arrive (see utils/distractors.js).
+  // Every third question is a written answer instead. `pool` is the whole set when the quiz uses only part of it.
+  function buildDeck() {
+    return shuffled(cards).map((card, i) => {
+      const written = { type: 'write', card, answer: '', checked: null, opts: [] }
+      if (i % 3 === 2) return written
+      const wrongs = pickLocalDistractors(pool || cards, card, 3)
+      return wrongs.length ? { type: 'mc', card, opts: buildOptions(card, wrongs), selected: null, checked: null } : written
+    })
+  }
 
   useEffect(() => {
     let cancelled = false
-
     async function init() {
-      const fallbackDeck = buildFallbackDeck()
-
-      // A saved set's distractors may already be cached from someone else's quiz on the same
-      // set — used instantly, no AI call, no wait.
+      const deck = buildDeck()
+      const status = {}
+      const ai = {}
+      let hadCache = false
+      // A saved set's AI options may already be stored from an earlier quiz on it (for official and community sets, from
+      // anyone's): used at once. The wait is short, and a slow or failed read just starts the quiz without them.
       if (setId) {
-        try {
-          const { getCachedDistractors } = await import('../utils/firestore')
-          const cached = await getCachedDistractors(setId, cards.length)
-          if (cached && !cancelled) {
-            setQs(applyDistractors(fallbackDeck, cached))
-            setBuilding(false)
-            return
-          }
-        } catch (e) {}
-      }
-
-      // No cache — generate now, before showing the quiz. Timeboxed so a slow or failed AI
-      // call still starts the quiz (with real-card options) rather than leaving the student
-      // stuck on a loading screen.
-      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 8000))
-      const generated = await Promise.race([generateDistractors(fallbackDeck).catch(() => null), timeout])
-      if (cancelled) return
-
-      if (generated && Object.keys(generated).length > 0) {
-        setQs(applyDistractors(fallbackDeck, generated))
-        if (setId) {
-          import('../utils/firestore').then(({ saveCachedDistractors }) => {
-            saveCachedDistractors(setId, cards.length, generated)
+        const cached = await Promise.race([getCachedDistractors(setId), new Promise(resolve => setTimeout(() => resolve(null), 1500))]).catch(() => null)
+        if (cached) {
+          hadCache = true
+          deck.forEach((q, i) => {
+            if (q.type !== 'mc') return
+            const wrongs = cleanProposed(q.card.a, cached[cardKey(q.card)])
+            if (wrongs.length >= 3) { ai[i] = buildOptions(q.card, wrongs); status[i] = 'done' }
           })
         }
-      } else {
-        setQs(fallbackDeck) // AI timed out or failed — quiz still starts, just with real-card options
       }
-      setBuilding(false)
+      if (cancelled) return
+      qsRef.current = deck
+      topUp.current = createDistractorTopUp({
+        getQuestions: () => qsRef.current,
+        getCurrent: () => idxRef.current,
+        fetchBatch: (items) => generateDistractorBatch(items, uid),
+        onUpgrade: (fresh) => { if (!cancelled) setAiOptions(prev => ({ ...prev, ...fresh })) },
+        onComplete: (found) => { if (setId) saveCachedDistractors(setId, found) },
+        status, hadCache,
+      })
+      setAiOptions(ai); setQs(deck); setBuilding(false)
+      topUp.current.kick()
     }
-
     init()
-    return () => { cancelled = true }
+    return () => { cancelled = true; if (topUp.current) topUp.current.stop() }
   }, [])
+  // Each new question is a chance to top up the ones ahead.
+  useEffect(() => { if (topUp.current) topUp.current.kick() }, [idx])
 
   // Timed Challenge mode only — resets the clock every time the question changes.
   useEffect(() => {
@@ -686,14 +642,16 @@ ${questions}`
     if (idx >= qs.length - 1) {
       const sc = qs.filter(q => q.checked === 'correct').length
       const missed = qs.filter(q => q.checked !== 'correct').map(q => q.card)
+      if (topUp.current) topUp.current.stop()
       setFin(true); onDone(sc, qs.length, missed); return
     }
+    idxRef.current += 1               // at once, so a reply that lands right now cannot change the question about to be shown
     setIdx(i => i + 1)
   }
 
   if (building || !qs.length) return (
     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '0.9rem' }}>Generating your questions…</div>
+      <div style={{ fontSize: '0.9rem' }}>Getting your quiz ready…</div>
     </div>
   )
   if (finished) return null
@@ -737,13 +695,13 @@ ${questions}`
       <div className="rf-q-card">
         <div className="rf-q-eyebrow-row">
           <span className="rf-q-eyebrow">{q.type === 'mc' ? 'Multiple choice' : 'Written answer'}</span>
-          {q.type === 'mc' && q.aiOpts && <span className="badge badge-grey" style={{ fontSize: '0.64rem' }}>AI-generated options</span>}
+          {q.type === 'mc' && aiOptions[idx] && <span className="badge badge-grey" style={{ fontSize: '0.64rem' }}>AI-generated options</span>}
           {q.checked === 'timeout' && <span className="badge badge-red" style={{ fontSize: '0.64rem' }}>Time's up</span>}
         </div>
         <div className="rf-q-text" style={{ marginBottom: 16 }}>{q.card.q}</div>
         {q.type === 'mc' && (
           <div className="rf-mc-list">
-            {q.opts.map((opt, i) => {
+            {(aiOptions[idx] || q.opts).map((opt, i) => {
               const isC = opt.a === q.card.a, isSel = q.selected?.a === opt.a, ch = q.checked !== null
               return (
                 <button key={i} onClick={() => selectMC(opt)} disabled={ch}
@@ -1706,7 +1664,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
         </div>
         {quizExitPromptEl}
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
+          <TestMode cards={quizCards} pool={selectedSet.cards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
             setId={selectedSet?.id} onDone={handleQuizDone} onAttempt={recordAttempt} />
         )}
         {quizMode === 'write' && (
