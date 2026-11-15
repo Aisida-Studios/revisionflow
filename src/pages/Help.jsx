@@ -11,6 +11,7 @@ import {
 import './AccountPages.css'
 import './Help.css'
 import { usePageMeta } from '../utils/pageMeta'
+import RichText from '../components/RichText'
 
 const APP_ARCHITECTURE = `RevisionFlow is a free UK GCSE, AS-Level and A-Level revision web app. AS-Level is a standalone qualification, kept completely separate from A-Level throughout the app (own topics, exam dates, past papers, grade scale) — not treated as "year one of A-Level". Here is the complete up-to-date feature set:
 
@@ -330,7 +331,7 @@ Give a clear, friendly answer specific to RevisionFlow. Be concise (2-4 sentence
             <div style={{ fontWeight: 700, marginBottom: 4, color: 'var(--accent-light)', fontSize: '0.78rem' }}>RevisionFlow Assistant</div>
             {loading
               ? <span className="ap-typing-dots"><span /><span /><span /></span>
-              : <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{answer}</p>
+              : <RichText text={answer} style={{ color: 'var(--text-secondary)' }} />
             }
           </div>
         )}
