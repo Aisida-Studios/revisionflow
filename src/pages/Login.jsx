@@ -8,7 +8,7 @@ import { authErrorMessage, isStandaloneApp, markRedirectStarted, consumeFailedRe
 import { usePageMeta } from '../utils/pageMeta'
 
 export default function Login() {
-  const { login, loginWithGoogle } = useAuth()
+  const { login, loginWithGoogle, redirectError, clearRedirectError } = useAuth()
   const navigate = useNavigate()
   usePageMeta({
     title: 'Sign in | RevisionFlow',
@@ -35,6 +35,12 @@ export default function Login() {
   useEffect(() => {
     if (consumeFailedRedirect()) setError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
   }, [])
+
+  useEffect(() => {
+    if (!redirectError) return
+    setError(authErrorMessage({ code: redirectError }, 'google'))
+    clearRedirectError()
+  }, [redirectError, clearRedirectError])
 
   useEffect(() => {
     function onPageShow(e) {
