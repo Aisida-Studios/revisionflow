@@ -2,7 +2,9 @@
 import ProvenanceBadge, { AiContentNotice } from '../components/ProvenanceBadge'
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../utils/provenance'
 import { setBoardLevel } from '../utils/flashcardMeta'
-import { persistSetOutcomes } from '../utils/studyProgress'
+import { persistSetOutcomes, loadSetProgress } from '../utils/studyProgress'
+import { outcomeFromMarkerText } from '../utils/progressMerge'
+import { setSoundsEnabled, unlockSounds, playCorrect, playIncorrect } from '../utils/studySounds'
 import { SaveProgressButton, ExitPrompt, useUnloadWarning } from '../components/SessionExit'
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
@@ -11,7 +13,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   checkAndAwardBadge, autoCompleteQuest, getTopicsWithConfidence,
   saveFlashcardSet, getFlashcardSets, deleteFlashcardSet,
-  getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet,
+  getPublicFlashcardSets, updateFlashcardSetVisibility, updateFlashcardSet, updateUserProfile,
 } from '../utils/firestore'
 import { generateFlashcards, generateFlashcardsChunked, generatePredictedQuestions, markAnswer, parseFlashcards, getFlashcardSetFromCache, saveFlashcardSetToCache } from '../utils/ai'
 import { getSubjectQualification, subjectColour, getSubjectList } from '../data/subjects'
@@ -36,7 +38,7 @@ import {
   Users, ChevronDown, Repeat, BarChart2,
   Layers, PenLine, SpellCheck, Grid3x3, ListChecks,
   Trophy, PartyPopper, Sprout, FileText, Timer, CheckCircle2,
-  Maximize2, Minimize2,
+  Maximize2, Minimize2, Volume2, VolumeX,
 } from 'lucide-react'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import EmptyState from '../components/illustrations/EmptyState'
@@ -48,6 +50,45 @@ import './Study.css'
 function SubjectIllustration({ subject, size = 64 }) {
   const Illustration = componentForSubject(subject)
   return <Illustration size={size} />
+}
+
+// ── Question sounds ─────────────────────────────────────────────────────────────────────────────────
+// A short tone when a question is answered, played by utils/studySounds.js (Web Audio, no files). 3 = got it, 1 = missed;
+// 2 (partly) stays silent. The setting is profile.studySounds (on unless it is false); Settings has the same switch.
+function playOutcome(outcome) {
+  try {
+    if (outcome === 3) playCorrect()
+    else if (outcome === 1) playIncorrect()
+  } catch { /* a sound is never worth failing an answer for */ }
+}
+
+// Save progress failed: say why (the Firestore error code when there is one) instead of a bare "could not".
+function reportProgressSaveFailure(e) {
+  console.error('[study] save progress failed', e?.code, e?.message)
+  toast.error('Could not save your progress' + (e?.code ? ' (' + e.code + ')' : '') + '. Try again.')
+}
+
+// A speaker button to mute or unmute the question sounds in one tap. The choice is stored on the profile.
+function SoundToggle() {
+  const { user, profile } = useAuth()
+  const on = profile?.studySounds !== false
+  async function toggle() {
+    const next = !on
+    setSoundsEnabled(next)                      // takes effect at once; the profile follows
+    try {
+      await updateUserProfile(user.uid, { studySounds: next })
+    } catch (e) {
+      console.error('[study] could not save the sound setting', e?.code, e?.message)
+      setSoundsEnabled(on)
+      toast.error('Could not save that setting. Try again.')
+    }
+  }
+  return (
+    <button type="button" className="btn btn-ghost btn-icon" onClick={toggle} style={{ minWidth: 44, minHeight: 44 }}
+      aria-label={on ? 'Mute question sounds' : 'Turn question sounds on'} title={on ? 'Question sounds on' : 'Question sounds off'}>
+      {on ? <Volume2 size={18} aria-hidden="true" /> : <VolumeX size={18} aria-hidden="true" />}
+    </button>
+  )
 }
 
 // Flashcard sets only carry board+level when they're official/admin-generated
@@ -210,13 +251,13 @@ VERDICT: CORRECT or INCORRECT
 SCORE: 1 or 0
 FEEDBACK: One sentence explaining your verdict.`
       const res = await callAI(prompt, null, 300, uid)
-      if (res.error) { onResult(false, 'AI error'); return }
+      if (res.error) { onResult(null, 'AI error'); return }      // null: no verdict because the marker could not run (false means marked wrong)
       const text = res.text || ''
       const correct = /VERDICT:\s*CORRECT/i.test(text)
       const feedback = (text.match(/FEEDBACK:\s*(.+)/i) || [])[1] || (correct ? 'Good answer!' : 'Not quite right.')
       setResult({ correct, feedback })
       onResult(correct, feedback)
-    } catch(e) { onResult(false, 'Could not mark') }
+    } catch(e) { onResult(null, 'Could not mark') }
     finally { setLoading(false) }
   }
 
@@ -295,6 +336,8 @@ function WriteMode({ cards, onDone, uid, onAttempt }) {
   useEffect(()=>{ setInput(''); setChecked(null); inputRef.current?.focus() },[idx])
 
   function handleAIResult(correct) {
+    if (checked === 'idk') return      // "I don't know" is already marked wrong, and its revealed answer has to stay on screen
+    if (correct === null) { setChecked('unmarked'); return }      // the marker could not run: nothing is recorded or scored
     // Called by AIWriteMarker with the AI verdict — sets final state and records score
     onAttempt?.(deck[idx], correct ? 3 : 1)
     setScores(s => {
@@ -339,8 +382,9 @@ function WriteMode({ cards, onDone, uid, onAttempt }) {
           onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)submitAnswer()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
         {!checked && <MathSymbolToolbar fieldRef={inputRef} value={input} onChange={setInput} />}
-        {/* AI marking shown once answer is submitted */}
-        {checked && (
+        {/* AI marking shown once an answer is submitted. Not after "I don't know": nothing was written, and the marker would
+            mark the empty box and overwrite the revealed answer with a verdict. */}
+        {checked && checked !== 'idk' && (
           <div style={{ marginTop:10 }}>
             <AIWriteMarker question={card.q} correctAnswer={card.a} studentAnswer={input} uid={uid}
               onResult={(correct) => handleAIResult(correct)} autoMark />
@@ -368,6 +412,11 @@ function WriteMode({ cards, onDone, uid, onAttempt }) {
             Answer revealed
           </div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6 }}>{card.a}</div>
+        </div>
+      )}
+      {checked === 'unmarked' && (
+        <div style={{ marginBottom: 10, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          This answer could not be marked just now. Press Mark answer to try again, or carry on: it will not count as correct.
         </div>
       )}
       {checked && checked !== 'pending' && (
@@ -627,7 +676,9 @@ ${questions}`
   }
 
   function handleWriteAI(correct) {
-    const u = [...qs]; u[idx] = { ...u[idx], checked: correct ? 'correct' : 'wrong' }; setQs(u)
+    const u = [...qs]
+    if (correct === null) { u[idx] = { ...u[idx], checked: 'unmarked' }; setQs(u); return }      // the marker could not run: nothing is recorded
+    u[idx] = { ...u[idx], checked: correct ? 'correct' : 'wrong' }; setQs(u)
     onAttempt?.(u[idx].card, correct ? 3 : 1)
   }
 
@@ -733,6 +784,11 @@ ${questions}`
                 <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
               </div>
             )}
+            {q.checked === 'unmarked' && (
+              <div style={{ marginTop: 8, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                This answer could not be marked just now. Press Mark answer to try again, or carry on: it will not count as correct.
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -772,18 +828,17 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
   // cardSchedule: { [cardQ]: { box: 1-5, dueDate: 'YYYY-MM-DD' } } — Leitner spaced-repetition data, same document
   const [cardSchedule,setCardSchedule] = useState({})
 
-  // Load mastery + schedule data from Firestore when studying a saved set
+  // Load the saved mastery and schedule for this set: from the student's own set document or, for an official, premade
+  // or community set that is not theirs, from their stored progress on it.
   useEffect(() => {
-    if (!uid || !setId) return
-    Promise.all([import('firebase/firestore'), import('../firebase')]).then(([{ getDoc, doc }, { db }]) => {
-      getDoc(doc(db, 'users', uid, 'flashcardSets', setId)).then(snap => {
-        if (snap.exists()) {
-          const data = snap.data()
-          if (data.cardMastery) setCardMastery(data.cardMastery)
-          if (data.cardSchedule) setCardSchedule(data.cardSchedule)
-        }
-      }).catch(() => {})
-    })
+    if (!uid || !setId) return undefined
+    let live = true
+    loadSetProgress(uid, setId).then(p => {
+      if (!live) return
+      if (Object.keys(p.cardMastery).length) setCardMastery(p.cardMastery)
+      if (Object.keys(p.cardSchedule).length) setCardSchedule(p.cardSchedule)
+    }).catch(() => {})
+    return () => { live = false }
   }, [uid, setId])
 
   // Save mastery + schedule after flash mode completes. Merges into the existing maps
@@ -806,6 +861,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
     if (!card?.q) return
     outcomesRef.current[card.q] = outcome
     setDirty(true)
+    playOutcome(outcome)
   }
 
   async function saveProgressNow() {
@@ -822,8 +878,8 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       setDirty(Object.keys(outcomesRef.current).length > 0)
       toast.success('Progress saved')
       return true
-    } catch {
-      toast.error('Could not save your progress. Try again.')
+    } catch (e) {
+      reportProgressSaveFailure(e)
       return false
     } finally {
       setSavingProgress(false)
@@ -920,6 +976,7 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
       </button>
       <span className="rf-session-title">{title}</span>
       <div className="rf-session-topbar-actions">
+        <SoundToggle />
         <SaveProgressButton saved={!!setId && !dirty} saving={savingProgress} onClick={saveProgressNow} />
         {mode==='flash'&&<button className="btn btn-ghost btn-sm" onClick={shuffle}><Shuffle size={14}/></button>}
         <button className="btn btn-ghost btn-sm" onClick={quizletCopy}>{copied?<Check size={14}/>:<Copy size={14}/>}</button>
@@ -1502,6 +1559,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
     if (!card?.q) return
     outcomesRef.current[card.q] = outcome
     setDirty(true)
+    playOutcome(outcome)
   }
 
   async function saveQuizProgress({ silent = false } = {}) {
@@ -1529,8 +1587,8 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
       setDirty(Object.keys(outcomesRef.current).length > 0)
       if (!silent) toast.success(isMine ? 'Progress saved' : 'Progress saved to a copy in My Sets')
       return true
-    } catch {
-      toast.error('Could not save your progress. Try again.')
+    } catch (e) {
+      reportProgressSaveFailure(e)
       return false
     } finally {
       setSavingProgress(false)
@@ -1933,6 +1991,7 @@ function PracticeTab({ mySets, uid }) {
   async function handleRate(rating) {
     const item = queue[idx]
     if (!item) return
+    playOutcome(rating)
     const prog = getProgress(item.setId)
     const newSchedule = nextSchedule(prog.schedule[item.card.q], rating)
     prog.mastery[item.card.q] = rating
@@ -2521,6 +2580,20 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
 export default function Study() {
   const { user, profile } = useAuth()
   const { isPro } = useIsPro()
+  // Question sounds: profile.studySounds (on unless it is false) goes to the sound module when the page opens and whenever
+  // it changes, and the first click or key press unlocks audio (browsers keep it locked until a gesture).
+  const soundsOn = profile?.studySounds !== false
+  useEffect(() => { setSoundsEnabled(soundsOn) }, [soundsOn])
+  useEffect(() => {
+    const unlock = () => {
+      try { unlockSounds() } catch { /* audio is optional */ }
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock) }
+  }, [])
   // Read URL params. Older links (for example from the Topics page) used ?tab=notes. The topic-notes tab no longer exists,
   // so those links, and a link with no tab, open Flashcards.
   const urlParams  = new URLSearchParams(window.location.search)
@@ -2757,6 +2830,7 @@ export default function Study() {
       }, user?.uid)
       if (res.error) { toast.error(res.error); setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false } })); return }
       setEqAttempts(a => ({ ...a, [qId]: { ...a[qId], loading: false, marking: res.text || 'Could not mark answer.' } }))
+      playOutcome(outcomeFromMarkerText(res.text))      // an AI estimate, so only a clear result (70% up, or under 50%) makes a sound
       await autoCompleteQuest(user.uid, 'use_ai')
     } catch (e) {
       toast.error('Marking failed: ' + e.message)
@@ -2805,6 +2879,7 @@ export default function Study() {
           <h2>Study Tools</h2>
           <p className="rf-study-subtitle">Flashcards, exam questions, and answer marking</p>
         </div>
+        <SoundToggle />
       </div>
 
       {(() => {
