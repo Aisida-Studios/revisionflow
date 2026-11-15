@@ -1,3 +1,4 @@
+// src/components/ErrorBoundary.jsx
 import { Component } from 'react'
 import { LazyIllustration } from './illustrations/lazy'
 
