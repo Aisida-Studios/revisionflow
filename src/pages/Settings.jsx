@@ -204,6 +204,12 @@ export default function Settings() {
     if (hasOptions(entry, profile)) setOptionsQueue(q => [...q, entry])
   }
 
+  // Question sounds while studying: profile.studySounds, on unless it is false (the Study page also has a speaker button)
+  async function saveStudySounds(on) {
+    try { await updateUserProfile(user.uid, { studySounds: on }) }
+    catch (e) { console.error('[settings] could not save the sound setting', e?.code, e?.message); toast.error('Could not save that setting. Try again.') }
+  }
+
   async function handleDeleteAccount() {
     if (!window.confirm('Delete your account and all data permanently? This cannot be undone.')) return
     try { await auth.currentUser.delete(); window.location.href = '/' }
@@ -403,6 +409,18 @@ export default function Settings() {
           {/* Theme and icon selector */}
           <div className="card">
             <ThemeSelector />
+          </div>
+
+          {/* Question sounds while studying */}
+          <div className="card">
+            <h4 className="card-eyebrow" style={{ margin: 0 }}>Question sounds</h4>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Play a sound after each answer</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>A short tone when you get a question right or wrong while you study</div>
+              </div>
+              <Toggle val={profile?.studySounds !== false} onChange={saveStudySounds} />
+            </div>
           </div>
         </div>
       )}
