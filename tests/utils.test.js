@@ -10,7 +10,7 @@ import { ALL_TIME, academicYearStart, resolveAnalyticsStart, earliestRecordDay, 
 import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
 import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
-import { mergeOutcomes, hasOutcomes } from '../src/utils/progressMerge.js'
+import { mergeOutcomes, hasOutcomes, planProgressSave, savedProgressFrom, outcomeFromMarkerText } from '../src/utils/progressMerge.js'
 import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
 import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
@@ -627,6 +627,31 @@ ok('saving progress folds per-card outcomes into mastery and the spaced-repetiti
   assert.equal(before.schedule.A.box, 2)                                // the inputs are not mutated
   assert.deepEqual(mergeOutcomes(undefined, undefined, undefined), { mastery: {}, schedule: {} })
   assert.equal(hasOutcomes({}), false); assert.equal(hasOutcomes({ A: 3 }), true); assert.equal(hasOutcomes(null), false)
+})
+ok('progress: a set the student owns is saved on the set, one that is not theirs in their own progress record', () => {
+  const own = { cardMastery: { A: 1 }, cardSchedule: {} }
+  const onOwn = planProgressSave(own, null, { A: 3, B: 1 })
+  assert.equal(onOwn.target, 'set'); assert.deepEqual(onOwn.mastery, { A: 3, B: 1 })
+  const first = planProgressSave(null, null, { A: 3 })                              // an official or community set, first save
+  assert.equal(first.target, 'progress'); assert.deepEqual(first.mastery, { A: 3 }); assert.equal(typeof first.schedule.A.box, 'number')
+  const second = planProgressSave(null, { cardMastery: first.mastery, cardSchedule: first.schedule }, { B: 1, C: 9 })
+  assert.equal(second.target, 'progress'); assert.deepEqual(second.mastery, { A: 3, B: 1 })      // earlier progress kept, the invalid outcome ignored
+  assert.deepEqual(Object.keys(second.schedule).sort(), ['A', 'B'])
+  assert.equal(planProgressSave(own, { cardMastery: { Z: 2 } }, { A: 2 }).target, 'set')           // an own set always wins
+  assert.deepEqual(own, { cardMastery: { A: 1 }, cardSchedule: {} })                               // nothing is changed in place
+})
+ok('progress: a session starts from the own set, else the stored progress record, else nothing', () => {
+  assert.deepEqual(savedProgressFrom(null, null), { cardMastery: {}, cardSchedule: {} })
+  assert.deepEqual(savedProgressFrom({ cardMastery: { A: 2 } }, { cardMastery: { Z: 1 } }), { cardMastery: { A: 2 }, cardSchedule: {} })
+  assert.deepEqual(savedProgressFrom(null, { cardMastery: { Z: 1 }, cardSchedule: { Z: { box: 2 } } }), { cardMastery: { Z: 1 }, cardSchedule: { Z: { box: 2 } } })
+})
+ok('outcomeFromMarkerText reads the awarded marks onto the 1 to 3 scale, and stays silent when there is no score', () => {
+  assert.equal(outcomeFromMarkerText('AWARDED MARKS: 5/6\nLEVEL: Level 3'), 3)
+  assert.equal(outcomeFromMarkerText('AWARDED MARKS: 7 / 10'), 3)                  // 70% is the success tier
+  assert.equal(outcomeFromMarkerText('awarded marks: 3/6'), 2)                      // half: partly
+  assert.equal(outcomeFromMarkerText('AWARDED MARKS: 2/6'), 1)
+  assert.equal(outcomeFromMarkerText('AWARDED MARKS: 0/0'), null)
+  assert.equal(outcomeFromMarkerText('no score in here'), null); assert.equal(outcomeFromMarkerText(undefined), null)
 })
 ok('REGRESSION: AS-Level subjects never show an impossible target of 9; an invalid stored target reads as Not set', () => {
   const as = { qualification: 'AS-Level' }
