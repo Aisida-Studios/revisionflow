@@ -24,6 +24,7 @@ import { usePageMeta } from '../utils/pageMeta'
 import ReferralRewardPopup from '../components/ReferralRewardPopup'
 import { applyReferralCode, getPendingReferral, clearPendingReferral } from '../utils/referrals'
 import { CONSENT_FLAG } from '../utils/authUi'
+import RichText from '../components/RichText'
 
 const STEPS   = ['Welcome', 'Qualification', 'Subjects', 'Targets', 'Availability', 'Plan', 'Friends', 'Done']
 const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -610,9 +611,9 @@ export default function Onboarding() {
                   <div style={{
                     background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.15)',
                     borderRadius:10, padding:14, maxHeight:260, overflowY:'auto',
-                    fontSize:'0.82rem', lineHeight:1.8, whiteSpace:'pre-wrap', marginBottom:10,
+                    fontSize:'0.82rem', lineHeight:1.8, marginBottom:10,
                   }}>
-                    {aiPlan}
+                    <RichText text={aiPlan} />
                   </div>
                   <p style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>
                     ✓ Plan generated. You can also generate a calendar in the app after setup.
