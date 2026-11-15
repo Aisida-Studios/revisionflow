@@ -5,7 +5,8 @@ import React, { useState, useEffect } from 'react'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { getAllTopicsFlat } from '../data/topics'
+import { getMergedTopicsFlat } from '../data/overrides'
+import { filterSpecTopics } from '../utils/courseOptions'
 import { getSubjectQualification } from '../data/subjects'
 import { buildTopicId } from '../utils/topicId'
 import { RefreshCw, X, CheckCircle } from 'lucide-react'
@@ -58,7 +59,7 @@ export default function UpdatePrompt() {
       let seeded = 0
       for (const s of profile.subjects) {
         const subjQual = getSubjectQualification(s, profile)
-        const topics = getAllTopicsFlat(s.board, s.name, subjQual)
+        const topics = filterSpecTopics(await getMergedTopicsFlat(s.board, s.name, subjQual), s, profile)
         for (const t of topics) {
           const id = buildTopicId(s.board, subjQual, s.name, t.name)
           await setDoc(
