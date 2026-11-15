@@ -106,18 +106,18 @@ export const THEMES = {
 }
 
 export const PROFILE_ICONS = {
-  lightning: { emoji: '⚡', unlock: 'free',                name: 'Lightning' },
-  book:       { emoji: '📚', unlock: 'free',                name: 'Books' },
-  pencil:     { emoji: '✏️', unlock: 'free',                name: 'Pencil' },
-  fire:       { emoji: '🔥', unlock: 'badge_streak_7',      name: 'Fire',         unlockLabel: '7-day streak badge' },
-  diamond:    { emoji: '💎', unlock: 'badge_streak_30',     name: 'Diamond',      unlockLabel: '30-day streak badge' },
-  trophy:     { emoji: '🏆', unlock: 'badge_top_three',     name: 'Trophy',       unlockLabel: 'Top 3 leaderboard badge' },
-  rocket:     { emoji: '🚀', unlock: 'xp_1000',             name: 'Rocket',       unlockLabel: '1,000 XP' },
-  star:       { emoji: '⭐', unlock: 'xp_5000',             name: 'Star',         unlockLabel: '5,000 XP' },
-  crown:      { emoji: '👑', unlock: 'xp_10000',            name: 'Crown',        unlockLabel: '10,000 XP' },
-  brain:      { emoji: '🧠', unlock: 'badge_mastery_gold',  name: 'Brain',        unlockLabel: 'Subject Master badge' },
-  robot:      { emoji: '🤖', unlock: 'premium',             name: 'Robot',        unlockLabel: 'RevisionFlow Pro' },
-  gem:        { emoji: '💠', unlock: 'premium',             name: 'Gem',          unlockLabel: 'RevisionFlow Pro' },
+  lightning: { unlock: 'free',                name: 'Lightning' },
+  book:       { unlock: 'free',                name: 'Books' },
+  pencil:     { unlock: 'free',                name: 'Pencil' },
+  fire:       { unlock: 'badge_streak_7',      name: 'Fire',         unlockLabel: '7-day streak badge' },
+  diamond:    { unlock: 'badge_streak_30',     name: 'Diamond',      unlockLabel: '30-day streak badge' },
+  trophy:     { unlock: 'badge_top_three',     name: 'Trophy',       unlockLabel: 'Top 3 leaderboard badge' },
+  rocket:     { unlock: 'xp_1000',             name: 'Rocket',       unlockLabel: '1,000 XP' },
+  star:       { unlock: 'xp_5000',             name: 'Star',         unlockLabel: '5,000 XP' },
+  crown:      { unlock: 'xp_10000',            name: 'Crown',        unlockLabel: '10,000 XP' },
+  brain:      { unlock: 'badge_mastery_gold',  name: 'Brain',        unlockLabel: 'Subject Master badge' },
+  robot:      { unlock: 'premium',             name: 'Robot',        unlockLabel: 'RevisionFlow Pro' },
+  gem:        { unlock: 'premium',             name: 'Gem',          unlockLabel: 'RevisionFlow Pro' },
 }
 
 // profile.profileIcon holds either a plain PROFILE_ICONS key ("lightning") or, for a badge
@@ -127,21 +127,22 @@ export const PROFILE_ICONS = {
 export function resolveProfileIcon(iconId) {
   if (iconId && iconId.startsWith('badge:')) {
     const badge = BADGE_LIST.find(b => b.id === iconId.slice(6))
-    if (badge) return { emoji: badge.icon, name: badge.name, badgeId: badge.id }
+    if (badge) return { name: badge.name, badgeId: badge.id }
   }
   const id = PROFILE_ICONS[iconId] ? iconId : 'lightning'
   const preset = PROFILE_ICONS[id]
-  return { emoji: preset.emoji, name: preset.name, id }
+  return { name: preset.name, id }
 }
 
-// Badges whose emoji doesn't already exist as a PROFILE_ICONS option. Several PROFILE_ICONS
-// entries are already reachable via a badge (🔥 fire via the 7-day-streak badge, 💎 diamond via
-// 30-day-streak, etc.) — offering that same badge again in a separate "badge icon" picker would
-// just be a second way to select an icon a user can already select, with no new visual. Only the
-// badges left after excluding those actually give someone a new option.
-const PROFILE_ICON_EMOJIS = new Set(Object.values(PROFILE_ICONS).map(p => p.emoji))
+// Badges that already match one of the PROFILE_ICONS above (fire with the 7-day streak badge, diamond with the
+// 30-day streak badge, and so on). Offering them again in the separate "badge icon" picker would only be a second way to
+// choose the same icon, so these are left out of it.
+const BADGES_WITH_PRESET_ICON = new Set([
+  'first_session', 'first_ai', 'streak_3', 'streak_7', 'streak_30', 'streak_100',
+  'comeback', 'ten_papers', 'top_three', 'ai_plan', 'flashcard_gen',
+])
 export function eligibleBadgeIcons() {
-  return BADGE_LIST.filter(b => !PROFILE_ICON_EMOJIS.has(b.icon))
+  return BADGE_LIST.filter(b => !BADGES_WITH_PRESET_ICON.has(b.id))
 }
 
 // Check if a theme/icon is unlocked for a given user profile
