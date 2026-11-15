@@ -7,6 +7,8 @@ import { db } from '../firebase'
 import { awardXP, autoCompleteQuest, migrateLegacyTopicDocs, saveNote, getNotes, deleteNote, runBadgeAudit } from '../utils/firestore'
 import { getTopicAdvice } from '../utils/ai'
 import AIOutput from '../components/AIOutput'
+import RichText from '../components/RichText'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
 import { getMergedTopicsFlat } from '../data/overrides'
 import { resolveTopicResources } from '../data/resourceLinks'
 import { subjectColour, getSubjectQualification } from '../data/subjects'
@@ -555,7 +557,7 @@ export default function Topics() {
                       <div style={{marginBottom:16}}>
                         <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
                           <input className="input" placeholder="Note title…" value={noteForm.title} onChange={e=>setNoteForm(f=>({...f,title:e.target.value}))}/>
-                          <textarea className="textarea" style={{minHeight:100}} placeholder="Write your revision notes here…" value={noteForm.content} onChange={e=>setNoteForm(f=>({...f,content:e.target.value}))}/>
+                          <AutoFormatTextarea className="textarea" style={{minHeight:100}} placeholder="Write your revision notes here…" value={noteForm.content} onValueChange={v=>setNoteForm(f=>({...f,content:v}))}/>
                           <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
                             {editingNote&&<button className="btn btn-ghost btn-sm" onClick={()=>{setEditingNote(null);setNoteForm({title:'',content:''})}}>Cancel</button>}
                             <button className="btn btn-primary btn-sm" onClick={handleSaveNote} disabled={noteSaving||!noteForm.title}>
@@ -572,7 +574,7 @@ export default function Topics() {
                                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
                                   <div style={{flex:1}}>
                                     <div style={{fontWeight:700,fontSize:'0.88rem',marginBottom:4}}>{n.title}</div>
-                                    <div style={{fontSize:'0.82rem',color:'var(--text-secondary)',whiteSpace:'pre-wrap',lineHeight:1.6}}>{n.content}</div>
+                                    <RichText text={n.content} style={{fontSize:'0.82rem',color:'var(--text-secondary)',lineHeight:1.6}}/>
                                     {formatDate(n.createdAt,'d MMM yyyy')&&<div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:6}}>{formatDate(n.createdAt,'d MMM yyyy')}</div>}
                                   </div>
                                   <div style={{display:'flex',gap:5,flexShrink:0}}>
@@ -695,7 +697,7 @@ export default function Topics() {
                 </div>
                 <span style={{fontSize:'0.78rem',color:CONF_COLOURS[newTopic.confidence||0],marginTop:4,display:'block'}}>{CONF_LABELS[newTopic.confidence||0]}</span>
               </div>
-              <div><label className="label">Notes</label><textarea className="textarea" style={{minHeight:60}} value={newTopic.notes} onChange={e=>setNewTopic(t=>({...t,notes:e.target.value}))}/></div>
+              <div><label className="label">Notes</label><AutoFormatTextarea className="textarea" style={{minHeight:60}} value={newTopic.notes} onValueChange={v=>setNewTopic(t=>({...t,notes:v}))}/></div>
               <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
                 <button className="btn btn-secondary" onClick={()=>setShowAdd(false)}>Cancel</button>
                 <button className="btn btn-primary" onClick={addTopic} disabled={!newTopic.name}>Add topic</button>
