@@ -4,6 +4,7 @@
 // only changes the visual nudge; the button itself is always available on demand.
 import React, { useState } from 'react'
 import { generateMemoryAid } from '../utils/ai'
+import RichText from './RichText'
 
 export default function MemoryAidButton({ front, back, subject, uid, struggling = false, compact = false }) {
   const [mnemonic, setMnemonic] = useState(null)
@@ -34,7 +35,7 @@ export default function MemoryAidButton({ front, back, subject, uid, struggling 
         <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--warning)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
           Memory aid
         </div>
-        <div style={{ fontSize: '0.82rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{mnemonic}</div>
+        <RichText text={mnemonic} style={{ fontSize: '0.82rem', lineHeight: 1.5, color: 'var(--text-secondary)' }} />
         <button
           onClick={handleGenerate}
           disabled={loading}
