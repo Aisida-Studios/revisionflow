@@ -11,7 +11,7 @@ import { usePageMeta } from '../utils/pageMeta'
 const CONSENT_ERROR = 'You must accept the Privacy Policy to create an account'
 
 export default function Signup() {
-  const { signup, loginWithGoogle } = useAuth()
+  const { signup, loginWithGoogle, redirectError, clearRedirectError } = useAuth()
   const navigate      = useNavigate()
   const [searchParams] = useSearchParams()
   usePageMeta({
@@ -57,6 +57,12 @@ export default function Signup() {
   useEffect(() => {
     if (consumeFailedRedirect()) setAuthError(authErrorMessage({ code: 'rf/redirect-stalled' }, 'google'))
   }, [])
+
+  useEffect(() => {
+    if (!redirectError) return
+    setAuthError(authErrorMessage({ code: redirectError }, 'google'))
+    clearRedirectError()
+  }, [redirectError, clearRedirectError])
 
   // If ?ref= in URL, store it
   useEffect(() => {
