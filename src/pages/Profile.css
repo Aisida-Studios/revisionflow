@@ -1,3 +1,4 @@
+/* src/pages/Profile.css */
 /* Shared by Profile.jsx and PublicProfile.jsx */
 .pf-level { margin: 0 0 16px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .pf-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 360px; margin: 0 auto 18px; }
