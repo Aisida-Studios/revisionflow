@@ -1,6 +1,6 @@
 // src/components/ProfileIcon.jsx
 // A profile icon drawn as a mark: a line icon for the preset icons, the badge medallion for "badge:<id>" icons.
-// Use this instead of the emoji that resolveProfileIcon() still returns for older screens.
+// resolveProfileIcon() returns only the icon's id (or badgeId) and name; this component draws it.
 import { Zap, BookOpen, Pencil, Flame, Gem, Trophy, Rocket, Star, Crown, Brain, Bot, Diamond } from 'lucide-react'
 import { LazyBadgeArt } from './illustrations/lazy'
 import { resolveProfileIcon } from '../data/themes'
