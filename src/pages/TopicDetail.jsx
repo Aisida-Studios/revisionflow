@@ -34,6 +34,8 @@ import { paperName } from '../data/paperNames'
 import { CONF_LABELS, CONF_COLOURS, parseCategory } from '../utils/topicDisplay'
 import { buildSubjectKey } from '../utils/subjectKey'
 import AIOutput from '../components/AIOutput'
+import RichText from '../components/RichText'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
 import toast from 'react-hot-toast'
 import {
   ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote, Pencil,
@@ -600,7 +602,7 @@ export default function TopicDetail() {
           <div className="card" style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input className="input" placeholder="Note title…" value={noteForm.title} onChange={e => setNoteForm(f => ({ ...f, title: e.target.value }))} />
-              <textarea className="textarea" style={{ minHeight: 100 }} placeholder={`Write your notes on ${displayName}…`} value={noteForm.content} onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))} />
+              <AutoFormatTextarea className="textarea" style={{ minHeight: 100 }} placeholder={`Write your notes on ${displayName}…`} value={noteForm.content} onValueChange={v => setNoteForm(f => ({ ...f, content: v }))} />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 {editingNote && <button className="btn btn-ghost btn-sm" onClick={() => { setEditingNote(null); setNoteForm({ title: '', content: '' }) }}>Cancel</button>}
                 <button className="btn btn-primary btn-sm" onClick={handleSaveNote} disabled={savingNote || !noteForm.title}>
@@ -618,7 +620,7 @@ export default function TopicDetail() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 4 }}>{n.title}</div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{n.content}</div>
+                      <RichText text={n.content} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }} />
                       {formatDate(n.createdAt, 'd MMM yyyy') && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>{formatDate(n.createdAt, 'd MMM yyyy')}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
