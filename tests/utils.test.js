@@ -11,6 +11,8 @@ import { buildSubjectKey } from '../src/utils/subjectKey.js'
 import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../src/utils/gradeTargets.js'
 import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
 import { mergeOutcomes, hasOutcomes, planProgressSave, savedProgressFrom, outcomeFromMarkerText } from '../src/utils/progressMerge.js'
+import { answerKey, cardKey, shuffled, pickLocalDistractors, buildOptions, cleanProposed, parseDistractorReply, buildDistractorPrompt, distractorTokens, planBatch, createDistractorTopUp, MAX_TRIES } from '../src/utils/distractors.js'
+import { isTransientAIError, withOneRetry } from '../src/utils/aiErrors.js'
 import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
 import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
@@ -1228,6 +1230,198 @@ await okAsync('the fake database: tx.update changes only the fields it is given 
   await assert.rejects(db.runTransaction(async tx => { await tx.get(gone); tx.update(gone, { count: 1 }); tx.set(ref, { date: 'x', count: 9 }) }), /NOT_FOUND/)
   assert.equal(db.read('users/u1/usage/aiCalls').count, 4)             // nothing from the failed transaction was applied
   assert.equal(db.read('users/u1/usage/missing'), undefined)
+})
+
+// ---- quiz options: real answers at once, AI distractors in small batches ahead of the student ----
+const dq = (a, q = 'Q: ' + a) => ({ q, a })
+ok('quiz options: a real-answer option is never the right answer, a repeat, or a near copy of it', () => {
+  const pool = [dq('Mitochondria'), dq('mitochondria.'), dq('Ribosome'), dq('Nucleus'), dq('The nucleus of the cell'), dq('Golgi apparatus'), dq('Chloroplast')]
+  const w = pickLocalDistractors(pool, pool[0], 3, () => 0.5)
+  assert.equal(w.length, 3)
+  assert.ok(!w.some(x => answerKey(x) === 'mitochondria'))                // 'mitochondria.' is the same answer
+  assert.equal(new Set(w.map(answerKey)).size, 3)
+  const w2 = pickLocalDistractors(pool, pool[3], 3, () => 0.5)             // right answer 'Nucleus'
+  assert.ok(!w2.some(x => /nucleus/i.test(x)))                             // 'The nucleus of the cell' would read as the right answer
+  assert.deepEqual(pickLocalDistractors([dq('Only')], dq('Only'), 3), [])
+  assert.deepEqual(pickLocalDistractors([dq('Same'), dq('same')], dq('Same'), 3), [])
+})
+ok('quiz options: real-answer options are of a similar length and kind, so none is obviously out of place', () => {
+  const longOnes = Array.from({ length: 8 }, (_, i) => dq('A long answer sentence about something entirely different, number ' + i + ', explained over several words'))
+  const shortOnes = ['Ribosome', 'Nucleus', 'Vacuole', 'Cell wall', 'Cytoplasm', 'Membrane'].map(a => dq(a))
+  const card = dq('Chloroplast')
+  for (let run = 0; run < 40; run++) {
+    const w = pickLocalDistractors([card, ...longOnes, ...shortOnes], card, 3)
+    assert.ok(w.every(x => x.length < 20), JSON.stringify(w))
+  }
+  const nums = [dq('17'), dq('99'), dq('3.5'), dq('120 m/s'), ...longOnes]
+  for (let run = 0; run < 40; run++) assert.ok(pickLocalDistractors([dq('42'), ...nums], dq('42'), 3).every(x => /\d/.test(x)))
+})
+ok('quiz options: an option list holds the right answer once, with the wrong ones beside it', () => {
+  const card = dq('Right', 'Question?')
+  const opts = buildOptions(card, ['W1', 'W2', 'W3'], () => 0.3)
+  assert.equal(opts.length, 4)
+  assert.equal(opts.filter(o => o.a === 'Right').length, 1)
+  assert.ok(opts.every(o => o.q === 'Question?'))
+  assert.deepEqual(opts.map(o => o.a).sort(), ['Right', 'W1', 'W2', 'W3'])
+  assert.deepEqual(shuffled([1, 2, 3, 4, 5], () => 0).sort(), [1, 2, 3, 4, 5])
+})
+ok('quiz options: AI wrong answers are kept only when they are real alternatives', () => {
+  assert.deepEqual(cleanProposed('Osmosis', ['Diffusion', 'osmosis.', 'Active transport', 'Diffusion', 'Passive osmosis in cells', 'Endocytosis']), ['Diffusion', 'Active transport', 'Endocytosis'])
+  assert.deepEqual(cleanProposed('x', ['a', 42, null, '  ', { z: 1 }, 'b']), ['a', '42', 'b'])
+  assert.deepEqual(cleanProposed('x', 'not a list'), [])
+  assert.deepEqual(cleanProposed('x', ['a', 'b', 'c', 'd', 'e']), ['a', 'b', 'c'])
+})
+ok('quiz options: an AI reply is read whether clean, fenced, cut off or one flat list, and garbage gives nothing', () => {
+  assert.deepEqual(parseDistractorReply('[["a","b","c"],["d","e","f"]]'), [['a', 'b', 'c'], ['d', 'e', 'f']])
+  assert.deepEqual(parseDistractorReply('```json\n[["a","b","c"]]\n```'), [['a', 'b', 'c']])
+  assert.deepEqual(parseDistractorReply('Here you go: [["a","b","c"],["d","e","f"],["g","h'), [['a', 'b', 'c'], ['d', 'e', 'f']])      // cut off mid-row: the whole rows are kept
+  assert.deepEqual(parseDistractorReply('["a","b","c"]'), [['a', 'b', 'c']])
+  assert.deepEqual(parseDistractorReply('[["say \\"hi\\"","b","c"]]'), [['say "hi"', 'b', 'c']])
+  assert.deepEqual(parseDistractorReply('Sorry, I cannot do that.'), [])
+  assert.deepEqual(parseDistractorReply(null), [])
+})
+ok('quiz options: a card has one stable key however it is spaced or capitalised, and different cards differ', () => {
+  assert.equal(cardKey({ q: 'What is osmosis?', a: 'Movement of water' }), cardKey({ q: ' what is  osmosis', a: 'movement of water.' }))
+  assert.notEqual(cardKey({ q: 'What is osmosis?', a: 'Movement of water' }), cardKey({ q: 'What is osmosis?', a: 'Movement of ions' }))
+  const keys = new Set()
+  for (let i = 0; i < 3000; i++) keys.add(cardKey({ q: 'Question ' + i, a: 'Answer ' + (i * 7) }))
+  assert.equal(keys.size, 3000)
+  assert.match(cardKey({ q: 'x', a: 'y' }), /^[a-z0-9]+$/)
+})
+ok('quiz options: the request is small and says how many questions it holds and what to send back', () => {
+  const items = [dq('A1', 'Q1'), dq('A2', 'Q2'), dq('A3', 'Q3')]
+  const p = buildDistractorPrompt(items)
+  assert.match(p, /Q1: Q1 \| Answer: A1/); assert.match(p, /Q3: Q3 \| Answer: A3/)
+  assert.match(p, /each of the 3 questions/); assert.match(p, /exactly 3 wrong/)
+  assert.equal(distractorTokens(items), 700)
+  assert.equal(distractorTokens([dq('x'.repeat(400))]), 700)
+  assert.equal(distractorTokens(Array.from({ length: 8 }, () => dq('y'.repeat(400)))), 3200)
+})
+const mcq = (a, checked = null) => ({ type: 'mc', card: dq(a), checked })
+const wq = () => ({ type: 'write', card: dq('w'), checked: null })
+ok('quiz options: a batch is planned only when the next few multiple-choice questions lack AI options, and holds the next eight', () => {
+  const deck = Array.from({ length: 30 }, (_, i) => (i % 3 === 2 ? wq() : mcq('Answer ' + i)))
+  const status = {}
+  const first = planBatch(deck, 0, status)
+  assert.deepEqual(first, [0, 1, 3, 4, 6, 7, 9, 10])                      // the next eight multiple-choice questions, the one on screen included
+  first.forEach(i => { status[i] = 'done' })
+  assert.deepEqual(planBatch(deck, 0, status), [])                        // the next six are covered: nothing to do yet
+  assert.deepEqual(planBatch(deck, 3, status), [])                        // still covered: 3, 4, 6, 7, 9, 10
+  assert.deepEqual(planBatch(deck, 4, status), [12, 13, 15, 16, 18, 19, 21, 22])      // the next six now reach one that is not
+})
+ok('quiz options: planning skips answered questions, finished ones, ones that failed twice and ones with a very long answer', () => {
+  const deck = [mcq('a', 'correct'), mcq('b'), mcq('c'), mcq('x'.repeat(401)), mcq('e'), mcq('f')]
+  assert.deepEqual(planBatch(deck, 0, { 2: MAX_TRIES, 4: 1 }), [1, 4, 5])     // 0 is answered, 2 gave up, 3 is too long, 4 has a try left
+  assert.deepEqual(planBatch(deck, 0, { 1: 'done', 2: 'done', 4: 'done', 5: 'done' }), [])
+  const long = Array.from({ length: 6 }, () => mcq('z'.repeat(300)))
+  assert.equal(planBatch(long, 0, {}, { maxChars: 700 }).length, 2)          // the answers in one request stay inside the budget
+})
+const rowsFor = (items) => items.map(it => { const n = it.q.match(/\d+/)[0]; return ['Alpha ' + n, 'Beta ' + n, 'Gamma ' + n] })
+const mkQuiz = (n) => Array.from({ length: n }, (_, i) => ({ type: i % 3 === 2 ? 'write' : 'mc', card: { q: 'Question ' + i + '?', a: 'Answer number ' + i }, checked: null }))
+function topUpRig(n, over = {}) {
+  const rig = { deck: mkQuiz(n), current: 0, status: {}, upgrades: {}, calls: [], completed: null, completedCount: 0, inflight: 0, maxInflight: 0 }
+  const fetch = over.fetch || (async (items) => ({ rows: rowsFor(items) }))
+  rig.top = createDistractorTopUp({
+    getQuestions: () => rig.deck, getCurrent: () => rig.current,
+    fetchBatch: async (items) => { rig.calls.push(items.length); rig.inflight++; rig.maxInflight = Math.max(rig.maxInflight, rig.inflight); try { return await fetch(items, rig) } finally { rig.inflight-- } },
+    onUpgrade: (f) => Object.assign(rig.upgrades, f), onComplete: (found) => { rig.completed = found; rig.completedCount++ },
+    status: rig.status, wait: async () => {}, rand: () => 0.5, ...(over.opts || {}),
+  })
+  return rig
+}
+await okAsync('quiz top-up: AI options arrive in small batches ahead of the student, never change the question on screen, and the finished set is handed over once', async () => {
+  const rig = topUpRig(20)
+  await rig.top.kick()
+  assert.deepEqual(rig.calls, [8])                                         // one small request, not one for the whole quiz
+  assert.deepEqual(Object.keys(rig.upgrades).map(Number).sort((a, b) => a - b), [1, 3, 4, 6, 7, 9, 10])        // not 0: that question is on screen
+  for (const [pos, opts] of Object.entries(rig.upgrades)) {
+    assert.equal(opts.length, 4)
+    assert.equal(opts.filter(o => o.a === rig.deck[pos].card.a).length, 1)
+  }
+  rig.current = 4
+  await rig.top.kick()
+  assert.deepEqual(rig.calls, [8, 6])
+  assert.equal(rig.completedCount, 1)
+  assert.equal(Object.keys(rig.completed).length, 14)                      // every multiple-choice card, keyed by its own text
+  await rig.top.kick()
+  assert.deepEqual(rig.calls, [8, 6]); assert.equal(rig.completedCount, 1)
+})
+await okAsync('quiz top-up: when the AI keeps failing it gives up quietly after two tries and the quiz is untouched', async () => {
+  const rig = topUpRig(20, { fetch: async () => ({ error: 'AI request timed out. Please try again.', retryable: true }) })
+  await rig.top.kick()
+  assert.equal(rig.top.stats().calls, 2); assert.equal(rig.top.stats().stopped, true)
+  assert.deepEqual(rig.upgrades, {}); assert.equal(rig.completed, null)
+  await rig.top.kick(); assert.equal(rig.top.stats().calls, 2)
+  const thrower = topUpRig(20, { fetch: async () => { throw new Error('boom') } })
+  await thrower.top.kick()                                                 // a request that throws never escapes into the quiz
+  assert.equal(thrower.top.stats().calls, 2); assert.deepEqual(thrower.upgrades, {})
+})
+await okAsync('quiz top-up: a used-up daily allowance stops it after one request', async () => {
+  const rig = topUpRig(20, { fetch: async () => ({ error: "You've used today's AI help. More opens up tomorrow.", retryable: false }) })
+  await rig.top.kick()
+  assert.equal(rig.top.stats().calls, 1); assert.equal(rig.top.stats().stopped, true)
+})
+await okAsync('quiz top-up: a partial reply keeps what came and asks again for the rest', async () => {
+  let n = 0
+  const rig = topUpRig(20, { fetch: async (items) => { n++; const rows = rowsFor(items); return { rows: n === 1 ? rows.slice(0, 5) : rows } } })
+  await rig.top.kick()
+  assert.deepEqual(rig.calls, [8, 8])                                      // the three left out were asked for again, with the next ones
+  assert.equal(rig.status[7], 'done'); assert.equal(rig.status[10], 'done')
+})
+await okAsync('quiz top-up: unusable options are asked for twice, then that question keeps its real answers and the set is not cached', async () => {
+  const rig = topUpRig(20, { fetch: async (items) => ({ rows: items.map((it, k) => (it.q === 'Question 3?' ? [it.a, it.a.toUpperCase(), 'x'] : rowsFor([it])[0])) }) })
+  await rig.top.kick()
+  assert.equal(rig.status[3], MAX_TRIES)
+  assert.equal(rig.upgrades[3], undefined)
+  assert.deepEqual(planBatch(rig.deck, 0, rig.status), [])                 // never asked a third time
+  rig.current = 4; await rig.top.kick()
+  assert.equal(rig.completed, null)                                        // one question has no AI options, so nothing is stored for everyone
+})
+await okAsync('quiz top-up: a student who has moved on does not have a question changed under them', async () => {
+  const rig = topUpRig(20, { fetch: async (items, r) => { r.current = 7; return { rows: rowsFor(items) } } })
+  await rig.top.kick()
+  assert.equal(rig.upgrades[1], undefined); assert.equal(rig.upgrades[6], undefined); assert.equal(rig.upgrades[7], undefined)
+  assert.ok(rig.upgrades[9] && rig.upgrades[10])                           // only the ones still ahead
+  assert.equal(rig.status[1], 'done')                                      // but the answer is kept for the cache
+})
+await okAsync('quiz top-up: a question answered while its options were being fetched is left exactly as it was', async () => {
+  const rig = topUpRig(20, { fetch: async (items, r) => { r.deck[9].checked = 'correct'; return { rows: rowsFor(items) } } })
+  await rig.top.kick()
+  assert.equal(rig.upgrades[9], undefined); assert.ok(rig.upgrades[10])
+})
+await okAsync('quiz top-up: options that came from the cache are not stored again, and requests never overlap', async () => {
+  const cached = topUpRig(20, { opts: { hadCache: true } })
+  await cached.top.kick(); cached.current = 4; await cached.top.kick()
+  assert.deepEqual(cached.calls, [8, 6]); assert.equal(cached.completed, null)
+  const slow = topUpRig(20, { fetch: async (items) => { await new Promise(r => setTimeout(r, 5)); return { rows: rowsFor(items) } } })
+  await Promise.all([slow.top.kick(), slow.top.kick(), slow.top.kick()])
+  assert.equal(slow.maxInflight, 1)
+  const stopped = topUpRig(20); stopped.top.stop(); await stopped.top.kick()
+  assert.equal(stopped.calls.length, 0)
+})
+await okAsync('quiz top-up: a long quiz stops asking after a fixed number of requests', async () => {
+  const rig = topUpRig(200, { opts: { maxCalls: 3 } })
+  for (let c = 0; c < 80; c += 4) { rig.current = c; await rig.top.kick() }
+  assert.equal(rig.calls.length, 3); assert.equal(rig.top.stats().stopped, true)
+})
+ok('AI errors: only the kind that passes is worth another try', () => {
+  for (const m of ['AI request timed out. Please try again.', 'Could not reach the AI service. Check your internet connection.', 'AI returned an empty response. Please try again.',
+    'Server returned a non-JSON response (HTTP 502) - most likely the request ran too long and the function was cut off before finishing.', 'AI help is temporarily unavailable. Please try again in a moment.', 'AI request failed (503). Please try again.']) assert.equal(isTransientAIError(m), true, m)
+  for (const m of ["You've used today's AI help. More opens up tomorrow.", 'AI request failed (429). Please try again.', 'Please sign in to use AI features.', 'AI request failed (400). Please try again.', '', null, undefined]) assert.equal(isTransientAIError(m), false, String(m))
+})
+await okAsync('AI errors: a request that fails in a passing way is tried once more, and nothing else is repeated', async () => {
+  let calls = 0
+  const flaky = await withOneRetry(async () => (++calls === 1 ? { error: 'AI request timed out. Please try again.' } : { text: 'ok' }), { wait: async () => {} })
+  assert.deepEqual(flaky, { text: 'ok' }); assert.equal(calls, 2)
+  calls = 0
+  const limited = await withOneRetry(async () => { calls++; return { error: "You've used today's AI help. More opens up tomorrow." } }, { wait: async () => {} })
+  assert.equal(calls, 1); assert.ok(limited.error)
+  calls = 0
+  const fine = await withOneRetry(async () => { calls++; return { text: 'ok' } }, { wait: async () => {} })
+  assert.equal(calls, 1); assert.deepEqual(fine, { text: 'ok' })
+  calls = 0
+  const down = await withOneRetry(async () => { calls++; return { error: 'AI request timed out. Please try again.' } }, { wait: async () => {} })
+  assert.equal(calls, 2); assert.ok(down.error)                            // the second failure is returned as it is, not retried again
 })
 
 console.log(`\n${n} checks passed`)
