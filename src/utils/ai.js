@@ -6,6 +6,8 @@ import { recordActivityStreak } from './firestore'
 import { auth, getAppCheckHeader } from '../firebase'
 import { daysUntilExam } from './examUtils'
 import { targetGradeForPrompt } from './gradeTargets'
+import { buildDistractorPrompt, parseDistractorReply, distractorTokens } from './distractors'
+import { isTransientAIError, withOneRetry } from './aiErrors'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -487,6 +489,17 @@ export async function generateFlashcards(subject, topic, count, uid, maxTokens =
   return callAI(prompt, SYSTEM, tokenBudget, uid)
 }
 
+// Wrong answers for a few multiple-choice questions at a time. The quiz asks for these while it is running (see
+// utils/distractors.js): it starts on real answers from the set and never waits for this, and swaps these in for the
+// questions the student has not reached. Resolves to { rows } (one array of wrong answers per item, in order; a row may
+// be short or missing) or { error, retryable }.
+export async function generateDistractorBatch(items, uid) {
+  if (!items || !items.length) return { rows: [] }
+  const res = await callAI(buildDistractorPrompt(items), null, distractorTokens(items), uid)
+  if (res.error) return { error: res.error, retryable: isTransientAIError(res.error) }
+  return { rows: parseDistractorReply(res.text) }
+}
+
 // Large flashcard requests are produced in chunks. One call for 30-50 cards needs more output than a
 // single response allows, so it came back cut off mid-card. Each chunk is a separate request that is
 // told which questions already exist (so the set does not repeat itself); chunks are merged into the
@@ -496,7 +509,7 @@ export async function generateFlashcards(subject, topic, count, uid, maxTokens =
 export async function generateFlashcardsChunked(subject, topic, count, uid, { chunkSize = 15, focusHint = '', onProgress = null } = {}) {
   count = count || 8
   if (count <= chunkSize) {
-    const res = await generateFlashcards(subject, topic, count, uid, null, focusHint)
+    const res = await withOneRetry(() => generateFlashcards(subject, topic, count, uid, null, focusHint))
     return res.error ? res : { ...res, requested: count, produced: parseFlashcards(res.text).length, partial: false }
   }
   const norm = (q) => q.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
@@ -508,7 +521,7 @@ export async function generateFlashcardsChunked(subject, topic, count, uid, { ch
     const want = Math.min(chunkSize, count - cards.length)
     const already = cards.slice(-30).map(c => c.q).join(' | ')
     const hint = [focusHint, already ? 'Cover DIFFERENT ground from these questions that are already written (do not repeat or reword them): ' + already : ''].filter(Boolean).join('\n')
-    const res = await generateFlashcards(subject, topic, want, uid, null, hint)
+    const res = await withOneRetry(() => generateFlashcards(subject, topic, want, uid, null, hint))
     if (res.error) {
       if (!cards.length) return res
       return { text: toQA(cards), requested: count, produced: cards.length, partial: true, warning: res.error }
