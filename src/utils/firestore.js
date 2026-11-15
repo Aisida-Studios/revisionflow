@@ -680,31 +680,29 @@ export const saveDailyBriefing = async (uid, text) => {
   }
 }
 
-// Cached AI-generated quiz distractors for a saved flashcard SET, keyed by the set's own doc
-// id. Reuses flashcardCache (already writable by any signed-in user, no rules change needed) —
-// whoever quizzes on a given public/official set first generates it once; everyone after gets
-// the cached version instantly instead of waiting on a fresh AI call. cardCount is stored
-// alongside so an edited set (cards added/removed) is correctly treated as stale rather than
-// silently returning mismatched distractors.
-export const getCachedDistractors = async (setId, cardCount) => {
+// AI-written quiz options for a saved set, shared by everyone who quizzes on it: whoever needs them first stores them,
+// once (flashcardCache is already creatable by any signed-in user, so there is no rules change; a document cannot be
+// updated afterwards, which is why a quiz saves only when every one of its multiple-choice questions got AI options).
+// Keyed by a hash of each card's own text (cardKey in distractors.js), so the options stay right for any part of the
+// set, in any order, and a card that has since been edited simply misses. Version 1 of this cache was keyed by a card's
+// POSITION in the quiz, which a quiz of part of a set (or in shuffled order, as the Quiz tab's is) did not keep, so
+// repeat quizzes could get another card's options. Those documents ('distractors_{setId}') are no longer read.
+export const getCachedDistractors = async (setId) => {
   try {
-    const snap = await getDoc(doc(db, 'flashcardCache', 'distractors_' + setId))
+    const snap = await getDoc(doc(db, 'flashcardCache', 'distractors2_' + setId))
     if (!snap.exists()) return null
-    const data = snap.data()
-    if (data.cardCount !== cardCount) return null
-    return data.distractors || null
+    const byCard = snap.data().byCard
+    return byCard && typeof byCard === 'object' ? byCard : null
   } catch {
     return null
   }
 }
 
-export const saveCachedDistractors = async (setId, cardCount, distractors) => {
+export const saveCachedDistractors = async (setId, byCard) => {
   try {
-    await setDoc(doc(db, 'flashcardCache', 'distractors_' + setId), {
-      cardCount, distractors, generatedAt: serverTimestamp(),
-    })
+    await setDoc(doc(db, 'flashcardCache', 'distractors2_' + setId), { version: 2, byCard, generatedAt: serverTimestamp() })
   } catch {
-    // Non-fatal — the quiz still works, it just regenerates for the next person too.
+    // Non-fatal: the quiz already has its options; the next person simply generates them again.
   }
 }
 
