@@ -18,6 +18,8 @@ import { computeTopicRecommendations } from '../utils/recommendations'
 import { useIsPro } from '../components/ProGate'
 import AIOutput from '../components/AIOutput'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
+import RichText from '../components/RichText'
 import { SUBJECT_COLOURS, getSubjectQualification } from '../data/subjects'
 import { daysUntilExam } from '../utils/examUtils'
 import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap, AlertTriangle, Star } from 'lucide-react'
@@ -321,7 +323,7 @@ export default function AIAdvisor() {
                       : <Zap size={14} />}
                   </div>
                   {m.role==='user' ? (
-                    <div className="ap-chat-bubble">{m.content}</div>
+                    <div className="ap-chat-bubble"><RichText text={m.content} /></div>
                   ) : m.isError ? (
                     <div className="ap-chat-bubble ap-chat-bubble--error">
                       {m.content}
@@ -354,11 +356,11 @@ export default function AIAdvisor() {
             <MathSymbolToolbar fieldRef={inputFieldRef} value={input} onChange={setInput} />
           </div>
           <div className="ap-chat-inputbar">
-            <textarea
+            <AutoFormatTextarea
               ref={inputFieldRef}
               rows={1}
               value={input}
-              onChange={e=>setInput(e.target.value)}
+              onValueChange={setInput}
               placeholder="Ask me anything…"
               onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}}
               disabled={loading}
