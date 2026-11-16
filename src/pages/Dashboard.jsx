@@ -19,6 +19,7 @@ import BadgeArt from '../components/illustrations/BadgeArt'
 import Illustration from '../components/illustrations/Illustration'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import PWAInstallBanner from '../components/PWAInstallBanner'
+import EmailVerifyBanner from '../components/EmailVerifyBanner'
 import AIOutput from '../components/AIOutput'
 import {
   getSessions, getPaperAttempts, getQuizResults, getTopicsWithConfidence,
@@ -440,6 +441,7 @@ export default function Dashboard() {
       <TopicUpdateBanner />
       {profile?.betaUser && !betaThanksDismissed && <BetaThanks onDismiss={dismissBetaThanks} />}
       <SetupChecklist profile={profile} />
+      <EmailVerifyBanner />
       <PWAInstallBanner />
 
       {/* ── Plain greeting — no card, no background, matching the reference ── */}
