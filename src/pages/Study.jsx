@@ -31,6 +31,9 @@ import SkillFlashcardSuggestion from '../components/SkillFlashcardSuggestion'
 import MemoryAidButton from '../components/MemoryAidButton'
 import PhotoCapture from '../components/PhotoCapture'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
+import RichText from '../components/RichText'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
+import { formatMathSymbols } from '../utils/richText'
 import { componentForSubject } from '../components/illustrations/SubjectIllustration'
 import toast from 'react-hot-toast'
 import {
@@ -142,12 +145,12 @@ function FlipCard({ card, index, total, onRate, showRate, uid, subject, struggli
         <div key={index} className={`rf-flip-inner${flipped ? ' is-flipped' : ''}`}>
           <div className="rf-flip-face" style={{ borderColor: accent + '4d' }}>
             <div className="rf-flip-eyebrow" style={{ color: accent }}>Card {index+1} of {total}</div>
-            <div className="rf-flip-q">{card.q}</div>
+            <div className="rf-flip-q"><RichText text={card.q} /></div>
             <div className="rf-flip-hint">Tap to flip</div>
           </div>
           <div className="rf-flip-face is-back">
             <div className="rf-flip-eyebrow">Answer</div>
-            <div className="rf-flip-a">{card.a}</div>
+            <div className="rf-flip-a"><RichText text={card.a} /></div>
           </div>
         </div>
       </div>
@@ -206,10 +209,10 @@ function LearnMode({ cards, onDone, onAttempt }) {
         <div className="rf-q-eyebrow-row">
           <span className="rf-q-eyebrow">{card.attempts>0?`Revisiting (seen ${card.attempts}x)`:'Term'}</span>
         </div>
-        <div className="rf-q-text" style={{ marginBottom:shown?16:0 }}>{card.q}</div>
+        <div className="rf-q-text" style={{ marginBottom:shown?16:0 }}><RichText text={card.q} /></div>
         {shown && <div style={{ borderTop:'1px solid var(--border)', paddingTop:14, marginTop:4 }}>
           <div className="rf-q-eyebrow" style={{ color:'var(--success)', marginBottom:8 }}>Definition</div>
-          <div style={{ fontSize:'0.95rem', lineHeight:1.6 }}>{card.a}</div>
+          <div style={{ fontSize:'0.95rem', lineHeight:1.6 }}><RichText text={card.a} /></div>
         </div>}
       </div>
       {!shown ? (
@@ -306,7 +309,7 @@ FEEDBACK: One sentence.`
         <div style={{ fontWeight:700, color:final.correct?'var(--success)':'var(--danger)', fontSize:'0.85rem', marginBottom:4, display:'flex', alignItems:'center', gap:5 }}>
           {final.correct ? <CheckCircle2 size={14}/> : <X size={14}/>} {final.correct ? 'Correct' : 'Incorrect'}
         </div>
-        <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)' }}>{final.feedback}</div>
+        <div style={{ fontSize:'0.82rem', color:'var(--text-secondary)' }}><RichText text={final.feedback} /></div>
       </div>
       {!disputeResult && !final.correct && !disputed && (
         <button className="btn btn-ghost btn-sm" onClick={() => setDisputed(true)} style={{ fontSize:'0.78rem' }}>
@@ -377,10 +380,10 @@ function WriteMode({ cards, onDone, uid, onAttempt }) {
       </div>
       <div className="rf-q-card">
         <div className="rf-q-eyebrow-row"><span className="rf-q-eyebrow">Write the definition</span></div>
-        <div className="rf-q-text" style={{ marginBottom:16 }}>{card.q}</div>
-        <textarea ref={inputRef} className="textarea"
+        <div className="rf-q-text" style={{ marginBottom:16 }}><RichText text={card.q} /></div>
+        <AutoFormatTextarea ref={inputRef} className="textarea"
           style={{ minHeight:80, fontSize:'0.9rem', borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
-          value={input} onChange={e=>setInput(e.target.value)}
+          value={input} onValueChange={setInput}
           onKeyDown={e=>{if((e.ctrlKey&&e.key==='Enter')&&!checked)submitAnswer()}}
           placeholder="Type your answer… (Ctrl+Enter to check)" disabled={!!checked} />
         {!checked && <MathSymbolToolbar fieldRef={inputRef} value={input} onChange={setInput} />}
@@ -413,7 +416,7 @@ function WriteMode({ cards, onDone, uid, onAttempt }) {
           <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 6, fontSize: '0.85rem' }}>
             Answer revealed
           </div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6 }}>{card.a}</div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6 }}><RichText text={card.a} /></div>
         </div>
       )}
       {checked === 'unmarked' && (
@@ -512,7 +515,7 @@ function SpellMode({ cards, onDone, onAttempt }) {
       </div>
       <div className="rf-q-card">
         <div className="rf-q-eyebrow-row"><span className="rf-q-eyebrow">Spell the definition</span></div>
-        <div className="rf-q-text" style={{ marginBottom:12 }}>{card.q}</div>
+        <div className="rf-q-text" style={{ marginBottom:12 }}><RichText text={card.q} /></div>
         <div style={{ fontFamily:'monospace', fontSize:'1rem', color:'var(--text-muted)', letterSpacing:'0.15em', marginBottom:14, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:8 }}>{hint}</div>
         <input ref={inputRef} className="input"
           style={{ borderColor:checked==='correct'?'var(--success)':checked==='wrong'?'var(--danger)':undefined }}
@@ -698,7 +701,7 @@ function TestMode({ cards, pool, onDone, uid, timePerQuestion, setId, onAttempt 
           {q.type === 'mc' && aiOptions[idx] && <span className="badge badge-grey" style={{ fontSize: '0.64rem' }}>AI-generated options</span>}
           {q.checked === 'timeout' && <span className="badge badge-red" style={{ fontSize: '0.64rem' }}>Time's up</span>}
         </div>
-        <div className="rf-q-text" style={{ marginBottom: 16 }}>{q.card.q}</div>
+        <div className="rf-q-text" style={{ marginBottom: 16 }}><RichText text={q.card.q} /></div>
         {q.type === 'mc' && (
           <div className="rf-mc-list">
             {(aiOptions[idx] || q.opts).map((opt, i) => {
@@ -707,7 +710,7 @@ function TestMode({ cards, pool, onDone, uid, timePerQuestion, setId, onAttempt 
                 <button key={i} onClick={() => selectMC(opt)} disabled={ch}
                   className={`rf-mc-opt${ch ? ' is-checked' : ''}${ch && isC ? ' is-correct' : ''}${ch && isSel && !isC ? ' is-wrong' : ''}${!ch && isSel ? ' is-selected' : ''}`}>
                   <span className="rf-mc-opt-letter">{['A','B','C','D'][i]}</span>
-                  <span style={{ flex: 1 }}>{opt.a}</span>
+                  <span style={{ flex: 1 }}>{formatMathSymbols(opt.a)}</span>
                   {ch && isC && <CheckCircle2 size={16} style={{ flexShrink: 0 }} />}
                   {ch && isSel && !isC && <X size={16} style={{ flexShrink: 0 }} />}
                 </button>
@@ -717,10 +720,10 @@ function TestMode({ cards, pool, onDone, uid, timePerQuestion, setId, onAttempt 
         )}
         {q.type === 'write' && (
           <div>
-            <textarea className="textarea"
+            <AutoFormatTextarea className="textarea"
               style={{ minHeight: 70, fontSize: '0.9rem', borderColor: q.checked === 'correct' ? 'var(--success)' : q.checked === 'wrong' ? 'var(--danger)' : undefined }}
               value={q.answer}
-              onChange={e => { const u = [...qs]; u[idx] = { ...u[idx], answer: e.target.value }; setQs(u) }}
+              onValueChange={v => { const u = [...qs]; u[idx] = { ...u[idx], answer: v }; setQs(u) }}
               placeholder="Type your answer…" disabled={q.checked !== null} />
             {q.checked && q.checked !== 'idk' && q.checked !== 'timeout' && (
               <div style={{ marginTop: 8 }}>
@@ -732,14 +735,14 @@ function TestMode({ cards, pool, onDone, uid, timePerQuestion, setId, onAttempt 
               <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 'var(--radius-lg)',
                 background: 'var(--warning-pale)', border: '1px solid var(--warning-border)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 4, fontSize: '0.82rem' }}>Answer</div>
-                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}><RichText text={q.card.a} /></div>
               </div>
             )}
             {q.checked === 'timeout' && (
               <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 'var(--radius-lg)',
                 background: 'var(--danger-pale)', border: '1px solid var(--danger-border)' }}>
                 <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 4, fontSize: '0.82rem' }}>Time's up — the answer was:</div>
-                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{q.card.a}</div>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}><RichText text={q.card.a} /></div>
               </div>
             )}
             {q.checked === 'unmarked' && (
@@ -1017,8 +1020,8 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {results.missed.map((c,i)=>(
                 <div key={i} className="rf-reinforce-card">
-                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
-                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
+                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}><RichText text={c.q} /></div>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}><RichText text={c.a} /></div>
                   <MemoryAidButton front={c.q} back={c.a} subject={subject} uid={uid} compact />
                 </div>
               ))}
@@ -1032,8 +1035,8 @@ function StudySession({ cards: initCards, title, subject, onClose, onSave, uid, 
               {cards.map((c,i)=>(
                 <div key={i} style={{ padding:'10px 14px', borderRadius:10, background:'var(--bg-card)',
                   border:`1px solid ${results.scores[i]===3?'var(--success-border)':results.scores[i]===1?'var(--danger-border)':'var(--border)'}` }}>
-                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}>{c.q}</div>
-                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{c.a}</div>
+                  <div style={{ fontWeight:600, fontSize:'0.84rem', marginBottom:3 }}><RichText text={c.q} /></div>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}><RichText text={c.a} /></div>
                 </div>
               ))}
             </div>
@@ -1171,12 +1174,12 @@ function CustomSetEditor({ subjects, onSave, onClose }) {
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <div>
                     <label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label>
-                    <textarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} placeholder="Question…" />
+                    <AutoFormatTextarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onValueChange={v => updateCard(i, 'q', v)} placeholder="Question…" />
                     <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-q'] }} value={card.q} onChange={val => updateCard(i, 'q', val)} />
                   </div>
                   <div>
                     <label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label>
-                    <textarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} placeholder="Answer…" />
+                    <AutoFormatTextarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onValueChange={v => updateCard(i, 'a', v)} placeholder="Answer…" />
                     <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-a'] }} value={card.a} onChange={val => updateCard(i, 'a', val)} />
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
@@ -1248,12 +1251,12 @@ function EditSetModal({ set, subjects, onSave, onClose }) {
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'start', padding: '10px 12px', background: 'var(--bg-card)', borderRadius: 'var(--r-lg)', border: '2px solid var(--border)' }}>
                   <div>
                     <label className="label" style={{ fontSize: '0.68rem' }}>Term / Question</label>
-                    <textarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onChange={e => updateCard(i, 'q', e.target.value)} />
+                    <AutoFormatTextarea ref={el => { fieldRefs.current[i + '-q'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.q} onValueChange={v => updateCard(i, 'q', v)} />
                     <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-q'] }} value={card.q} onChange={val => updateCard(i, 'q', val)} />
                   </div>
                   <div>
                     <label className="label" style={{ fontSize: '0.68rem' }}>Definition / Answer</label>
-                    <textarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onChange={e => updateCard(i, 'a', e.target.value)} />
+                    <AutoFormatTextarea ref={el => { fieldRefs.current[i + '-a'] = el }} className="textarea" style={{ minHeight: 60, fontSize: '0.82rem' }} value={card.a} onValueChange={v => updateCard(i, 'a', v)} />
                     <MathSymbolToolbar fieldRef={{ current: fieldRefs.current[i + '-a'] }} value={card.a} onChange={val => updateCard(i, 'a', val)} />
                   </div>
                   <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--danger)', marginTop: 20 }} onClick={() => removeCard(i)} disabled={cards.length === 1}><Trash2 size={13} /></button>
@@ -1389,8 +1392,8 @@ function PasteImportModal({ subjects, onImport, onClose }) {
             <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {preview.slice(0, 10).map((c, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '7px 10px', background: 'var(--bg-card)', borderRadius: 'var(--r-md)', border: '2px solid var(--border)', fontSize: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{c.q}</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{c.a}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{formatMathSymbols(c.q)}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{formatMathSymbols(c.a)}</span>
                 </div>
               ))}
               {preview.length > 10 && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>+{preview.length - 10} more cards</div>}
@@ -1639,8 +1642,8 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {results.missed.map((c, i) => (
               <div key={i} className="rf-reinforce-card">
-                <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{c.q}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{c.a}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}><RichText text={c.q} /></div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}><RichText text={c.a} /></div>
                 <MemoryAidButton front={c.q} back={c.a} subject={selectedSet?.subject} uid={uid} compact />
               </div>
             ))}
@@ -2048,8 +2051,8 @@ function PracticeTab({ mySets, uid }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sessionResults.filter(r => r.rating === 1).map((r, i) => (
                 <div key={i} className="rf-reinforce-card">
-                  <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}>{r.card.q}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{r.card.a}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.84rem', marginBottom: 3 }}><RichText text={r.card.q} /></div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}><RichText text={r.card.a} /></div>
                   <MemoryAidButton front={r.card.q} back={r.card.a} subject={r.subject} uid={uid} compact />
                 </div>
               ))}
@@ -2425,8 +2428,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               </div>
               <div>
                 <label className="label">The question</label>
-                <textarea ref={mkQRef} className="textarea" rows={3} placeholder="Paste or type the exam question here..."
-                  value={mkQ} onChange={e => setMkQ(e.target.value)} />
+                <AutoFormatTextarea ref={mkQRef} className="textarea" rows={3} placeholder="Paste or type the exam question here..."
+                  value={mkQ} onValueChange={setMkQ} />
                 <MathSymbolToolbar fieldRef={mkQRef} value={mkQ} onChange={setMkQ} />
                 <div style={{ marginTop:8 }}>
                   <PhotoCapture uid={uid} kind="question" onExtracted={setMkQ} label="or scan the question" />
@@ -2447,8 +2450,8 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
               </div>
               <div>
                 <label className="label">Your answer</label>
-                <textarea ref={mkAnswerRef} className="textarea" rows={6} placeholder="Type or paste your answer here..."
-                  value={mkAnswer} onChange={e => setMkAnswer(e.target.value)} />
+                <AutoFormatTextarea ref={mkAnswerRef} className="textarea" rows={6} placeholder="Type or paste your answer here..."
+                  value={mkAnswer} onValueChange={setMkAnswer} />
                 <MathSymbolToolbar fieldRef={mkAnswerRef} value={mkAnswer} onChange={setMkAnswer} />
                 <div style={{ marginTop:8 }}>
                   <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="or scan your handwritten answer" />
@@ -2477,7 +2480,7 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                         cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden',
-                          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.question}</div>
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatMathSymbols(h.question)}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                           {h.subject} {h.board} · {h.time}
                         </div>
@@ -3202,10 +3205,10 @@ export default function Study() {
                           {/* Attempt it yourself before checking the mark scheme */}
                           <div className="rf-eq-attempt-box">
                             <div className="rf-eq-section-label" style={{ color: 'var(--text-muted)' }}>Your answer</div>
-                            <textarea className="textarea" style={{ minHeight: 70, fontSize: '0.85rem' }}
+                            <AutoFormatTextarea className="textarea" style={{ minHeight: 70, fontSize: '0.85rem' }}
                               placeholder="Try answering before you check the mark scheme…"
                               value={attempt.answer || ''}
-                              onChange={e => setEqAttemptAnswer(q.id, e.target.value)} />
+                              onValueChange={v => setEqAttemptAnswer(q.id, v)} />
                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                               <button className="btn btn-secondary btn-sm"
                                 onClick={() => markEqAttempt(q.id, qText, q.marks)}
