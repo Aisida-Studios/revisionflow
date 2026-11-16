@@ -10,6 +10,7 @@ import { doc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import toast from 'react-hot-toast'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
 import { Plus, X, CheckCircle2, Trash2 } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import SubjectTile from '../components/illustrations/SubjectTile'
@@ -267,7 +268,7 @@ export default function Mistakes() {
                   </select></div>
                 <div><label className="label">Topic</label><input className="input" placeholder="e.g. Integration" value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}/></div>
               </div>
-              <div><label className="label">What went wrong?</label><textarea ref={descriptionRef} className="textarea" value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Describe the mistake and correct approach…" required/>
+              <div><label className="label">What went wrong?</label><AutoFormatTextarea ref={descriptionRef} className="textarea" value={form.description} onValueChange={v=>setForm(f=>({...f,description:v}))} placeholder="Describe the mistake and correct approach…" required/>
                 <MathSymbolToolbar fieldRef={descriptionRef} value={form.description} onChange={val=>setForm(f=>({...f,description:val}))} />
               </div>
               <div className="grid-2" style={{gap:10}}>
