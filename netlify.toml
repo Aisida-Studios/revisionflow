@@ -1,3 +1,4 @@
+# netlify.toml
 [build]
   command   = "npm install --prefix netlify/functions && npm run build"
   publish   = "dist"
@@ -134,11 +135,11 @@
 #   3. In the Firebase console (Authentication > Settings > Authorised domains) add www.revisionflow.co.uk.
 #   4. Replace <PROJECT_ID> below with the Firebase project id (Netlify cannot read an environment variable inside a
 #      redirect rule), uncomment the rule, and keep it ABOVE the /* catch-all so the catch-all does not swallow it.
-[[redirects]]
-from   = "/__/auth/*"
-to     = "https://revisionflow-fc2f9.firebaseapp.com/__/auth/:splat"
-status = 200
-force  = true
+# [[redirects]]
+#   from   = "/__/auth/*"
+#   to     = "https://<PROJECT_ID>.firebaseapp.com/__/auth/:splat"
+#   status = 200
+#   force  = true
 
 # ── React app — catch-all must be last ───────────────────────────────────────
 [[redirects]]
