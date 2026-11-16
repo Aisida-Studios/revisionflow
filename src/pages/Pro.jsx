@@ -9,7 +9,6 @@ import toast from 'react-hot-toast'
 import './AccountPages.css'
 
 const FREE_FEATURES = [
-  '5 Topic Note generations per day',
   'Up to 20 flashcards per generation',
   '30 AI Advisor messages per day',
   '3 essay feedback requests per day',
@@ -28,7 +27,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   { label: 'AI Tutor — Maths step-by-step solver & English essay feedback', highlight: true },
   { label: 'Predicted grade for every subject', highlight: true },
-  { label: 'Higher AI limits (topic notes, flashcard sets)', highlight: true },
+  { label: 'Higher AI limits (flashcard sets)', highlight: true },
   { label: 'Up to 50 flashcards per generation', highlight: true },
   { label: 'Timed challenge quiz mode', highlight: true },
   { label: '150 AI Advisor messages/day + longer, more detailed study plans', highlight: true },
