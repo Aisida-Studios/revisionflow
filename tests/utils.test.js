@@ -1,3 +1,4 @@
+// tests/utils.test.js
 import assert from 'node:assert/strict'
 import { toLocalDateStr, parseLocalDate, localWeekStartStr, localMonthStartStr, addLocalDays, diffLocalDays } from '../src/utils/localDate.js'
 import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPatch as srvPatch, effectivePeriodXP as srvEffective, periodFields as srvPeriodFields } from '../netlify/functions/lib/periods.js'
@@ -13,6 +14,7 @@ import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
 import { mergeOutcomes, hasOutcomes, planProgressSave, savedProgressFrom, outcomeFromMarkerText } from '../src/utils/progressMerge.js'
 import { answerKey, cardKey, shuffled, pickLocalDistractors, buildOptions, cleanProposed, parseDistractorReply, buildDistractorPrompt, distractorTokens, planBatch, createDistractorTopUp, MAX_TRIES } from '../src/utils/distractors.js'
 import { isTransientAIError, withOneRetry } from '../src/utils/aiErrors.js'
+import { convertMathNotation, formatMathSymbols, autoFormatTyped, stripMarkers } from '../src/utils/richText.js'
 import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
 import { FRESH_REFERRAL_MS, timestampMs, isFreshReferral } from '../src/utils/referralReward.js'
@@ -1422,6 +1424,57 @@ await okAsync('AI errors: a request that fails in a passing way is tried once mo
   calls = 0
   const down = await withOneRetry(async () => { calls++; return { error: 'AI request timed out. Please try again.' } }, { wait: async () => {} })
   assert.equal(calls, 2); assert.ok(down.error)                            // the second failure is returned as it is, not retried again
+})
+
+// ---- rich text (Chat A's richText.js): maths notation and typed-text formatting ----
+ok('rich text: powers, roots and chemical formulae become real symbols, and words with underscores are left alone', () => {
+  assert.equal(convertMathNotation('a^2 + b^2 = c^2'), 'a² + b² = c²')
+  assert.equal(convertMathNotation('x^10 and 10^-3 and x^-1'), 'x¹⁰ and 10⁻³ and x⁻¹')
+  assert.equal(convertMathNotation('x^(2+3)'), 'x⁽²⁺³⁾')
+  assert.equal(convertMathNotation('2^(3^2)'), '2^(3²)')                  // a nested power is left readable rather than guessed at
+  assert.equal(convertMathNotation('sqrt(x+y) and sqrt 9 and sqrtx'), '√(x+y) and √9 and √x')
+  assert.equal(convertMathNotation('H_2O, CO_2 and Ca(OH)_2'), 'H₂O, CO₂ and Ca(OH)₂')
+  assert.equal(convertMathNotation('snake_case_name and a_b_c'), 'snake_case_name and a_b_c')
+  assert.equal(convertMathNotation('H2O'), 'H2O')                           // no underscore, so no change
+})
+ok('rich text: a fraction in a sentence becomes a fraction, but dates, longer numbers and a/b/c do not', () => {
+  assert.equal(convertMathNotation('3/4 of the class and 1/2'), '¾ of the class and ½')
+  assert.equal(convertMathNotation('ratio 1:2 or 1/3'), 'ratio 1:2 or ⅓')
+  for (const keep of ['1/2/2024', '12/25', '0.5/2', '1/20', 'a/b/c']) assert.equal(convertMathNotation(keep), keep)
+})
+ok('rich text: comparison symbols, arrows, multiplication, and the LaTeX an AI sometimes writes', () => {
+  assert.equal(convertMathNotation('<= >= != +- -->'), '≤ ≥ ≠ ± →')
+  assert.equal(convertMathNotation('a -> b'), 'a → b')
+  assert.equal(convertMathNotation('2 * 3'), '2 × 3')
+  assert.equal(convertMathNotation('F = m*a'), 'F = m*a')                    // no spaces around the star: left as it is
+  assert.equal(convertMathNotation('\\(x^2\\) and \\frac{a}{b} and \\sqrt{x}'), 'x² and a/b and √x')
+  assert.equal(convertMathNotation('$x^2$'), 'x²')
+})
+ok('rich text: Greek words become letters only when asked for', () => {
+  assert.equal(convertMathNotation('pi r^2 and theta'), 'pi r² and theta')
+  assert.equal(convertMathNotation('pi r^2 and theta', { greek: true }), 'π r² and θ')
+})
+ok('rich text: code is never touched', () => {
+  assert.equal(formatMathSymbols('`x^2 <= y` and x^2'), '`x^2 <= y` and x²')
+  assert.equal(formatMathSymbols('```\nlet a = b^2 >= 3\n```\nthen x^2'), '```\nlet a = b^2 >= 3\n```\nthen x²')
+  assert.equal(formatMathSymbols('Use `a_1` and a_1'), 'Use `a_1` and a₁')
+  assert.equal(formatMathSymbols(''), ''); assert.equal(formatMathSymbols(null), null)
+})
+ok('rich text: typing leaves the word being typed alone, converts it once it is finished, and converts everything on blur', () => {
+  assert.deepEqual(autoFormatTyped('x^10', 4), { value: 'x^10', caret: 4 })           // x^1 does not become x¹ while the 0 is still coming
+  assert.deepEqual(autoFormatTyped('x^10 ', 5), { value: 'x¹⁰ ', caret: 4 })
+  assert.deepEqual(autoFormatTyped('1/2 of it', 9), { value: '½ of it', caret: 7 })
+  assert.deepEqual(autoFormatTyped('a <= b', 4), { value: 'a <= b', caret: 4 })
+  assert.deepEqual(autoFormatTyped('a <= b', 6), { value: 'a ≤ b', caret: 5 })
+  assert.deepEqual(autoFormatTyped('x^2 and y^3', null), { value: 'x² and y³', caret: null })
+  assert.deepEqual(autoFormatTyped(undefined, 0), { value: undefined, caret: 0 })
+})
+ok('rich text: markers are stripped for plain-text places such as titles and toasts', () => {
+  assert.equal(stripMarkers('**bold** text'), 'bold text')
+  assert.equal(stripMarkers('`code` and __under__'), 'code and under')
+  assert.equal(stripMarkers('## Heading\nbody'), 'Heading\nbody')
+  assert.equal(stripMarkers('snake__case__x'), 'snake__case__x')
+  assert.equal(stripMarkers(null), '')
 })
 
 console.log(`\n${n} checks passed`)
