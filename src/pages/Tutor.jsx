@@ -7,6 +7,7 @@ import { solveMathsProblem, parseMathsSteps, getEssayFeedback } from '../utils/a
 import { autoCompleteQuest } from '../utils/firestore'
 import PhotoCapture from '../components/PhotoCapture'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
+import AutoFormatTextarea from '../components/AutoFormatTextarea'
 import { Calculator, PenTool } from 'lucide-react'
 
 const MATHS_LEVELS = ['GCSE', 'A-Level', 'Further Maths']
@@ -95,8 +96,8 @@ function MathsSolver({ uid, profile }) {
         </div>
 
         <label className="label">The problem</label>
-        <textarea ref={problemFieldRef} className="textarea" rows={3} placeholder="e.g. Solve 2x^2 - 5x - 3 = 0"
-          value={problem} onChange={e => setProblem(e.target.value)} />
+        <AutoFormatTextarea ref={problemFieldRef} className="textarea" rows={3} placeholder="e.g. Solve 2x^2 - 5x - 3 = 0"
+          value={problem} onValueChange={setProblem} />
         <MathSymbolToolbar fieldRef={problemFieldRef} value={problem} onChange={setProblem} />
         <div style={{ marginTop:8 }}>
           <PhotoCapture uid={uid} kind="question" onExtracted={setProblem} label="scans straight into the box above — check it before solving" />
