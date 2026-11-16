@@ -11,6 +11,7 @@ import {
 import { LEVELS, levelFromXP } from '../data/subjects'
 import LoadingScreen from '../components/LoadingScreen'
 import { isFreshReferral } from '../utils/referralReward'
+import { sendVerificationEmail } from '../utils/accountMethods'
 
 const AuthContext = createContext(null)
 
@@ -241,6 +242,9 @@ export function AuthProvider({ children }) {
         }, { merge: true })
       } catch (e) { /* non-fatal: ensureUser will handle this */ }
     }
+    // A new email sign-up is sent its confirmation email straight away. Not awaited and never fatal: the account exists
+    // either way, and the Dashboard banner and Settings can send it again.
+    if (cred?.user?.email) sendVerificationEmail(cred.user).catch(() => {})
     return cred
   }
 
