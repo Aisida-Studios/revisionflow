@@ -15,6 +15,7 @@ import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions, with
 import BoardOptions from '../components/BoardOptions'
 import CourseOptionsModal from '../components/CourseOptionsModal'
 import { PWAInstallCard } from '../components/PWAInstallBanner'
+import SignInMethods from '../components/SignInMethods'
 import SubjectTile from '../components/illustrations/SubjectTile'
 import { AVAILABLE_YEARS, getBoundaries } from '../data/paperDatabase'
 import { gradeColour } from '../utils/calendar'
@@ -249,6 +250,7 @@ export default function Settings() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Email</label>
             <input className="input" value={user?.email || ''} disabled style={{ opacity: 0.6 }} />
+            <SignInMethods />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
