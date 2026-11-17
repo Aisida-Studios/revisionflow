@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { MailCheck, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import AuthNotice from './AuthNotice'
 import { authErrorMessage } from '../utils/authUi'
 import { needsEmailConfirmation, sendVerificationEmail, refreshUser } from '../utils/accountMethods'
 
@@ -85,15 +86,15 @@ export default function EmailVerifyBanner({ style }) {
   return (
     <div className="card" role="region" aria-label="Confirm your email address"
       style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, padding: '12px 8px 12px 16px', marginBottom: 16, ...style }}>
-      <MailCheck size={20} aria-hidden="true" style={{ color: 'var(--accent-light)', flexShrink: 0, marginTop: 2 }} />
+      <MailCheck size={20} aria-hidden="true" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>Confirm your email address</div>
-        <div aria-live="polite" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
+        <div aria-live="polite" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
           {sentTo
             ? 'Sent to ' + sentTo + '. Open it to confirm, and check your spam folder too.'
             : 'It lets you reset your password if you ever forget it. If you just signed up, a message is already on its way to ' + user.email + '.'}
         </div>
-        {error && <div role="alert" style={{ fontSize: '0.78rem', color: 'var(--danger)', marginTop: 4, overflowWrap: 'anywhere' }}>{error}</div>}
+        <AuthNotice message={error} style={{ marginTop: 8 }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
         <button className="btn btn-secondary" style={{ minHeight: 44 }} onClick={send} disabled={busy || wait > 0}>{label}</button>
