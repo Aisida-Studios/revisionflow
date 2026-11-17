@@ -17,7 +17,7 @@ function Row({ title, detail, children }) {
     <div style={ROW_STYLE}>
       <div style={{ flex: '1 1 160px', minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{title}</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', overflowWrap: 'anywhere' }}>{detail}</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflowWrap: 'anywhere' }}>{detail}</div>
       </div>
       {children ? <div style={{ marginLeft: 'auto' }}>{children}</div> : null}
     </div>
@@ -138,7 +138,7 @@ export default function SignInMethods() {
                 <input id="rf-new-password" className="input" type={showPw ? 'text' : 'password'} autoComplete="new-password"
                   value={pw} onChange={e => setPw(e.target.value)} style={{ minHeight: 44, paddingRight: 48, width: '100%' }} />
                 <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? 'Hide password' : 'Show password'}
-                  style={{ position: 'absolute', right: 0, top: 0, minWidth: 44, minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ position: 'absolute', right: 0, top: 0, minWidth: 44, minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
