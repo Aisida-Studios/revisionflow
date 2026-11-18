@@ -12,6 +12,9 @@ import {
 import { collection, getDocs, deleteDoc, doc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useIsPro, ProBadge } from '../components/ProGate'
+import UpgradeNotice from '../components/UpgradeNotice'
+import { useFreeUses } from '../hooks/useFreeUses'
+import { consumeFeatureUse, isUpgradeCode } from '../utils/entitlementsClient'
 import { getMonthDays, getWeekDays, sessionsForDay, downloadICS, parseICS, parseCSV, hoursBySubject, formatDuration } from '../utils/calendar'
 import { filterUpcomingExams, countdownLabel, countdownUrgency } from '../utils/examUtils'
 import { computeTopicRecommendations } from '../utils/recommendations'
@@ -22,7 +25,7 @@ import toast from 'react-hot-toast'
 import { format, addMonths, subMonths, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns'
 import {
   ChevronLeft, ChevronRight, Plus, Download, Upload, Zap, X,
-  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye, Lock,
+  CheckCircle2, Clock, Trash2, AlertTriangle, Check, Eye,
   CalendarDays, GraduationCap, ListTodo, ArrowLeft,
   Lightbulb, AlertCircle, Info, BookOpen, ClipboardCheck,
 } from 'lucide-react'
@@ -67,6 +70,11 @@ export default function Calendar() {
   // are fully controllable — persisted to the profile so the choice survives across devices,
   // same as any other setting. Never auto-schedules anything; see the "Schedule" action below.
   const [recsEnabled,  setRecsEnabled]  = useState(profile?.calendarRecsEnabled !== false)
+  // A free account can look at recommended topics 3 times in all (looking again the same day is free). Ticking "Show
+  // recommendations" is the look, so merely visiting this page never uses one.
+  const recsUses = useFreeUses('recommendedTopics', { enabled: !(isPro || isBeta) })
+  const [recsPermit, setRecsPermit]   = useState(false)
+  const [recsRefusal, setRecsRefusal] = useState('')
   const [recsOnGrid,   setRecsOnGrid]   = useState(profile?.calendarRecsOnGrid !== false)
   const fileRef = useRef()
 
@@ -132,6 +140,18 @@ export default function Calendar() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleFreeRecsToggle(checked) {
+    if (!checked) { setRecsPermit(false); return }
+    const res = await consumeFeatureUse('recommendedTopics')
+    if (res.ok) {
+      recsUses.update({ remainingLifetime: res.remainingLifetime, dailyRemaining: null })
+      setRecsRefusal(''); setRecsEnabled(true); setRecsPermit(true)
+      return
+    }
+    if (isUpgradeCode(res.code)) setRecsRefusal(res.message)      // stays off, and says why
+    else toast.error(res.message || 'Could not check your plan just now. Please try again.')
   }
 
   async function handleToggleRecs(enabled) {
@@ -411,7 +431,7 @@ export default function Calendar() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8)
 
-  const recommendations = (recsEnabled && (isPro || isBeta))
+  const recommendations = (recsEnabled && (isPro || isBeta || recsPermit))
     ? computeTopicRecommendations({ topics, mistakes, examDates: profile?.examDates || [], sessions, limit: 6 })
     : []
   const filteredRecommendations = recsSubjectFilter
@@ -713,29 +733,29 @@ export default function Calendar() {
       <div className="card rf-recs-panel">
         <div className="rf-recs-head">
           <h4><Lightbulb size={16} color="var(--accent)"/> Recommended topics {(isPro || isBeta) && <ProBadge style={{marginLeft:2}}/>}</h4>
-          {(isPro || isBeta) && (
-            <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+          <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+            <label className="rf-recs-toggle">
+              <input type="checkbox" checked={(isPro || isBeta) ? recsEnabled : recsPermit}
+                onChange={e => ((isPro || isBeta) ? handleToggleRecs(e.target.checked) : handleFreeRecsToggle(e.target.checked))} style={{accentColor:'var(--accent)'}}/>
+              Show recommendations
+            </label>
+            {recsEnabled && (isPro || isBeta || recsPermit) && (
               <label className="rf-recs-toggle">
-                <input type="checkbox" checked={recsEnabled} onChange={e=>handleToggleRecs(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
-                Show recommendations
+                <input type="checkbox" checked={recsOnGrid} onChange={e=>handleToggleRecsOnGrid(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
+                Show on today's date
               </label>
-              {recsEnabled && (
-                <label className="rf-recs-toggle">
-                  <input type="checkbox" checked={recsOnGrid} onChange={e=>handleToggleRecsOnGrid(e.target.checked)} style={{accentColor:'var(--accent)'}}/>
-                  Show on today's date
-                </label>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
-        {!(isPro || isBeta) ? (
+        {!(isPro || isBeta || recsPermit) ? (
           <div className="empty-state" style={{padding:'20px 0'}}>
             <Lightbulb size={26} style={{opacity:0.35}}/>
-            <p style={{fontSize:'0.85rem',fontWeight:600}}>Recommended topics is a Pro feature</p>
+            <p style={{fontSize:'0.85rem',fontWeight:600}}>Personalised topic suggestions</p>
             <p style={{fontSize:'0.8rem',maxWidth:340,textAlign:'center'}}>
-              Get personalised topic suggestions based on your confidence ratings, exam dates and logged mistakes.
+              Based on your confidence ratings, exam dates and logged mistakes. Tick "Show recommendations" to take a look: looking again on the same day is free.
             </p>
-            <Link to="/pro" className="btn btn-primary btn-sm"><Lock size={13}/> Upgrade to Pro</Link>
+            {recsUses.label && <p style={{fontSize:'0.75rem',color:'var(--text-muted)',margin:0}}>{recsUses.label}</p>}
+            {recsRefusal && <UpgradeNotice compact message={recsRefusal} />}
           </div>
         ) : recsEnabled && (
           <>
