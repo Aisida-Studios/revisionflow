@@ -28,7 +28,7 @@ import {
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
 import { getDailyAdvice } from '../utils/ai'
 import { applyReferralCodeForExistingUser } from '../utils/referrals'
-import { computeSubjectPredictions } from '../utils/gradeInsights'
+import { computeSubjectPredictions, predictionsVisibleTo } from '../utils/gradeInsights'
 import GradeEstimate from '../components/GradeEstimate'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { filterUpcomingExams, countdownLabel } from '../utils/examUtils'
@@ -412,7 +412,7 @@ export default function Dashboard() {
   const freezesUsed = freshFreezeWeek ? 0 : Math.min(profile?.freezesUsedThisWeek || 0, freezeAllowance)
   const freezesLeft = freezeAllowance - freezesUsed
 
-  const visiblePredictions = isPro ? predictions : predictions.slice(0, 1)
+  const visiblePredictions = predictionsVisibleTo(predictions, isPro)
   const hiddenPredictionCount = Math.max(0, predictions.length - visiblePredictions.length)
 
   async function handleApplyRefCode(e) {
