@@ -33,6 +33,9 @@ import PhotoCapture from '../components/PhotoCapture'
 import MathSymbolToolbar from '../components/MathSymbolToolbar'
 import RichText from '../components/RichText'
 import AutoFormatTextarea from '../components/AutoFormatTextarea'
+import UpgradeNotice from '../components/UpgradeNotice'
+import { useFreeUses } from '../hooks/useFreeUses'
+import { consumeFeatureUse, isUpgradeCode, entitlementMessage } from '../utils/entitlementsClient'
 import { formatMathSymbols } from '../utils/richText'
 import { componentForSubject } from '../components/illustrations/SubjectIllustration'
 import toast from 'react-hot-toast'
@@ -1428,6 +1431,32 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
   const [results,     setResults]     = useState(null)
   const [timedChallenge, setTimedChallenge] = useState(false)
   const [timePerQ,    setTimePerQ]    = useState(20)
+  // Pro and beta have the timed challenge. A free account has 3 in all, counted when a quiz is started with the clock on.
+  const isFree = !(isPro || isBeta)
+  const timedUses = useFreeUses('timedChallenge', { enabled: isFree })
+  const [timedPermit, setTimedPermit]   = useState(false)    // this quiz's clock has been counted (free accounts)
+  const [timedRefusal, setTimedRefusal] = useState('')
+  const [starting, setStarting]         = useState(false)
+  const timedAvailable = isFree && timedUses.known && !timedUses.exhausted
+
+  async function startQuiz() {
+    if (starting) return
+    setTimedRefusal(''); setTimedPermit(false)
+    if (isFree && timedChallenge && quizMode !== 'write') {
+      setStarting(true)
+      try {
+        const res = await consumeFeatureUse('timedChallenge')
+        if (!res.ok) {
+          if (isUpgradeCode(res.code)) { setTimedChallenge(false); setTimedRefusal(res.message) }
+          else toast.error(res.message || 'Could not check your plan just now. Please try again.')
+          return                                           // not started: a check that failed never hands the clock out
+        }
+        timedUses.update(res)
+        setTimedPermit(true)
+      } finally { setStarting(false) }
+    }
+    setStarted(true)
+  }
 
   const [setSource,   setSetSource]   = useState('mine')  // 'mine' | 'public'
   const [publicSets,  setPublicSets]  = useState([])
@@ -1667,7 +1696,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
         </div>
         {quizExitPromptEl}
         {(quizMode === 'mc' || quizMode === 'mixed') && (
-          <TestMode cards={quizCards} pool={selectedSet.cards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta)) ? timePerQ : undefined}
+          <TestMode cards={quizCards} pool={selectedSet.cards} uid={uid} timePerQuestion={(timedChallenge && (isPro || isBeta || timedPermit)) ? timePerQ : undefined}
             setId={selectedSet?.id} onDone={handleQuizDone} onAttempt={recordAttempt} />
         )}
         {quizMode === 'write' && (
@@ -1877,7 +1906,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
             </div>
             {quizMode !== 'write' && (
               <div>
-                {(isPro || isBeta) ? (
+                {(isPro || isBeta || timedAvailable) ? (
                   <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input type="checkbox" checked={timedChallenge} onChange={e => setTimedChallenge(e.target.checked)} />
                     <Timer size={14} style={{ color: 'var(--accent)' }} /> Timed challenge — answer before the clock runs out
@@ -1888,7 +1917,9 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
                     <Timer size={14} /> Timed challenge <ProBadge />
                   </Link>
                 )}
-                {timedChallenge && (isPro || isBeta) && (
+                {timedAvailable && timedUses.label && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{timedUses.label}</div>}
+                {timedRefusal && <div style={{ marginTop: 8 }}><UpgradeNotice compact message={timedRefusal} /></div>}
+                {timedChallenge && (isPro || isBeta || timedAvailable) && (
                   <div className="rf-pill-row" style={{ marginTop: 8 }}>
                     {[10, 15, 20, 30].map(s => (
                       <button key={s} onClick={() => setTimePerQ(s)} className={`rf-pill-btn${timePerQ === s ? ' is-active' : ''}`}>
@@ -1906,7 +1937,7 @@ function QuizTab({ mySets, uid, profile, onSetsChanged }) {
       {/* Start button */}
       {selectedSet && (
         <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
-          onClick={() => setStarted(true)}>
+          onClick={startQuiz} disabled={starting}>
           Start quiz — {Math.min(questionCount, selectedSet.cards?.length || 0)} questions
         </button>
       )}
@@ -2201,6 +2232,13 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
   const [mkLoading, setMkLoading] = React.useState(false)
   const [mkHistory, setMkHistory] = React.useState([])
   const [histIdx,   setHistIdx]   = React.useState(null)
+  // Scanning a HANDWRITTEN answer is one of a free account's 3 photo-scan markings (the question scan and typed answers are not
+  // counted). Pro and beta see no counter.
+  const { isPro, isBeta } = useIsPro()
+  const scanUses = useFreeUses('photoMarking', { enabled: !(isPro || isBeta) })
+  const [scanRefusal, setScanRefusal] = React.useState('')     // the server said the free scans are used up
+  const [scanNote, setScanNote]       = React.useState('')     // a plain message, such as the daily limit
+  const scanLocked = !!scanRefusal || scanUses.exhausted
 
   // Auto-fill board/level from the first subject's own settings
   React.useEffect(() => {
@@ -2454,7 +2492,15 @@ function AnswerMarkerTab({ subjects, profile, uid }) {
                   value={mkAnswer} onValueChange={setMkAnswer} />
                 <MathSymbolToolbar fieldRef={mkAnswerRef} value={mkAnswer} onChange={setMkAnswer} />
                 <div style={{ marginTop:8 }}>
-                  <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="or scan your handwritten answer" />
+                  {scanLocked ? (
+                    <UpgradeNotice compact message={scanRefusal || entitlementMessage('LIFETIME_EXHAUSTED', 'photoMarking')} />
+                  ) : (
+                    <PhotoCapture uid={uid} kind="essay" onExtracted={setMkAnswer} label="or scan your handwritten answer"
+                      feature="photoMarking" onEntitlement={scanUses.update}
+                      onRefused={(res) => { if (isUpgradeCode(res.code)) { setScanRefusal(res.error); setScanNote('') } else setScanNote(res.error) }} />
+                  )}
+                  {!scanLocked && scanUses.label && <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:6 }}>{scanUses.label}</div>}
+                  {scanNote && <p style={{ color:'var(--text-secondary)', fontSize:'0.78rem', marginTop:6 }}>{scanNote}</p>}
                 </div>
               </div>
               <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}
