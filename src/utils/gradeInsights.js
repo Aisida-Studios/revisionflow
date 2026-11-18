@@ -297,3 +297,25 @@ export function computeSubjectPredictions(topics, paperAttempts, quizResults, pr
   }
   return out.sort((a, b) => a.percentage - b.percentage) // weakest subject first - most actionable
 }
+
+// ── Who sees which predicted grade ─────────────────────────────────────────────────────────────────
+// A free account sees the predicted grade for ONE subject: the first in the list, and computeSubjectPredictions sorts weakest
+// first (the most actionable), so which subject that is can change as the student's data does. Pro and beta accounts see every
+// subject (the "multiSubjectPredictions" feature in netlify/functions/lib/entitlementConfig.json). One rule for every place that
+// shows a prediction (Dashboard, the AI Advisor's grade predictor, Emergency Mode), so a locked subject cannot be read somewhere
+// else instead. It is a rule about display only: the calculation above is the same for everyone.
+export const FREE_PREDICTION_SUBJECTS = 1
+
+/** The predictions this account may see. */
+export function predictionsVisibleTo(predictions, isPro) {
+  const list = predictions || []
+  return isPro ? list : list.slice(0, FREE_PREDICTION_SUBJECTS)
+}
+
+/** One subject's prediction for this account: { prediction, locked }. A subject with no prediction yet is neither
+ *  (the page says "not enough data" as it always has); a locked one has prediction null, so nothing can show it by accident. */
+export function predictionAccess(predictions, subject, isPro) {
+  const found = (predictions || []).find(p => p.subject === subject) || null
+  if (!found) return { prediction: null, locked: false }
+  return predictionsVisibleTo(predictions, isPro).includes(found) ? { prediction: found, locked: false } : { prediction: null, locked: true }
+}
