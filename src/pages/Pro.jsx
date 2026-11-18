@@ -5,37 +5,36 @@ import { useAuth } from '../context/AuthContext'
 import { useIsPro } from '../components/ProGate'
 import { auth, getAppCheckHeader } from '../firebase'
 import { Check, Lock, Crown, ArrowLeft, RotateCcw, Code2, GraduationCap } from 'lucide-react'
+import Illustration from '../components/illustrations/Illustration'
 import toast from 'react-hot-toast'
 import './AccountPages.css'
 
 const FREE_FEATURES = [
   'Up to 20 flashcards per generation',
   '30 AI Advisor messages per day',
-  '3 essay feedback requests per day',
-  '5 photo scans per day',
-  '3 quiz modes (no timed challenge)',
+  'AI Tutor to try: 5 Maths solves (2 a day) and 2 essay feedback requests (1 a day), in all',
+  '5 photo scans per day, and 3 handwritten answers marked from a photo, in all',
+  '3 quiz modes, plus 3 timed challenges in all',
+  '1 timetable from the generator (you can always add and edit your own sessions)',
+  '3 looks at recommended topics, in all',
   'Predicted grade for 1 subject',
   '1 streak freeze per week',
-  'Default theme only',
-  '5 profile icons',
-  'Unlimited sessions, papers, topics',
+  'Log as many sessions, papers and topics as you like',
   'All core revision tools — Practice (spaced repetition), Answer Marker, command-word coaching, memory aids',
   'Leaderboard & friends',
   'Public profile page',
 ]
 
 const PRO_FEATURES = [
-  { label: 'AI Tutor — Maths step-by-step solver & English essay feedback', highlight: true },
+  { label: 'AI Tutor beyond the free allowance — Maths solver, English essay feedback, photo-scan marking', highlight: true },
   { label: 'Predicted grade for every subject', highlight: true },
-  { label: 'Higher AI limits (flashcard sets)', highlight: true },
+  { label: 'Higher AI limits', highlight: true },
   { label: 'Up to 50 flashcards per generation', highlight: true },
-  { label: 'Timed challenge quiz mode', highlight: true },
+  { label: 'Timed challenges, recommended topics and timetable generation, as often as you like', highlight: true },
   { label: '150 AI Advisor messages/day + longer, more detailed study plans', highlight: true },
   { label: '15 essay feedback requests per day', highlight: false },
   { label: '25 photo scans per day', highlight: false },
   { label: '3 streak freezes per week', highlight: false },
-  { label: 'All 10 colour themes unlocked', highlight: false },
-  { label: 'All 12 profile icons unlocked', highlight: false },
   { label: 'Everything in the free plan', highlight: false },
   { label: 'Cancel any time', highlight: false },
   { label: 'Supports independent development', highlight: false },
@@ -100,19 +99,15 @@ export default function Pro() {
         background: 'var(--bg-base)', padding: 24,
       }}>
         <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%', background: 'var(--gold)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px',
-          }}>
-            <Crown size={32} color="#fff" />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <Illustration name="achievement" width={220} />
           </div>
           <h2 style={{ marginBottom: 8 }}>
             {isBeta ? 'You have lifetime Pro access' : 'Welcome to RevisionFlow Pro!'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
             {isBeta
-              ? 'As a beta user you have lifetime free access to all Pro features — including all themes, higher AI limits, and timed quiz mode.'
+              ? 'As a beta user you have lifetime free access to all Pro features — including higher AI limits, the AI Tutor beyond the free allowance, and timed challenges.'
               : 'Your Pro subscription is active. All Pro features are now unlocked. Thank you for supporting RevisionFlow!'}
           </p>
           <div className="card gold-card" style={{ textAlign: 'left', marginBottom: 24 }}>
@@ -157,7 +152,7 @@ export default function Pro() {
             Unlock your full potential
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
-            Higher AI limits, all themes, timed quiz mode — everything you need to revise with confidence.
+            Higher AI limits, the full AI Tutor, timed challenges — everything you need to revise with confidence.
           </p>
         </div>
 
