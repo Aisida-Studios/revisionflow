@@ -13,7 +13,7 @@
       "label": "Timed challenge", "single": "timed challenge", "plural": "timed challenges"
     },
     "recommendedTopics": {
-      "lifetime": 3,
+      "lifetime": 3, "oncePerDay": true,
       "label": "Recommended topics", "single": "look at recommended topics", "plural": "looks at recommended topics"
     },
     "photoMarking": {
