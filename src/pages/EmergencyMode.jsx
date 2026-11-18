@@ -13,8 +13,11 @@ import {
   checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, getSessions,
 } from '../utils/firestore'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
-import { computeSubjectPredictions } from '../utils/gradeInsights'
+import { computeSubjectPredictions, predictionAccess } from '../utils/gradeInsights'
 import GradeEstimate from '../components/GradeEstimate'
+import { useIsPro } from '../components/ProGate'
+import UpgradeNotice from '../components/UpgradeNotice'
+import { entitlementMessage } from '../utils/entitlementsClient'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { callAI } from '../utils/ai'
 import { getSubjectQualification } from '../data/subjects'
@@ -97,6 +100,7 @@ function parsePlan(text) {
 
 export default function EmergencyMode() {
   const { profile, user } = useAuth()
+  const { isPro } = useIsPro()
   const navigate = useNavigate()
   const [selectedExam, setSelectedExam] = useState(null)
 
@@ -168,7 +172,11 @@ export default function EmergencyMode() {
     () => (profile ? computeSubjectPredictions(topics, currentPapers, currentQuizzes, profile, { sessions: filterToCurrentSubjectInstance(sessions, profile) }) : []),
     [topics, currentPapers, currentQuizzes, profile, sessions]
   )
-  const prediction = selectedExam ? allPredictions.find(p => p.subject === selectedExam.subject) : null
+  // A free account sees the estimate for one subject only (see predictionsVisibleTo). When the exam's subject is locked,
+  // `prediction` is null, so neither the card nor the plan's AI prompt carries the grade.
+  const access = selectedExam ? predictionAccess(allPredictions, selectedExam.subject, isPro) : { prediction: null, locked: false }
+  const prediction = access.prediction
+  const predictionLocked = access.locked
 
   const subjectTopics = useMemo(() => {
     if (!selectedExam) return []
@@ -325,7 +333,9 @@ export default function EmergencyMode() {
               <Target size={18} style={{ color: 'var(--success)' }} />
               <h3 style={{ margin: 0, fontSize: '1rem' }}>Estimated grade</h3>
             </div>
-            {prediction ? (
+            {predictionLocked ? (
+              <UpgradeNotice compact message={entitlementMessage('PRO_REQUIRED', 'multiSubjectPredictions')} />
+            ) : prediction ? (
               <>
                 <GradeEstimate prediction={prediction} />
               </>
