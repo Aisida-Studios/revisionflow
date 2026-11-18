@@ -13,7 +13,7 @@ import { resolveTargetGrade, targetGradeLabel, targetGradeForPrompt } from '../s
 import { parseSetTitle, setBoardLevel } from '../src/utils/flashcardMeta.js'
 import { mergeOutcomes, hasOutcomes, planProgressSave, savedProgressFrom, outcomeFromMarkerText } from '../src/utils/progressMerge.js'
 import { answerKey, cardKey, shuffled, pickLocalDistractors, buildOptions, cleanProposed, parseDistractorReply, buildDistractorPrompt, distractorTokens, planBatch, createDistractorTopUp, MAX_TRIES } from '../src/utils/distractors.js'
-import { isTransientAIError, withOneRetry } from '../src/utils/aiErrors.js'
+import { isTransientAIError, withOneRetry, aiFailure } from '../src/utils/aiErrors.js'
 import { convertMathNotation, formatMathSymbols, autoFormatTyped, stripMarkers } from '../src/utils/richText.js'
 import { dropOptionsWhenCourseChanges, isSameCourse, isSavedCourse } from '../src/utils/subjectEdits.js'
 import { topicKey, dropHiddenTopics, dropHiddenFromPapers } from '../src/utils/topicVisibility.js'
@@ -1234,6 +1234,37 @@ await okAsync('the fake database: tx.update changes only the fields it is given 
   assert.equal(db.read('users/u1/usage/missing'), undefined)
 })
 
+// ---- free uses: a once-a-day feature (recommended topics) ----
+ok('free uses: a once-a-day feature costs one use for the first look of a day and nothing for the rest of that day', () => {
+  const day = '2026-11-16'
+  const first = ent.decideConsume('recommendedTopics', null, { day })
+  assert.equal(first.allowed, true); assert.equal(first.repeat, undefined); assert.equal(first.remainingLifetime, 2)
+  assert.deepEqual(first.write, { recommendedTopics: 1, daily: { recommendedTopics: { day, n: 1 } } })
+  const doc = { recommendedTopics: 1, daily: { recommendedTopics: { day, n: 1 } } }
+  const again = ent.decideConsume('recommendedTopics', doc, { day })
+  assert.equal(again.allowed, true); assert.equal(again.repeat, true); assert.equal(again.write, undefined); assert.equal(again.remainingLifetime, 2)
+  const tomorrow = ent.decideConsume('recommendedTopics', doc, { day: '2026-11-17' })
+  assert.equal(tomorrow.allowed, true); assert.equal(tomorrow.repeat, undefined); assert.equal(tomorrow.remainingLifetime, 1)
+})
+ok('free uses: a once-a-day feature stays open for the day it was last paid for, and closes once the allowance is gone', () => {
+  const day = '2026-11-16'
+  const spentToday = { recommendedTopics: 3, daily: { recommendedTopics: { day, n: 1 } } }
+  assert.equal(ent.decideConsume('recommendedTopics', spentToday, { day }).allowed, true)           // the third look was today: still open today
+  const spentEarlier = { recommendedTopics: 3, daily: { recommendedTopics: { day: '2026-11-15', n: 1 } } }
+  const closed = ent.decideConsume('recommendedTopics', spentEarlier, { day })
+  assert.equal(closed.allowed, false); assert.equal(closed.code, 'LIFETIME_EXHAUSTED')
+  assert.equal(ent.decideConsume('recommendedTopics', spentEarlier, { pro: true, day }).pro, true)
+})
+await okAsync('free uses: opening the panel twice in a day uses one of the three, and the stored count agrees', async () => {
+  const db = makeFakeFirestore({ 'users/u1': {} })
+  const at = (h, d = 16) => ({ now: new Date(Date.UTC(2026, 10, d, h)) })
+  const a = await ent.consumeLifetimeUse(db, 'u1', 'recommendedTopics', at(9))
+  const b = await ent.consumeLifetimeUse(db, 'u1', 'recommendedTopics', at(20))
+  assert.equal(a.remainingLifetime, 2); assert.equal(b.repeat, true); assert.equal(b.remainingLifetime, 2)
+  assert.equal(db.read('users/u1/usage/lifetime').recommendedTopics, 1)
+  const c = await ent.consumeLifetimeUse(db, 'u1', 'recommendedTopics', at(9, 17))
+  assert.equal(c.remainingLifetime, 1); assert.equal(db.read('users/u1/usage/lifetime').recommendedTopics, 2)
+})
 // ---- quiz options: real answers at once, AI distractors in small batches ahead of the student ----
 const dq = (a, q = 'Q: ' + a) => ({ q, a })
 ok('quiz options: a real-answer option is never the right answer, a repeat, or a near copy of it', () => {
@@ -1410,6 +1441,13 @@ ok('AI errors: only the kind that passes is worth another try', () => {
   for (const m of ['AI request timed out. Please try again.', 'Could not reach the AI service. Check your internet connection.', 'AI returned an empty response. Please try again.',
     'Server returned a non-JSON response (HTTP 502) - most likely the request ran too long and the function was cut off before finishing.', 'AI help is temporarily unavailable. Please try again in a moment.', 'AI request failed (503). Please try again.']) assert.equal(isTransientAIError(m), true, m)
   for (const m of ["You've used today's AI help. More opens up tomorrow.", 'AI request failed (429). Please try again.', 'Please sign in to use AI features.', 'AI request failed (400). Please try again.', '', null, undefined]) assert.equal(isTransientAIError(m), false, String(m))
+})
+ok('AI errors: a refusal reaches the app with its code and counts, and a plain failure has none', () => {
+  assert.deepEqual(aiFailure(402, { error: 'You\'ve used all 5 of your free Maths solves.', code: 'LIFETIME_EXHAUSTED', remainingLifetime: 0, dailyRemaining: null }),
+    { error: 'You\'ve used all 5 of your free Maths solves.', code: 'LIFETIME_EXHAUSTED', remainingLifetime: 0 })
+  assert.deepEqual(aiFailure(429, { error: 'Used today.', code: 'DAILY_LIMIT', remainingLifetime: 3, dailyRemaining: 0 }), { error: 'Used today.', code: 'DAILY_LIMIT', remainingLifetime: 3, dailyRemaining: 0 })
+  assert.deepEqual(aiFailure(429, {}), { error: "You've used today's AI help. More opens up tomorrow." })
+  assert.deepEqual(aiFailure(500, null), { error: 'AI request failed (500). Please try again.' })
 })
 await okAsync('AI errors: a request that fails in a passing way is tried once more, and nothing else is repeated', async () => {
   let calls = 0
