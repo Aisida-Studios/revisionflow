@@ -68,11 +68,16 @@ function decideConsume(feature, doc, { pro = false, day = utcDay() } = {}) {
   if (!f) return { allowed: false, code: 'UNKNOWN_FEATURE', message: messageFor('UNKNOWN_FEATURE', feature) }
   if (pro) return { allowed: true, pro: true, usedLifetime: null, remainingLifetime: null, dailyRemaining: null }
   const s = describeStatus(feature, doc, { pro: false, day })
+  // A once-a-day feature (the recommended-topics panel) costs one use for the first look on a given day. Looking again that
+  // day costs nothing, even when the allowance has just run out: the student has already paid for today.
+  const rec = doc && doc.daily && doc.daily[feature]
+  if (f.oncePerDay && rec && rec.day === day && nonNeg(rec.n) > 0) return { allowed: true, repeat: true, usedLifetime: s.usedLifetime, remainingLifetime: s.remainingLifetime, dailyRemaining: null }
   if (s.remainingLifetime <= 0) return { allowed: false, code: DONE, message: messageFor(DONE, feature), usedLifetime: s.usedLifetime, remainingLifetime: 0, dailyRemaining: s.dailyRemaining }
   if (f.daily && s.dailyUsed >= f.daily) return { allowed: false, code: DAILY, message: messageFor(DAILY, feature), usedLifetime: s.usedLifetime, remainingLifetime: s.remainingLifetime, dailyRemaining: 0 }
   const usedLifetime = s.usedLifetime + 1
   const write = { [feature]: usedLifetime }
   if (f.daily) write.daily = { [feature]: { day, n: s.dailyUsed + 1 } }
+  else if (f.oncePerDay) write.daily = { [feature]: { day, n: 1 } }
   return { allowed: true, usedLifetime, remainingLifetime: f.lifetime - usedLifetime, dailyRemaining: f.daily ? f.daily - (s.dailyUsed + 1) : null, write }
 }
 
