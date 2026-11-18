@@ -1,7 +1,10 @@
 // src/pages/Tutor.jsx
 import React, { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import ProGate from '../components/ProGate'
+import { useIsPro } from '../components/ProGate'
+import UpgradeNotice from '../components/UpgradeNotice'
+import { useFreeUses } from '../hooks/useFreeUses'
+import { isUpgradeCode, entitlementMessage } from '../utils/entitlementsClient'
 import AIOutput from '../components/AIOutput'
 import { solveMathsProblem, parseMathsSteps, getEssayFeedback } from '../utils/ai'
 import { autoCompleteQuest } from '../utils/firestore'
@@ -32,19 +35,18 @@ export default function Tutor({ embedded = false }) {
       </div>
       )}
 
-      <ProGate feature="the AI Tutor">
-        <div className="tabs" style={{ marginBottom:20, padding:4, flexWrap:'wrap' }}>
-          <button className={'tab' + (mode==='maths' ? ' active' : '')} onClick={() => setMode('maths')}>
-            <Calculator size={15} /> Maths
-          </button>
-          <button className={'tab' + (mode==='english' ? ' active' : '')} onClick={() => setMode('english')}>
-            <PenTool size={15} /> English
-          </button>
-        </div>
+      {/* Open to everyone: a free account has a small allowance of each (shown under the button), and Pro has more. */}
+      <div className="tabs" style={{ marginBottom:20, padding:4, flexWrap:'wrap' }}>
+        <button className={'tab' + (mode==='maths' ? ' active' : '')} onClick={() => setMode('maths')}>
+          <Calculator size={15} /> Maths
+        </button>
+        <button className={'tab' + (mode==='english' ? ' active' : '')} onClick={() => setMode('english')}>
+          <PenTool size={15} /> English
+        </button>
+      </div>
 
-        {mode === 'maths' && <MathsSolver uid={user?.uid} profile={profile} />}
-        {mode === 'english' && <EssayFeedback uid={user?.uid} profile={profile} />}
-      </ProGate>
+      {mode === 'maths' && <MathsSolver uid={user?.uid} profile={profile} />}
+      {mode === 'english' && <EssayFeedback uid={user?.uid} profile={profile} />}
     </div>
   )
 }
@@ -62,13 +64,22 @@ function MathsSolver({ uid, profile }) {
   const [finalAnswer, setFinalAnswer] = useState('')
   const [revealed, setRevealed] = useState(0)
   const [error, setError] = useState('')
+  // A free account has 5 Maths solves in all (2 a day); Pro and beta see no counter.
+  const { isPro, isBeta } = useIsPro()
+  const uses = useFreeUses('mathsSolver', { enabled: !(isPro || isBeta) })
+  const [refusal, setRefusal] = useState('')          // set when the server says the free solves are used up
 
   async function handleSolve() {
     if (!problem.trim()) return
-    setLoading(true); setError(''); setSteps(null); setFinalAnswer(''); setRevealed(0)
+    setLoading(true); setError(''); setRefusal(''); setSteps(null); setFinalAnswer(''); setRevealed(0)
     try {
       const res = await solveMathsProblem(problem.trim(), level, uid)
-      if (res.error) { setError(res.error); return }
+      uses.update(res.entitlement)
+      if (res.error) {
+        if (isUpgradeCode(res.code)) setRefusal(res.error)        // used up: offer Pro. A daily limit is just said in words.
+        else setError(res.error)
+        return
+      }
       const parsed = parseMathsSteps(res.text || '')
       if (!parsed.steps.length) {
         setError('Could not read a step-by-step solution from that — try rephrasing the problem')
@@ -103,9 +114,14 @@ function MathsSolver({ uid, profile }) {
           <PhotoCapture uid={uid} kind="question" onExtracted={setProblem} label="scans straight into the box above — check it before solving" />
         </div>
 
-        <button className="btn btn-primary" style={{ marginTop:10 }} onClick={handleSolve} disabled={loading || !problem.trim()}>
-          {loading ? 'Working it out…' : 'Solve step by step'}
-        </button>
+        {(uses.exhausted || refusal) ? (
+          <div style={{ marginTop:10 }}><UpgradeNotice compact message={refusal || entitlementMessage('LIFETIME_EXHAUSTED', 'mathsSolver')} /></div>
+        ) : (
+          <button className="btn btn-primary" style={{ marginTop:10 }} onClick={handleSolve} disabled={loading || !problem.trim()}>
+            {loading ? 'Working it out…' : 'Solve step by step'}
+          </button>
+        )}
+        {uses.label && !uses.exhausted && !refusal && <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', margin:'8px 0 0' }}>{uses.label}</p>}
         {error && <p style={{ color:'var(--danger)', fontSize:'0.82rem', marginTop:8 }}>{error}</p>}
       </div>
 
@@ -152,15 +168,24 @@ function EssayFeedback({ uid, profile }) {
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [error, setError] = useState('')
+  // A free account has 2 essay feedback requests in all (1 a day); Pro and beta see no counter.
+  const { isPro, isBeta } = useIsPro()
+  const uses = useFreeUses('essayFeedback', { enabled: !(isPro || isBeta) })
+  const [refusal, setRefusal] = useState('')
 
   const overLimit = essay.length > MAX_ESSAY_CHARS
 
   async function handleGetFeedback() {
     if (!essay.trim() || overLimit) return
-    setLoading(true); setError(''); setFeedback('')
+    setLoading(true); setError(''); setRefusal(''); setFeedback('')
     try {
       const res = await getEssayFeedback(essay.trim(), essayType, level, uid)
-      if (res.error) { setError(res.error); return }
+      uses.update(res.entitlement)
+      if (res.error) {
+        if (isUpgradeCode(res.code)) setRefusal(res.error)
+        else setError(res.error)
+        return
+      }
       setFeedback(res.text || '')
       if (uid) await autoCompleteQuest(uid, 'use_ai')
     } catch (e) {
@@ -203,9 +228,14 @@ function EssayFeedback({ uid, profile }) {
           </span>
         </div>
 
-        <button className="btn btn-primary" style={{ marginTop:10 }} onClick={handleGetFeedback} disabled={loading || !essay.trim() || overLimit}>
-          {loading ? 'Reading your essay…' : 'Get feedback'}
-        </button>
+        {(uses.exhausted || refusal) ? (
+          <div style={{ marginTop:10 }}><UpgradeNotice compact message={refusal || entitlementMessage('LIFETIME_EXHAUSTED', 'essayFeedback')} /></div>
+        ) : (
+          <button className="btn btn-primary" style={{ marginTop:10 }} onClick={handleGetFeedback} disabled={loading || !essay.trim() || overLimit}>
+            {loading ? 'Reading your essay…' : 'Get feedback'}
+          </button>
+        )}
+        {uses.label && !uses.exhausted && !refusal && <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', margin:'8px 0 0' }}>{uses.label}</p>}
         {error && <p style={{ color:'var(--danger)', fontSize:'0.82rem', marginTop:8 }}>{error}</p>}
       </div>
 
