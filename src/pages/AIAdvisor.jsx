@@ -12,7 +12,9 @@ import {
 } from '../utils/ai'
 import { checkAndAwardBadge, getTopicsWithConfidence, getPaperAttempts, getQuizResults, getMistakes, getSessions } from '../utils/firestore'
 import { filterToCurrentSubjectInstance } from '../utils/subjectKey'
-import { computeSubjectPredictions } from '../utils/gradeInsights'
+import { computeSubjectPredictions, predictionAccess } from '../utils/gradeInsights'
+import UpgradeNotice from '../components/UpgradeNotice'
+import { entitlementMessage } from '../utils/entitlementsClient'
 import GradeEstimate from '../components/GradeEstimate'
 import { computeTopicRecommendations } from '../utils/recommendations'
 import { useIsPro } from '../components/ProGate'
@@ -79,6 +81,7 @@ export default function AIAdvisor() {
   // Grade predictor
   const [gradeSubj,   setGradeSubj]   = useState('')
   const [gradePred,   setGradePred]   = useState(null)
+  const [gradeLocked, setGradeLocked] = useState(false)      // a free account asked for a subject whose estimate is Pro-only
 
   // Next topic suggestion
   const [nextSubj,    setNextSubj]    = useState('')
@@ -244,7 +247,8 @@ export default function AIAdvisor() {
 
   function handleGradePredict() {
     if (!gradeSubj) return
-    setGradePred(allPredictions.find(p => p.subject === gradeSubj) || null)
+    const access = predictionAccess(allPredictions, gradeSubj, isPro)
+    setGradePred(access.prediction); setGradeLocked(access.locked)
   }
 
   function handleNextTopic() {
@@ -378,7 +382,7 @@ export default function AIAdvisor() {
             <p style={{marginBottom:16,fontSize:'0.875rem'}}>Worked out from your own paper scores, quizzes and topic ratings, with the working shown.</p>
             <div className="form-group">
               <label className="label">Subject</label>
-              <select className="select" value={gradeSubj} onChange={e=>setGradeSubj(e.target.value)}>
+              <select className="select" value={gradeSubj} onChange={e=>{ setGradeSubj(e.target.value); setGradeLocked(false) }}>
                 <option value="">Select subject…</option>
                 {subjects.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
@@ -393,7 +397,12 @@ export default function AIAdvisor() {
                 <GradeEstimate prediction={gradePred} />
               </div>
             )}
-            {gradeSubj && !gradePred && (
+            {gradeLocked && (
+              <div className="card" style={{padding:'20px 22px'}}>
+                <UpgradeNotice message={entitlementMessage('PRO_REQUIRED', 'multiSubjectPredictions')} />
+              </div>
+            )}
+            {gradeSubj && !gradePred && !gradeLocked && (
               <div className="ap-tool-output-empty">
                 <Target size={30} style={{opacity:0.3}} />
                 Not enough data yet for {gradeSubj} — log a past paper, quiz, or rate a few topics' confidence first
