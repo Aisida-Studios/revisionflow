@@ -21,3 +21,16 @@ export async function withOneRetry(run, { delay = 1500, wait = (ms) => new Promi
   }
   return res
 }
+
+// A refused or failed AI request as the app receives it: { error } always, and for a FREE-USE feature (Maths solver, essay
+// feedback, photo-scan marking) also { code, remainingLifetime, dailyRemaining }, so a page can show the right upgrade or wait
+// message instead of a bare string. The codes (LIFETIME_EXHAUSTED, PRO_REQUIRED, DAILY_LIMIT) come from
+// netlify/functions/lib/entitlementLogic.js; isUpgradeCode() in utils/entitlementsCore.js says which of them mean "offer Pro".
+export function aiFailure(status, data) {
+  const d = data || {}
+  const out = { error: d.error || (status === 429 ? "You've used today's AI help. More opens up tomorrow." : `AI request failed (${status}). Please try again.`) }
+  if (d.code) out.code = d.code
+  if (d.remainingLifetime != null) out.remainingLifetime = d.remainingLifetime
+  if (d.dailyRemaining != null) out.dailyRemaining = d.dailyRemaining
+  return out
+}
