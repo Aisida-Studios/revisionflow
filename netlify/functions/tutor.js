@@ -56,6 +56,14 @@ async function getDb() {
   return admin.firestore()
 }
 
+// ── Free uses for the Maths solver, essay feedback and photo-scan marking ─────────────────────────────────
+// A free account has a lifetime allowance of these (and a daily one for two of them): see lib/entitlementConfig.json.
+// They are counted HERE, in the same request as the AI call, so the browser cannot skip the count. Pro and beta accounts are
+// never counted. A use is taken before the AI runs and given back if the request fails for any reason that was not the
+// student's (see giveBack below).
+const ent = require('./lib/entitlementLogic')
+const COUNTED_FEATURES = new Set(['mathsSolver', 'essayFeedback', 'photoMarking'])
+
 // ── Auth verification ─────────────────────────────────────────────────────────
 // Extracts the Bearer token from the Authorization header and verifies it with
 // Firebase Admin. Returns the decoded token (its .uid is the only uid this file trusts).
@@ -296,6 +304,28 @@ module.exports.handler = async function(event) {
     return respond(400, { error: 'That image is too large. Try a lower-resolution photo.' })
   }
 
+  // ── Free uses: take one now, before anything is paid for ──────────────────────────────────────────────
+  // `counted` is set only for a free account using a counted feature. Every way out of this request after this point that is
+  // not a successful answer gives the use back, and it is awaited: a refund that is not awaited can be lost when the function
+  // returns. A request with no feature tag is not counted; the general daily pool below still limits it.
+  let counted = null
+  const giveBack = async () => {
+    if (!counted) return
+    const f = counted.feature
+    counted = null
+    try { await ent.refundLifetimeUse(await getDb(), uid, f) } catch (e) { console.error('[tutor] could not give a free use back:', e.message) }
+  }
+  if (COUNTED_FEATURES.has(feature)) {
+    try {
+      const d = await ent.consumeLifetimeUse(await getDb(), uid, feature)
+      if (!d.allowed) { const r = ent.denialResponse(d); return respond(r.status, r.body) }
+      if (!d.pro) counted = { feature, remainingLifetime: d.remainingLifetime, dailyRemaining: d.dailyRemaining }
+    } catch (e) {
+      console.error('[tutor] free-use count failed:', e.message)
+      return respond(503, { error: 'AI help is temporarily unavailable. Please try again in a moment.', code: 'TEMPORARILY_UNAVAILABLE' })
+    }
+  }
+
   // ── Daily allowance check (Firestore-backed, survives cold starts) ────────
   // Photo scans, AI Advisor chat, and essay feedback each have their own dedicated
   // allowance (checkImageRateLimit/checkChatLimit/checkEssayLimit) — those three are the
@@ -314,17 +344,20 @@ module.exports.handler = async function(event) {
     // is NO. This used to fail OPEN, which made every AI call free and uncounted for as long as the check was failing, and
     // a student could provoke that by firing many requests at once. A short outage is better than an open tap to a paid API.
     console.error('[tutor] allowance check failed:', e.message)
+    await giveBack()
     return respond(503, { error: 'AI help is temporarily unavailable. Please try again in a moment.', code: 'TEMPORARILY_UNAVAILABLE' })
   }
   const allowanceMs = Date.now() - allowanceStart
 
   if (!rateCheck.allowed) {
+    await giveBack()
     return respond(429, { error: rateCheck.reason, code: 'DAILY_LIMIT' })
   }
 
   const apiKey = process.env.MISTRAL_API_KEY
   if (!apiKey) {
     console.error('[tutor] MISTRAL_API_KEY not set in Netlify environment variables')
+    await giveBack()
     return respond(500, { error: 'AI service not configured.' })
   }
 
@@ -363,6 +396,7 @@ module.exports.handler = async function(event) {
   const controller    = new AbortController()
   const timeoutId     = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT)
   const mistralStart  = Date.now()
+  let succeeded = false
 
   try {
     let mistralRes = await callMistral(apiKey, fullMessages, maxTokens, controller)
@@ -412,10 +446,13 @@ module.exports.handler = async function(event) {
 
     console.log('[tutor] feature=' + (feature || 'general') + ' auth=' + authMs + 'ms allowance=' + allowanceMs + 'ms mistral=' + (Date.now() - mistralStart) + 'ms total=' + (Date.now() - requestStart) + 'ms' + (retried ? ' retried=true' : ''))
 
+    succeeded = true
     return respond(200, {
       text,
       provider:  'mistral',
       remaining: rateCheck.isPro ? null : rateCheck.remaining,
+      // What is left of a free allowance, for the app to show. Absent for Pro, beta and uncounted requests.
+      ...(counted ? { entitlement: { feature: counted.feature, remainingLifetime: counted.remainingLifetime, dailyRemaining: counted.dailyRemaining } } : {}),
     })
   } catch(e) {
     if (e.name === 'AbortError') {
@@ -426,5 +463,6 @@ module.exports.handler = async function(event) {
     return respond(503, { error: 'Could not reach the AI service. Check your connection.' })
   } finally {
     clearTimeout(timeoutId)
+    if (!succeeded) await giveBack()
   }
 }
