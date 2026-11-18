@@ -7,7 +7,7 @@ import { auth, getAppCheckHeader } from '../firebase'
 import { daysUntilExam } from './examUtils'
 import { targetGradeForPrompt } from './gradeTargets'
 import { buildDistractorPrompt, parseDistractorReply, distractorTokens } from './distractors'
-import { isTransientAIError, withOneRetry } from './aiErrors'
+import { isTransientAIError, withOneRetry, aiFailure } from './aiErrors'
 
 const AI_ENDPOINT = '/api/tutor'
 
@@ -83,18 +83,12 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 2000, ui
 
     const data = await res.json()
 
-    if (!res.ok) {
-      // 429 = daily allowance used up for this feature
-      if (res.status === 429) {
-        return { error: data.error || "You've used today's AI help. More opens up tomorrow." }
-      }
-      return { error: data.error || `AI request failed (${res.status}). Please try again.` }
-    }
+    if (!res.ok) return aiFailure(res.status, data)      // 429 = a daily allowance used up; a free-use refusal also carries its code
 
     if (!data.text) return { error: 'AI returned an empty response. Please try again.' }
     // Record streak for any successful AI interaction
     if (uid) recordActivityStreak(uid).catch(() => {})
-    return { text: data.text, provider: 'mistral', remaining: data.remaining }
+    return { text: data.text, provider: 'mistral', remaining: data.remaining, entitlement: data.entitlement || null }
   } catch (e) {
     clearTimeout(timeoutId)
     if (e.name === 'AbortError') {
@@ -110,7 +104,7 @@ export async function callAI(prompt, systemPrompt = SYSTEM, maxTokens = 2000, ui
 // just also sends imageBase64 through to tutor.js. Kept as a separate function rather
 // than adding an optional param to callAI so none of its ~15 existing text-only callers
 // need to change, and so it's obvious at a glance which calls actually send an image. ──
-export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM, maxTokens = 2000, uid = null) {
+export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM, maxTokens = 2000, uid = null, feature = null) {
   const headers = await authedHeaders()
   if (!headers) return { error: 'Please sign in to use AI features.' }
   const controller = new AbortController()
@@ -125,6 +119,7 @@ export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM
         systemPrompt: systemPrompt || SYSTEM,
         maxTokens,
         imageBase64,
+        feature,
       }),
     })
     clearTimeout(timeoutId)
@@ -136,16 +131,11 @@ export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM
 
     const data = await res.json()
 
-    if (!res.ok) {
-      if (res.status === 429) {
-        return { error: data.error || "You've used today's AI help. More opens up tomorrow." }
-      }
-      return { error: data.error || `AI request failed (${res.status}). Please try again.` }
-    }
+    if (!res.ok) return aiFailure(res.status, data)
 
     if (!data.text) return { error: 'AI returned an empty response. Please try again.' }
     if (uid) recordActivityStreak(uid).catch(() => {})
-    return { text: data.text, provider: 'mistral', remaining: data.remaining }
+    return { text: data.text, provider: 'mistral', remaining: data.remaining, entitlement: data.entitlement || null }
   } catch (e) {
     clearTimeout(timeoutId)
     if (e.name === 'AbortError') {
@@ -161,7 +151,7 @@ export async function callAIWithImage(prompt, imageBase64, systemPrompt = SYSTEM
 // for feeding into the maths solver or answer marker) or a handwritten essay (transcribed
 // with an explicit best-effort guess at unclear handwriting, per the brief — messy essays
 // still get a full transcription with [unclear] markers rather than gaps).
-export async function extractTextFromImage(imageBase64, kind, uid) {
+export async function extractTextFromImage(imageBase64, kind, uid, feature = null) {
   const isEssay = kind === 'essay'
   const sys = isEssay
     ? `You transcribe handwritten student essays from photos. Handwriting is often messy — make your best educated guess at unclear words from context rather than leaving them out. If a word is genuinely illegible, write [unclear] in its place rather than guessing wildly. Return ONLY the transcribed text, no commentary, no "Here's the transcription:" preamble.`
@@ -169,7 +159,7 @@ export async function extractTextFromImage(imageBase64, kind, uid) {
   const prompt = isEssay
     ? 'Transcribe the handwritten essay in this image as accurately as possible.'
     : 'Transcribe the question or problem shown in this image exactly.'
-  return callAIWithImage(prompt, imageBase64, sys, 1500, uid)
+  return callAIWithImage(prompt, imageBase64, sys, 1500, uid, feature)
 }
 export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null, feature = null, maxTokens = 2000) {
   const headers = await authedHeaders()
@@ -191,14 +181,9 @@ export async function callAIChat(messages, systemPrompt = SYSTEM, uid = null, fe
     }
 
     const data = await res.json()
-    if (!res.ok) {
-      if (res.status === 429) {
-        return { error: data.error || "You've used today's AI help. More opens up tomorrow." }
-      }
-      return { error: data.error || `AI request failed (${res.status}). Please try again.` }
-    }
+    if (!res.ok) return aiFailure(res.status, data)
     if (!data.text) return { error: 'AI returned an empty response. Please try again.' }
-    return { text: data.text, provider: 'mistral', remaining: data.remaining }
+    return { text: data.text, provider: 'mistral', remaining: data.remaining, entitlement: data.entitlement || null }
   } catch (e) {
     clearTimeout(timeoutId)
     if (e.name === 'AbortError') {
@@ -774,7 +759,7 @@ Rules:
 - Explain the reasoning at each step, not just the calculation
 - If there's a common mistake students make on this type of problem, mention it briefly in the relevant step`
 
-  return callAI(prompt, sys, 1800, uid)
+  return callAI(prompt, sys, 1800, uid, 'mathsSolver')
 }
 
 // Splits a solveMathsProblem response into individual steps for progressive reveal, plus
