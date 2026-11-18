@@ -42,7 +42,10 @@ function compressImage(file) {
   })
 }
 
-export default function PhotoCapture({ uid, kind, onExtracted, label }) {
+// `feature` tags a scan that is one of a free account's counted uses (photo-scan marking); the server counts it and answers with
+// what is left (onEntitlement) or refuses it (onRefused, with the code, so the page can show its upgrade notice). With no
+// onRefused a refusal is just shown here as text.
+export default function PhotoCapture({ uid, kind, onExtracted, label, feature = null, onEntitlement, onRefused }) {
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -65,8 +68,12 @@ export default function PhotoCapture({ uid, kind, onExtracted, label }) {
     try {
       const dataUrl = await compressImage(file)
       setPreview(dataUrl)
-      const res = await extractTextFromImage(dataUrl, kind, uid)
-      if (res.error) { setError(res.error); return }
+      const res = await extractTextFromImage(dataUrl, kind, uid, feature)
+      if (res.entitlement && onEntitlement) onEntitlement(res.entitlement)
+      if (res.error) {
+        if (res.code && onRefused) { setPreview(null); onRefused(res); return }
+        setError(res.error); return
+      }
       const text = (res.text || '').trim()
       if (!text) { setError('Could not read any text from that photo \u2014 try a clearer or better-lit shot'); return }
       onExtracted(text)
