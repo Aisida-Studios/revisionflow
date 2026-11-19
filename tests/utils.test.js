@@ -31,7 +31,7 @@ import { groupsFromQuestions } from '../src/utils/paperQuestions.js'
 import { buildQuestions, distributionTotal, validateDistribution, validateScores, lostMarks, questionsWithLostMarks, maxQuestionMarks } from '../src/utils/paperQuestions.js'
 import { summariseMistakes } from '../src/utils/mistakeStats.js'
 import { sessionMinutes, isMeasuredSession } from '../src/utils/sessionTime.js'
-import { computeSubjectPredictions, gradeToPercent, percentToGrade, PREDICTION_WEIGHTS, predictionsVisibleTo, predictionAccess, FREE_PREDICTION_SUBJECTS } from '../src/utils/gradeInsights.js'
+import { computeSubjectPredictions, gradeToPercent, percentToGrade, PREDICTION_WEIGHTS, predictionsVisibleTo, FREE_PREDICTION_SUBJECTS } from '../src/utils/gradeInsights.js'
 import { computeTopicRecommendations, RECOMMENDATION_WEIGHTS } from '../src/utils/recommendations.js'
 
 let n = 0
@@ -1235,16 +1235,12 @@ await okAsync('the fake database: tx.update changes only the fields it is given 
 })
 
 // ---- predicted grades: who sees which ----
-ok('predicted grades: a free account sees one subject (the first in the list), Pro and beta see all, and a locked subject yields no prediction anywhere', () => {
+ok('predicted grades: on the Dashboard a free account sees one subject (the first in the list) and Pro and beta see all', () => {
   const preds = [{ subject: 'Maths', grade: '6' }, { subject: 'Biology', grade: '5' }, { subject: 'History', grade: '4' }]
   assert.equal(FREE_PREDICTION_SUBJECTS, 1)
   assert.deepEqual(predictionsVisibleTo(preds, false).map(p => p.subject), ['Maths'])
   assert.deepEqual(predictionsVisibleTo(preds, true).map(p => p.subject), ['Maths', 'Biology', 'History'])
-  assert.deepEqual(predictionAccess(preds, 'Maths', false), { prediction: preds[0], locked: false })
-  assert.deepEqual(predictionAccess(preds, 'Biology', false), { prediction: null, locked: true })      // locked: nothing to show by accident
-  assert.deepEqual(predictionAccess(preds, 'Biology', true), { prediction: preds[1], locked: false })
-  assert.deepEqual(predictionAccess(preds, 'Art', false), { prediction: null, locked: false })           // no prediction yet is not a lock
-  assert.deepEqual(predictionsVisibleTo(undefined, false), []); assert.deepEqual(predictionAccess(null, 'Maths', false), { prediction: null, locked: false })
+  assert.deepEqual(predictionsVisibleTo(undefined, false), []); assert.deepEqual(predictionsVisibleTo(null, true), [])
 })
 // ---- free uses: a once-a-day feature (recommended topics) ----
 ok('free uses: a once-a-day feature costs one use for the first look of a day and nothing for the rest of that day', () => {
