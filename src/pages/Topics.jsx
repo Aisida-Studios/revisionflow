@@ -469,7 +469,7 @@ export default function Topics() {
           {selSubj === 'All' ? (
             // ── All Subjects — summary cards ──
             visibleSubjectSummaries.length === 0 ? (
-              <EmptyState art="notFound" size="sm" as="p" title={`No subjects match "${search}"`} />
+              <EmptyState art="notFound" size="sm" as="p" title={`No subjects match "${search}"`} action={<button className="btn btn-secondary btn-sm" onClick={()=>setSearch('')}>Clear search</button>} />
             ) : (
               <div className="subject-summary-grid">
                 {visibleSubjectSummaries.map(s => {
@@ -641,7 +641,7 @@ export default function Topics() {
                   ) : (
                     // ── List view ──
                     sortedFiltered.length===0 ? (
-                      <EmptyState art="notFound" size="sm" as="p" title="No topics match your search or filter" />
+                      <EmptyState art="notFound" size="sm" as="p" title="No topics match your search or filter" action={<button className="btn btn-secondary btn-sm" onClick={()=>{setSearch('');setConfFilter(null)}}>Clear search and filter</button>} />
                     ) : (
                       <div>
                         {paperGroups.map(group => (
@@ -740,11 +740,11 @@ function TopicRow({ topic, subject, board, level, selected, onToggleSelect, onSe
           </div>
         </div>
         <div className="topic-row-actions">
-          <button className="btn btn-ghost btn-icon btn-sm" title="AI advice" onClick={onOpenAdvice} disabled={loadingAdvice}>
+          <button className="btn btn-ghost btn-icon btn-sm" title="AI advice" aria-label={'Advice for ' + topic.name} onClick={onOpenAdvice} disabled={loadingAdvice}>
             {loadingAdvice ? '…' : <Brain size={13}/>}
           </button>
-          <button className="btn btn-ghost btn-icon btn-sm" title="Resources" onClick={onToggleResources}><Link2 size={13}/></button>
-          <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} title="Delete" onClick={onDelete}><Trash2 size={13}/></button>
+          <button className="btn btn-ghost btn-icon btn-sm" title="Resources" aria-label={'Resources for ' + topic.name} onClick={onToggleResources}><Link2 size={13}/></button>
+          <button className="btn btn-ghost btn-icon btn-sm" style={{color:'var(--danger)'}} title="Delete" aria-label={'Delete ' + topic.name} onClick={onDelete}><Trash2 size={13}/></button>
         </div>
       </div>
       {advice && (
