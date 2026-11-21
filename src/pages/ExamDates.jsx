@@ -195,7 +195,8 @@ export default function ExamDates() {
 
       {/* Exam dates list */}
       {examDates.length === 0 ? (
-        <EmptyState art="emptyExams" title="No exam dates yet" body="Use auto-fill above or click Fill all subjects to add all your 2027 dates at once" />
+        <EmptyState art="emptyExams" title="No exam dates yet" body="Add all your 2027 dates at once, or use auto-fill above."
+          action={<button className="btn btn-primary btn-sm" onClick={() => setShowFillAll(true)}><Zap size={14}/> Fill all subjects</button>} />
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {examDates.map(e => {
