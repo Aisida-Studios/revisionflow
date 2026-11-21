@@ -1,5 +1,5 @@
 // src/pages/Friends.jsx
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   sendFriendRequest, acceptFriendRequest, declineFriendRequest,
@@ -31,6 +31,7 @@ export default function Friends() {
   const [friends,       setFriends]       = useState([])
   const [requests,      setRequests]      = useState([])
   const [search,        setSearch]        = useState('')
+  const searchRef = useRef(null)
   const [searchResults, setSearchResults] = useState([])
   const [searching,     setSearching]     = useState(false)
   const [tab,           setTab]           = useState('friends')
@@ -153,6 +154,7 @@ export default function Friends() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by username or name…"
+              ref={searchRef}
             />
           </div>
           <button className="btn btn-primary" type="submit" disabled={searching || !search.trim()}>
@@ -205,6 +207,7 @@ export default function Friends() {
             art="friends"
             title="No friends yet"
             body="Share your referral link above or search by username to add friends."
+            action={<button className="btn btn-primary btn-sm" onClick={() => searchRef.current && searchRef.current.focus()}>Search by username</button>}
           />
         ) : (
           <div className="card" style={{ padding: '4px 16px' }}>
