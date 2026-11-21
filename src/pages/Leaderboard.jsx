@@ -72,6 +72,9 @@ export default function Leaderboard() {
   const [globalCache,  setGlobalCache]  = useState({})
   const [loadingF,     setLoadingF]     = useState(true)
   const [loadingG,     setLoadingG]     = useState(false)
+  const [errorF,       setErrorF]       = useState(false)
+  const [errorG,       setErrorG]       = useState(false)
+  const [attempt,      setAttempt]      = useState(0)
 
   // Guard: profile.friends may be a number (from increment()) not an array
   const friendUids = Array.isArray(profile?.friends) ? profile.friends : []
@@ -79,16 +82,18 @@ export default function Leaderboard() {
   useEffect(() => {
     if (!user || !profile) return
     setLoadingF(true)
+    setErrorF(false)
     // Fetched once — getLeaderboard returns xp/xpThisWeek/xpThisMonth together, so switching
     // the period tab below just re-sorts this same data instead of re-fetching.
     getLeaderboard(friendUids, user.uid)
       .then(d => { setFriendsBoard(d || []); setLoadingF(false) })
-      .catch(() => setLoadingF(false))
-  }, [user, profile])
+      .catch(() => { setErrorF(true); setLoadingF(false) })
+  }, [user, profile, attempt])
 
   useEffect(() => {
     if (tab !== 'global' || globalCache[period]) return
     setLoadingG(true)
+    setErrorG(false)
     getGlobalLeaderboard(100, period)
       .then(d => {
         setGlobalCache(c => ({ ...c, [period]: d || [] }))
@@ -99,8 +104,8 @@ export default function Leaderboard() {
           if (rank >= 0 && rank < 3) checkAndAwardBadge(user.uid, 'top_three').catch(() => {})
         }
       })
-      .catch(() => setLoadingG(false))
-  }, [tab, period])
+      .catch(() => { setErrorG(true); setLoadingG(false) })
+  }, [tab, period, attempt])
 
   async function toggleHideName() {
     const newVal = !(profile?.hideNameFromLeaderboard)
@@ -115,6 +120,7 @@ export default function Leaderboard() {
     ? [...friendsBoard].sort((a, b) => (b[xpField] || 0) - (a[xpField] || 0))
     : (globalCache[period] || [])
   const loading      = tab === 'friends' ? loadingF : loadingG
+  const loadFailed   = tab === 'friends' ? errorF : errorG
   const myRank        = board.findIndex(u => u.uid === user?.uid)
   const myEntry       = board[myRank]
   const topBoard      = board.slice(0, 100)
@@ -193,18 +199,25 @@ export default function Leaderboard() {
             ))}
           </div>
         </div>
+      ) : loadFailed && topBoard.length === 0 ? (
+        <EmptyState
+          art="notFound"
+          title="Could not load the board"
+          body="Check your connection and try again."
+          action={<button className="btn btn-primary btn-sm" onClick={() => setAttempt(a => a + 1)}>Try again</button>}
+        />
       ) : topBoard.length === 0 ? (
         <EmptyState
           art={tab === 'friends' ? 'friends' : 'leaderboard'}
           title={tab === 'friends'
             ? (period === 'allTime' ? 'No friends yet' : `No friend XP logged ${periodLabel} yet`)
-            : (period === 'allTime' ? 'Global board loading…' : `No one has earned XP ${periodLabel} yet`)}
+            : (period === 'allTime' ? 'No one is on the global board yet' : `No one has earned XP ${periodLabel} yet`)}
           body={tab === 'friends'
-            ? (period === 'allTime' ? 'Add friends to see them here.' : undefined)
-            : (period === 'allTime' ? undefined : 'Be the first!')}
+            ? (period === 'allTime' ? 'Add friends to see them here.' : 'XP shows up here when you or your friends study.')
+            : 'Earn XP by revising and you will appear here.'}
           action={tab === 'friends' && period === 'allTime'
             ? <Link to="/friends" className="btn btn-primary btn-sm">Find friends</Link>
-            : undefined}
+            : <Link to="/study" className="btn btn-primary btn-sm">Start revising</Link>}
         />
       ) : (
         <div className="card" style={{ padding: '4px 16px' }}>
