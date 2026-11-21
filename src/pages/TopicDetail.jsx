@@ -718,9 +718,9 @@ export default function TopicDetail() {
               Your trend builds up here each time you re-rate this topic's confidence — check back after a few study sessions.
             </p>
           ) : (
-            <div className="confidence-trend-chart">
+            <div className="confidence-trend-chart" role="group" aria-label="Confidence at each re-rating">
               {history.slice(-14).map((h, i) => (
-                <div key={i} title={h.value + '/5 — ' + formatDate(h.date, 'd MMM')}
+                <div key={i} role="img" aria-label={h.value + ' out of 5, ' + formatDate(h.date, 'd MMM')} title={h.value + '/5 — ' + formatDate(h.date, 'd MMM')}
                   className="confidence-trend-bar" style={{ height: `${h.value * 20}%`, background: CONF_COLOURS[h.value] }} />
               ))}
             </div>
