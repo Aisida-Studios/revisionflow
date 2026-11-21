@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Zap, Mail, Lock, Eye, EyeOff, X } from 'lucide-react'
 import AuthNotice from '../components/AuthNotice'
 import { authErrorMessage, isStandaloneApp, markRedirectStarted, consumeFailedRedirect, REDIRECT_WAIT_MS } from '../utils/authUi'
 import { usePageMeta } from '../utils/pageMeta'
@@ -173,7 +173,7 @@ function ResetModal({ onClose }) {
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Reset password</span>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><X size={16} /></button>
         </div>
         {sent ? (
           <p>Check your email for a reset link.</p>
