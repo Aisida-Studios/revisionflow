@@ -386,7 +386,10 @@ export default function Profile() {
       <div className="card" style={{ marginBottom: 20 }}>
         <h4 className="card-eyebrow" style={{ marginBottom: 2 }}>Your subjects</h4>
         {(profile?.subjects || []).length === 0 ? (
-          <p className="card-sub-line" style={{ margin: '8px 0 0' }}>No subjects added. Go to Settings to add subjects.</p>
+          <div style={{ margin: '8px 0 0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <p className="card-sub-line" style={{ margin: 0 }}>No subjects added yet.</p>
+            <Link to="/settings" className="btn btn-secondary btn-sm">Add subjects</Link>
+          </div>
         ) : (
           <div className="pf-subjects">
             {(profile?.subjects || []).map(s => {
