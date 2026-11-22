@@ -1,5 +1,6 @@
 // tests/utils.test.js
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { toLocalDateStr, parseLocalDate, localWeekStartStr, localMonthStartStr, addLocalDays, diffLocalDays } from '../src/utils/localDate.js'
 import { currentWeekStart as srvWeek, currentMonthStart as srvMonth, xpPeriodPatch as srvPatch, effectivePeriodXP as srvEffective, periodFields as srvPeriodFields } from '../netlify/functions/lib/periods.js'
 import { flashcardSetSource, isOfficialSet, isCommunitySet } from '../src/utils/provenance.js'
@@ -1234,6 +1235,41 @@ await okAsync('the fake database: tx.update changes only the fields it is given 
   assert.equal(db.read('users/u1/usage/missing'), undefined)
 })
 
+// ---- theme contrast: the text tokens in globals.css must stay readable ----
+function themeTokens(css, headPattern) {
+  const lines = css.split('\n'), start = lines.findIndex(l => headPattern.test(l))
+  assert.ok(start >= 0, 'theme block not found: ' + headPattern)
+  const tokens = {}
+  for (const l of lines.slice(start + 1)) {
+    if (l.startsWith('}')) break
+    const m = l.match(/^\s*(--[a-z0-9-]+):\s*([^;]+);/)
+    if (m) tokens[m[1]] = m[2].trim()
+  }
+  return tokens
+}
+const resolveToken = (tokens, name, depth = 0) => {
+  const v = tokens[name]
+  const ref = v && v.match(/^var\((--[a-z0-9-]+)\)$/)
+  return ref && depth < 4 ? resolveToken(tokens, ref[1], depth + 1) : v
+}
+const luminance = (hex) => {
+  const h = hex.replace('#', ''), c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
+ok('theme contrast: primary, secondary and muted text and the green text colour reach WCAG AA (4.5:1) on every surface, in light and dark', () => {
+  const css = readFileSync(new URL('../src/styles/globals.css', import.meta.url), 'utf8')
+  for (const [name, head] of [['light', /^:root\s*\{/], ['dark', /^\[data-theme="dark"\]\s*\{/]]) {
+    const t = themeTokens(css, head)
+    const surfaces = ['--bg-base', '--bg-surface', '--bg-card', '--bg-hover', '--bg-muted', '--bg-input', '--accent-pale'].map(k => [k, resolveToken(t, k)]).filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v || ''))
+    assert.ok(surfaces.length >= 5, name + ': surfaces not found')
+    for (const textToken of ['--text-primary', '--text-secondary', '--text-muted', '--accent-text']) {
+      const text = resolveToken(t, textToken)
+      assert.match(text || '', /^#[0-9a-f]{6}$/i, name + ' ' + textToken + ' is not a plain colour: ' + text)
+      for (const [surface, bg] of surfaces) assert.ok(contrast(text, bg) >= 4.5, `${name}: ${textToken} ${text} on ${surface} ${bg} is only ${contrast(text, bg).toFixed(2)}:1`)
+    }
+  }
+})
 // ---- predicted grades: who sees which ----
 ok('predicted grades: on the Dashboard a free account sees one subject (the first in the list) and Pro and beta see all', () => {
   const preds = [{ subject: 'Maths', grade: '6' }, { subject: 'Biology', grade: '5' }, { subject: 'History', grade: '4' }]
