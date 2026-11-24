@@ -36,6 +36,7 @@ import { buildSubjectKey } from '../utils/subjectKey'
 import AIOutput from '../components/AIOutput'
 import RichText from '../components/RichText'
 import AutoFormatTextarea from '../components/AutoFormatTextarea'
+import { paperTitle } from '../utils/paperLabel'
 import toast from 'react-hot-toast'
 import {
   ChevronLeft, Plus, X, Trash2, ExternalLink, Brain, StickyNote, Pencil,
@@ -688,7 +689,7 @@ export default function TopicDetail() {
                 return (
                   <div key={a.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{a.subject} — {a.board} Paper {a.paper} ({a.year})</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{a.subject} — {a.board} {paperTitle(a)}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{a.matchedMarks.length} matching question{a.matchedMarks.length !== 1 ? 's' : ''}</div>
                     </div>
                     <div style={{ fontWeight: 800, color: max > 0 && got / max >= 0.7 ? 'var(--success)' : 'var(--warning)' }}>{got}/{max}</div>
