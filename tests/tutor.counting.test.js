@@ -39,7 +39,8 @@ globalThis.fetch = async () => {
 const fresh = (seed = {}) => { nowMs = BASE; globalThis.__db = makeFakeFirestore({ 'users/u1': {}, ...seed }); mistral = { calls: 0, mode: 'ok' } }     // every scenario starts on the same day
 const life = (uid = 'u1') => globalThis.__db.read(`users/${uid}/usage/lifetime`)
 const call = async (uid, body) => {
-  const res = await handler({ httpMethod: 'POST', headers: { authorization: 'Bearer good:' + uid }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Solve it' }], ...body }) })
+  // The app always sends a JSON content type, and the hardened function insists on it (lib/http.js), so the test sends it too.
+  const res = await handler({ httpMethod: 'POST', headers: { authorization: 'Bearer good:' + uid, 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Solve it' }], ...body }) })
   return { status: res.statusCode, body: JSON.parse(res.body) }
 }
 const IMG = 'data:image/jpeg;base64,AAAA'
@@ -81,7 +82,7 @@ await ok('a refusal by the general daily pool gives the use back', async () => {
 await ok('an allowance check that fails returns 503, never calls the AI, and gives the use back', async () => {
   fresh()
   const db = globalThis.__db, real = db.runTransaction.bind(db); let t = 0
-  db.runTransaction = async (fn) => { t++; if (t === 2) throw new Error('unavailable'); return real(fn) }     // 1 = the free-use count, 2 = the general pool
+  db.runTransaction = async (fn) => { t++; if (t === 3) throw new Error('unavailable'); return real(fn) }     // 1 = the per-minute burst limit, 2 = the free-use count, 3 = the general pool
   const r = await call('u1', { feature: 'mathsSolver' })
   assert.equal(r.status, 503); assert.equal(r.body.code, 'TEMPORARILY_UNAVAILABLE'); assert.equal(mistral.calls, 0); assert.equal(life().mathsSolver, 0)
 })
