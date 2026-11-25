@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { updateUserProfile, archiveSupersededAttempts, deleteSubjectAttempts } from '../utils/firestore'
+import { updateUserProfile, archiveSupersededAttempts, deleteSubjectAttempts, MAX_DISPLAY_NAME, MAX_USERNAME } from '../utils/firestore'
 import { detectQualificationSwitches } from '../utils/qualificationSwitch'
 import { scheduleDailyReminder, clearDailyReminder } from '../utils/notifications'
 import { SUPPORTED_QUALIFICATIONS, getGradeOptions, getSubjectQualification, isTiered } from '../data/subjects'
@@ -14,6 +14,8 @@ import { dropOptionsWhenCourseChanges, isSavedCourse } from '../utils/subjectEdi
 import { hasOptions, needsOptionChoice, optionsSummary, saveSubjectOptions, withSubjectOptions } from '../utils/courseOptions'
 import BoardOptions from '../components/BoardOptions'
 import CourseOptionsModal from '../components/CourseOptionsModal'
+import DeleteAccountDialog from '../components/DeleteAccountDialog'
+import { returnedFromGoogleConfirmation } from '../utils/accountDeletion'
 import { PWAInstallCard } from '../components/PWAInstallBanner'
 import SignInMethods from '../components/SignInMethods'
 import SubjectTile from '../components/illustrations/SubjectTile'
@@ -64,6 +66,9 @@ export default function Settings() {
   const { isPro, isBeta } = useIsPro()
   const { theme, toggle } = useTheme()
   const [saving,       setSaving]       = useState(false)
+  // The delete-account dialog (components/DeleteAccountDialog.jsx). It opens by itself when the installed app has just come back
+  // from Google after the student confirmed it is them, so they can finish what they started.
+  const [showDelete,   setShowDelete]   = useState(() => returnedFromGoogleConfirmation())
   // Subjects that just switched qualification, awaiting the student's keep/remove choice —
   // see detectAndOfferSwitchChoice below. Null when there's nothing pending.
   const [pendingSwitches, setPendingSwitches] = useState(null)
@@ -141,14 +146,21 @@ export default function Settings() {
 
   async function saveProfile() {
     setSaving(true)
-    await updateUserProfile(user.uid, {
-      displayName,
-      username: username.toLowerCase().replace(/\s/g, ''),
-      qualification: qual,
-      settings: { ...profile?.settings, ...privacy },
-    })
-    await refreshProfile()
-    toast.success('Settings saved')
+    try {
+      // The name and username are shown to other students and firestore.rules bounds them, so they are clamped to the same
+      // sizes here: an over-long entry is shortened rather than refused by the database.
+      await updateUserProfile(user.uid, {
+        displayName: displayName.trim().slice(0, MAX_DISPLAY_NAME),
+        username: username.toLowerCase().replace(/\s/g, '').slice(0, MAX_USERNAME),
+        qualification: qual,
+        settings: { ...profile?.settings, ...privacy },
+      })
+      await refreshProfile()
+      toast.success('Settings saved')
+    } catch (e) {
+      console.error('[saveProfile]', e)
+      toast.error('Could not save your settings. Please try again.')
+    }
     setSaving(false)
   }
 
@@ -211,11 +223,8 @@ export default function Settings() {
     catch (e) { console.error('[settings] could not save the sound setting', e?.code, e?.message); toast.error('Could not save that setting. Try again.') }
   }
 
-  async function handleDeleteAccount() {
-    if (!window.confirm('Delete your account and all data permanently? This cannot be undone.')) return
-    try { await auth.currentUser.delete(); window.location.href = '/' }
-    catch (e) { alert('Please sign out and sign back in first, then try again.') }
-  }
+  // Deleting the account is handled by components/DeleteAccountDialog.jsx, which calls /api/account (the old button here only
+  // removed the sign-in record and left the profile data and any Stripe subscription in place).
 
   return (
     <div className="fade-in ap-page ap-page--narrow">
@@ -236,12 +245,12 @@ export default function Settings() {
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Display name</label>
-            <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} />
+            <input className="input" value={displayName} maxLength={MAX_DISPLAY_NAME} onChange={e => setDisplayName(e.target.value)} />
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Username</label>
-            <input className="input" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="your-username" />
+            <input className="input" value={username} maxLength={MAX_USERNAME} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="your-username" />
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
               Profile URL: {window.location.origin}/u/{username || 'yourname'}
             </span>
@@ -525,9 +534,9 @@ export default function Settings() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontWeight: 650, fontSize: '0.88rem' }}>Delete account</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Permanently deletes your account and all data. Cannot be undone.</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Permanently deletes your account and your study data. Cannot be undone.</div>
               </div>
-              <button className="btn btn-danger btn-sm" onClick={handleDeleteAccount} style={{ flexShrink: 0 }}>
+              <button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)} style={{ flexShrink: 0 }}>
                 <Trash2 size={13} /> Delete account
               </button>
             </div>
@@ -537,6 +546,8 @@ export default function Settings() {
           </button>
         </div>
       )}
+
+      {showDelete && <DeleteAccountDialog onClose={() => setShowDelete(false)} />}
 
       {/* Qualification change modal */}
       {newQualFlow && (
