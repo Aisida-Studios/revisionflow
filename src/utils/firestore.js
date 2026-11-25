@@ -67,11 +67,21 @@ export const logout           = ()       => signOut(auth)
    USER / PROFILE
 ========================= */
 
+// Profile text is shown to other students, and firestore.rules bounds it (name 100 characters, avatar an https link of at most
+// 2048). Clamped here so an unusually long name or a non-https photo URL can never make the account write fail.
+const MAX_DISPLAY_NAME = 100
+const MAX_USERNAME = 50
+const safeDisplayName = (v) => String(v == null ? '' : v).slice(0, MAX_DISPLAY_NAME)
+const safeAvatarUrl   = (v) => { const s = String(v == null ? '' : v); return s.length <= 2048 && /^https:\/\//i.test(s) ? s : '' }
+export { MAX_DISPLAY_NAME, MAX_USERNAME }
+
 export async function ensureUser(uid, initialData = {}) {
   const ref          = doc(db, 'users', uid)
   const snap         = await getDoc(ref)
   // Referral code is always the first 8 chars of uid — deterministic, no query needed
   const referralCode = uid.slice(0, 8).toUpperCase()
+  const displayName  = safeDisplayName(initialData.displayName)
+  const avatarUrl    = safeAvatarUrl(initialData.avatarUrl)
 
   if (!snap.exists()) {
     await setDoc(ref, {
@@ -84,12 +94,12 @@ export async function ensureUser(uid, initialData = {}) {
       // would stop this whole create). netlify/functions/friends.js adds it with arrayUnion; every reader treats a
       // missing value as an empty list.
       referralCode,
-      displayName:  initialData.displayName || '',
-      avatarUrl:    initialData.avatarUrl   || '',
+      displayName,
+      avatarUrl,
       profile: {
-        displayName: initialData.displayName || '',
+        displayName,
         email:       initialData.email       || '',
-        avatarUrl:   initialData.avatarUrl   || '',
+        avatarUrl,
       },
     })
   } else {
@@ -97,11 +107,11 @@ export async function ensureUser(uid, initialData = {}) {
     const existing = snap.data()
     const patches  = {}
     if (!existing.referralCode)                                    patches.referralCode           = referralCode
-    if (!existing.displayName  && initialData.displayName)         patches.displayName             = initialData.displayName
-    if (!existing.profile?.displayName && initialData.displayName) patches['profile.displayName'] = initialData.displayName
+    if (!existing.displayName  && displayName)                     patches.displayName             = displayName
+    if (!existing.profile?.displayName && displayName)             patches['profile.displayName'] = displayName
     // Refresh on every login (not just "if missing") — a Google photo can change, or wasn't
     // available yet if the account was originally created with email/password.
-    if (initialData.avatarUrl && existing.avatarUrl !== initialData.avatarUrl) patches.avatarUrl = initialData.avatarUrl
+    if (avatarUrl && existing.avatarUrl !== avatarUrl) patches.avatarUrl = avatarUrl
     if (Object.keys(patches).length > 0) await updateDoc(ref, patches)
   }
 }
@@ -981,24 +991,23 @@ export const migrateLegacyTopicDocs = async (uid, topicDocs, subjects, profileQu
    FRIENDS SYSTEM
 ========================= */
 
-export const sendFriendRequest = async (fromUid, toUid) => {
-  let fromName = ''
-  let fromAvatarUrl = ''
-  try {
-    const snap = await getDoc(doc(db, 'users', fromUid))
-    if (snap.exists()) {
-      const d = snap.data()
-      fromName = d.displayName || d.profile?.displayName || ''
-      fromAvatarUrl = d.avatarUrl || d.profile?.avatarUrl || ''
-    }
-  } catch {}
-  await addDoc(collection(db, 'friendRequests'), {
-    from:      fromUid,
-    fromName,
-    fromAvatarUrl,
-    to:        toUid,
-    createdAt: serverTimestamp(),
-  })
+// A friend request is created by /api/friends, not by the browser: the server records the sender's real name and avatar from
+// their own profile, refuses duplicates and limits how many a student can send (firestore.rules no longer lets a browser
+// create one). The first argument is kept so existing callers do not change; the server takes the sender from the signed-in
+// session, never from the request.
+const FRIEND_REQUEST_REFUSALS = {
+  already_friends:       "You're already friends.",
+  incoming_pending:      'They have already sent you a request. Open your requests to accept it.',
+  not_found:             'That student could not be found.',
+  too_many_pending:      'You have a lot of requests waiting. Wait for some replies first.',
+  recipient_unavailable: "That request can't be sent right now.",
+}
+export const sendFriendRequest = async (_fromUid, toUid) => {
+  const result = await callFriendsApi('request', { toUid })
+  if (result && result.sent === false) {
+    throw new Error(FRIEND_REQUEST_REFUSALS[result.reason] || "That request can't be sent right now.")
+  }
+  return result
 }
 
 export const getReceivedRequests = async (uid) => {
@@ -1030,7 +1039,10 @@ async function callFriendsApi(action, params = {}) {
 // server-side — see netlify/functions/friends.js for the full explanation and the Admin SDK writes
 // that now handle both sides of each operation correctly.
 export const acceptFriendRequest = async (requestId) => {
-  await callFriendsApi('accept', { requestId })
+  const result = await callFriendsApi('accept', { requestId })
+  // The server answers 200 with accepted:false when the request is already gone (withdrawn, or the sender's account no longer
+  // exists). Say so instead of showing "Friend added!".
+  if (result && result.accepted === false) throw new Error('This request is no longer available.')
   if (auth.currentUser) await autoCompleteQuest(auth.currentUser.uid, 'add_friend')
 }
 
@@ -1283,9 +1295,31 @@ export async function runBadgeAudit(uid) {
    Public sets also stored at: publicFlashcards/{id}
 ========================= */
 
+// What is copied into the world-readable publicFlashcards collection when a student shares a set. The private copy at
+// users/{uid}/flashcardSets/{id} also holds that student's own study progress (cardMastery, cardSchedule, lastStudiedAt), which
+// must never be published, and firestore.rules accepts exactly these fields. Text is clamped to the sizes the rules allow.
+export const MAX_PUBLIC_SET_CARDS = 500
+const PUBLIC_SET_FIELDS = ['uid', 'title', 'subject', 'topic', 'cards', 'isPublic', 'cardCount', 'author', 'authorType', 'createdAt', 'updatedAt', 'board', 'level', 'setId']
+const PUBLIC_SET_TEXT_LIMITS = { title: 200, subject: 100, topic: 200, author: 100 }
+export function publicSetPayload(source) {
+  if (Array.isArray(source.cards) && source.cards.length > MAX_PUBLIC_SET_CARDS) {
+    throw new Error(`Shared sets can have up to ${MAX_PUBLIC_SET_CARDS} cards. Split this set to share it.`)
+  }
+  const out = {}
+  for (const key of PUBLIC_SET_FIELDS) {
+    if (source[key] === undefined) continue
+    out[key] = (PUBLIC_SET_TEXT_LIMITS[key] && typeof source[key] === 'string') ? source[key].slice(0, PUBLIC_SET_TEXT_LIMITS[key]) : source[key]
+  }
+  return out
+}
+
 export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPublic: wantPublic = false, author, authorType, board, level, aiGenerated = false }) => {  // Resolve display name for author
   // AI-generated sets stay private: whatever was asked for, they are never made public.
   const isPublic = wantPublic && !aiGenerated
+  // Refuse before anything is written, so a set that is too big to share is not saved half-way.
+  if (isPublic && Array.isArray(cards) && cards.length > MAX_PUBLIC_SET_CARDS) {
+    throw new Error(`Shared sets can have up to ${MAX_PUBLIC_SET_CARDS} cards. Split this set to share it.`)
+  }
   let resolvedAuthor = author
   if (!resolvedAuthor && uid) {
     try {
@@ -1323,10 +1357,10 @@ export const saveFlashcardSet = async (uid, { title, subject, topic, cards, isPu
   } else if (isPublic) {
     // Community set: published by its owner (uid is stamped on `data`).
     if (refId) {
-      await setDoc(doc(db, 'publicFlashcards', refId), { ...data, setId: refId })
+      await setDoc(doc(db, 'publicFlashcards', refId), publicSetPayload({ ...data, setId: refId }))
     } else {
       // Official sets with no user subcollection entry
-      const ref = await addDoc(collection(db, 'publicFlashcards'), { ...data, setId: null })
+      const ref = await addDoc(collection(db, 'publicFlashcards'), publicSetPayload({ ...data, setId: null }))
       await updateDoc(ref, { setId: ref.id })
       refId = ref.id
     }
@@ -1413,6 +1447,9 @@ export const updateFlashcardSet = async (uid, setId, { title, subject, topic, ca
   if (!snap.exists()) return
   const prev = snap.data()
   if (isPublic && prev.aiGenerated) throw new Error('AI-generated sets stay private. To share a set, create it yourself.')
+  if (isPublic && Array.isArray(cards) && cards.length > MAX_PUBLIC_SET_CARDS) {
+    throw new Error(`Shared sets can have up to ${MAX_PUBLIC_SET_CARDS} cards. Split this set to share it.`)
+  }
   const updates = {
     title, subject, topic: topic || '',
     cards, isPublic,
@@ -1424,7 +1461,7 @@ export const updateFlashcardSet = async (uid, setId, { title, subject, topic, ca
   await updateDoc(ref, updates)
   // Sync public collection
   if (isPublic) {
-    await setDoc(doc(db, 'publicFlashcards', setId), { ...prev, ...updates, uid, setId })
+    await setDoc(doc(db, 'publicFlashcards', setId), publicSetPayload({ ...prev, ...updates, uid, setId }))
   } else if (prev.isPublic && !isPublic) {
     try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
   }
@@ -1502,7 +1539,7 @@ export const updateFlashcardSetVisibility = async (uid, setId, isPublic) => {
   if (isPublic && snap.data().aiGenerated) throw new Error('AI-generated sets stay private. To share a set, create it yourself.')
   await updateDoc(ref, { isPublic, updatedAt: serverTimestamp() })
   if (isPublic) {
-    await setDoc(doc(db, 'publicFlashcards', setId), { ...snap.data(), isPublic: true, setId })
+    await setDoc(doc(db, 'publicFlashcards', setId), publicSetPayload({ ...snap.data(), isPublic: true, setId }))
   } else {
     try { await deleteDoc(doc(db, 'publicFlashcards', setId)) } catch {}
   }
