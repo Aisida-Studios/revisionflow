@@ -25,7 +25,7 @@ import { daysUntilExam } from '../utils/examUtils'
 import { Compass, MessageSquare, Send, Zap, BookOpen, TrendingUp, X, Brain, Target, Check, Lightbulb, RefreshCw, GraduationCap, AlertTriangle, Star } from 'lucide-react'
 import EmptyState from '../components/illustrations/EmptyState'
 import Illustration from '../components/illustrations/Illustration'
-import { targetGradeForPrompt } from '../utils/gradeTargets'
+import { buildAdvisorContext, advisorWeakTopics } from '../utils/advisorContext'
 import './AccountPages.css'
 import { toLocalDateStr } from '../utils/localDate'
 
@@ -150,28 +150,19 @@ export default function AIAdvisor() {
       const papers   = papersSnap.docs.map(d=>d.data())
       const mistakes = mistakesSnap.docs.map(d=>d.data())
 
-      const currentSubjectNames = new Set((profile.subjects||[]).map(s=>s.name))
-      const weakTopics   = topics.filter(t=>t.confidence>0 && t.confidence<=2 && currentSubjectNames.has(t.subjectId)).slice(0,10).map(t=>`${t.subjectId}: ${t.name}`)
-      const recentPapers = papers.slice(0,5).map(p=>`${p.subject} P${p.paper} ${p.year}: ${p.percentage}% (Grade ${p.grade||'?'})`)
-      const topMistakes  = mistakes.filter(m=>!m.resolved).slice(0,5).map(m=>`${m.subject} - ${m.topic}: ${m.description?.slice(0,60)}`)
+      // What the model is told is built by buildAdvisorContext (src/utils/advisorContext.js): subjects, exam dates, weak topics,
+      // recent papers and the topics of open mistakes, for the course the student is on now. Never their name, XP, level or
+      // streak, and never anything they typed as free text. chatWithAI passes it on; it used to be dropped there.
+      setUserContext(buildAdvisorContext(profile, { topics, papers, mistakes }))
 
-      const ctx = [
-        `Student: ${profile.displayName}`,
-        `Level: ${profile.level||1} | XP: ${profile.xp||0} | Streak: ${profile.streak||0} days`,
-        `Subjects: ${(profile.subjects||[]).map(s=>`${s.name} (${s.board}, ${getSubjectQualification(s, profile)}, target: ${targetGradeForPrompt(s, profile)})`).join(', ')}`,
-        `Upcoming exams: ${(profile.examDates||[]).map(e=>({...e,daysLeft:daysUntilExam(e.examDate)})).filter(e=>e.daysLeft!=null&&e.daysLeft>=0).slice(0,5).map(e=>`${e.subject} P${e.paper} on ${e.examDate}`).join(', ')||'None set'}`,
-        weakTopics.length   ? `Weak topics: ${weakTopics.join(', ')}`          : '',
-        recentPapers.length ? `Recent papers: ${recentPapers.join(', ')}`      : '',
-        topMistakes.length  ? `Unresolved mistakes: ${topMistakes.join(', ')}` : '',
-      ].filter(Boolean).join('\n')
-      setUserContext(ctx)
-
+      const weakTopics = advisorWeakTopics(profile, topics, 3)
+      const firstName  = String(profile.displayName || '').trim().split(/\s+/)[0]
       setMessages([{
         role:'assistant',
-        content:`Hi ${profile.displayName?.split(' ')[0]}! I'm your AI revision advisor and I can see your full profile.\n\n` +
+        content:`${firstName ? `Hi ${firstName}!` : 'Hi!'} I'm your AI revision advisor. I can see your subjects, exam dates, weakest topics, recent paper results and the topics of mistakes you haven't resolved.\n\n` +
           `You're revising: ${(profile.subjects||[]).map(s=>s.name).join(', ')||'no subjects set yet'}.\n\n` +
-          (weakTopics.length ? `Your weakest topics right now: ${weakTopics.slice(0,3).join(', ')}.\n\n` : '') +
-          `Ask me anything — I can predict your grades, suggest what to revise next, give exam technique tips, or give specific advice on any topic.`
+          (weakTopics.length ? `Your weakest topics right now: ${weakTopics.join(', ')}.\n\n` : '') +
+          `Ask me anything — I can suggest what to revise next, give exam technique tips, or give specific advice on any topic. Any grade I give is an estimate.`
       }])
     } catch(e) {
       setMessages([{role:'assistant',content:`Hi! I'm your AI revision advisor. How can I help you today?`}])
@@ -276,7 +267,7 @@ export default function AIAdvisor() {
       <div className="ap-page-head">
         <div>
           <h2 style={{display:'flex',alignItems:'center',gap:9}}><Compass size={22} color="var(--accent-light)"/> AI Advisor</h2>
-          <p className="ap-page-sub">Powered by Mistral AI · Sees your full profile</p>
+          <p className="ap-page-sub">Powered by Mistral AI · Uses your subjects, exams and progress</p>
         </div>
       </div>
 
@@ -310,7 +301,7 @@ export default function AIAdvisor() {
               <Illustration name="assistant" width={190} />
               <div>
                 <div style={{fontWeight:700,marginBottom:4}}>Ask me anything about your revision</div>
-                <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, papers and confidence ratings</div>
+                <div style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>I can see your subjects, exam dates, weak topics and recent paper results</div>
               </div>
             </div>
           ) : (
