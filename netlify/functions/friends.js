@@ -1,197 +1,180 @@
 // netlify/functions/friends.js
-// Handles friend request accept/remove server-side, with the Admin SDK.
+// Friend requests, accepting, declining and removing friends, all server-side with the Admin SDK.
 //
-// WHY THIS EXISTS: acceptFriendRequest and removeFriend in src/utils/firestore.js both need to
-// write to TWO users' documents — the caller's own, and the other party's. Firestore rules only
-// allow `request.auth.uid == userId` (plus a narrow friends-array exception that doesn't cover
-// both directions of this), so the half of each operation touching the OTHER user's document was
-// being rejected with "Missing or insufficient permissions" — while the caller's own half (which
-// IS allowed) could still go through, which is why a removed friend disappeared from the remover's
-// own list but not the other person's, and why accepting produced an error yet still appeared to
-// partially work. This mirrors referral.js's existing fix for the exact same class of problem
-// (that file's own header comment documents it) — same getAdmin/verifyUserToken/respond pattern.
+// WHY THIS EXISTS: a friendship touches TWO users' documents, and Firestore rules (rightly) only let a student write their own.
+// So accept and remove were moved here earlier. Sending a request now lives here too, for three reasons that were real
+// problems in the version where the browser wrote friendRequests directly:
+//   * nothing limited how many requests one student could fire at others, or stopped the same request being created again and
+//     again (the rules cannot rate-limit or enforce uniqueness);
+//   * the sender's name and avatar came from the browser, so a request could claim to be from "RevisionFlow Support" and carry
+//     any image URL: here they are read from the sender's own profile;
+//   * accepting paid 25 XP (+ the first-friend badge) to BOTH students every time, so remove -> request -> accept repeated for
+//     unlimited XP. The reward is now paid once per pair of students (friendPairs) and for a bounded number of friendships.
 //
-// CommonJS — netlify/functions/package.json sets "type":"commonjs"
+// Identity is the verified ID token only; no uid in the body is trusted to say who is calling.
+// CommonJS - netlify/functions/package.json sets "type":"commonjs"
+'use strict'
 
-let _admin = null
-async function getAdmin() {
-  if (_admin) return _admin
-  const admin = require('firebase-admin')
-  if (!admin.apps.length) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}')
-    admin.initializeApp({ credential: admin.credential.cert(sa) })
-  }
-  _admin = admin
-  return admin
-}
-
-async function verifyUserToken(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) throw new Error('No authorization token provided')
-  const admin = await getAdmin()
-  return admin.auth().verifyIdToken(token)
-}
-
-function respond(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
-    },
-    body: JSON.stringify(body),
-  }
-}
-
-// ── App Check (bot protection) — monitor mode, see notify.js for the full explanation.
-async function checkAppCheck(event) {
-  const token = event.headers['x-firebase-appcheck']
-  if (!token) { console.log('[app-check] missing'); return false }
-  try {
-    const admin = await getAdmin()
-    await admin.appCheck().verifyToken(token)
-    return true
-  } catch (e) {
-    console.log('[app-check] invalid:', e.message)
-    return false
-  }
-}
-
-async function addFriendPair(db, uidA, uidB) {
-  const admin = await getAdmin()
-  const refA = db.collection('users').doc(uidA)
-  const refB = db.collection('users').doc(uidB)
-  await refA.update({ friends: admin.firestore.FieldValue.arrayUnion(uidB) })
-  await refB.update({ friends: admin.firestore.FieldValue.arrayUnion(uidA) })
-}
-
-async function removeFriendPair(db, uidA, uidB) {
-  const admin = await getAdmin()
-  const refA = db.collection('users').doc(uidA)
-  const refB = db.collection('users').doc(uidB)
-  await refA.update({ friends: admin.firestore.FieldValue.arrayRemove(uidB) })
-  await refB.update({ friends: admin.firestore.FieldValue.arrayRemove(uidA) })
-}
-
-// Period keys are computed in the user's own timezone (xpTz), matching the client - see lib/periods.js.
+const crypto = require('crypto')
+const { route, parseJsonBody, respond, HttpError } = require('./lib/http')
+const { getAdmin, verifyUser, enforceAppCheck } = require('./lib/auth')
+const { enforceRateLimit } = require('./lib/rateLimit')
 const { xpPeriodPatch } = require('./lib/periods')
+const { cleanName, safeAvatarUrl } = require('./lib/profile')
 
-async function awardXP(db, uid, amount, reason) {
-  const admin = await getAdmin()
-  const ref   = db.collection('users').doc(uid)
-  const snap  = await ref.get()
-  const data  = snap.exists ? snap.data() : {}
-  await ref.update({ xp: admin.firestore.FieldValue.increment(amount), ...xpPeriodPatch(admin, data, amount) })
-}
+const UID_RE = /^[A-Za-z0-9_-]{1,128}$/
+const REQUEST_ID_RE = /^[A-Za-z0-9_-]{1,300}$/
+const MAX_OUTGOING_PENDING = 20      // requests one student can have waiting for an answer
+const MAX_INCOMING_PENDING = 50      // requests that can be waiting for one student
+const FRIEND_XP = 25                 // paid to each student, once per pair
+const MAX_REWARDED_FRIENDSHIPS = 25  // friendships per student that pay the reward (25 x 25 = 625 XP at most)
+const FIRST_FRIEND_BADGE = { id: 'first_friend', xp: 50 } // mirrors BADGE_MAP.first_friend in src/data/badges.js
 
-// Mirrors checkAndAwardBadge's 'first_friend' case in src/utils/firestore.js — duplicated
-// narrowly here (just this one badge, not the whole badge system) since this function runs with
-// Admin credentials in a different runtime and can't import client-side firestore.js.
-// BADGE_XP mirrors BADGE_MAP.first_friend.xp in src/data/badges.js — checkAndAwardBadge always
-// grants a badge's XP alongside the badge itself; this duplicate needs to as well, or a badge
-// earned through this path (as opposed to the client-side badge audit) pays out less than it
-// should.
-const BADGE_XP = { first_friend: 50 }
-async function awardFirstFriendBadge(db, admin, uid) {
-  const ref  = db.collection('users').doc(uid)
-  const snap = await ref.get()
-  if (!snap.exists) return
-  const data   = snap.data()
-  const earned = data.badges || []
-  if (earned.includes('first_friend')) return
-  await ref.update({
-    badges: [...earned, 'first_friend'],
-    xp:     admin.firestore.FieldValue.increment(BADGE_XP.first_friend),
-    ...xpPeriodPatch(admin, data, BADGE_XP.first_friend),
+const isUid = (v) => typeof v === 'string' && UID_RE.test(v)
+// Hashed so the document id says nothing about who the pair is and cannot be confused by an "_" inside a uid.
+const pairId = (a, b) => crypto.createHash('sha256').update([a, b].sort().join('|')).digest('hex').slice(0, 32)
+
+const cleanAvatar = safeAvatarUrl   // https and a Google photo host only (lib/profile.js)
+
+// ── Send a request ───────────────────────────────────────────────────────────
+async function sendRequest(db, admin, caller, toUid) {
+  if (!isUid(toUid)) throw new HttpError(400, 'Choose a student to add.', 'bad_request')
+  if (toUid === caller) throw new HttpError(400, "You can't add yourself.", 'bad_request')
+
+  // Bounded queries, run before the transaction (a count inside it is not needed for correctness: the deterministic request id
+  // below is what stops duplicates, and the rate limit bounds anything that slips through).
+  const outgoing = await db.collection('friendRequests').where('from', '==', caller).limit(MAX_OUTGOING_PENDING).get()
+  if (outgoing.size >= MAX_OUTGOING_PENDING) return { sent: false, reason: 'too_many_pending' }
+  const incoming = await db.collection('friendRequests').where('to', '==', toUid).limit(MAX_INCOMING_PENDING).get()
+  if (incoming.size >= MAX_INCOMING_PENDING) return { sent: false, reason: 'recipient_unavailable' }
+
+  const reqRef = db.collection('friendRequests').doc(`${caller}_${toUid}`)
+  const reverseRef = db.collection('friendRequests').doc(`${toUid}_${caller}`)
+  const fromRef = db.collection('users').doc(caller)
+  const toRef = db.collection('users').doc(toUid)
+
+  return db.runTransaction(async (tx) => {
+    const [fromSnap, toSnap, reqSnap, reverseSnap] = await Promise.all([tx.get(fromRef), tx.get(toRef), tx.get(reqRef), tx.get(reverseRef)])
+    if (!fromSnap.exists || !toSnap.exists) return { sent: false, reason: 'not_found' }
+    const from = fromSnap.data()
+    if (Array.isArray(from.friends) && from.friends.includes(toUid)) return { sent: false, reason: 'already_friends' }
+    if (reverseSnap.exists) return { sent: false, reason: 'incoming_pending' }
+    if (reqSnap.exists) return { sent: true, duplicate: true }
+    const profile = (from.profile && typeof from.profile === 'object') ? from.profile : {}
+    tx.create(reqRef, {
+      from: caller,
+      fromName: cleanName(from.displayName || profile.displayName),
+      fromAvatarUrl: cleanAvatar(from.avatarUrl || profile.avatarUrl),
+      to: toUid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+    return { sent: true }
   })
 }
 
-module.exports.handler = async function (event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
-      },
-      body: '',
-    }
-  }
-  if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
+// ── Accept ───────────────────────────────────────────────────────────────────
+// Everything happens in one transaction: both friend lists, the reward and the removal of the request succeed together or not
+// at all (the old code updated the two students one after the other, so a failure part-way left a one-sided friendship).
+async function acceptRequest(db, admin, caller, requestId) {
+  const reqRef = db.collection('friendRequests').doc(requestId)
+  const FieldValue = admin.firestore.FieldValue
+  return db.runTransaction(async (tx) => {
+    const reqSnap = await tx.get(reqRef)
+    if (!reqSnap.exists) return { accepted: false, reason: 'not_found' }
+    const { from, to } = reqSnap.data()
+    // The request's own `to` decides who may accept it, never a uid supplied by the client.
+    if (to !== caller) throw new HttpError(403, 'Forbidden.', 'forbidden')
+    if (!isUid(from) || from === to) { tx.delete(reqRef); return { accepted: false, reason: 'invalid' } }
 
-  const appCheckValid = await checkAppCheck(event)
-  if (process.env.APP_CHECK_ENFORCE === 'true' && !appCheckValid) {
-    return respond(401, { error: 'Request verification failed.' })
-  }
+    const fromRef = db.collection('users').doc(from)
+    const toRef = db.collection('users').doc(to)
+    const pairRef = db.collection('friendPairs').doc(pairId(from, to))
+    const [fromSnap, toSnap, pairSnap] = await Promise.all([tx.get(fromRef), tx.get(toRef), tx.get(pairRef)])
+    if (!fromSnap.exists || !toSnap.exists) { tx.delete(reqRef); return { accepted: false, reason: 'sender_gone' } }
 
-  let body
-  try { body = JSON.parse(event.body || '{}') } catch (e) { return respond(400, { error: 'Invalid JSON' }) }
-
-  let decoded
-  try {
-    decoded = await verifyUserToken(event)
-  } catch (e) {
-    return respond(403, { error: 'Forbidden' })
-  }
-  const callerUid = decoded.uid
-  const action = body.action
-
-  try {
-    const admin = await getAdmin()
-    const db = admin.firestore()
-
-    // ── Accept — caller must be the request's actual recipient ──────────────────
-    if (action === 'accept') {
-      const requestId = String(body.requestId || '')
-      if (!requestId) return respond(400, { error: 'Missing requestId' })
-
-      const reqRef  = db.collection('friendRequests').doc(requestId)
-      const reqSnap = await reqRef.get()
-      if (!reqSnap.exists) return respond(200, { accepted: false, reason: 'not_found' })
-
-      const { from, to } = reqSnap.data()
-      // The request's own `to` field decides who's allowed to accept it — never trust a
-      // client-supplied fromUid/toUid pair, since that would let anyone accept anyone's request.
-      if (to !== callerUid) return respond(403, { error: 'Forbidden' })
-
-      await addFriendPair(db, from, to)
-      await reqRef.delete()
-      await awardXP(db, from, 25, 'New friend')
-      await awardXP(db, to,   25, 'New friend')
-      await awardFirstFriendBadge(db, admin, from)
-      await awardFirstFriendBadge(db, admin, to)
-
-      return respond(200, { accepted: true })
+    let rewarded = false
+    if (!pairSnap.exists) {
+      const pairsOf = (uid) => db.collection('friendPairs').where('members', 'array-contains', uid).limit(MAX_REWARDED_FRIENDSHIPS)
+      const [a, b] = await Promise.all([tx.get(pairsOf(from)), tx.get(pairsOf(to))])
+      rewarded = a.size < MAX_REWARDED_FRIENDSHIPS && b.size < MAX_REWARDED_FRIENDSHIPS
     }
 
-    // ── Decline — same ownership check, no friend-array writes needed ───────────
-    if (action === 'decline') {
-      const requestId = String(body.requestId || '')
-      if (!requestId) return respond(400, { error: 'Missing requestId' })
-
-      const reqRef  = db.collection('friendRequests').doc(requestId)
-      const reqSnap = await reqRef.get()
-      if (!reqSnap.exists) return respond(200, { declined: true }) // already gone — fine
-
-      if (reqSnap.data().to !== callerUid) return respond(403, { error: 'Forbidden' })
-      await reqRef.delete()
-      return respond(200, { declined: true })
+    const patchFor = (data, otherUid) => {
+      const patch = { friends: FieldValue.arrayUnion(otherUid) }
+      if (!rewarded) return patch
+      const earned = Array.isArray(data.badges) ? data.badges : []
+      const giveBadge = !earned.includes(FIRST_FRIEND_BADGE.id)
+      const total = FRIEND_XP + (giveBadge ? FIRST_FRIEND_BADGE.xp : 0)
+      patch.xp = FieldValue.increment(total)
+      Object.assign(patch, xpPeriodPatch(admin, data, total))
+      if (giveBadge) patch.badges = FieldValue.arrayUnion(FIRST_FRIEND_BADGE.id)
+      return patch
     }
-
-    // ── Remove — caller removes an existing friend; only valid for the caller's own list ──
-    if (action === 'remove') {
-      const friendUid = String(body.friendUid || '')
-      if (!friendUid) return respond(400, { error: 'Missing friendUid' })
-      await removeFriendPair(db, callerUid, friendUid)
-      return respond(200, { removed: true })
-    }
-
-    return respond(400, { error: 'Unknown action' })
-  } catch (e) {
-    console.error('[friends]', action, e.message)
-    return respond(500, { error: 'Server error' })
-  }
+    tx.update(fromRef, patchFor(fromSnap.data(), to))
+    tx.update(toRef, patchFor(toSnap.data(), from))
+    tx.delete(reqRef)
+    if (rewarded) tx.create(pairRef, { members: [from, to], createdAt: FieldValue.serverTimestamp() })
+    return { accepted: true, xpAwarded: rewarded }
+  })
 }
+
+// ── Decline / withdraw ───────────────────────────────────────────────────────
+async function declineRequest(db, caller, requestId) {
+  const reqRef = db.collection('friendRequests').doc(requestId)
+  const snap = await reqRef.get()
+  if (!snap.exists) return { declined: true } // already gone: fine
+  const { from, to } = snap.data()
+  // Either person involved may remove a request (the recipient declines, the sender withdraws).
+  if (to !== caller && from !== caller) throw new HttpError(403, 'Forbidden.', 'forbidden')
+  await reqRef.delete()
+  return { declined: true }
+}
+
+// ── Remove a friend ──────────────────────────────────────────────────────────
+// Removes the caller from the friend's list and the friend from the caller's. The friendPairs record stays, so removing and
+// re-adding someone never pays the reward again.
+async function removeFriend(db, admin, caller, friendUid) {
+  if (!isUid(friendUid) || friendUid === caller) throw new HttpError(400, 'Choose a friend to remove.', 'bad_request')
+  const FieldValue = admin.firestore.FieldValue
+  const myRef = db.collection('users').doc(caller)
+  const theirRef = db.collection('users').doc(friendUid)
+  await db.runTransaction(async (tx) => {
+    const [mine, theirs] = await Promise.all([tx.get(myRef), tx.get(theirRef)])
+    if (mine.exists) tx.update(myRef, { friends: FieldValue.arrayRemove(friendUid) })
+    if (theirs.exists) tx.update(theirRef, { friends: FieldValue.arrayRemove(caller) })
+  })
+  return { removed: true }
+}
+
+module.exports.handler = route('friends', async (event) => {
+  await enforceAppCheck(event)
+  const decoded = await verifyUser(event)
+  const caller = decoded.uid
+  const body = parseJsonBody(event, { maxBytes: 4096, allowEmpty: false })
+  const action = String(body.action || '')
+  const admin = getAdmin()
+  const db = admin.firestore()
+
+  if (action === 'request') {
+    await enforceRateLimit(db, event, { route: 'friends.request', uid: caller, limit: 20, windowSec: 3600, message: 'You have sent a lot of friend requests. Please try again later.' })
+    return respond(200, await sendRequest(db, admin, caller, body.toUid), event)
+  }
+
+  if (action === 'accept' || action === 'decline') {
+    const requestId = String(body.requestId || '')
+    if (!REQUEST_ID_RE.test(requestId)) throw new HttpError(400, 'Missing request.', 'bad_request')
+    await enforceRateLimit(db, event, { route: 'friends.respond', uid: caller, limit: 60, windowSec: 3600 })
+    const result = action === 'accept' ? await acceptRequest(db, admin, caller, requestId) : await declineRequest(db, caller, requestId)
+    return respond(200, result, event)
+  }
+
+  if (action === 'remove') {
+    await enforceRateLimit(db, event, { route: 'friends.remove', uid: caller, limit: 60, windowSec: 3600 })
+    return respond(200, await removeFriend(db, admin, caller, String(body.friendUid || '')), event)
+  }
+
+  throw new HttpError(400, 'Unknown action.', 'unknown_action')
+})
+
+// Exported for tests only.
+module.exports._internals = { pairId, MAX_OUTGOING_PENDING, MAX_REWARDED_FRIENDSHIPS, FRIEND_XP }
