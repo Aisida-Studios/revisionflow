@@ -13,7 +13,12 @@
     "curriculum:links": "node scripts/curriculum/check-links.mjs",
     "test:curriculum": "node --test tests/curriculum/curriculum.test.mjs",
     "test:utils": "esbuild tests/utils.test.js --bundle --platform=node --format=esm --outfile=.test-build/utils.test.mjs --log-level=error && node .test-build/utils.test.mjs",
-    "test:tutor": "node tests/tutor.counting.test.js"
+    "test:tutor": "node tests/tutor.counting.test.js",
+    "test:functions": "node scripts/run-node-tests.mjs tests/functions",
+    "test:client": "node scripts/run-node-tests.mjs tests/client",
+    "test:rules:static": "node --test tests/rules/rules-static.test.mjs",
+    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project demo-revisionflow-rules \"node --test tests/rules/firestore.rules.test.mjs\"",
+    "test:all": "npm run test:functions && npm run test:client && npm run test:rules:static && npm run test:utils && npm run test:tutor"
   },
   "dependencies": {
     "date-fns": "^3.6.0",
@@ -32,6 +37,7 @@
     "recharts": "^2.12.7"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
