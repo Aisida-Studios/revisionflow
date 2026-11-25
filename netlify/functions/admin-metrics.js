@@ -1,79 +1,43 @@
 // netlify/functions/admin-metrics.js
 // Read-only admin analytics: revenue, growth, activation/funnel, engagement, churn risk.
 //
-// Deliberately a SEPARATE function from admin.js (own file, own route) rather than a new
-// action bolted onto admin.js — that file may be under active work elsewhere, and this is a
-// clean, additive, read-only surface with no reason to share a file with privileged writes.
-// It duplicates admin.js's auth/response/audit-log helpers rather than importing them,
-// matching this codebase's existing convention of self-contained Netlify functions (there's
-// no shared lib module between netlify/functions/*.js currently).
+// Deliberately a SEPARATE function from admin.js (own file, own route) rather than a new action bolted onto admin.js: this is a
+// read-only surface with no reason to share a file with privileged writes. Identity, request handling, rate limiting and the
+// audit trail come from the same shared modules admin.js uses (lib/*).
 //
-// WHY THIS EXISTS: the admin panel's existing StatsTab computes stats client-side over
-// listUsers' results, which are capped at 500 docs — past that, every stat silently
-// undercounts with no indication anything was truncated. This function aggregates
-// server-side, paginating through the ENTIRE users collection with no cap, so the numbers
-// are actually correct regardless of how many users exist.
+// SECURITY MODEL
+//   * Verified admin only (lib/auth.js requireAdmin: verified token, revocation checked, verified e-mail on the admin list).
+//   * Looking at ONE student's record (userDetail: name, e-mail, subjects, activity) is written to adminAuditLog BEFORE the
+//     record is read, and the request fails if that cannot be written. The dashboard itself is aggregate numbers only, so its
+//     audit entry is best-effort.
+//   * The dashboard reads the whole users collection, so it is rate limited per admin (a stolen admin token cannot run up
+//     Firestore reads). Errors are generic and nothing identifying reaches a log.
 //
-// SCALING NOTE: this still does a full collection scan on every call, field-masked with
-// .select() to keep it cheap, which is fine at the pre-launch/beta scale this app is at
-// today. It will NOT scale indefinitely — past a few thousand users (or once Netlify's
-// function execution timeout becomes a real risk), replace this with a scheduled job that
-// writes a precomputed `adminStats/daily` document instead of scanning live on every
-// dashboard load. Flagging this now rather than silently building something that quietly
-// breaks later.
+// WHY THIS EXISTS: the admin panel's existing StatsTab computes stats client-side over listUsers' results, which are capped at 500
+// docs — past that, every stat silently undercounts with no indication anything was truncated. This function aggregates
+// server-side, paginating through the ENTIRE users collection with no cap, so the numbers are correct however many users exist.
+//
+// SCALING NOTE: this still does a full collection scan on every call, field-masked with .select() to keep it cheap, which is fine
+// at the pre-launch/beta scale this app is at today. It will NOT scale indefinitely — past a few thousand users (or once Netlify's
+// function execution timeout becomes a real risk), replace this with a scheduled job that writes a precomputed `adminStats/daily`
+// document instead of scanning live on every dashboard load. Flagging this now rather than silently building something that
+// quietly breaks later.
 //
 // CommonJS — netlify/functions/package.json sets "type":"commonjs"
+'use strict'
 
-const ADMIN_EMAIL = 'femiaisida1@gmail.com'
+const { route, parseJsonBody, respond, HttpError, scrub } = require('./lib/http')
+const { getAdmin, requireAdmin, enforceAppCheck } = require('./lib/auth')
+const { enforceRateLimit } = require('./lib/rateLimit')
+const { logAdminAction } = require('./lib/audit')
 
-// Pricing used only to ESTIMATE MRR from stored subscription status — this is a planning
-// number, not an accounting one. Update these if RevisionFlow's prices change; there's no
-// live Stripe price lookup here (see PRICING note below for why).
+const UID_RE = /^[A-Za-z0-9_-]{1,128}$/
+
+// Pricing used only to ESTIMATE MRR from stored subscription status — this is a planning number, not an accounting one. Update
+// these if RevisionFlow's prices change (they match the prices the app shows: Profile.jsx / Settings.jsx); there's no live Stripe
+// price lookup here.
 const MONTHLY_PRICE_GBP = 3.99
 const ANNUAL_PRICE_GBP  = 29.99
-
-let _admin = null
-async function getAdmin() {
-  if (_admin) return _admin
-  const admin = require('firebase-admin')
-  if (!admin.apps.length) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}')
-    admin.initializeApp({ credential: admin.credential.cert(sa) })
-  }
-  _admin = admin
-  return admin
-}
-
-function respond(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
-    },
-    body: JSON.stringify(body),
-  }
-}
-
-async function verifyAdminToken(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'] || ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) throw new Error('No authorization token provided')
-  const admin = await getAdmin()
-  const decoded = await admin.auth().verifyIdToken(token)
-  if (decoded.email !== ADMIN_EMAIL) throw new Error('Forbidden: not an admin account')
-  return decoded
-}
-
-function logAdminAction(db, action, details = {}) {
-  db.collection('adminAuditLog').add({
-    action,
-    actorEmail: ADMIN_EMAIL,
-    details,
-    timestamp: new Date().toISOString(),
-  }).catch(e => console.warn('[admin-metrics] audit log write failed:', e.message))
-}
 
 // Local calendar-day string (UK), not UTC — a signup at 00:30 BST shouldn't land on
 // yesterday's bucket. Firestore Admin SDK timestamps carry a real Date via .toDate().
@@ -121,11 +85,11 @@ const AI_FEATURE_LABELS = {
 }
 
 async function fetchAiUsage(db) {
+  // tutor.js stamps every counter with the UTC date, so the days here are UTC dates too (London dates would put the last hour of
+  // a British Summer Time evening in the wrong bucket).
   const now = new Date()
   const days = []
-  for (let i = 0; i < 7; i++) {
-    days.push(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now.getTime() - i * 86400000)))
-  }
+  for (let i = 0; i < 7; i++) days.push(new Date(now.getTime() - i * 86400000).toISOString().slice(0, 10))
   try {
     // 'in' queries support up to 30 values — 7 is comfortably inside that.
     const snap = await db.collectionGroup('usage').where('date', 'in', days).get()
@@ -159,8 +123,9 @@ async function fetchAiUsage(db) {
     // Most likely cause: the collection-group query needs a composite index Firestore
     // hasn't been asked to build yet — the real error names the console URL to create it.
     // Fail soft rather than take the whole metrics endpoint down over this one section.
-    console.warn('[admin-metrics] AI usage query failed:', e.message)
-    return { available: false, error: e.message }
+    const reason = scrub(e && e.message).slice(0, 400)
+    console.warn('[admin-metrics] AI usage query failed: ' + reason)
+    return { available: false, error: reason }
   }
 }
 
@@ -169,7 +134,7 @@ async function fetchRecentAuditLog(db, limitN = 50) {
     const snap = await db.collection('adminAuditLog').orderBy('timestamp', 'desc').limit(limitN).get()
     return snap.docs.map(d => ({ id: d.id, ...d.data() }))
   } catch (e) {
-    console.warn('[admin-metrics] audit log fetch failed:', e.message)
+    console.warn('[admin-metrics] audit log fetch failed: ' + scrub(e && e.message))
     return []
   }
 }
@@ -301,7 +266,7 @@ async function fetchUserDetail(db, uid) {
       email: u.email || null,
       createdAt: u.createdAt?.toDate ? u.createdAt.toDate().toISOString() : null,
       qualification: u.qualification || null,
-      subjects: (u.subjects || []).map(s => ({ name: s.name, board: s.board || null })),
+      subjects: (Array.isArray(u.subjects) ? u.subjects : []).filter(s => s && typeof s === 'object').map(s => ({ name: s.name, board: s.board || null })),
       xp: u.xp || 0,
       level: u.level || 1,
       streak: u.streak || 0,
@@ -328,57 +293,40 @@ async function fetchUserDetail(db, uid) {
   }
 }
 
-module.exports.handler = async function (event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Firebase-AppCheck',
-      },
-      body: '',
-    }
-  }
-  if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' })
+module.exports.handler = route('admin-metrics', async (event) => {
+  await enforceAppCheck(event)                       // monitor-only unless APP_CHECK_ENFORCE=true
+  const actor = await requireAdmin(event)            // verified token + verified e-mail + on the admin list
+  const db = getAdmin().firestore()
+  const body = parseJsonBody(event, { maxBytes: 4096, allowEmpty: true })
+  const action = body.action === undefined ? 'metrics' : body.action
 
-  try {
-    await verifyAdminToken(event)
-  } catch (e) {
-    console.warn('[admin-metrics] auth failed:', e.message)
-    return respond(403, { error: 'Forbidden' })
+  // Per-user drill-down — a distinct, cheap, on-demand action, kept in this file rather than a new one since it's the same
+  // admin-analytics concern as everything else here.
+  if (action === 'userDetail') {
+    if (typeof body.uid !== 'string' || !UID_RE.test(body.uid)) throw new HttpError(400, 'uid required', 'bad_request')
+    await enforceRateLimit(db, event, { route: 'admin-metrics.detail', uid: actor.uid, limit: 600, windowSec: 3600 })
+    await logAdminAction(db, actor, 'viewUserDetail', { uid: body.uid })      // recorded BEFORE the record is read
+    const detail = await fetchUserDetail(db, body.uid)
+    if (!detail) throw new HttpError(404, 'User not found', 'not_found')
+    return respond(200, detail, event)
   }
 
-  let body = {}
-  try { body = JSON.parse(event.body || '{}') } catch (_) {}
+  // Default (no action / existing behaviour, unchanged) — full metrics dashboard.
+  if (action !== 'metrics') throw new HttpError(400, 'Unknown action', 'bad_request')
+  await enforceRateLimit(db, event, { route: 'admin-metrics.full', uid: actor.uid, limit: 60, windowSec: 3600, message: 'The dashboard was refreshed too often. Try again in a few minutes.' })
+  const [users, aiUsage, auditLog] = await Promise.all([
+    fetchAllUserFields(db),
+    fetchAiUsage(db),
+    fetchRecentAuditLog(db, 50),
+  ])
+  const metrics = computeMetrics(users)
+  metrics.aiUsage = aiUsage
+  metrics.auditLog = auditLog
+  // Aggregate numbers only, so a failure to record the view does not stop the dashboard.
+  await logAdminAction(db, actor, 'viewMetrics', { totalUsers: metrics.totals.totalUsers })
+    .catch((e) => console.warn('[admin-metrics] could not record a dashboard view: ' + scrub(e && e.message)))
+  return respond(200, metrics, event)
+})
 
-  try {
-    const admin = await getAdmin()
-    const db = admin.firestore()
-
-    // Per-user drill-down — a distinct, cheap, on-demand action, kept in this file rather
-    // than a new one since it's the same admin-analytics concern as everything else here.
-    if (body.action === 'userDetail') {
-      if (!body.uid) return respond(400, { error: 'uid required' })
-      const detail = await fetchUserDetail(db, body.uid)
-      if (!detail) return respond(404, { error: 'User not found' })
-      logAdminAction(db, 'viewUserDetail', { uid: body.uid })
-      return respond(200, detail)
-    }
-
-    // Default (no action / existing behaviour, unchanged) — full metrics dashboard.
-    const [users, aiUsage, auditLog] = await Promise.all([
-      fetchAllUserFields(db),
-      fetchAiUsage(db),
-      fetchRecentAuditLog(db, 50),
-    ])
-    const metrics = computeMetrics(users)
-    metrics.aiUsage = aiUsage
-    metrics.auditLog = auditLog
-    logAdminAction(db, 'viewMetrics', { totalUsers: metrics.totals.totalUsers })
-    return respond(200, metrics)
-  } catch (e) {
-    console.error('[admin-metrics] error:', e)
-    return respond(500, { error: 'Failed: ' + e.message })
-  }
-}
+// Exported for tests only.
+module.exports._internals = { computeMetrics, MONTHLY_PRICE_GBP, ANNUAL_PRICE_GBP }
