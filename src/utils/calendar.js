@@ -208,6 +208,46 @@ export function parseICSDate(str) {
 }
 
 // ── CSV IMPORT ────────────────────────────────────────────────────────────────
+// A CSV row's start. new Date('2026-06-01') is UTC midnight, so a date with no time used to be imported at
+// 00:00 / 01:00 UK time (and on the previous day anywhere west of Greenwich), and a separate time column was
+// ignored. A date with no time is now read as that LOCAL day, at the time in the file's own "start" / "time"
+// column or, failing that, the same 09:00 an all-day calendar event gets. Day-first dates (01/06/2026) are read
+// the way they are written in the UK, not as 6 January. A date that is not on the calendar (31/02/2026) is
+// unreadable, not "the 3rd of March". Anything else falls back to the browser's own parsing, as before, and
+// an unreadable value gives null (the review step shows it as "—").
+const CSV_DEFAULT_HOUR = 9
+
+function csvTime(text) {
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text)
+  return m && +m[1] < 24 && +m[2] < 60 ? { h: +m[1], mi: +m[2] } : null
+}
+
+// { y, mo, d, t } for a date written without a time zone; t is the time written in the same cell
+// (null if none, 'bad' if it was there but not a real time). null if the text is not one of these forms.
+function csvDay(text) {
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text)
+  if (m) return { y: +m[1], mo: +m[2], d: +m[3], t: null }
+  m = /^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})(?:[ T]+(\d{1,2}:\d{2}(?::\d{2})?))?$/.exec(text)
+  if (m) return { y: +m[3], mo: +m[2], d: +m[1], t: m[4] ? (csvTime(m[4]) || 'bad') : null }
+  return null
+}
+
+export function parseCSVStart(row) {
+  const val = (k) => String(row[k] ?? '').trim()
+  const raw = val('date') || val('start') || val('dtstart')
+  if (!raw) return null
+  const day = csvDay(raw)
+  if (day) {
+    if (day.t === 'bad') return null
+    const t = day.t || csvTime(val('start')) || csvTime(val('start time')) || csvTime(val('time')) || { h: CSV_DEFAULT_HOUR, mi: 0 }
+    const dt = new Date(day.y, day.mo - 1, day.d, t.h, t.mi)
+    // new Date rolls 31/02 over into March; check it is still the day that was written.
+    return dt.getFullYear() === day.y && dt.getMonth() === day.mo - 1 && dt.getDate() === day.d ? dt : null
+  }
+  const dt = new Date(raw)
+  return Number.isNaN(dt.getTime()) ? null : dt
+}
+
 export function parseCSV(csvText) {
   const lines = csvText.trim().split('\n')
   if (lines.length < 2) return []
@@ -221,7 +261,7 @@ export function parseCSV(csvText) {
     return {
       ...obj, ...parsed,
       title: titleField,
-      start: obj.date || obj.start || obj.dtstart ? new Date(obj.date||obj.start||obj.dtstart) : null,
+      start: parseCSVStart(obj),
     }
   }).filter(r => r.title || r.subject)
 }
