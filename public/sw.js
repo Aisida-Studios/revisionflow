@@ -1,87 +1,157 @@
-// RevisionFlow Service Worker v7 — Web Push + caching (same-origin only fetch handling)
-const CACHE_STATIC  = 'rf-static-v7'
-const CACHE_DYNAMIC = 'rf-dynamic-v7'
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json']
+// RevisionFlow Service Worker v8 — Web Push + conservative same-origin caching
+//
+// What this worker may keep in Cache Storage, and nothing else:
+//   • the app shell (/, /index.html, /manifest.json), refreshed from the network whenever the network is reachable;
+//   • built static files from this origin (hashed JS/CSS, fonts, images).
+// What it never stores and never answers from a cache: anything under /api/, /.netlify/ or /__/ (the API, the Netlify
+// functions and the Firebase auth helper), any request that carries an Authorization header, and any response that says
+// Cache-Control: no-store or private. Those requests are not inspected at all, so the browser handles them exactly as if
+// this worker were not here. Cross-origin requests (Google Fonts, Firebase, Stripe, ...) are left alone in the same way.
+//
+// v7 also stored every other same-origin GET that came back 200, which would have kept a copy of any private JSON a GET
+// endpoint returned. v8 has no such catch-all, and when it activates it deletes every cache except the two named below,
+// which removes v7's "dynamic" cache from browsers that already have one.
+const CACHE_STATIC     = 'rf-static-v8'
+const VAPID_CACHE      = 'revisionflow-push-config'
+const KEEP_CACHES      = [CACHE_STATIC, VAPID_CACHE]
+const SHELL            = '/index.html'
+const STATIC_ASSETS    = ['/', SHELL, '/manifest.json']
+const PRIVATE_PREFIXES = ['/api/', '/.netlify/', '/__/']
+const STATIC_FILE_RE   = /\.(js|css|woff2?|ttf|png|jpg|svg|ico|webp)$/
+const DEFAULT_ICON     = '/favicon.svg'
 
 // ── Install ──────────────────────────────────────────────────────
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_STATIC).then(c => c.addAll(STATIC_ASSETS)))
+  // Each file is added on its own, so one that is briefly unavailable cannot stop the worker installing (and with it push).
+  e.waitUntil(caches.open(CACHE_STATIC).then(c => Promise.all(STATIC_ASSETS.map(u => c.add(u).catch(() => {})))))
   self.skipWaiting()
 })
 
 // ── Activate ─────────────────────────────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_STATIC && k !== CACHE_DYNAMIC).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => !KEEP_CACHES.includes(k)).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
+
+// ── Helpers ──────────────────────────────────────────────────────
+const isPrivatePath = pathname => PRIVATE_PREFIXES.some(p => pathname.startsWith(p) || pathname === p.slice(0, -1))
+const isHtml = res => /text\/html/i.test(res.headers.get('content-type') || '')
+
+// A response may be kept only if it is an ordinary, successful, same-origin answer that does not ask not to be stored.
+function mayStore(request, res) {
+  if (!res || res.status !== 200 || res.type !== 'basic' || res.redirected) return false
+  if (request.headers && request.headers.has('authorization')) return false
+  if (/\b(no-store|private)\b/i.test(res.headers.get('cache-control') || '')) return false
+  if ((res.headers.get('vary') || '').includes('*')) return false
+  return true
+}
+
+// Cache writes carry on after the response has been handed back. If the event has already finished, waitUntil refuses;
+// the write still proceeds, so that refusal is ignored.
+function keepAlive(e, promise) {
+  try { e.waitUntil(promise) } catch (err) { /* event already finished */ }
+}
 
 // ── Fetch ────────────────────────────────────────────────────────
-// Same-origin requests only. Cross-origin requests (Google Fonts, Firebase, Mistral, Stripe,
-// etc.) are left completely alone — not even inspected — so the browser handles them with its
-// own normal network behaviour. Trying to selectively allow/deny specific cross-origin hostnames
-// here previously missed some (fonts.googleapis.com/fonts.gstatic.com), and a failed cross-origin
-// fetch with nothing cached yet could resolve respondWith() with undefined, which throws
-// "Failed to convert value to 'Response'" — and that failure could cascade into unrelated
-// same-page requests (e.g. dynamic JS chunk imports) failing too.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return
+  const req = e.request
+  if (req.method !== 'GET') return
   let url
-  try { url = new URL(e.request.url) } catch (err) { return }
+  try { url = new URL(req.url) } catch (err) { return }
   if (url.origin !== self.location.origin) return
+  if (isPrivatePath(url.pathname)) return
+  if (req.headers.has('authorization')) return
 
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => { const clone = res.clone(); caches.open(CACHE_DYNAMIC).then(c => c.put(e.request, clone)); return res })
-        .catch(() => caches.match('/index.html').then(cached => cached || Response.error()))
-    )
+  if (req.mode === 'navigate') {
+    e.respondWith(handleNavigation(e, req, url))
     return
   }
 
-  if (url.pathname.match(/\.(js|css|woff2?|ttf|png|jpg|svg|ico|webp)$/) || url.pathname.startsWith('/assets/')) {
-    e.respondWith(
-      caches.match(e.request).then(cached => {
-        const networkFetch = fetch(e.request).then(res => {
-          // A missing script, style or image used to come back as the app's index.html (the catch-all rewrite) and was cached
-          // as if it were the file. HTML is never a valid answer here, so it is refused and never stored.
-          if (/text\/html/i.test(res.headers.get('content-type') || '')) return Response.error()
-          if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_STATIC).then(c => c.put(e.request, clone)) }
-          return res
-        }).catch(() => cached || Response.error())
-        return cached || networkFetch
-      })
-    )
+  if (STATIC_FILE_RE.test(url.pathname) || url.pathname.startsWith('/assets/')) {
+    e.respondWith(handleStatic(e, req))
     return
   }
-
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        if (res.ok && res.status < 400) { const clone = res.clone(); caches.open(CACHE_DYNAMIC).then(c => c.put(e.request, clone)) }
-        return res
-      })
-      .catch(() => caches.match(e.request).then(cached => cached || Response.error()))
-  )
+  // Anything else on this origin is not this worker's business: it goes to the network and nothing is stored.
 })
 
+async function handleNavigation(e, req, url) {
+  try {
+    const res = await fetch(req)
+    // Every app route is answered with the same index.html, so one good copy is enough for offline use. Other pages (a .html
+    // file, an error page, a redirect) are never stored as the shell.
+    if (mayStore(req, res) && isHtml(res) && !/\.html?$/i.test(url.pathname)) {
+      const copy = res.clone()
+      keepAlive(e, caches.open(CACHE_STATIC).then(c => c.put(SHELL, copy)).catch(() => {}))
+    }
+    return res
+  } catch (err) {
+    try {
+      const cache = await caches.open(CACHE_STATIC)
+      return (await cache.match(SHELL)) || Response.error()
+    } catch (err2) {
+      return Response.error()
+    }
+  }
+}
+
+async function handleStatic(e, req) {
+  const cache = await caches.open(CACHE_STATIC)
+  const cached = await cache.match(req)
+  const network = fetch(req).then(res => {
+    // A missing script, style or image used to come back as the app's index.html (the catch-all rewrite) and was cached as
+    // if it were the file. HTML is never a valid answer here, so it is refused and never stored.
+    if (isHtml(res)) return Response.error()
+    if (mayStore(req, res)) {
+      const copy = res.clone()
+      keepAlive(e, cache.put(req, copy).catch(() => {}))
+    }
+    return res
+  }).catch(() => cached || Response.error())
+  return cached || network
+}
+
 // ── Push ─────────────────────────────────────────────────────────
+// Only a path on this site is ever used, for the notification's link and for its icons. Anything else (another host, a
+// "//host" or "javascript:" address, control characters, a backslash) becomes the fallback.
+function sitePath(raw, fallback) {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 500 || /[\u0000-\u001f\u007f\\]/.test(raw)) return fallback
+  try {
+    const u = new URL(raw, self.location.origin)
+    return u.origin === self.location.origin ? u.pathname + u.search + u.hash : fallback
+  } catch (err) {
+    return fallback
+  }
+}
+const text = (v, max, fallback) => (typeof v === 'string' && v.trim() ? v.slice(0, max) : fallback)
+
 self.addEventListener('push', e => {
-  let data = { title: 'RevisionFlow', body: 'Time to revise!', url: '/', icon: '/favicon.svg', badge: '/favicon.svg' }
-  try { if (e.data) data = { ...data, ...e.data.json() } } catch(err) {}
+  let data = {}
+  try {
+    if (e.data) {
+      const parsed = e.data.json()
+      if (parsed && typeof parsed === 'object') data = parsed
+    }
+  } catch (err) { /* not JSON: show the default notification */ }
+
+  const actions = Array.isArray(data.actions)
+    ? data.actions
+        .filter(a => a && typeof a.action === 'string' && typeof a.title === 'string')
+        .slice(0, 2)
+        .map(a => ({ action: a.action.slice(0, 32), title: a.title.slice(0, 32) }))
+    : []
 
   e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body:             data.body,
-      icon:             data.icon  || '/favicon.svg',
-      badge:            data.badge || '/favicon.svg',
-      tag:              data.tag   || 'revisionflow',
-      data:             { url: data.url || '/' },
-      requireInteraction: data.requireInteraction || false,
-      actions: data.actions || [],
+    self.registration.showNotification(text(data.title, 100, 'RevisionFlow'), {
+      body:               text(data.body, 300, 'Time to revise!'),
+      icon:               sitePath(data.icon, DEFAULT_ICON),
+      badge:              sitePath(data.badge, DEFAULT_ICON),
+      tag:                text(data.tag, 64, 'revisionflow'),
+      data:               { url: sitePath(data.url, '/') },
+      requireInteraction: data.requireInteraction === true,
+      actions,
       vibrate: [100, 50, 100],
     })
   )
@@ -90,20 +160,21 @@ self.addEventListener('push', e => {
 // ── Notification click ───────────────────────────────────────────
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  const url = (e.notification.data && e.notification.data.url) || '/'
+  const target = sitePath(e.notification.data && e.notification.data.url, '/')
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      // Focus existing tab if open
+      // Reuse an open tab of this site, if there is one. A window on any other origin is never navigated.
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.focus()
-          client.navigate(url)
-          return
+        let sameOrigin = false
+        try { sameOrigin = new URL(client.url).origin === self.location.origin } catch (err) { /* unreadable address */ }
+        if (sameOrigin && 'focus' in client) {
+          return Promise.resolve(client.focus())
+            .then(() => ('navigate' in client ? client.navigate(target) : null))
+            .catch(() => (clients.openWindow ? clients.openWindow(target) : null))
         }
       }
-      // Otherwise open new window
-      if (clients.openWindow) return clients.openWindow(url)
+      if (clients.openWindow) return clients.openWindow(target)
     })
   )
 })
@@ -111,8 +182,8 @@ self.addEventListener('notificationclick', e => {
 // ── Push subscription lifecycle ───────────────────────────────────
 // A service worker cannot read Vite env vars, so the page hands us the public
 // VAPID key (SET_VAPID_KEY message) and we persist it in Cache Storage.
-const VAPID_CACHE = 'revisionflow-push-config'
 const VAPID_KEY_URL = '/__push-config/vapid-public-key'
+const VAPID_KEY_RE  = /^[A-Za-z0-9_-]{40,200}={0,2}$/
 
 async function saveVapidKey(key) {
   if (!key) return
@@ -138,7 +209,9 @@ async function notifyClients(message) {
 }
 
 self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SET_VAPID_KEY') e.waitUntil(saveVapidKey(e.data.key))
+  const d = e.data
+  // Only a well-formed public key is stored; anything else is ignored.
+  if (d && d.type === 'SET_VAPID_KEY' && typeof d.key === 'string' && VAPID_KEY_RE.test(d.key)) e.waitUntil(saveVapidKey(d.key))
 })
 
 self.addEventListener('pushsubscriptionchange', e => {
