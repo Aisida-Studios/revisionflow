@@ -104,9 +104,11 @@ export default function PrivacyPolicy() {
 
           <p style={{ ...P_STYLE, fontWeight:600 }}>Technical data (lawful basis: legitimate interests)</p>
           <ul style={UL_STYLE}>
-            <li>Browser local storage: app preferences (dark mode, dismissed banners, tour completion)</li>
+            <li>Sign-in state: Firebase Authentication keeps your sign-in token in your browser's local storage on this device so you stay signed in (see section 8)</li>
+            <li>Browser local storage: app preferences (dark mode, dismissed banners, tour completion) and, if you arrive through a friend's referral link, that link's referral code until your account is created</li>
             <li>Service worker cache: static app assets for offline functionality</li>
-            <li>No IP addresses, device fingerprints, or tracking pixels are collected by us</li>
+            <li>Push notification subscription (only if you turn notifications on): the address and encryption keys your browser's push service gives us, stored with your profile and used to send the reminders you asked for</li>
+            <li>No IP addresses, device fingerprints, or tracking pixels are collected by us. The hosting, payment and font providers listed in section 4 may process IP addresses and similar technical data as part of delivering their services</li>
           </ul>
         </section>
 
@@ -141,6 +143,8 @@ export default function PrivacyPolicy() {
                   ['Google Firebase','Authentication, Firestore database, hosting infrastructure','Email, display name, all Firestore data','EU / USA (SCCs apply)','firebase.google.com/support/privacy'],
                   ['Mistral AI','AI Advisor, answer marking, study plan generation','Your messages + summarised revision context','EU','mistral.ai/privacy'],
                   ['Netlify','Web hosting, deployment, and serverless functions (admin operations, AI proxy)','IP addresses in server logs (Netlify standard logging)','USA (SCCs apply)','netlify.com/privacy'],
+                  ['Stripe','Payments for Pro subscriptions',"Your email address, our internal account ID and your chosen plan. Card details are entered on Stripe's own checkout page and are not seen or stored by us","See Stripe's privacy policy",'stripe.com/privacy'],
+                  ['Google Fonts','Typefaces used by the app','Your IP address and browser details, sent by your browser to Google when a page loads',"See Google's Fonts privacy FAQ",'developers.google.com/fonts/faq/privacy'],
                 ].map(([s,p,d,l,url]) => (
                   <tr key={s} style={{ borderBottom:'1px solid var(--border)' }}>
                     <td style={{ padding:'10px 12px', fontWeight:600 }}>{s}</td>
@@ -168,7 +172,15 @@ export default function PrivacyPolicy() {
             <li><strong>Browser local storage:</strong> retained in your browser until you clear it or uninstall the PWA</li>
             <li><strong>Netlify server logs:</strong> retained per Netlify's standard policy (30 days)</li>
           </ul>
-          <p style={P_STYLE}>When you delete your account (Settings → Account → Delete Account), all Firestore documents associated with your UID are permanently deleted. This action is irreversible.</p>
+          <p style={P_STYLE}>When you delete your account (Settings → Account → Delete Account), RevisionFlow first cancels any active Pro subscription and confirms it has ended. It then permanently deletes your profile and everything stored under it (sessions, notes, flashcards, progress, settings), your friend connections and requests, flashcard sets you shared with the community, and your sign-in account. This cannot be undone. If a subscription cannot be cancelled, nothing is deleted and you are told so.</p>
+          <p style={P_STYLE}>Some records are kept after deletion:</p>
+          <ul style={UL_STYLE}>
+            <li><strong>Payment records:</strong> if you ever paid, Stripe keeps your customer, invoice and payment records. These are financial records we are required to retain; only the subscription itself is ended.</li>
+            <li><strong>Deletion record:</strong> a record that a deletion took place, holding a one-way hash, its status and timings (no email address, name or content), kept for 90 days.</li>
+            <li><strong>Administrator activity records:</strong> if an administrator acted on or looked at your account (for example to support you), the record of that action is kept for security and accountability and may contain your account's internal ID. It contains no revision content.</li>
+            <li><strong>Shared AI-generated flashcards:</strong> flashcards the AI generated that other students use stay in the shared cache; only the link to you is removed.</li>
+            <li><strong>Provider copies:</strong> copies held by providers under their own policies, such as Netlify server logs (30 days).</li>
+          </ul>
         </section>
 
         <section style={SECTION_STYLE}>
@@ -177,7 +189,7 @@ export default function PrivacyPolicy() {
           <ul style={UL_STYLE}>
             <li><strong>Right of access (Article 15):</strong> You can request a copy of all personal data we hold about you</li>
             <li><strong>Right to rectification (Article 16):</strong> You can correct inaccurate data via your Settings page at any time</li>
-            <li><strong>Right to erasure (Article 17):</strong> You can delete your entire account and all associated data via Settings → Delete Account</li>
+            <li><strong>Right to erasure (Article 17):</strong> You can delete your entire account and its data via Settings → Delete Account, except the records described in section 5</li>
             <li><strong>Right to restrict processing (Article 18):</strong> You can request that we stop processing your data in certain circumstances</li>
             <li><strong>Right to data portability (Article 20):</strong> You can request an export of your data in a machine-readable format</li>
             <li><strong>Right to object (Article 21):</strong> You can object to processing based on legitimate interests</li>
@@ -193,7 +205,7 @@ export default function PrivacyPolicy() {
           <ul style={UL_STYLE}>
             <li>All data is transmitted over HTTPS (TLS 1.2+)</li>
             <li>Firebase Firestore security rules restrict each user to their own data only — no user can read another user's revision data</li>
-            <li>Passwords are hashed using Firebase Authentication's bcrypt-based system — we never store or transmit plain-text passwords</li>
+            <li>Passwords are hashed by Firebase Authentication — we never see or store your password in plain text</li>
             <li>API keys for AI services are stored as environment variables on Netlify servers and are never exposed in the client-side bundle to end users</li>
             <li>Firebase Authentication uses industry-standard OAuth 2.0 for Google sign-in</li>
           </ul>
@@ -205,8 +217,8 @@ export default function PrivacyPolicy() {
           <p style={P_STYLE}>RevisionFlow does <strong>not</strong> use advertising cookies, tracking cookies, or third-party analytics cookies.</p>
           <p style={P_STYLE}>We use the following technologies:</p>
           <ul style={UL_STYLE}>
-            <li><strong>Firebase Authentication session cookie:</strong> A secure, HTTP-only session token to keep you logged in. This is strictly necessary for the app to function and does not require consent under PECR.</li>
-            <li><strong>localStorage:</strong> Used to store your UI preferences (dark/light mode, dismissed banners, tour completion status). This data stays on your device and is never transmitted to our servers.</li>
+            <li><strong>Firebase Authentication sign-in state:</strong> To keep you signed in (including in the installed app), Firebase Authentication stores a sign-in token in your browser's local storage on this device until you sign out. It is not a cookie. It is strictly necessary for the app to function and does not require consent under PECR.</li>
+            <li><strong>localStorage:</strong> Used to store your UI preferences (dark/light mode, dismissed banners, tour completion status) and, if you arrive through a friend's referral link, that link's referral code until your account is created. Preferences stay on your device. The referral code is sent to our server when you sign up and when your account is set up, so the referral can be credited, and is then removed from your browser.</li>
             <li><strong>Service worker cache:</strong> Used to cache static assets for offline use. Contains no personal data.</li>
           </ul>
         </section>
