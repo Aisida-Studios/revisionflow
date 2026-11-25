@@ -1,0 +1,279 @@
+rules_version = '2';
+
+// RevisionFlow Firestore rules (version-controlled).
+//
+// This file is the owner's policy (including users/{uid}/setProgress) plus hardening. What changed, what each rule protects
+// against and the order to deploy in are explained in CHANGES-EXPLAINED.md, in the section "The Firestore rules".
+//
+// Privileged writes (admin overrides, official content, Pro/beta flags, Stripe, friends, referrals, friend requests,
+// AI usage counters, account deletion) happen only server-side through Netlify functions using the Admin SDK, which
+// bypasses these rules. Clients may never write them.
+//
+// Everything a student owns sits under users/{uid}. Each subcollection the app uses is listed by name below;
+// anything NOT listed is denied, so a new subcollection needs a rule here before the app can use it.
+//
+// What these rules can and cannot do: they check who is writing, which fields, their types, sizes and (for the
+// gamification numbers) how far a single write may move them. They cannot rate-limit, enforce uniqueness, or prove that
+// a revision session really happened, so XP, streaks and badges are bounded per write but remain client-reported.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // Fields only server functions may set on a user document: plan and payment state, admin flags, referral
+    // attribution and the friends list. (subjects is NOT here: a student's own subject list, including
+    // subjects[].options for course options, stays writable by them.) stripeCurrentPeriodEnd and proActivatedAt are
+    // written by the Stripe webhook, so they are server-owned too.
+    function serverOwnedKeys() {
+      return ['isPro', 'betaUser', 'isAdmin', 'admin', 'stripeCustomerId', 'stripeSubId',
+              'stripeSubStatus', 'stripePlan', 'stripePaymentFailed',
+              'stripeCurrentPeriodEnd', 'proActivatedAt',
+              'referredBy', 'referredAt', 'friends'];
+    }
+    function touchesServerOwned() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOwnedKeys());
+    }
+    function createsServerOwned() {
+      return request.resource.data.keys().hasAny(serverOwnedKeys());
+    }
+
+    // ---- Checks on the user document (update) ----------------------------------------------------------------------
+    // Each check applies only to a field that THIS write changes, so an older account whose stored value would not pass
+    // today's check can still update its other fields.
+    function changed(key) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny([key]);
+    }
+    function textOk(v, max) { return v is string && v.size() <= max; }
+
+    // XP only ever goes up, and by at most the largest single award the app makes (the biggest badge bonus is 2000).
+    function xpWriteOk() {
+      return !changed('xp')
+          || (request.resource.data.xp is int
+              && request.resource.data.xp >= resource.data.get('xp', 0)
+              && request.resource.data.xp - resource.data.get('xp', 0) <= 2000);
+    }
+    function levelWriteOk() {
+      return !changed('level')
+          || (request.resource.data.level is int && request.resource.data.level >= 0 && request.resource.data.level <= 1000);
+    }
+    // Weekly and monthly counters are reset to a single award or incremented by one, never jumped.
+    function periodXpWriteOk() {
+      return (!changed('xpThisWeek')
+              || (request.resource.data.xpThisWeek is int && request.resource.data.xpThisWeek >= 0
+                  && request.resource.data.xpThisWeek <= resource.data.get('xpThisWeek', 0) + 2000))
+          && (!changed('xpThisMonth')
+              || (request.resource.data.xpThisMonth is int && request.resource.data.xpThisMonth >= 0
+                  && request.resource.data.xpThisMonth <= resource.data.get('xpThisMonth', 0) + 2000));
+    }
+    // A streak grows by at most one a day, or restarts at one.
+    function streakWriteOk() {
+      return (!changed('streak')
+              || (request.resource.data.streak is int && request.resource.data.streak >= 0
+                  && request.resource.data.streak <= resource.data.get('streak', 0) + 1))
+          && (!changed('bestStreak')
+              || (request.resource.data.bestStreak is int && request.resource.data.bestStreak >= 0
+                  && (request.resource.data.bestStreak <= resource.data.get('bestStreak', 0)
+                      || request.resource.data.bestStreak <= request.resource.data.get('streak', 0))));
+    }
+    // A badge is earned one at a time.
+    function badgesWriteOk() {
+      return !changed('badges')
+          || (request.resource.data.badges is list
+              && request.resource.data.badges.size() <= 150
+              && request.resource.data.badges.size() <= resource.data.get('badges', []).size() + 1);
+    }
+    // Public-facing text: other students see these through /api/public-data.
+    function profileTextWriteOk() {
+      return (!changed('displayName') || textOk(request.resource.data.displayName, 100))
+          && (!changed('username')    || textOk(request.resource.data.username, 50))
+          && (!changed('avatarUrl')   || (textOk(request.resource.data.avatarUrl, 2048)
+                                          && (request.resource.data.avatarUrl == ''
+                                              || request.resource.data.avatarUrl.matches('https://.*'))))
+          // A referral code is the first 8 characters of the uid, upper-cased (src/utils/referrals.js). The rules only bound the
+          // field, because a stricter format could lock out an account whose uid has unusual characters. They cannot prove the
+          // code belongs to this uid, so netlify/functions/referral.js only honours a code that really derives from the
+          // owning account's uid: copying another student's code into your own profile captures nothing.
+          && (!changed('referralCode') || textOk(request.resource.data.referralCode, 16));
+    }
+    // A brand-new account starts with nothing: no XP, streak or badges, and none of the server-owned fields.
+    function newAccountOk() {
+      return !createsServerOwned()
+          && request.resource.data.get('xp', 0) == 0
+          && request.resource.data.get('xpThisWeek', 0) == 0
+          && request.resource.data.get('xpThisMonth', 0) == 0
+          && request.resource.data.get('streak', 0) == 0
+          && request.resource.data.get('bestStreak', 0) == 0
+          && request.resource.data.get('badges', []).size() == 0
+          && request.resource.data.get('level', 1) <= 1
+          && textOk(request.resource.data.get('displayName', ''), 100)
+          && textOk(request.resource.data.get('username', ''), 50)
+          && textOk(request.resource.data.get('avatarUrl', ''), 2048)
+          && textOk(request.resource.data.get('referralCode', ''), 16);
+    }
+
+    // One entry in the XP ledger the Analytics chart reads: created once, never edited or removed by the student.
+    function validXpEvent() {
+      return request.resource.data.keys().hasOnly(['amount', 'reason', 'day', 'createdAt'])
+          && request.resource.data.amount is int
+          && request.resource.data.amount >= 1
+          && request.resource.data.amount <= 2000
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() <= 120
+          && request.resource.data.day is string
+          && request.resource.data.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && request.resource.data.createdAt == request.time;
+    }
+
+    // A flashcard set a student publishes to the community: their own, never official, never AI-generated and never
+    // marked as reviewed, with only the fields the app publishes (the private set document also holds the student's own
+    // study progress, which must not be copied here) and with bounded sizes. (Official sets are written only by the
+    // admin review queue, and a student's AI-generated sets stay private in users/{uid}/flashcardSets.)
+    function isCommunitySet() {
+      return request.resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'title', 'subject', 'topic', 'cards', 'isPublic', 'cardCount',
+                                                   'author', 'authorType', 'createdAt', 'updatedAt', 'board', 'level',
+                                                   'setId', 'official', 'aiGenerated', 'verified'])
+          && request.resource.data.get('official', false) == false
+          && request.resource.data.get('authorType', 'user') == 'user'
+          && request.resource.data.get('aiGenerated', false) == false
+          && request.resource.data.get('verified', false) == false
+          && request.resource.data.cards is list
+          && request.resource.data.cards.size() <= 500
+          && textOk(request.resource.data.get('title', ''), 200)
+          && textOk(request.resource.data.get('subject', ''), 100)
+          && textOk(request.resource.data.get('topic', ''), 200)
+          && textOk(request.resource.data.get('author', ''), 100);
+    }
+
+    // An entry in the shared flashcard cache: either a generated card set, or the AI answer options for a quiz on a saved set.
+    // The options are stored as { version: 2, byCard: { <card key>: [options] }, generatedAt } under the id
+    // distractors2_<set id> (saveCachedDistractors in src/utils/firestore.js); the older { cardCount, distractors } shape is
+    // still accepted so a browser that has not reloaded can finish what it started. Unreviewed, a sensible id and size, and,
+    // when it says who stored it, the signed-in student.
+    function validCacheDoc() {
+      return request.resource.data.keys().hasOnly(['board', 'level', 'subject', 'topic', 'count', 'cards', 'slug',
+                                                   'generatedAt', 'views', 'cardCount', 'distractors', 'createdBy',
+                                                   'verified', 'version', 'byCard'])
+          && request.resource.data.get('verified', false) == false
+          && request.resource.data.get('createdBy', request.auth.uid) == request.auth.uid
+          && request.resource.data.get('views', 1) == 1
+          && (!('cards' in request.resource.data)
+              || (request.resource.data.cards is list && request.resource.data.cards.size() <= 120))
+          && (!('distractors' in request.resource.data)
+              || ((request.resource.data.distractors is list || request.resource.data.distractors is map)
+                  && request.resource.data.distractors.size() <= 600))
+          && (!('byCard' in request.resource.data)
+              || (request.resource.data.byCard is map && request.resource.data.byCard.size() <= 1000))
+          && (!('version' in request.resource.data)
+              || (request.resource.data.version is int && request.resource.data.version >= 1 && request.resource.data.version <= 99))
+          && (!('generatedAt' in request.resource.data) || request.resource.data.generatedAt == request.time)
+          && textOk(request.resource.data.get('board', ''), 60)
+          && textOk(request.resource.data.get('level', ''), 60)
+          && textOk(request.resource.data.get('subject', ''), 120)
+          && textOk(request.resource.data.get('topic', ''), 240)
+          && textOk(request.resource.data.get('slug', ''), 220);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && newAccountOk();
+      allow update: if isOwner(uid)
+                    && !touchesServerOwned()
+                    && xpWriteOk() && levelWriteOk() && periodXpWriteOk()
+                    && streakWriteOk() && badgesWriteOk()
+                    && profileTextWriteOk();
+      allow delete: if false;   // account deletion runs server-side: /api/account
+
+      // Student-owned data: the student reads and writes their own.
+      match /topics/{id}           { allow read, write: if isOwner(uid); }
+      match /sessions/{id}         { allow read, write: if isOwner(uid); }
+      match /paperAttempts/{id}    { allow read, write: if isOwner(uid); }
+      match /paperStructures/{id}  { allow read, write: if isOwner(uid); }
+      match /quizResults/{id}      { allow read, write: if isOwner(uid); }
+      match /mistakes/{id}         { allow read, write: if isOwner(uid); }
+      match /tasks/{id}            { allow read, write: if isOwner(uid); }
+      match /notes/{id}            { allow read, write: if isOwner(uid); }
+      match /flashcardSets/{id}    { allow read, write: if isOwner(uid); }
+      match /notifications/{id}    { allow read, write: if isOwner(uid); }
+      match /settings/{id}         { allow read, write: if isOwner(uid); }
+      match /meta/{id}             { allow read, write: if isOwner(uid); }   // announcement and update dismissals
+      match /aiData/{id}           { allow read, write: if isOwner(uid); }   // saved AI study plan
+      match /quests/{id}           { allow read, write: if isOwner(uid); }
+      match /priorities/{id}       { allow read, write: if isOwner(uid); }   // kept: stored data from the removed topic Priority
+      match /dailyBriefing/{id}    { allow read, write: if isOwner(uid); }
+      match /setProgress/{id}      { allow read, write: if isOwner(uid); }   // the student's progress on official, premade and community sets they do not own
+
+      // The XP ledger the Analytics chart reads. Append-only for the student; see validXpEvent().
+      match /xpEvents/{id} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validXpEvent();
+        allow update, delete: if false;
+      }
+
+      // Entitlement and AI usage counters. The student can READ them (to show "2 free solves left"), but only the
+      // server writes them: previously a student could write here and reset their own daily and lifetime limits.
+      match /usage/{id}            { allow read: if isOwner(uid); allow write: if false; }
+    }
+
+    // Content overrides: read by every signed-in student, written only through /api/admin.
+    match /topicOverrides/{id}      { allow read: if signedIn(); allow write: if false; }
+    match /examDateOverrides/{id}   { allow read: if signedIn(); allow write: if false; }
+    match /paperSpecOverrides/{id}  { allow read: if signedIn(); allow write: if false; }
+    match /boundaryOverrides/{id}   { allow read: if signedIn(); allow write: if false; }
+    match /adminDrafts/{id}         { allow read, write: if false; }
+    match /adminAuditLog/{id}       { allow read, write: if false; }
+    match /announcements/{id}       { allow read, write: if false; }   // served through /api/announcements
+    match /topicResourceLinks/{id}  { allow read, write: if false; }   // managed through /api/admin
+
+    // Server-only bookkeeping used by the Netlify functions (Admin SDK). Clients can neither read nor write any of it.
+    match /rateLimits/{id}          { allow read, write: if false; }   // request counters per caller and route
+    match /stripeEvents/{id}        { allow read, write: if false; }   // processed Stripe webhook ids (idempotency)
+    match /accountDeletions/{id}    { allow read, write: if false; }   // account-deletion job state (no personal content)
+    match /friendPairs/{id}         { allow read, write: if false; }   // pairs that already received the new-friend XP
+
+    // Community flashcard sets (and the official sets the admin review queue publishes). Students write only
+    // community sets of their own; see isCommunitySet().
+    match /publicFlashcards/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && isCommunitySet();
+      allow update: if signedIn() && resource.data.uid == request.auth.uid && isCommunitySet();
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // topicNotes: the feature was removed and nothing in the app reads or writes it any more. The stored data is kept,
+    // readable, but no longer writable.
+    match /topicNotes/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Cache of AI-generated flashcards and quiz distractors, shared between students: the first person to need one
+    // stores it. A document can be created once (unreviewed, with a sensible id and size) and afterwards only its
+    // view count changes, by one at a time. Nobody but the server can delete or rewrite an entry, so a bad entry is
+    // removed by an administrator (createdBy says who stored it).
+    match /flashcardCache/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && id.matches('[A-Za-z0-9_]{1,220}')
+                    && validCacheDoc();
+      allow update: if signedIn()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+                    && request.resource.data.views is int
+                    && request.resource.data.views == resource.data.get('views', 0) + 1;
+      allow delete: if false;
+    }
+
+    // Friend requests: created only by /api/friends (which fills in the sender's real name and avatar and limits how
+    // many a student can send), visible only to the two people involved. Accepting, declining and removing friends goes
+    // through /api/friends as well; a student can still withdraw a request they sent or received.
+    match /friendRequests/{id} {
+      allow read: if signedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if false;
+      allow delete: if signedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow update: if false;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
