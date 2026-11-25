@@ -6,6 +6,7 @@ import { recordActivityStreak } from './firestore'
 import { auth, getAppCheckHeader } from '../firebase'
 import { daysUntilExam } from './examUtils'
 import { targetGradeForPrompt } from './gradeTargets'
+import { advisorSystemPrompt } from './advisorContext'
 import { buildDistractorPrompt, parseDistractorReply, distractorTokens } from './distractors'
 import { isTransientAIError, withOneRetry, aiFailure } from './aiErrors'
 
@@ -335,12 +336,11 @@ Keep it short, punchy, and encouraging. Max 150 words total.`
   return callAI(prompt, SYSTEM, 1024, uid)
 }
 
+// userContext: { subjects, context } as the Advisor page builds it. `context` is the minimised text from
+// buildAdvisorContext() (src/utils/advisorContext.js); it used to be passed in and then dropped here, leaving the model
+// with nothing but the subject names. Without it, the subject names are still sent, as before.
 export async function chatWithAI(messages, userContext, uid) {
-  const contextStr = userContext?.subjects?.length
-    ? `Student context: studying ${userContext.subjects.map(s => s.name).join(', ')}.`
-    : ''
-  const systemWithContext = contextStr ? `${SYSTEM}\n\n${contextStr}` : SYSTEM
-  return callAIChat(messages.slice(-10), systemWithContext, uid, 'advisorChat', 2000)
+  return callAIChat(messages.slice(-10), advisorSystemPrompt(SYSTEM, userContext), uid, 'advisorChat', 2000)
 }
 
 export const AI_MARKING_DISCLAIMER = 'AI marking estimate — not official marking. Compare with your teacher\'s or the board\'s published mark scheme.'
