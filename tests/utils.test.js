@@ -36,9 +36,18 @@ import { computeSubjectPredictions, gradeToPercent, percentToGrade, PREDICTION_W
 import { computeTopicRecommendations, RECOMMENDATION_WEIGHTS } from '../src/utils/recommendations.js'
 
 let n = 0
-const ok = (name, fn) => { fn(); n++; console.log('ok -', name) }
+// A failing assertion is recorded and the run carries on, so one failure no longer hides every test after it.
+// Nothing is weakened by this: every assertion still has to pass, and the process exits non-zero (see the end of
+// the file) if any test failed.
+const failures = []
+const recordFailure = (name, err) => {
+  failures.push(name)
+  console.log('not ok -', name)
+  console.log('   ' + String((err && err.message) || err).split('\n').join('\n   '))
+}
+const ok = (name, fn) => { try { fn(); n++; console.log('ok -', name) } catch (err) { recordFailure(name, err) } }
 // Tests that talk to the (fake) database are async. The file is bundled as ESM, so top-level await works.
-const okAsync = async (name, fn) => { await fn(); n++; console.log('ok -', name) }
+const okAsync = async (name, fn) => { try { await fn(); n++; console.log('ok -', name) } catch (err) { recordFailure(name, err) } }
 const IN_LONDON = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Europe/London'
 const okLondon = (name, fn) => IN_LONDON ? ok(name, fn) : console.log('skip - ' + name + ' (needs TZ=Europe/London)')
 
@@ -1559,4 +1568,9 @@ ok('rich text: markers are stripped for plain-text places such as titles and toa
   assert.equal(stripMarkers(null), '')
 })
 
-console.log(`\n${n} checks passed`)
+console.log(`\n${n} checks passed${failures.length ? `, ${failures.length} FAILED` : ''}`)
+if (failures.length) {
+  console.log('\nFailed:')
+  for (const name of failures) console.log(' - ' + name)
+  process.exitCode = 1
+}
